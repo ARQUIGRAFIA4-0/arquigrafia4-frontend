@@ -1,0 +1,26 @@
+// Override Bootstrap's Sass default variables.
+// Nearly all variables in Bootstrap are written with the `!default` flag.
+// This allows you to override the default values of those variables before you import Bootstrap's source Sass files.
+@import "variables";
+
+// Bring in Bootstrap
+@import "bootstrap/scss/bootstrap";
+
+// Import Bootstrap Icons w/ custom path to fonts folder
+$bootstrap-icons-font-dir: "../node_modules/bootstrap-icons/font/fonts";
+@import "bootstrap-icons/font/bootstrap-icons";
+
+// Custom styles
+body {
+  margin-top: 60px;
+  overflow-x: hidden;
+}
+
+.home-display {
+  background: url('../assets/casa-com-plantas.jpg');
+  background-position: center;
+}
+
+.txt-white {
+  color: $white;
+}
