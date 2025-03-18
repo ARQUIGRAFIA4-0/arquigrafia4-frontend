@@ -32,7 +32,6 @@
 <script>
 import { mapActions, mapState } from 'pinia'
 import { authStore } from '../../store/auth'
-// import axios from '../../axios/index';
 
 export default {
   data() {
