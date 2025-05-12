@@ -6,5 +6,12 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     port: 8080
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern-compiler' // or "modern"
+      }
+    }
   }
 })
