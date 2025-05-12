@@ -1,4 +1,26 @@
 // variable overrides
 
 // colors
-$white: rgba(255,255,255,1);
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap");
+$font-family-base: "DM Sans";
+
+$nav-link-padding-x: 0.5rem;
+
+$base-text-color: #2f2f2f;
+
+// Bootstrap variable overrides
+$primary: #2F2F2F;
+
+// CSS Custom Properties
+:root {
+  --bs-primary: #{$primary};
+  --bs-primary-rgb: 47, 47, 47;
+  --bs-btn-bg: var(--bs-primary);
+  --bs-btn-border-color: var(--bs-primary);
+  --bs-btn-hover-bg: #404040;
+  --bs-btn-hover-border-color: #404040;
+  --bs-btn-active-bg: #404040;
+  --bs-btn-active-border-color: #404040;
+}
+
