@@ -31,22 +31,14 @@ export const authStore = defineStore('auth', {
       })
       .catch(function (error) {
         // handle error
-<<<<<<< HEAD
-        this.deuCerto = true;
-=======
         console.log('deu erro', error);
         this.isLoggedIn = true;
->>>>>>> eac44b5 (refactor: renomeia variavel e muda porta padrão)
       });
 
     },
     async getLoggedUser() {
-<<<<<<< HEAD
-      var loggedRequest = await axios.get('http://localhost:8000/api/me', {
-=======
       console.log('entrou get user');
       var loggedRequest = await axios.get('http://localhost:80/api/me', {
->>>>>>> eac44b5 (refactor: renomeia variavel e muda porta padrão)
         headers: {
           'Authorization': 'Bearer ' + this.accessToken
         }
