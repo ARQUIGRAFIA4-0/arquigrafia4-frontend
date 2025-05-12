@@ -8,7 +8,7 @@ export const authStore = defineStore('auth', {
     tokenType: '',
     accessToken: '',
     refreshToken: '',
-    deuCerto: false,
+    isLoggedIn: false,
   }),
   getters: {
   },
@@ -22,21 +22,31 @@ export const authStore = defineStore('auth', {
         'password': formData.password,
         'scope': '*',
       };
-      var loginRequest = await axios.post('http://localhost:8000/oauth/token', sendData)
+      var loginRequest = await axios.post('http://localhost:80/oauth/token', sendData)
       .then(response => {
         this.tokenType = response.data.token_type;
         this.accessToken = response.data.access_token;
         this.refreshToken = response.data.refresh_token;
-        this.deuCerto = true;
+        this.isLoggedIn = true;
       })
       .catch(function (error) {
         // handle error
+<<<<<<< HEAD
         this.deuCerto = true;
+=======
+        console.log('deu erro', error);
+        this.isLoggedIn = true;
+>>>>>>> eac44b5 (refactor: renomeia variavel e muda porta padrão)
       });
 
     },
     async getLoggedUser() {
+<<<<<<< HEAD
       var loggedRequest = await axios.get('http://localhost:8000/api/me', {
+=======
+      console.log('entrou get user');
+      var loggedRequest = await axios.get('http://localhost:80/api/me', {
+>>>>>>> eac44b5 (refactor: renomeia variavel e muda porta padrão)
         headers: {
           'Authorization': 'Bearer ' + this.accessToken
         }
