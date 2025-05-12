@@ -1,65 +1,49 @@
 <template>
   <div class="container-fluid p-2">
+    <!-- Main Content Row -->
     <div class="row my-2">
-      <div v-if="!deuCerto" class="col-md-6 px-3 text-center">
-        <h2>Login</h2>
-        <!-- <form> -->
-          <div class="form-floating mb-3">
-            <input v-model="loginForm.email" type="email" class="form-control" id="floatingInput" placeholder="name@example.com">
-            <label for="floatingInput">Email</label>
-          </div>
-          <div class="mb-3 form-floating">
-            <input v-model="loginForm.password" type="password" class="form-control" id="floatingPassword" placeholder="Password">
-            <label for="floatingPassword">Password</label>
-          </div>
-          <div class="mb-3 form-check text-start">
-            <input v-model="loginForm.email" type="checkbox" class="form-check-input" id="exampleCheck1">
-            <label class="form-check-label" for="exampleCheck1">Lembrar</label>
-          </div>
-          <button type="button" class="btn btn-primary" @click="doLogin">Entrar</button>
-        <!-- </form> -->
+      <!-- Login Form Column (3 cols) -->
+      <div class="col-12 col-md-3 ps-5">
+        <LoginForm />
       </div>
-      <div v-else class="col-md-6 px-3 text-center">
-        <h2>Login Realizado</h2>
-        <p>{{ loggedUser.name }}</p>
-      </div>
-      <div class="col-md-6 home-display">
+
+      <!-- Empty Column (1 col) -->
+      <div class="d-none d-md-block col-md-1"></div>
+
+      <!-- Image Gallery Column (8 cols) -->
+      <div class="col-12 col-md-8">
+        <Mosaic />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { mapActions, mapState } from 'pinia'
-import { authStore } from '../../store/auth'
+import Mosaic from '../../components/Mosaic.vue'
+import LoginForm from '../../components/LoginForm.vue'
 
 export default {
-  data() {
-    return {
-      retorno: '',
-      loginForm: {
-        email: "",
-        password: "",
-        remember: false,
-      },
-    }
-  },
-  methods: {
-    async doLogin() {
-      if (!this.loginForm.email || !this.loginForm.password) {
-        alert('preencha!');
-        return;
-      }
-      await this.getAccessToken(this.loginForm);
-      if (this.deuCerto) {
-        await this.getLoggedUser();
-      }
-      
-    },
-    ...mapActions(authStore, ['getAccessToken', 'getLoggedUser'])
-  },
-  computed: {
-    ...mapState(authStore, ['accessToken', 'deuCerto', 'loggedUser'])
-  },
+  components: {
+    Mosaic,
+    LoginForm
+  }
 }
 </script>
+
+<style scoped>
+/* Remove unused mosaic styles */
+
+/* Optional: Add some padding or borders if needed */
+.nav-tabs {
+  border-bottom: 1px solid #dee2e6; /* Standard Bootstrap border */
+}
+
+.nav-link {
+  color: #495057; /* Standard link color */
+}
+
+.nav-link.active {
+  color: #0d6efd; /* Bootstrap primary blue */
+  border-color: #dee2e6 #dee2e6 #fff;
+}
+</style>
