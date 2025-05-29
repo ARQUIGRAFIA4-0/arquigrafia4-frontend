@@ -26,6 +26,29 @@ export default {
   components: {
     Mosaic,
     LoginForm
+  },
+  methods: {
+    saveToken(token) {
+      const expirationTime = new Date();
+      expirationTime.setHours(expirationTime.getHours() + 12); // Token valid for 12 hours
+      const tokenData = {
+        value: token,
+        expiresAt: expirationTime.toISOString()
+      };
+      localStorage.setItem('loginToken', JSON.stringify(tokenData));
+    },
+    getToken() {
+      const tokenData = JSON.parse(localStorage.getItem('loginToken'));
+      if (tokenData) {
+        const now = new Date();
+        if (new Date(tokenData.expiresAt) > now) {
+          return tokenData.value;
+        } else {
+          localStorage.removeItem('loginToken'); // Remove expired token
+        }
+      }
+      return null;
+    }
   }
 }
 </script>
