@@ -2,26 +2,43 @@ export default [
   {
     path: "/",
     name: "explore",
-    component: () => import("../views/Home.vue"),
-  },
-  {
-    path: "/about",
-    name: "about",
-    component: () => import("../views/About.vue"),
+    component: () => import("../views/HomePage.vue"),
   },
   {
     path: "/login",
     name: "login",
-    component: () => import("../views/Auth/Login.vue"),
+    component: () => import("../views/Auth/AuthLogin.vue"),
   },
-  //   {
-  //     path: "/explore",
-  //     name: "explore",
-  //     component: () => import("../views/Explore.vue"),
-  //   },
   {
     path: "/contribua",
     name: "contribua",
     component: () => import("../views/Contribua.vue"),
   },
+  // About routes
+  {
+    path: "/about/project",
+    name: "about-project",
+    component: () => import("../views/About/AboutProject.vue"),
+  },
+  {
+    path: "/about/events",
+    name: "events",
+    component: () => import("../views/About/Events.vue"),
+  },
+  {
+    path: "/about/wiki",
+    name: "wiki",
+    component: () => import("../views/About/Wiki.vue"),
+  },
+  // Profile routes
+  {
+    path: "/profile",
+    name: "view-profile",
+    component: () => import("../views/Profile/ViewProfile.vue"),
+  },
+  {
+    path: "/profile/edit",
+    name: "edit-profile",
+    component: () => import("../views/Profile/EditProfile.vue"),
+  }
 ];
