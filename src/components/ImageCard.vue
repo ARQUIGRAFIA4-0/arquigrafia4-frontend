@@ -1,5 +1,5 @@
 <template>
-  <div class="card h-100" @click="$emit('click')">
+  <div class="card h-100" @click="handleClick">
     <div class="image-container">
       <div v-show="loading" class="loading-overlay">
         <div class="spinner-border text-primary" role="status">
@@ -22,10 +22,15 @@
 
 <script>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 export default {
   name: 'ImageCard',
   props: {
+    id: {
+      type: [String, Number],
+      required: true
+    },
     imageUrl: {
       type: String,
       default: 'https://via.placeholder.com/300x200'
@@ -35,7 +40,8 @@ export default {
       required: true
     }
   },
-  setup() {
+  setup(props) {
+    const router = useRouter()
     const loading = ref(true)
     const hasError = ref(false)
 
@@ -44,13 +50,17 @@ export default {
       hasError.value = true
     }
 
+    const handleClick = () => {
+      router.push(`/image/${props.id}`)
+    }
+
     return {
       loading,
       hasError,
-      handleImageError
+      handleImageError,
+      handleClick
     }
-  },
-  emits: ['click']
+  }
 }
 </script>
 
