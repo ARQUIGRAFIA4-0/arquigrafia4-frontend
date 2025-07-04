@@ -88,7 +88,6 @@ export default {
     const options = [
       { label: "Explore", path: "/" },
       { label: "Contribua", path: "/contribua" },
-      { label: "Participe", path: "/participe" },
     ];
 
     const activeLabel = computed(() => {
