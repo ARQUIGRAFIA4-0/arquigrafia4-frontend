@@ -7,7 +7,7 @@ const generateMockItems = (page, limit = 12) => {
     const id = Math.floor(Math.random() * 15000) + 1;
     items.push({
       id,
-      title: 'Imagem',
+      title: `Imagem ${id}`,
       imageUrl: `${baseUrl}/${id}_view.jpg`
     });
   }
