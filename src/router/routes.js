@@ -5,6 +5,11 @@ export default [
     component: () => import("../views/HomePage.vue"),
   },
   {
+    path: "/image/:id",
+    name: "image-detail",
+    component: () => import("../views/ImageDetail.vue"),
+  },
+  {
     path: "/login",
     name: "login",
     component: () => import("../views/Auth/AuthLogin.vue"),
