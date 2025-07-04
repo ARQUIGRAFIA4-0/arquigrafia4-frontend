@@ -1,26 +1,20 @@
 <template>
   <div class="container-fluid mosaic-container">
-    <!-- Skeleton while loading -->
-    <div v-if="isLoading" class="row">
-      <div v-for="i in 12" :key="`skel-${i}`" class="col-sm-6 col-lg-4 mb-4">
-        <div class="skeleton-box" :style="{ height: randomHeight() + 'px' }"></div>
-      </div>
-    </div>
-
-    <!-- Masonry layout using Bootstrap 5 data-masonry -->
-    <div v-else class="row" data-masonry='{"percentPosition": true }'>
-      <div
+    <div class="masonry-grid">
+      <mosaic-card
         v-for="(item, index) in items"
         :key="index"
-        class="col-sm-6 col-lg-3 mb-4"
-      >
-        <div class="card">
-          <img
-            :src="item.src"
-            :alt="`Image ${index}`"
-            class="card-img-top"
-          />
-        </div>
+        :id="item.id"
+        :title="item.title"
+        :image-url="item.src"
+        @load="onImageLoad"
+      />
+    </div>
+
+    <!-- Loading indicator -->
+    <div v-if="isLoading" class="text-center my-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
       </div>
     </div>
   </div>
@@ -28,72 +22,115 @@
 
 <script>
 import imagesLoaded from 'imagesloaded';
+import { api } from '@/services/api';
+import MosaicCard from './MosaicCard.vue';
 
 export default {
-  name: 'Mosaic',
+  components: {
+    MosaicCard
+  },
+  name: 'ImageMosaic',
   data() {
     return {
-      isLoading: true,
+      isLoading: false,
       items: [],
+      currentPage: 1,
+      hasMore: true,
+      loadedImages: 0
     };
   },
   methods: {
-    generateFakeItems(count = 30) {
-      const items = [];
-      for (let i = 0; i < count; i++) {
-        const width = Math.floor(Math.random() * 200 + 150);
-        const height = Math.floor(Math.random() * 200 + 100);
-        items.push({
-          src: `https://placehold.co/${width}x${height}/eee/777?text=${width}x${height}`
-        });
+    async loadImages() {
+      if (this.isLoading || !this.hasMore) return;
+      
+      this.isLoading = true;
+      try {
+        const response = await api.getImages(this.currentPage);
+        const newItems = response.items.map(item => ({
+          id: item.id,
+          src: item.imageUrl,
+          title: item.title,
+          spanTwoColumns: Math.random() < 0.3 // 30% chance to span two columns
+        }));
+        this.items.push(...newItems);
+        this.hasMore = response.hasMore;
+        this.currentPage++;
+      } catch (error) {
+        console.error('Error loading images:', error);
+      } finally {
+        this.isLoading = false;
       }
-      return items;
     },
-    randomHeight() {
-      return Math.floor(Math.random() * 200 + 100);
+    handleScroll() {
+      const scrollPosition = window.innerHeight + window.scrollY;
+      const pageBottom = document.documentElement.offsetHeight - 1000;
+      
+      if (scrollPosition >= pageBottom) {
+        this.loadImages();
+      }
     },
-    waitForImagesThenLayout() {
+    onImageLoad() {
+      this.loadedImages++;
+      if (this.loadedImages % 4 === 0) { // Refresh layout every 4 images
+        this.refreshMasonryLayout();
+      }
+    },
+    refreshMasonryLayout() {
       const container = this.$el.querySelector('[data-masonry]');
-      if (container) {
+      if (container && window.Masonry) {
         imagesLoaded(container, () => {
-          // Manually trigger Masonry layout after images are loaded
-          const Masonry = window.Masonry || require('masonry-layout');
-          new Masonry(container, { percentPosition: true });
+          new window.Masonry(container, { percentPosition: true });
         });
       }
     }
   },
   mounted() {
-    setTimeout(() => {
-      this.items = this.generateFakeItems();
-      this.isLoading = false;
-      this.$nextTick(() => {
-        this.waitForImagesThenLayout();
-      });
-    }, 1000);
+    // Load initial images
+    this.loadImages();
+    
+    // Add scroll listener for infinite loading
+    window.addEventListener('scroll', this.handleScroll);
+    
+    // Add Masonry script if not already loaded
+    if (!window.Masonry) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js';
+      script.async = true;
+      document.head.appendChild(script);
+    }
   },
+  beforeUnmount() {
+    window.removeEventListener('scroll', this.handleScroll);
+  }
 };
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .mosaic-container {
-  /* Optional additional styling */
+  min-height: 100vh;
+  padding: 1rem;
 }
 
-.skeleton-box {
-  background-color: #e9ecef;
-  border-radius: 0.375rem;
-  width: 100%;
-  display: block;
+.masonry-grid {
+  columns: 1;
+  column-gap: 1rem;
 }
 
-.card {
-  border: none;
+@media (min-width: 576px) {
+  .masonry-grid {
+    columns: 2;
+  }
 }
 
-.card-img-top {
-  width: 100%;
-  height: auto;
-  display: block;
+@media (min-width: 768px) {
+  .masonry-grid {
+    columns: 3;
+  }
+}
+
+@media (min-width: 992px) {
+  .masonry-grid {
+    columns: 4;
+  }
 }
 </style>
