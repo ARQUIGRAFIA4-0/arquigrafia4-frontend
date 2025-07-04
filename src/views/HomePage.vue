@@ -1,13 +1,27 @@
 <template>
-  <div class="container py-4">
-    <div class="row g-4">
-      <div v-for="item in items" :key="item.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
-        <image-card
-          :title="item.title"
-          :image-url="item.imageUrl"
-        />
+  <div class="container-fluid p-4">
+    <template v-if="viewMode === 'grid'">
+      <div class="row g-4">
+        <div v-for="item in items" :key="item.id" class="col-6 col-md-4 col-lg-3">
+          <image-card
+            :id="item.id"
+            :title="item.title"
+            :image-url="item.imageUrl"
+          />
+        </div>
       </div>
-    </div>
+    </template>
+    
+    <template v-else-if="viewMode === 'mosaic'">
+      <image-mosaic />
+    </template>
+    
+    <template v-else>
+      <div class="text-center py-5">
+        <h3>Map View</h3>
+        <p class="text-muted">Map view coming soon...</p>
+      </div>
+    </template>
     <!-- Loading indicator -->
     <div v-if="loading" class="text-center my-4">
       <div class="spinner-border text-primary" role="status">
@@ -28,7 +42,10 @@
 
 <script>
 import { ref, onMounted, onUnmounted } from 'vue';
+import { storeToRefs } from 'pinia';
+import { uiStore } from '@/store/ui';
 import ImageCard from '@/components/ImageCard.vue';
+import ImageMosaic from '@/components/Mosaic.vue';
 import PageToolbar from '@/components/Toolbar.vue';
 import { api } from '@/services/api';
 
@@ -36,9 +53,12 @@ export default {
   name: 'HomePage',
   components: {
     ImageCard,
+    ImageMosaic,
     PageToolbar
   },
   setup() {
+    const store = uiStore();
+    const { viewMode } = storeToRefs(store);
     const items = ref([]);
     const loading = ref(false);
     const currentPage = ref(1);
@@ -80,7 +100,13 @@ export default {
     });
 
     const handleViewChange = (mode) => {
-      console.log('View mode changed to:', mode);
+      store.setViewMode(mode);
+      if (mode === 'grid') {
+        // Reset grid view if needed
+        if (items.value.length === 0) {
+          loadMoreItems();
+        }
+      }
     };
 
     const handleDatePicker = () => {
@@ -95,6 +121,7 @@ export default {
       items,
       loading,
       hasMore,
+      viewMode,
       handleViewChange,
       handleDatePicker,
       handleColorPicker,
