@@ -1,7 +1,43 @@
 <template>
   <div v-if="!isLoggedIn" class="login-container">
-    <h2 class="text-start mb-4">{{ isRegistering ? 'Crie sua conta' : 'Acesse seu perfil' }}</h2>
-    <form @submit.prevent="isRegistering ? doRegister() : doLogin()">
+    <h2 class="text-start mb-4">{{ pageTitle }}</h2>
+
+    <!-- Email Verification Form -->
+    <form v-if="isVerifying" @submit.prevent="verifyCode">
+      <p class="text-muted mb-4">Digite o código de verificação enviado para seu email</p>
+      <div class="verification-code mb-4">
+        <template v-for="(digit, index) in 6" :key="index">
+          <input
+            v-model="verificationDigits[index]"
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="1"
+            class="form-control verification-input"
+            :ref="el => { if (el) digitRefs[index] = el }"
+            @input="handleDigitInput($event, index)"
+            @keydown.delete="handleBackspace($event, index)"
+            @keydown.left="focusPreviousDigit(index)"
+            @keydown.right="focusNextDigit(index)"
+            @paste="handlePaste"
+          >
+        </template>
+      </div>
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary" :disabled="!isCodeComplete">
+          Verificar
+        </button>
+      </div>
+      <p class="text-center mt-3">
+        <small>
+          Não recebeu o código? 
+          <a href="#" @click.prevent="resendCode" class="text-decoration-none">Reenviar</a>
+        </small>
+      </p>
+    </form>
+
+    <!-- Registration/Login Form -->
+    <form v-else @submit.prevent="isRegistering ? doRegister() : doLogin()">
       <div v-if="isRegistering" class="form-floating mb-3">
         <input v-model="registerForm.username" type="text" class="form-control" id="floatingUsername"
           placeholder="Nome de usuário">
@@ -73,6 +109,10 @@ export default {
   data() {
     return {
       isRegistering: false,
+      isVerifying: false,
+      verificationDigits: Array(6).fill(''),
+      verificationEmail: '',
+      digitRefs: Array(6).fill(null),
       loginForm: {
         email: "",
         password: "",
@@ -89,10 +129,13 @@ export default {
   methods: {
     toggleRegister() {
       this.isRegistering = !this.isRegistering;
+      this.isVerifying = false;
       // Clear the forms when toggling
       this.loginForm = { email: "", password: "", remember: false };
       this.registerForm = { username: "", email: "", password: "" };
+      this.verificationDigits = ['', '', '', '', '', ''];
     },
+
     async doLogin() {
       if (!this.loginForm.email || !this.loginForm.password) {
         alert('Preencha todos os campos!');
@@ -103,30 +146,124 @@ export default {
         await this.getLoggedUser();
       }
     },
+
+    async sendVerificationEmail(email) {
+      try {
+        await axios.post('http://localhost:80/api/account-verification-email', { email });
+        this.isVerifying = true;
+        this.verificationEmail = email;
+      } catch (error) {
+        console.error('Error sending verification email:', error);
+        alert('Erro ao enviar email de verificação. Tente novamente.');
+      }
+    },
+
+    async verifyCode() {
+      const code = this.verificationDigits.join('');
+      try {
+        await axios.post('http://localhost:80/api/verify-account', {
+          email: this.verificationEmail,
+          code
+        });
+        // After successful verification, proceed with registration or login
+        if (this.isRegistering) {
+          await this.completeRegistration();
+        } else {
+          await this.doLogin();
+        }
+      } catch (error) {
+        console.error('Error verifying code:', error);
+        alert('Código inválido. Tente novamente.');
+      }
+    },
+
+    async resendCode() {
+      await this.sendVerificationEmail(this.verificationEmail);
+      alert('Um novo código foi enviado para seu email.');
+    },
+
+    handleDigitInput(event, index) {
+      const digit = event.target.value;
+      // Only allow numbers
+      if (!/^\d*$/.test(digit)) {
+        this.verificationDigits[index] = '';
+        return;
+      }
+      // Auto-advance to next input
+      if (digit && index < 5 && this.digitRefs[index + 1]) {
+        this.digitRefs[index + 1].focus();
+      }
+    },
+
+    handleBackspace(event, index) {
+      if (!this.verificationDigits[index] && index > 0 && this.digitRefs[index - 1]) {
+        this.digitRefs[index - 1].focus();
+      }
+    },
+
+    focusPreviousDigit(index) {
+      if (index > 0 && this.digitRefs[index - 1]) {
+        this.digitRefs[index - 1].focus();
+      }
+    },
+
+    focusNextDigit(index) {
+      if (index < 5 && this.digitRefs[index + 1]) {
+        this.digitRefs[index + 1].focus();
+      }
+    },
+
+    handlePaste(event) {
+      event.preventDefault();
+      const pastedText = event.clipboardData.getData('text');
+      const numbers = pastedText.match(/\d/g);
+      if (numbers) {
+        numbers.slice(0, 6).forEach((number, index) => {
+          if (index < 6) {
+            this.verificationDigits[index] = number;
+          }
+        });
+      }
+    },
+
     async doRegister() {
+      // Validate all fields are filled
       if (!this.registerForm.username || !this.registerForm.email || !this.registerForm.password) {
         alert('Preencha todos os campos!');
         return;
       }
+
+      // Validate username length
       if (this.registerForm.username.length > 50) {
         alert('O nome de usuário deve ter no máximo 50 caracteres.');
         return;
       }
+
+      // Validate email format
       if (!this.validEmail(this.registerForm.email)) {
         alert('Insira um email válido.');
         return;
       }
+
+      // Validate password length
       if (this.registerForm.password.length < 8) {
         alert('A senha deve ter no mínimo 8 caracteres.');
         return;
       }
+
+      // Validate password confirmation
       if (this.registerForm.password !== this.registerForm.confirmPassword) {
         alert('As senhas não coincidem.');
         return;
       }
 
+      // Start verification process
+      await this.sendVerificationEmail(this.registerForm.email);
+    },
+
+    async completeRegistration() {
       try {
-        const response = await axios.post('http://localhost:80/api/users', {
+        await axios.post('http://localhost:80/api/users', {
           name: this.registerForm.username,
           email: this.registerForm.email,
           password: this.registerForm.password,
@@ -136,12 +273,14 @@ export default {
           },
         });
         alert('Registrado com sucesso! Agora você pode fazer login.');
+        this.isVerifying = false;
         this.toggleRegister();
       } catch (error) {
         console.error(error);
         alert('Erro ao registrar. Tente novamente.');
       }
     },
+
     validEmail(email) {
       const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       return re.test(email);
@@ -150,6 +289,15 @@ export default {
   },
   computed: {
     ...mapState(authStore, ['accessToken', 'isLoggedIn', 'loggedUser']),
+
+    pageTitle() {
+      if (this.isVerifying) return 'Verificação de Email';
+      return this.isRegistering ? 'Crie sua conta' : 'Acesse seu perfil';
+    },
+
+    isCodeComplete() {
+      return this.verificationDigits.every(digit => digit.length === 1);
+    },
 
     formEmail: {
       get() {
@@ -186,6 +334,35 @@ export default {
   border-radius: 16px;
   padding: 2rem;
   font-weight: 500;
-  /* max-width: 340px; */
+}
+
+.verification-code {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.verification-input {
+  width: 3rem;
+  height: 3rem;
+  text-align: center;
+  font-size: 1.5rem;
+  border-radius: 0.5rem;
+  border: 2px solid #dee2e6;
+  transition: border-color 0.2s;
+  appearance: textfield;
+  -webkit-appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.verification-input:focus {
+  border-color: #AA4F28;
+  box-shadow: none;
+}
+
+.verification-input::-webkit-outer-spin-button,
+.verification-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 </style>
