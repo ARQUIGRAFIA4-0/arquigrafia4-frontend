@@ -1,10 +1,33 @@
 <template>
   <div class="toolbar">
     <div class="toolbar-content">
-      <!-- View Toggle -->
-      <button class="btn btn-light" @click="toggleView">
-        <i class="bi" :class="viewMode === 'grid' ? 'bi-grid-3x3' : 'bi-map'"></i>
-      </button>
+      <!-- View Mode Dropdown -->
+      <div class="dropdown">
+        <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+          <i class="bi" :class="{
+            'bi-grid-3x3': viewMode === 'grid',
+            'bi-columns-gap': viewMode === 'mosaic',
+            'bi-map': viewMode === 'map'
+          }"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li>
+            <button class="dropdown-item" @click="changeViewMode('grid')">
+              <i class="bi bi-grid-3x3 me-2"></i> Grid
+            </button>
+          </li>
+          <li>
+            <button class="dropdown-item" @click="changeViewMode('mosaic')">
+              <i class="bi bi-columns-gap me-2"></i> Mosaic
+            </button>
+          </li>
+          <li>
+            <button class="dropdown-item" @click="changeViewMode('map')">
+              <i class="bi bi-map me-2"></i> Map
+            </button>
+          </li>
+        </ul>
+      </div>
 
       <!-- Search -->
       <div class="search-container">
@@ -38,17 +61,20 @@
 
 <script>
 import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { uiStore } from '@/store/ui'
 
 export default {
   name: 'PageToolbar',
   setup(props, { emit }) {
-    const viewMode = ref('grid')
+    const store = uiStore();
+    const { viewMode } = storeToRefs(store);
     const isSearchVisible = ref(false)
     const searchQuery = ref('')
 
-    const toggleView = () => {
-      viewMode.value = viewMode.value === 'grid' ? 'map' : 'grid'
-      emit('view-change', viewMode.value)
+    const changeViewMode = (mode) => {
+      store.setViewMode(mode);
+      emit('view-change', mode);
     }
 
     const toggleSearch = () => {
@@ -67,7 +93,7 @@ export default {
       viewMode,
       isSearchVisible,
       searchQuery,
-      toggleView,
+      changeViewMode,
       toggleSearch,
       toggleDatePicker,
       toggleColorPicker
@@ -80,13 +106,13 @@ export default {
 <style scoped>
 .toolbar {
   position: fixed;
-  top: 80vh;
+  top: 85vh;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   padding: 0.75rem 1.5rem;
-  border-radius: 50px;
+  border-radius: 10px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   transition: transform 0.3s ease;
