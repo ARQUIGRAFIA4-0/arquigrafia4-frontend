@@ -1,0 +1,1 @@
+import{_ as s,c as a,a as o,o as t}from"./index-DVlznE7u.js";const r={name:"WikiPage"},i={class:"container"};function n(c,e,_,p,d,f){return t(),a("div",i,e[0]||(e[0]=[o("h1",{class:"my-4"},"Wiki Arquigrafia",-1)]))}const m=s(r,[["render",n]]);export{m as default};
