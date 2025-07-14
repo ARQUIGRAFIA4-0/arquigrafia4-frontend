@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-import axios from "axios"
+import axios from "../axios"
 
 export const authStore = defineStore('auth', {
   state: () => ({
@@ -20,7 +20,7 @@ export const authStore = defineStore('auth', {
         'password': formData.password,
         'scope': '*',
       };
-      await axios.post('http://localhost:80/oauth/token', sendData)
+      await axios.post('/oauth/token', sendData)
         .then(response => {
           this.tokenType = response.data.token_type;
           this.accessToken = response.data.access_token;
@@ -45,7 +45,7 @@ export const authStore = defineStore('auth', {
         return;
       }
 
-      await axios.get('http://localhost:80/api/me', {
+      await axios.get('/api/me', {
         headers: {
           'Authorization': 'Bearer ' + this.accessToken
         }
@@ -63,7 +63,7 @@ export const authStore = defineStore('auth', {
     async logout() {
       try {
         if (this.accessToken) {
-          await axios.post('http://localhost:80/api/logout', {}, {
+          await axios.post('/api/logout', {}, {
             headers: {
               'Authorization': 'Bearer ' + this.accessToken
             }

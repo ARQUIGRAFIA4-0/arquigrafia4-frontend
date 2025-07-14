@@ -1,0 +1,1 @@
+import{_ as o,c as s,a as t,o as r}from"./index-CqXBFi5u.js";const a={name:"ViewProfile"},n={class:"container"};function c(i,e,f,l,_,p){return r(),s("div",n,e[0]||(e[0]=[t("h1",{class:"my-4"},"Meu Perfil",-1)]))}const m=o(a,[["render",c]]);export{m as default};

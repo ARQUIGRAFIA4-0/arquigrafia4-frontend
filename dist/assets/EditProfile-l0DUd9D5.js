@@ -1,0 +1,1 @@
+import{_ as t,c as o,a as s,o as r}from"./index-CqXBFi5u.js";const a={name:"EditProfile"},n={class:"container"};function c(i,e,d,f,l,_){return r(),o("div",n,e[0]||(e[0]=[s("h1",{class:"my-4"},"Editar Perfil",-1)]))}const m=t(a,[["render",c]]);export{m as default};
