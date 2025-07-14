@@ -1,0 +1,1 @@
+import{_ as e,c as t,a as s,o as r}from"./index-CqXBFi5u.js";const a={name:"AboutProject"},c={class:"container"};function n(_,o,p,d,i,f){return r(),t("div",c,o[0]||(o[0]=[s("h1",{class:"my-4"},"O Projeto",-1)]))}const m=e(a,[["render",n]]);export{m as default};

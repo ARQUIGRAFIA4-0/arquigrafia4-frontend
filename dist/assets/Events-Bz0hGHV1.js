@@ -1,1 +1,0 @@
-import{_ as s,c as t,a as o,o as n}from"./index-DVlznE7u.js";const a={name:"EventsPage"},c={class:"container"};function r(_,e,p,d,i,f){return n(),t("div",c,e[0]||(e[0]=[o("h1",{class:"my-4"},"Eventos",-1)]))}const m=s(a,[["render",r]]);export{m as default};
