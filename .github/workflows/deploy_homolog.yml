@@ -25,7 +25,7 @@ jobs:
         run: npm run build
       
       - name: 📂 Copy files via SSH
-        uses: appleboy/scp-action@v1
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
