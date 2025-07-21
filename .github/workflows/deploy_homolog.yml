@@ -32,5 +32,8 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "dist/*"
-          target: ${{ secrets.REMOTE_PATH }}/dist
+          target: ${{ secrets.REMOTE_PATH }}
           rm: true
+
+      - name: Change files ownership
+        run: sudo chown -R ubuntu:www-data ${{ secrets.REMOTE_PATH }}/dist/
