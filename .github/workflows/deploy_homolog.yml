@@ -23,6 +23,14 @@ jobs:
 
       - name: 🛠️ Build project
         run: npm run build
+        env:
+          VITE_BASE_REQUEST_URL: ${{ secrets.VITE_BASE_REQUEST_URL }}
+          BASE_URL: "http://dev.arquigrafia.org.br"
+          VITE_TITLE: "ARQUIGRAFIA"
+          VITE_GRANT_TYPE: "password"
+          VITE_CLIENT_ID: "1"
+          VITE_CLIENT_SECRET: ${{ secrets.VITE_CLIENT_SECRET}}
+          VITE_SCOPE: "*"
       
       - name: 📂 Copy files via SSH
         uses: appleboy/scp-action@v1.0.0
@@ -35,5 +43,11 @@ jobs:
           target: ${{ secrets.REMOTE_PATH }}/dist
           rm: true
 
-      - name: Change files ownership
-        run: sudo chown -R ubuntu:www-data ${{ secrets.REMOTE_PATH }}/dist/
+      # - name: Set ownership of dist folder
+      #   uses: appleboy/ssh-action@v1.0.0
+      #   with:
+      #     host: ${{ secrets.SSH_HOST }}
+      #     username: ${{ secrets.SSH_USERNAME }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     script: |
+      #       sudo chown -R ${{ secrets.SSH_USERNAME }}:www-data ${{ secrets.REMOTE_PATH }}/dist/
