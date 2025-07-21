@@ -1,0 +1,53 @@
+name: Deploy Vue App
+
+on:
+  push:
+    branches:
+      - homolog
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🧱 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      - name: 🛠️ Build project
+        run: npm run build
+        env:
+          VITE_BASE_REQUEST_URL: "${{ vars.VITE_BASE_REQUEST_URL }}"
+          BASE_URL: "${{ vars.BASE_URL }}"
+          VITE_TITLE: "${{ vars.VITE_TITLE }}"
+          VITE_GRANT_TYPE: "${{ vars.VITE_GRANT_TYPE }}"
+          VITE_CLIENT_ID: "${{ vars.VITE_CLIENT_ID }}"
+          VITE_CLIENT_SECRET: "${{ secrets.VITE_CLIENT_SECRET }}"
+          VITE_SCOPE: "${{ vars.VITE_SCOPE }}"
+      
+      - name: 📂 Copy files via SSH
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "dist/*"
+          target: ${{ secrets.REMOTE_PATH }}/dist
+          rm: true
+
+      # - name: Set ownership of dist folder
+      #   uses: appleboy/ssh-action@v1.0.0
+      #   with:
+      #     host: ${{ secrets.SSH_HOST }}
+      #     username: ${{ secrets.SSH_USERNAME }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     script: |
+      #       sudo chown -R ${{ secrets.SSH_USERNAME }}:www-data ${{ secrets.REMOTE_PATH }}/dist/
