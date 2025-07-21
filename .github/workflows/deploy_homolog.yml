@@ -25,7 +25,7 @@ jobs:
         run: npm run build
         env:
           VITE_BASE_REQUEST_URL: "${{ vars.VITE_BASE_REQUEST_URL }}"
-          BASE_URL: "${{ vars.BASE_URL }}
+          BASE_URL: "${{ vars.BASE_URL }}"
           VITE_TITLE: "${{ vars.VITE_TITLE }}"
           VITE_GRANT_TYPE: "${{ vars.VITE_GRANT_TYPE }}"
           VITE_CLIENT_ID: "${{ vars.VITE_CLIENT_ID }}"
