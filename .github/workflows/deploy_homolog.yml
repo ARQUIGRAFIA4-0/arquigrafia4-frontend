@@ -24,13 +24,13 @@ jobs:
       - name: 🛠️ Build project
         run: npm run build
         env:
-          VITE_BASE_REQUEST_URL: ${{ secrets.VITE_BASE_REQUEST_URL }}
-          BASE_URL: "http://dev.arquigrafia.org.br"
-          VITE_TITLE: "ARQUIGRAFIA"
-          VITE_GRANT_TYPE: "password"
-          VITE_CLIENT_ID: "1"
-          VITE_CLIENT_SECRET: ${{ secrets.VITE_CLIENT_SECRET}}
-          VITE_SCOPE: "*"
+          VITE_BASE_REQUEST_URL: "${{ vars.VITE_BASE_REQUEST_URL }}"
+          BASE_URL: "${{ vars.BASE_URL }}
+          VITE_TITLE: "${{ vars.VITE_TITLE }}"
+          VITE_GRANT_TYPE: "${{ vars.VITE_GRANT_TYPE }}"
+          VITE_CLIENT_ID: "${{ vars.VITE_CLIENT_ID }}"
+          VITE_CLIENT_SECRET: "${{ secrets.VITE_CLIENT_SECRET }}"
+          VITE_SCOPE: "${{ vars.VITE_SCOPE }}"
       
       - name: 📂 Copy files via SSH
         uses: appleboy/scp-action@v1.0.0
