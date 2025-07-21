@@ -32,7 +32,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "dist/*"
-          target: ${{ secrets.REMOTE_PATH }}
+          target: ${{ secrets.REMOTE_PATH }}/dist
           rm: true
 
       - name: Change files ownership
