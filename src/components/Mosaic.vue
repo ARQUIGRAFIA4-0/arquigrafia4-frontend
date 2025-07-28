@@ -108,7 +108,7 @@ export default {
 <style scoped>
 .mosaic-container {
   min-height: 100vh;
-  padding: 1rem;
+  /* padding: 1rem; */
 }
 
 .masonry-grid {

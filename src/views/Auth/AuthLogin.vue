@@ -1,14 +1,14 @@
 <template>
   <div class="container-fluid p-2">
     <!-- Main Content Row -->
-    <div class="row my-2">
+    <div class="row my-2 justify-content-center">
       <!-- Login Form Column (3 cols) -->
-      <div class="col-12 col-md-3 ps-5">
+      <div class="col-12 col-md-3">
         <LoginForm />
       </div>
 
       <!-- Empty Column (1 col) -->
-      <div class="d-none d-md-block col-md-1"></div>
+      <!-- <div class="d-none d-md-block col-md-1"></div> -->
 
       <!-- Image Gallery Column (8 cols) -->
       <div class="col-12 col-md-8">
