@@ -1,5 +1,13 @@
 <template>
   <div v-if="!isLoggedIn" class="login-container">
+    <!-- Loading Overlay -->
+    <div v-if="isLoading" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Carregando...</span>
+      </div>
+      <p class="mt-3 text-primary">{{ loadingMessage }}</p>
+    </div>
+
     <h2 class="text-start mb-4">{{ pageTitle }}</h2>
 
     <!-- Email Verification Form -->
@@ -102,16 +110,15 @@
 <script>
 import { mapActions, mapState } from 'pinia'
 import { authStore } from '../store/auth'
-import axios from 'axios';
 
 export default {
   name: 'LoginForm',
   data() {
     return {
       isRegistering: false,
-      isVerifying: false,
+      isLoading: false,
+      loadingMessage: '',
       verificationDigits: Array(6).fill(''),
-      verificationEmail: '',
       digitRefs: Array(6).fill(null),
       loginForm: {
         email: "",
@@ -129,7 +136,7 @@ export default {
   methods: {
     toggleRegister() {
       this.isRegistering = !this.isRegistering;
-      this.isVerifying = false;
+      this.$pinia._s.get('auth').isVerifying = false;
       // Clear the forms when toggling
       this.loginForm = { email: "", password: "", remember: false };
       this.registerForm = { username: "", email: "", password: "" };
@@ -144,14 +151,23 @@ export default {
       await this.getAccessToken(this.loginForm);
       if (this.isLoggedIn) {
         await this.getLoggedUser();
+        // Check if user is verified
+        if (this.loggedUser && !this.loggedUser.email_verified_at) {
+          // Not verified: send code and show code input
+          await this.sendVerificationEmail(this.loginForm.email);
+          // Optionally, log out the user in the store
+          this.$pinia._s.get('auth').isLoggedIn = false;
+          this.$pinia._s.get('auth').loggedUser = null;
+          alert('Sua conta ainda não foi verificada. Digite o código enviado para seu email.');
+          return;
+        }
+        // If verified, proceed as normal (redirect handled elsewhere)
       }
     },
 
     async sendVerificationEmail(email) {
       try {
-        await axios.post('http://localhost:80/api/account-verification-email', { email });
-        this.isVerifying = true;
-        this.verificationEmail = email;
+        await this.sendVerificationEmail(email);
       } catch (error) {
         console.error('Error sending verification email:', error);
         alert('Erro ao enviar email de verificação. Tente novamente.');
@@ -161,16 +177,10 @@ export default {
     async verifyCode() {
       const code = this.verificationDigits.join('');
       try {
-        await axios.post('http://localhost:80/api/verify-account', {
-          email: this.verificationEmail,
-          code
-        });
-        // After successful verification, proceed with registration or login
-        if (this.isRegistering) {
-          await this.completeRegistration();
-        } else {
-          await this.doLogin();
-        }
+        await this.verifyAccount(this.verificationEmail, code);
+        // After successful verification, show success and reset
+        alert('Conta verificada com sucesso! Agora você pode fazer login.');
+        this.toggleRegister();
       } catch (error) {
         console.error('Error verifying code:', error);
         alert('Código inválido. Tente novamente.');
@@ -232,52 +242,48 @@ export default {
         alert('Preencha todos os campos!');
         return;
       }
-
       // Validate username length
       if (this.registerForm.username.length > 50) {
         alert('O nome de usuário deve ter no máximo 50 caracteres.');
         return;
       }
-
       // Validate email format
       if (!this.validEmail(this.registerForm.email)) {
         alert('Insira um email válido.');
         return;
       }
-
       // Validate password length
       if (this.registerForm.password.length < 8) {
         alert('A senha deve ter no mínimo 8 caracteres.');
         return;
       }
-
       // Validate password confirmation
       if (this.registerForm.password !== this.registerForm.confirmPassword) {
         alert('As senhas não coincidem.');
         return;
       }
-
-      // Start verification process
-      await this.sendVerificationEmail(this.registerForm.email);
-    },
-
-    async completeRegistration() {
+      
+      this.isLoading = true;
+      
       try {
-        await axios.post('http://localhost:80/api/users', {
+        this.loadingMessage = 'Criando sua conta...';
+        await this.registerUser({
           name: this.registerForm.username,
           email: this.registerForm.email,
           password: this.registerForm.password,
-        }, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
         });
-        alert('Registrado com sucesso! Agora você pode fazer login.');
-        this.isVerifying = false;
-        this.toggleRegister();
+        
+        this.loadingMessage = 'Enviando código de verificação...';
+        await this.sendVerificationEmail(this.registerForm.email);
       } catch (error) {
-        console.error(error);
-        alert('Erro ao registrar. Tente novamente.');
+        if (error.response && error.response.data && error.response.data.message) {
+          alert(error.response.data.message);
+        } else {
+          alert('Erro ao registrar. Tente novamente.');
+        }
+      } finally {
+        this.isLoading = false;
+        this.loadingMessage = '';
       }
     },
 
@@ -285,10 +291,22 @@ export default {
       const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       return re.test(email);
     },
-    ...mapActions(authStore, ['getAccessToken', 'getLoggedUser'])
+    ...mapActions(authStore, [
+      'getAccessToken',
+      'getLoggedUser',
+      'registerUser',
+      'sendVerificationEmail',
+      'verifyAccount'
+    ])
   },
   computed: {
-    ...mapState(authStore, ['accessToken', 'isLoggedIn', 'loggedUser']),
+    ...mapState(authStore, [
+      'accessToken',
+      'isLoggedIn',
+      'loggedUser',
+      'isVerifying',
+      'verificationEmail'
+    ]),
 
     pageTitle() {
       if (this.isVerifying) return 'Verificação de Email';
@@ -334,6 +352,22 @@ export default {
   border-radius: 16px;
   padding: 2rem;
   font-weight: 500;
+  position: relative;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(250, 249, 249, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  z-index: 10;
 }
 
 .verification-code {

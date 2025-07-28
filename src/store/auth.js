@@ -9,6 +9,8 @@ export const authStore = defineStore('auth', {
     accessToken: localStorage.getItem('accessToken') || '',
     refreshToken: localStorage.getItem('refreshToken') || '',
     isLoggedIn: localStorage.getItem('isLoggedIn') === 'true',
+    isVerifying: false,
+    verificationEmail: '',
   }),
   actions: {
     async getAccessToken(formData) {
@@ -79,12 +81,50 @@ export const authStore = defineStore('auth', {
       this.accessToken = '';
       this.refreshToken = '';
       this.isLoggedIn = false;
+      this.isVerifying = false;
+      this.verificationEmail = '';
 
       localStorage.removeItem('loggedUser');
       localStorage.removeItem('tokenType');
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('isLoggedIn');
+    },
+
+    async registerUser(userData) {
+      try {
+        await axios.post('/api/users', userData, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        return true;
+      } catch (error) {
+        console.error('Error registering user:', error);
+        throw error;
+      }
+    },
+
+    async sendVerificationEmail(email) {
+      try {
+        await axios.post('/api/account-verification-email', { email });
+        this.isVerifying = true;
+        this.verificationEmail = email;
+        return true;
+      } catch (error) {
+        console.error('Error sending verification email:', error);
+        throw error;
+      }
+    },
+
+    async verifyAccount(email, code) {
+      try {
+        await axios.post('/api/verify-account', { email, code });
+        return true;
+      } catch (error) {
+        console.error('Error verifying account:', error);
+        throw error;
+      }
     }
   },
 });
