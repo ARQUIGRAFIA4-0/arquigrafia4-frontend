@@ -1,5 +1,14 @@
+<script setup>
+import { storeToRefs } from 'pinia'
+import { useAuthStore } from '../store/auth'
+
+const auth = useAuthStore()
+const { isLoggedIn, loggedUser, isVerifying, isRegistering, isLoading, formData, pageTitle, loadingMessage, verificationDigits, digitRefs, isCodeComplete } = storeToRefs(auth)
+const { handleLogin, handleRegister, toggleRegister, handleDigitInput, handleBackspace, focusPreviousDigit, focusNextDigit, handlePaste, verifyCode, resendCode } = auth
+</script>
+
 <template>
-  <div v-if="!isLoggedIn" class="login-container">
+  <div v-if="!isLoggedIn || (isLoggedIn && !loggedUser.email_verified_at)" class="login-container">
     <!-- Loading Overlay -->
     <div v-if="isLoading" class="loading-overlay">
       <div class="spinner-border text-primary" role="status">
@@ -45,31 +54,48 @@
     </form>
 
     <!-- Registration/Login Form -->
-    <form v-else @submit.prevent="isRegistering ? doRegister() : doLogin()">
+    <form v-else @submit.prevent="isRegistering ? handleRegister() : handleLogin()">
       <div v-if="isRegistering" class="form-floating mb-3">
-        <input v-model="registerForm.username" type="text" class="form-control" id="floatingUsername"
-          placeholder="Nome de usuário">
-        <label for="floatingUsername">Nome de usuário</label>
+        <div class="form-floating mb-3">
+          <input v-model="formData.username" type="text" class="form-control" id="floatingUsername"
+            placeholder="Nome de usuário">
+          <label for="floatingUsername">Nome de usuário</label>
+        </div>
+        <div class="form-floating mb-3"> 
+          <input v-model="formData.email" type="email" class="form-control" id="floatingEmail" placeholder="nome@exemplo.com">
+          <label for="floatingEmail">Email</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input v-model="formData.confirmEmail" type="email" class="form-control" id="floatingConfirmEmail" placeholder="nome@exemplo.com">
+          <label for="floatingConfirmEmail">Confirme o email</label>
+        </div>
+        <div class="mb-3 form-floating">
+          <input v-model="formData.password" type="password" class="form-control" id="floatingPassword" placeholder="senha">
+          <label for="floatingPassword">Senha</label>
+        </div>
+        <div class="mb-3 form-floating">
+          <input v-model="formData.confirmPassword" type="password" class="form-control" id="floatingConfirmPassword"
+            placeholder="Confirme a senha">
+          <label for="floatingConfirmPassword">Confirme a Senha</label>
+        </div>
       </div>
-      <div class="form-floating mb-3">
-        <input v-model="formEmail" type="email" class="form-control" id="floatingInput" placeholder="nome@examplo.com">
-        <label for="floatingInput">Email</label>
-      </div>
-      <div class="mb-3 form-floating">
-        <input v-model="formPassword" type="password" class="form-control" id="floatingPassword" placeholder="senha">
-        <label for="floatingPassword">Senha</label>
-        <template v-if="!isRegistering">
+      <div v-else class="mb-3 form-floating">
+        <div class="form-floating mb-3">
+          <input v-model="formData.email" type="email" class="form-control" id="floatingInput" placeholder="nome@exemplo.com">
+          <label for="floatingInput">Email</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input v-model="formData.password" type="password" class="form-control" id="floatingPassword" placeholder="senha">
+          <label for="floatingPassword">Senha</label>
+        </div>
+        <template>
           <a href="#" class="text-muted">Esqueceu sua senha?</a>
         </template>
       </div>
-      <div v-if="isRegistering" class="mb-3 form-floating">
-        <input v-model="registerForm.confirmPassword" type="password" class="form-control" id="floatingConfirmPassword"
-          placeholder="Confirme a senha">
-        <label for="floatingConfirmPassword">Confirme a Senha</label>
-      </div>
+      
 
       <div v-if="!isRegistering" class="mb-3 form-check text-start">
-        <input v-model="loginForm.remember" type="checkbox" class="form-check-input" id="exampleCheck1">
+        <input v-model="formData.remember" type="checkbox" class="form-check-input" id="exampleCheck1">
         <label class="form-check-label" for="exampleCheck1">Lembrar</label>
       </div>
 
@@ -103,248 +129,9 @@
 
   <div v-else class="text-center">
     <h2>Login Realizado</h2>
-    <p>{{ loggedUser.name }}</p>
+    <p>{{ loggedUser?.name }}</p>
   </div>
 </template>
-
-<script>
-import { mapActions, mapState } from 'pinia'
-import { authStore } from '../store/auth'
-
-export default {
-  name: 'LoginForm',
-  data() {
-    return {
-      isRegistering: false,
-      isLoading: false,
-      loadingMessage: '',
-      verificationDigits: Array(6).fill(''),
-      digitRefs: Array(6).fill(null),
-      loginForm: {
-        email: "",
-        password: "",
-        remember: false,
-      },
-      registerForm: {
-        username: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-      },
-    }
-  },
-  methods: {
-    toggleRegister() {
-      this.isRegistering = !this.isRegistering;
-      this.$pinia._s.get('auth').isVerifying = false;
-      // Clear the forms when toggling
-      this.loginForm = { email: "", password: "", remember: false };
-      this.registerForm = { username: "", email: "", password: "" };
-      this.verificationDigits = ['', '', '', '', '', ''];
-    },
-
-    async doLogin() {
-      if (!this.loginForm.email || !this.loginForm.password) {
-        alert('Preencha todos os campos!');
-        return;
-      }
-      await this.getAccessToken(this.loginForm);
-      if (this.isLoggedIn) {
-        await this.getLoggedUser();
-        // Check if user is verified
-        if (this.loggedUser && !this.loggedUser.email_verified_at) {
-          // Not verified: send code and show code input
-          await this.sendVerificationEmail(this.loginForm.email);
-          // Optionally, log out the user in the store
-          this.$pinia._s.get('auth').isLoggedIn = false;
-          this.$pinia._s.get('auth').loggedUser = null;
-          alert('Sua conta ainda não foi verificada. Digite o código enviado para seu email.');
-          return;
-        }
-        // If verified, proceed as normal (redirect handled elsewhere)
-      }
-    },
-
-    async sendVerificationEmail(email) {
-      try {
-        await this.sendVerificationEmail(email);
-      } catch (error) {
-        console.error('Error sending verification email:', error);
-        alert('Erro ao enviar email de verificação. Tente novamente.');
-      }
-    },
-
-    async verifyCode() {
-      const code = this.verificationDigits.join('');
-      try {
-        await this.verifyAccount(this.verificationEmail, code);
-        // After successful verification, show success and reset
-        alert('Conta verificada com sucesso! Agora você pode fazer login.');
-        this.toggleRegister();
-      } catch (error) {
-        console.error('Error verifying code:', error);
-        alert('Código inválido. Tente novamente.');
-      }
-    },
-
-    async resendCode() {
-      await this.sendVerificationEmail(this.verificationEmail);
-      alert('Um novo código foi enviado para seu email.');
-    },
-
-    handleDigitInput(event, index) {
-      const digit = event.target.value;
-      // Only allow numbers
-      if (!/^\d*$/.test(digit)) {
-        this.verificationDigits[index] = '';
-        return;
-      }
-      // Auto-advance to next input
-      if (digit && index < 5 && this.digitRefs[index + 1]) {
-        this.digitRefs[index + 1].focus();
-      }
-    },
-
-    handleBackspace(event, index) {
-      if (!this.verificationDigits[index] && index > 0 && this.digitRefs[index - 1]) {
-        this.digitRefs[index - 1].focus();
-      }
-    },
-
-    focusPreviousDigit(index) {
-      if (index > 0 && this.digitRefs[index - 1]) {
-        this.digitRefs[index - 1].focus();
-      }
-    },
-
-    focusNextDigit(index) {
-      if (index < 5 && this.digitRefs[index + 1]) {
-        this.digitRefs[index + 1].focus();
-      }
-    },
-
-    handlePaste(event) {
-      event.preventDefault();
-      const pastedText = event.clipboardData.getData('text');
-      const numbers = pastedText.match(/\d/g);
-      if (numbers) {
-        numbers.slice(0, 6).forEach((number, index) => {
-          if (index < 6) {
-            this.verificationDigits[index] = number;
-          }
-        });
-      }
-    },
-
-    async doRegister() {
-      // Validate all fields are filled
-      if (!this.registerForm.username || !this.registerForm.email || !this.registerForm.password) {
-        alert('Preencha todos os campos!');
-        return;
-      }
-      // Validate username length
-      if (this.registerForm.username.length > 50) {
-        alert('O nome de usuário deve ter no máximo 50 caracteres.');
-        return;
-      }
-      // Validate email format
-      if (!this.validEmail(this.registerForm.email)) {
-        alert('Insira um email válido.');
-        return;
-      }
-      // Validate password length
-      if (this.registerForm.password.length < 8) {
-        alert('A senha deve ter no mínimo 8 caracteres.');
-        return;
-      }
-      // Validate password confirmation
-      if (this.registerForm.password !== this.registerForm.confirmPassword) {
-        alert('As senhas não coincidem.');
-        return;
-      }
-      
-      this.isLoading = true;
-      
-      try {
-        this.loadingMessage = 'Criando sua conta...';
-        await this.registerUser({
-          name: this.registerForm.username,
-          email: this.registerForm.email,
-          password: this.registerForm.password,
-        });
-        
-        this.loadingMessage = 'Enviando código de verificação...';
-        await this.sendVerificationEmail(this.registerForm.email);
-      } catch (error) {
-        if (error.response && error.response.data && error.response.data.message) {
-          alert(error.response.data.message);
-        } else {
-          alert('Erro ao registrar. Tente novamente.');
-        }
-      } finally {
-        this.isLoading = false;
-        this.loadingMessage = '';
-      }
-    },
-
-    validEmail(email) {
-      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return re.test(email);
-    },
-    ...mapActions(authStore, [
-      'getAccessToken',
-      'getLoggedUser',
-      'registerUser',
-      'sendVerificationEmail',
-      'verifyAccount'
-    ])
-  },
-  computed: {
-    ...mapState(authStore, [
-      'accessToken',
-      'isLoggedIn',
-      'loggedUser',
-      'isVerifying',
-      'verificationEmail'
-    ]),
-
-    pageTitle() {
-      if (this.isVerifying) return 'Verificação de Email';
-      return this.isRegistering ? 'Crie sua conta' : 'Acesse seu perfil';
-    },
-
-    isCodeComplete() {
-      return this.verificationDigits.every(digit => digit.length === 1);
-    },
-
-    formEmail: {
-      get() {
-        return this.isRegistering ? this.registerForm.email : this.loginForm.email;
-      },
-      set(value) {
-        if (this.isRegistering) {
-          this.registerForm.email = value;
-        } else {
-          this.loginForm.email = value;
-        }
-      }
-    },
-
-    formPassword: {
-      get() {
-        return this.isRegistering ? this.registerForm.password : this.loginForm.password;
-      },
-      set(value) {
-        if (this.isRegistering) {
-          this.registerForm.password = value;
-        } else {
-          this.loginForm.password = value;
-        }
-      }
-    },
-  },
-}
-</script>
 
 <style scoped>
 .login-container {

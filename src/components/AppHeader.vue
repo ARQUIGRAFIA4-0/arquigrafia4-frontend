@@ -72,50 +72,46 @@
   </header>
 </template>
 
-<script>
+<script setup>
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { authStore } from "@/store/auth";
+import { useAuthStore } from "@/store/auth";
 
-export default {
-  setup() {
-    const route = useRoute();
-    const router = useRouter();
-    const store = authStore(); // Initialize the store
-    const dropdownOpen = ref(false);
-    const isLoggedIn = computed(() => store.isLoggedIn);
+  const route = useRoute();
+  const router = useRouter();
+  const store = useAuthStore(); // Initialize the store
+  const dropdownOpen = ref(false);
+  const isLoggedIn = computed(() => store.isLoggedIn);
 
-    const options = [
-      { label: "Explore", path: "/" },
-      { label: "Contribua", path: "/contribua" },
-    ];
+  const options = [
+    { label: "Explore", path: "/" },
+    { label: "Contribua", path: "/contribua" },
+  ];
 
-    const activeLabel = computed(() => {
-      const active = options.find(option => option.path === route.path);
-      return active ? active.label : "Explore";
-    });
+  const activeLabel = computed(() => {
+    const active = options.find(option => option.path === route.path);
+    return active ? active.label : "Explore";
+  });
 
-    const filteredOptions = computed(() => {
-      return options.filter(option => option.path !== route.path);
-    });
+  const filteredOptions = computed(() => {
+    return options.filter(option => option.path !== route.path);
+  });
 
-    const toggleDropdown = () => {
-      dropdownOpen.value = !dropdownOpen.value;
-    };
+  const toggleDropdown = () => {
+    dropdownOpen.value = !dropdownOpen.value;
+  };
 
-    const handleLogout = async () => {
-      await store.logout();
-      router.push('/'); // Redirect to home page after logout
-    };
+  const handleLogout = async () => {
+    await store.logout();
+    router.push('/'); // Redirect to home page after logout
+  };
 
-    return { 
-      dropdownOpen, 
-      activeLabel, 
-      filteredOptions, 
-      toggleDropdown, 
-      handleLogout,
-      isLoggedIn 
-    };
-  }
-};
+  // return { 
+  //   dropdownOpen, 
+  //   activeLabel, 
+  //   filteredOptions, 
+  //   toggleDropdown, 
+  //   handleLogout,
+  //   isLoggedIn 
+  // };
 </script>

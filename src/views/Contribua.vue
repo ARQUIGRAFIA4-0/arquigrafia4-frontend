@@ -56,44 +56,45 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      activeTab: 'images',
-      isDragging: false,
-      tabs: [
-        { id: 'images', label: 'Envie imagens' },
-        { id: 'works', label: 'Cadastre obras' },
-        { id: 'routes', label: 'Crie percursos' },
-        { id: 'evaluate', label: 'Avalie imagens' }
-      ]
-    }
-  },
-  methods: {
-    handleDragOver() {
-      this.isDragging = true
-    },
-    handleDragLeave() {
-      this.isDragging = false
-    },
-    handleDrop(e) {
-      this.isDragging = false
-      const files = [...e.dataTransfer.files]
-      this.handleFiles(files)
-    },
-    handleFileSelect(e) {
-      const files = [...e.target.files]
-      this.handleFiles(files)
-    },
-    handleFiles(files) {
-      // Filter for images only
-      const imageFiles = files.filter(file => file.type.startsWith('image/'))
-      if (imageFiles.length) {
-        console.log('Received images:', imageFiles)
-        // TODO: Handle file upload
-      }
-    }
+<script setup>
+import { ref } from 'vue'
+
+const activeTab = ref('images')
+const isDragging = ref(false)
+const fileInput = ref(null)
+
+const tabs = [
+  { id: 'images', label: 'Envie imagens' },
+  { id: 'works', label: 'Cadastre obras' },
+  { id: 'routes', label: 'Crie percursos' },
+  { id: 'evaluate', label: 'Avalie imagens' }
+]
+
+const handleDragOver = () => {
+  isDragging.value = true
+}
+
+const handleDragLeave = () => {
+  isDragging.value = false
+}
+
+const handleDrop = (e) => {
+  isDragging.value = false
+  const files = [...e.dataTransfer.files]
+  handleFiles(files)
+}
+
+const handleFileSelect = (e) => {
+  const files = [...e.target.files]
+  handleFiles(files)
+}
+
+const handleFiles = (files) => {
+  // Filter for images only
+  const imageFiles = files.filter(file => file.type.startsWith('image/'))
+  if (imageFiles.length) {
+    console.log('Received images:', imageFiles)
+    // TODO: Handle file upload
   }
 }
 </script>
