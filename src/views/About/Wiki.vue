@@ -7,6 +7,6 @@
 
 <script>
 export default {
-  name: 'WikiPage'
-}
+  name: "WikiPage",
+};
 </script>

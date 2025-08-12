@@ -2,7 +2,11 @@
   <div class="container-fluid p-4">
     <template v-if="viewMode === 'grid'">
       <div class="row g-4">
-        <div v-for="item in items" :key="item.id" class="col-6 col-md-4 col-lg-3">
+        <div
+          v-for="item in items"
+          :key="item.id"
+          class="col-6 col-md-4 col-lg-3"
+        >
           <image-card
             :id="item.id"
             :title="item.title"
@@ -11,11 +15,11 @@
         </div>
       </div>
     </template>
-    
+
     <template v-else-if="viewMode === 'mosaic'">
       <image-mosaic />
     </template>
-    
+
     <template v-else>
       <div class="text-center py-5">
         <h3>Map View</h3>
@@ -29,7 +33,10 @@
       </div>
     </div>
     <!-- No more items indicator -->
-    <div v-if="!hasMore && items.length > 0" class="text-center text-muted my-4">
+    <div
+      v-if="!hasMore && items.length > 0"
+      class="text-center text-muted my-4"
+    >
       No more images to load
     </div>
     <page-toolbar
@@ -41,20 +48,20 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue';
-import { storeToRefs } from 'pinia';
-import { uiStore } from '@/store/ui';
-import ImageCard from '@/components/ImageCard.vue';
-import ImageMosaic from '@/components/Mosaic.vue';
-import PageToolbar from '@/components/Toolbar.vue';
-import { api } from '@/services/api';
+import { ref, onMounted, onUnmounted } from "vue";
+import { storeToRefs } from "pinia";
+import { uiStore } from "@/store/ui";
+import ImageCard from "@/components/ImageCard.vue";
+import ImageMosaic from "@/components/Mosaic.vue";
+import PageToolbar from "@/components/Toolbar.vue";
+import { api } from "@/services/api";
 
 export default {
-  name: 'HomePage',
+  name: "HomePage",
   components: {
     ImageCard,
     ImageMosaic,
-    PageToolbar
+    PageToolbar,
   },
   setup() {
     const store = uiStore();
@@ -66,7 +73,7 @@ export default {
 
     const loadMoreItems = async () => {
       if (loading.value || !hasMore.value) return;
-      
+
       loading.value = true;
       try {
         const response = await api.getImages(currentPage.value);
@@ -74,7 +81,7 @@ export default {
         hasMore.value = response.hasMore;
         currentPage.value++;
       } catch (error) {
-        console.error('Error loading images:', error);
+        console.error("Error loading images:", error);
       } finally {
         loading.value = false;
       }
@@ -83,7 +90,7 @@ export default {
     const handleScroll = () => {
       const scrollPosition = window.innerHeight + window.scrollY;
       const pageBottom = document.documentElement.offsetHeight - 1000; // Load more 1000px before bottom
-      
+
       if (scrollPosition >= pageBottom) {
         loadMoreItems();
       }
@@ -92,16 +99,16 @@ export default {
     // Initial load and scroll handling
     onMounted(() => {
       loadMoreItems();
-      window.addEventListener('scroll', handleScroll);
+      window.addEventListener("scroll", handleScroll);
     });
 
     onUnmounted(() => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
     });
 
     const handleViewChange = (mode) => {
       store.setViewMode(mode);
-      if (mode === 'grid') {
+      if (mode === "grid") {
         // Reset grid view if needed
         if (items.value.length === 0) {
           loadMoreItems();
@@ -110,11 +117,11 @@ export default {
     };
 
     const handleDatePicker = () => {
-      console.log('Toggle date picker');
+      console.log("Toggle date picker");
     };
 
     const handleColorPicker = () => {
-      console.log('Toggle color picker');
+      console.log("Toggle color picker");
     };
 
     return {
@@ -126,8 +133,8 @@ export default {
       handleDatePicker,
       handleColorPicker,
     };
-  }
-}
+  },
+};
 </script>
 
 <style scoped>

@@ -3,12 +3,19 @@
     <div class="toolbar-content">
       <!-- View Mode Dropdown -->
       <div class="dropdown">
-        <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-          <i class="bi" :class="{
-            'bi-grid-3x3': viewMode === 'grid',
-            'bi-columns-gap': viewMode === 'mosaic',
-            'bi-map': viewMode === 'map'
-          }"></i>
+        <button
+          class="btn btn-light dropdown-toggle"
+          type="button"
+          data-bs-toggle="dropdown"
+        >
+          <i
+            class="bi"
+            :class="{
+              'bi-grid-3x3': viewMode === 'grid',
+              'bi-columns-gap': viewMode === 'mosaic',
+              'bi-map': viewMode === 'map',
+            }"
+          ></i>
         </button>
         <ul class="dropdown-menu">
           <li>
@@ -42,7 +49,7 @@
             placeholder="Buscar..."
             v-model="searchQuery"
             @input="handleSearch"
-          >
+          />
         </transition>
       </div>
 
@@ -60,34 +67,34 @@
 </template>
 
 <script>
-import { ref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { uiStore } from '@/store/ui'
+import { ref } from "vue";
+import { storeToRefs } from "pinia";
+import { uiStore } from "@/store/ui";
 
 export default {
-  name: 'PageToolbar',
+  name: "PageToolbar",
   setup(props, { emit }) {
     const store = uiStore();
     const { viewMode } = storeToRefs(store);
-    const isSearchVisible = ref(false)
-    const searchQuery = ref('')
+    const isSearchVisible = ref(false);
+    const searchQuery = ref("");
 
     const changeViewMode = (mode) => {
       store.setViewMode(mode);
-      emit('view-change', mode);
-    }
+      emit("view-change", mode);
+    };
 
     const toggleSearch = () => {
-      isSearchVisible.value = !isSearchVisible.value
-    }
+      isSearchVisible.value = !isSearchVisible.value;
+    };
 
     const toggleDatePicker = () => {
-      emit('toggle-date-picker')
-    }
+      emit("toggle-date-picker");
+    };
 
     const toggleColorPicker = () => {
-      emit('toggle-color-picker')
-    }
+      emit("toggle-color-picker");
+    };
 
     return {
       viewMode,
@@ -96,11 +103,11 @@ export default {
       changeViewMode,
       toggleSearch,
       toggleDatePicker,
-      toggleColorPicker
-    }
+      toggleColorPicker,
+    };
   },
-  emits: ['view-change', 'toggle-date-picker', 'toggle-color-picker']
-}
+  emits: ["view-change", "toggle-date-picker", "toggle-color-picker"],
+};
 </script>
 
 <style scoped>
@@ -159,7 +166,7 @@ export default {
   .toolbar-content {
     justify-content: space-around;
   }
-  
+
   .search-input {
     width: 150px;
   }

@@ -45,5 +45,5 @@ export default [
     path: "/profile/edit",
     name: "edit-profile",
     component: () => import("../views/Profile/EditProfile.vue"),
-  }
+  },
 ];

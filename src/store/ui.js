@@ -1,13 +1,13 @@
-import { defineStore } from 'pinia'
+import { defineStore } from "pinia";
 
-export const uiStore = defineStore('ui', {
+export const uiStore = defineStore("ui", {
   state: () => ({
-    viewMode: localStorage.getItem('viewMode') || 'grid'
+    viewMode: localStorage.getItem("viewMode") || "grid",
   }),
   actions: {
     setViewMode(mode) {
-      this.viewMode = mode
-      localStorage.setItem('viewMode', mode)
-    }
-  }
-})
+      this.viewMode = mode;
+      localStorage.setItem("viewMode", mode);
+    },
+  },
+});

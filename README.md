@@ -7,6 +7,7 @@ Online desde 2011, o [ARQUIGRAFIA](https://www.arquigrafia.org.br/home) é hoje 
 Site oficial do Node.js para referência https://nodejs.org/en/learn/getting-started/how-to-install-nodejs
 
 ## Requisitos
+
 - Node.js (versão recomendada: ^20) (https://www.php.net/downloads)
 - npm (versão recomendada: ^10) (https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 
@@ -40,7 +41,9 @@ Compila minimizado e mais demorado, necessário para deploy no servidor:
 Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions). -->
 
 ## Licença
+
 O projeto ARQUIGRAFIA é um software livre licenciado segundo diretrizes da [MIT license](https://opensource.org/licenses/MIT).
 
 ## Financiamentos
+
 O presente trabalho foi realizado com apoio da Fundação de Amparo à Pesquisa do Estado de São Paulo (FAPESP), Brasil. Processo nº 20/05134-9
