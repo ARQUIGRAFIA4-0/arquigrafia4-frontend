@@ -95,7 +95,7 @@ const {
       </p>
     </form>
     <!-- Password Reset Form -->
-    <div v-if="isForgotPassword" class="form-floating mb-3">
+    <div v-else-if="isForgotPassword" class="form-floating mb-3">
       <input
         v-model="formData.email"
         type="email"
