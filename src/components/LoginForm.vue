@@ -8,7 +8,7 @@ const { handleLogin, handleRegister, toggleRegister, handleDigitInput, handleBac
 </script>
 
 <template>
-  <div v-if="!isLoggedIn || (isLoggedIn && !loggedUser.email_verified_at)" class="login-container">
+  <div v-if="!isLoggedIn || (isLoggedIn && !loggedUser?.email_verified_at)" class="login-container">
     <!-- Loading Overlay -->
     <div v-if="isLoading" class="loading-overlay">
       <div class="spinner-border text-primary" role="status">
