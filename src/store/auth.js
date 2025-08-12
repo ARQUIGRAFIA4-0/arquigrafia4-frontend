@@ -343,6 +343,7 @@ export const useAuthStore = defineStore("auth", () => {
         await getLoggedUser(); // Now we have the token, get user data
 
         if (loggedUser.value?.email_verified_at) {
+          alert("Conta verificada com sucesso!");
           router.push("/");
         }
       }
