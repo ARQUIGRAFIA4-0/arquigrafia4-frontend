@@ -14,6 +14,9 @@ export const useAuthStore = defineStore('auth', () => {
   const isVerifying = ref(false);
   const isRegistering = ref(false);
   const isLoading = ref(false);
+  const isForgotPassword = ref(false);
+  const showPassword = ref(false);
+  const showConfirmPassword = ref(false);
   const verificationEmail = ref('');
   const initialFormState = {
     username: "",
@@ -222,14 +225,14 @@ export const useAuthStore = defineStore('auth', () => {
         throw error;
       }
   }
-  async function sendVerificationEmail(email) {
+  async function sendVerificationEmail() {
     isLoading.value = true;
     loadingMessage.value = 'Enviando código de verificação...';
     
     try {
-        await axios.post('/api/account-verification-email', { email });
+        await axios.post('/api/account-verification-email', { email: formData.value.email });
         isVerifying.value = true;
-        verificationEmail.value = email;
+        // verificationEmail.value = email;
         return true;
     } catch (error) {
         console.error('Error sending verification email:', error);
@@ -237,6 +240,22 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
         isLoading.value = false;
         loadingMessage.value = '';
+    }
+  }
+  async function sendPasswordResetEmail() {
+    isLoading.value = true
+    loadingMessage.value = 'Enviando email de recuperação...'
+    
+    try {
+      await axios.post('/api/forgot-password-email', { email: formData.value.email })
+      alert('Um email com instruções foi enviado para você.')
+      isForgotPassword.value = false
+    } catch (error) {
+      console.error('Error sending reset email:', error)
+      alert('Erro ao enviar email. Tente novamente.')
+    } finally {
+      isLoading.value = false
+      loadingMessage.value = ''
     }
   }
   async  function verifyAccount(email, code) {
@@ -333,7 +352,10 @@ export const useAuthStore = defineStore('auth', () => {
     verificationEmail,
     isLoggedIn,
     pageTitle,
+    showPassword,
+    showConfirmPassword,
     isCodeComplete,
+    isForgotPassword,
     toggleRegister,
     handleLogin,
     handleRegister,
@@ -342,6 +364,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     registerUser,
     sendVerificationEmail,
+    sendPasswordResetEmail,
     verifyAccount,
     handleDigitInput,
     handleBackspace,

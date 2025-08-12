@@ -3,8 +3,8 @@ import { storeToRefs } from 'pinia'
 import { useAuthStore } from '../store/auth'
 
 const auth = useAuthStore()
-const { isLoggedIn, loggedUser, isVerifying, isRegistering, isLoading, formData, pageTitle, loadingMessage, verificationDigits, digitRefs, isCodeComplete } = storeToRefs(auth)
-const { handleLogin, handleRegister, toggleRegister, handleDigitInput, handleBackspace, focusPreviousDigit, focusNextDigit, handlePaste, verifyCode, resendCode } = auth
+const { isLoggedIn, loggedUser, isVerifying, isRegistering, isLoading, formData, pageTitle, loadingMessage, verificationDigits, digitRefs, isCodeComplete, showPassword, showConfirmPassword, isForgotPassword } = storeToRefs(auth)
+const { handleLogin, handleRegister, toggleRegister, handleDigitInput, handleBackspace, focusPreviousDigit, focusNextDigit, handlePaste, verifyCode, resendCode, sendPasswordResetEmail } = auth
 </script>
 
 <template>
@@ -52,7 +52,33 @@ const { handleLogin, handleRegister, toggleRegister, handleDigitInput, handleBac
         </small>
       </p>
     </form>
-
+    <!-- Password Reset Form -->
+    <div v-if="isForgotPassword" class="form-floating mb-3">
+      <input 
+        v-model="formData.email" 
+        type="email" 
+        class="form-control" 
+        id="floatingResetEmail" 
+        placeholder="nome@exemplo.com"
+      >
+      <label for="floatingResetEmail">Digite seu email</label>
+      <div class="mt-3 d-flex gap-2">
+        <button 
+          type="button" 
+          class="btn btn-secondary flex-grow-1"
+          @click="isForgotPassword = false"
+        >
+          Voltar
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-primary flex-grow-1"
+          @click="sendPasswordResetEmail()"
+        >
+          Enviar
+        </button>
+      </div>
+    </div>
     <!-- Registration/Login Form -->
     <form v-else @submit.prevent="isRegistering ? handleRegister() : handleLogin()">
       <div v-if="isRegistering" class="form-floating mb-3">
@@ -70,13 +96,27 @@ const { handleLogin, handleRegister, toggleRegister, handleDigitInput, handleBac
           <label for="floatingConfirmEmail">Confirme o email</label>
         </div>
         <div class="mb-3 form-floating">
-          <input v-model="formData.password" type="password" class="form-control" id="floatingPassword" placeholder="senha">
+          <input v-model="formData.password" :type="showPassword ? 'text' : 'password'" class="form-control" id="floatingPassword" placeholder="senha">
           <label for="floatingPassword">Senha</label>
+          <button 
+            type="button" 
+            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3" 
+            @click="showPassword = !showPassword"
+          >
+            <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+          </button>
         </div>
         <div class="mb-3 form-floating">
-          <input v-model="formData.confirmPassword" type="password" class="form-control" id="floatingConfirmPassword"
+          <input v-model="formData.confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" class="form-control" id="floatingConfirmPassword"
             placeholder="Confirme a senha">
           <label for="floatingConfirmPassword">Confirme a Senha</label>
+          <button 
+            type="button" 
+            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3" 
+            @click="showConfirmPassword = !showConfirmPassword"
+          >
+            <i class="bi" :class="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+          </button>
         </div>
       </div>
       <div v-else class="mb-3 form-floating">
@@ -85,13 +125,24 @@ const { handleLogin, handleRegister, toggleRegister, handleDigitInput, handleBac
           <label for="floatingInput">Email</label>
         </div>
         <div class="form-floating mb-3">
-          <input v-model="formData.password" type="password" class="form-control" id="floatingPassword" placeholder="senha">
+          <input v-model="formData.password" :type="showPassword ? 'text' : 'password'" class="form-control" id="floatingPassword" placeholder="senha">
           <label for="floatingPassword">Senha</label>
+          <button 
+            type="button" 
+            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3" 
+            @click="showPassword = !showPassword"
+          >
+            <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+          </button>
+          <a 
+            href="#" 
+            class="text-muted text-decoration-none" 
+            @click.prevent="auth.isForgotPassword = true"
+          >
+            Esqueceu sua senha?
+          </a>
         </div>
-        <template>
-          <a href="#" class="text-muted">Esqueceu sua senha?</a>
-        </template>
-      </div>
+      </div>  
       
 
       <div v-if="!isRegistering" class="mb-3 form-check text-start">
