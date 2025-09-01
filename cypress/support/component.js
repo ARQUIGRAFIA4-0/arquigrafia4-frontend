@@ -16,9 +16,27 @@
 // Import commands.js using ES2015 syntax:
 import './commands'
 
-import { mount } from 'cypress/vue'
+import '../../src/scss/styles.scss'
+import 'bootstrap-icons/font/bootstrap-icons.css'
+import 'bootstrap'
 
-Cypress.Commands.add('mount', mount)
+import { mount as vueMount } from 'cypress/vue'
+import { createPinia } from 'pinia'
+
+// Mount with global plugins pre-configured (Pinia, etc.)
+Cypress.Commands.add('mount', (component, options = {}) => {
+  const pinia = createPinia()
+
+  const mergedOptions = {
+    ...options,
+    global: {
+      ...(options.global || {}),
+      plugins: [...(options.global?.plugins || []), pinia],
+    },
+  }
+
+  return vueMount(component, mergedOptions)
+})
 
 // Example use:
 // cy.mount(MyComponent)
