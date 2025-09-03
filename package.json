@@ -15,7 +15,9 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --ignore-path .gitignore",
     "fix": "npm run lint -- --fix",
     "format": "prettier --write \"./**/*.{js,jsx,ts,tsx,vue,css,scss,md}\"",
-    "test": "npm run build && npm run lint"
+    "test": "npm run build && npm run lint",
+    "test:open": "cypress open",
+    "test:run": "cypress run"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
