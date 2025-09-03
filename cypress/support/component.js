@@ -38,5 +38,34 @@ Cypress.Commands.add('mount', (component, options = {}) => {
   return vueMount(component, mergedOptions)
 })
 
+/**
+ * Set Cypress viewport by label or custom size.
+ * Usage: cy.setViewport('iphone-6') or cy.setViewport({ width: 1280, height: 800 })
+ */
+Cypress.Commands.add('setViewport', (presetOrSize) => {
+  if (typeof presetOrSize === 'string') {
+    // Preset label, e.g., 'iphone-6', 'macbook-13'
+    cy.viewport(presetOrSize)
+  } else if (presetOrSize && typeof presetOrSize === 'object') {
+    const { width, height } = presetOrSize
+    cy.viewport(width, height)
+  } else {
+    throw new Error('setViewport expects a string preset or { width, height }')
+  }
+})
+
+/**
+ * Mount a component after setting the viewport. Accepts same options as cy.mount.
+ * Example: cy.mountWithViewport(UiInput, { props: { ... } }, 'iphone-6')
+ */
+Cypress.Commands.add('mountWithViewport', (component, options = {}, presetOrSize) => {
+  if (!presetOrSize) return cy.mount(component, options)
+  return cy
+    .setViewport(presetOrSize)
+    .then(() => {
+      return cy.mount(component, options)
+    })
+})
+
 // Example use:
 // cy.mount(MyComponent)
