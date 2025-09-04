@@ -10,19 +10,133 @@
 // $bootstrap-icons-font-dir: "../node_modules/bootstrap-icons/font/fonts";
 // @import "bootstrap-icons/font/fonts/bootstrap-icons";
 
-// Custom styles
+// Design System - Tokens de tipografia (mobile-first)
+:root {
+  /* Menu principal - selecionado */
+  --menu-sel-color: var(--202-TXT);
+  --menu-sel-fs: 18px;
+  --menu-sel-fw: 900;
+  --menu-sel-lh: 100%;
+  --menu-sel-ls: -1.08px;
+
+  /* Submenu - selecionado */
+  --submenu-sel-color: var(--Laranja_E);
+  --submenu-sel-fs: 12px;
+  --submenu-sel-fw: 800;
+  --submenu-sel-lh: 150%;
+
+  /* Headings e textos */
+  --h1-color: var(--202-TXT);
+  --h1-fs: 20px;
+  --h1-fw: 500;
+  --h1-lh: 150%;
+
+  --h2-color: var(--202-TXT);
+  --h2-fs: 16px;
+  --h2-fw: 500;
+  --h2-lh: 150%;
+
+  --h3-color: var(--Gray-900);
+  --h3-fs: 14px;
+  --h3-fw: 500;
+  --h3-lh: 150%;
+
+  --p-color: var(--Gray-900);
+  --p-fs: 14px;
+  --p-fw: 400;
+  --p-lh: 125%;
+
+  /* Botão (texto) */
+  --btn-uni-color: var(--Laranja_E);
+  --btn-uni-fs: 14px;
+  --btn-uni-fw: 400;
+  --btn-uni-lh: 150%;
+
+  /* Placeholder */
+  --placeholder-color: var(--Cinza_M);
+  --placeholder-fs: 12px;
+  --placeholder-fw: 400;
+  --placeholder-lh: 150%;
+}
+
+@media (min-width: 768px) {
+  :root {
+    /* Menu principal - selecionado (desktop) */
+    --menu-sel-fs: 24px;
+    --menu-sel-fw: 700;
+    --menu-sel-lh: 100%;
+    --menu-sel-ls: -1.44px;
+
+    /* Submenu - selecionado (desktop) */
+    --submenu-sel-fs: 20px;
+    --submenu-sel-fw: 700;
+    --submenu-sel-lh: 100%;
+
+    /* Headings (desktop) */
+    --h1-fs: 30px;
+    --h1-fw: 500;
+    --h1-lh: 150%;
+
+    --h2-fs: 20px;
+    --h2-fw: 500;
+    --h2-lh: 150%;
+
+    --h3-fs: 16px;
+    --h3-fw: 500;
+    --h3-lh: 150%;
+
+    /* Placeholder (desktop) */
+    --placeholder-fs: 14px;
+  }
+}
+
+/* ********************************* */
+/* ********  ESTILOS GLOBAIS  ******** */
+/* ********************************* */
+
 body {
-  // margin-top: 60px;
+  font-family: "DM Sans";
   overflow-x: hidden;
+}
+
+h1 {
+  color: var(--h1-color);
+  font-size: var(--h1-fs);
+  font-weight: var(--h1-fw);
+  line-height: var(--h1-lh);
+}
+
+h2 {
+  color: var(--h2-color);
+  font-size: var(--h2-fs);
+  font-weight: var(--h2-fw);
+  line-height: var(--h2-lh);
+}
+
+h3 {
+  color: var(--h3-color);
+  font-size: var(--h3-fs);
+  font-weight: var(--h3-fw);
+  line-height: var(--h3-lh);
+}
+
+p {
+  color: var(--p-color);
+  font-size: var(--p-fs);
+  font-weight: var(--p-fw);
+  line-height: var(--p-lh);
+}
+
+a {
+  color: var(--p-color);
+  font-size: var(--p-fs);
+  font-weight: var(--p-fw);
+  line-height: var(--p-lh);
 }
 
 .home-display {
   background: url("../assets/casa-com-plantas.jpg");
   background-position: center;
-}
-
-.txt-white {
-  color: $white;
 }
 
 .nav-link {
@@ -47,42 +161,145 @@ body {
   font-size: 20px;
 }
 
+/* *************************************** */
+/* ********  BOOTSTRAP OVERRIDES  ******** */
+/* *************************************** */
+
+// ********** Dropdown **********
+
 .dropdown-toggle {
-  background-color: white; /* Custom blue */
-  color: $base-text-color;
   border: 0px;
   padding: 10px 0px;
   font-size: 20px;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
 }
 
-.dropdown-toggle:hover {
-  background-color: white;
-  color: $base-text-color;
+/* Utilitário para ocultar o caret */
+.dropdown-toggle.no-caret::after,
+.dropdown-toggle.no-caret::before {
+  display: none !important;
 }
 
+/* Substitui o caret padrão por chevron-down usando mask para herdar currentColor */
+.dropdown-toggle::before {
+  content: "";
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.25rem;
+  vertical-align: middle;
+  border: 0;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+/* Garante que o caret padrão do Bootstrap nunca seja renderizado */
 .dropdown-toggle::after {
   display: none !important;
 }
 
 .dropdown-menu {
-  background-color: white;
-  border-radius: 8px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-  min-width: 200px;
-  padding: 10px;
-  border-width: 0px;
-  border-top: none;
-  margin-top: -1px;
-  border-top-right-radius: 0;
-  border-top-left-radius: 0;
+  border: none;
 }
 
-.btn {
-  --bs-btn-active-color: $base-text-color;
-  --bs-btn-active-bg: white;
+// ********** Input **********
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--placeholder-color);
+  font-size: var(--placeholder-fs);
+  font-style: italic;
+  font-weight: var(--placeholder-fw);
+  line-height: var(--placeholder-lh);
 }
+
+// ********** Radio **********
+
+.form-check-input[type="radio"]:checked {
+  background-color: transparent;
+}
+
+.form-check-input[type="radio"] {
+  border-color: var(--Preto);
+}
+.form-check-input[type="radio"]:checked {
+  border-color: var(--Preto);
+}
+
+// ********** Button **********
+
+/* .btn {
+  //--bs-btn-active-color: $base-text-color;
+  //--bs-btn-active-bg: white;
+}
+ */
+
+// HR
 
 hr {
   border-color: #a6a6a6;
+}
+
+/* ***************************** */
+/* ********  UTILITIES  ******** */
+/* ***************************** */
+
+$bg-color-utilities: (
+  "azul-e": "--Azul_E",
+  "azul-m": "--Azul_M",
+  "azul-c": "--Azul_C",
+  "laranja-e": "--Laranja_E",
+  "laranja-m": "--Laranja_M",
+  "laranja-c": "--Laranja_C",
+  "cinza-e": "--Cinza_E",
+  "cinza-m": "--Cinza_M",
+  "cinza-c": "--Cinza_C",
+  "preto": "--Preto",
+  "off-white": "--Off_white",
+  "branco": "--Branco",
+  "202-txt": "--202-TXT",
+);
+
+@each $suffix, $css-var in $bg-color-utilities {
+  .bg-#{$suffix} {
+    background-color: var(#{$css-var}) !important;
+  }
+}
+
+@each $suffix, $css-var in $bg-color-utilities {
+  .text-#{$suffix} {
+    color: var(#{$css-var}) !important;
+  }
+}
+
+@each $suffix, $css-var in $bg-color-utilities {
+  .border-#{$suffix} {
+    border-color: var(#{$css-var}) !important;
+  }
+}
+
+.text-menu {
+  color: var(--menu-color);
+  font-size: var(--menu-fs);
+  font-weight: var(--menu-fw);
+  line-height: var(--menu-lh);
+  letter-spacing: var(--menu-ls);
+}
+
+.text-submenu {
+  color: var(--submenu-color);
+  font-size: var(--submenu-fs);
+  font-weight: var(--submenu-fw);
+  line-height: var(--submenu-lh);
+  letter-spacing: var(--submenu-ls);
 }

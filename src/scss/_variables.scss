@@ -9,17 +9,44 @@ $nav-link-padding-x: 0.5rem;
 
 $base-text-color: #2f2f2f;
 
-// Bootstrap variable overrides
-$primary: #2f2f2f;
+// Design tokens - colors
+$color-202-txt: #2f2f2f; // Texto principal
+$color-cinza-e: #2f2f2f; // Cinza_E
+$color-cinza-m: #636262; // Cinza_M
+$color-cinza-c: #a6a6a6; // Cinza_C
+$color-laranja-e: #aa4f28; // Laranja_E (accent)
+$color-laranja-m: #d27d30; // Laranja_M
+$color-laranja-c: #f6ddc6; // Laranja_C
+$color-azul-e: #0f59a5; // Azul_E
+$color-azul-m: #0f89e1; // Azul_M
+$color-azul-c: #b7dcf6; // Azul_C
+$color-preto: #1f1f1f; // Preto
+$color-off-white: #faf9f9; // Off_white
+$color-branco: #ffffff; // Branco
+$color-gray-900: #212529; // Gray-900
+
 
 // CSS Custom Properties
 :root {
-  --bs-primary: #{$primary};
-  --bs-primary-rgb: 47, 47, 47;
-  --bs-btn-bg: var(--bs-primary);
-  --bs-btn-border-color: var(--bs-primary);
-  --bs-btn-hover-bg: #404040;
-  --bs-btn-hover-border-color: #404040;
-  --bs-btn-active-bg: #404040;
-  --bs-btn-active-border-color: #404040;
+  /* Design tokens - colors */
+  --202-TXT: #{$color-202-txt};
+  --Cinza_E: #{$color-cinza-e};
+  --Cinza_M: #{$color-cinza-m};
+  --Cinza_C: #{$color-cinza-c};
+  --Laranja_E: #{$color-laranja-e};
+  --Laranja_M: #{$color-laranja-m};
+  --Laranja_C: #{$color-laranja-c};
+  --Azul_E: #{$color-azul-e};
+  --Azul_M: #{$color-azul-m};
+  --Azul_C: #{$color-azul-c};
+  --Preto: #{$color-preto};
+  --Off_white: #{$color-off-white};
+  --Branco: #{$color-branco};
+  --Gray-900: #{$color-gray-900};
 }
+
+
+// Bootstrap variable overrides
+
+// Override Bootstrap radio styles: black inner dot
+$form-check-radio-checked-bg-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3E%3Ccircle r='3' fill='%231f1f1f'/%3E%3C/svg%3E");
