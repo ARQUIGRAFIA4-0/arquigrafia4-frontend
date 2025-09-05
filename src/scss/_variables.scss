@@ -10,7 +10,6 @@ $nav-link-padding-x: 0.5rem;
 $base-text-color: #2f2f2f;
 
 // Design tokens - colors
-$color-202-txt: #2f2f2f; // Texto principal
 $color-cinza-e: #2f2f2f; // Cinza_E
 $color-cinza-m: #636262; // Cinza_M
 $color-cinza-c: #a6a6a6; // Cinza_C
@@ -29,7 +28,6 @@ $color-gray-900: #212529; // Gray-900
 // CSS Custom Properties
 :root {
   /* Design tokens - colors */
-  --202-TXT: #{$color-202-txt};
   --Cinza_E: #{$color-cinza-e};
   --Cinza_M: #{$color-cinza-m};
   --Cinza_C: #{$color-cinza-c};

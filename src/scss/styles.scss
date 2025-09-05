@@ -13,7 +13,7 @@
 // Design System - Tokens de tipografia (mobile-first)
 :root {
   /* Menu principal - selecionado */
-  --menu-sel-color: var(--202-TXT);
+  --menu-sel-color: var(--Cinza_E);
   --menu-sel-fs: 18px;
   --menu-sel-fw: 900;
   --menu-sel-lh: 100%;
@@ -26,12 +26,12 @@
   --submenu-sel-lh: 150%;
 
   /* Headings e textos */
-  --h1-color: var(--202-TXT);
+  --h1-color: var(--Cinza_E);
   --h1-fs: 20px;
   --h1-fw: 500;
   --h1-lh: 150%;
 
-  --h2-color: var(--202-TXT);
+  --h2-color: var(--Cinza_E);
   --h2-fs: 16px;
   --h2-fw: 500;
   --h2-lh: 150%;
@@ -97,6 +97,7 @@
 body {
   font-family: "DM Sans";
   overflow-x: hidden;
+  color: var(--Cinza_E);
 }
 
 h1 {
@@ -267,7 +268,6 @@ $bg-color-utilities: (
   "preto": "--Preto",
   "off-white": "--Off_white",
   "branco": "--Branco",
-  "202-txt": "--202-TXT",
 );
 
 @each $suffix, $css-var in $bg-color-utilities {
