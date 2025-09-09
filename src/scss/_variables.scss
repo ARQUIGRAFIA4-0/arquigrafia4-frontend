@@ -24,6 +24,12 @@ $color-off-white: #faf9f9; // Off_white
 $color-branco: #ffffff; // Branco
 $color-gray-900: #212529; // Gray-900
 
+// Bootstrap theme overrides
+$primary: $color-laranja-e;
+$secondary: $color-preto;
+
+$btn-padding-x: 0.975rem;
+$btn-padding-x-sm: 0.725rem;
 
 // CSS Custom Properties
 :root {
@@ -42,7 +48,6 @@ $color-gray-900: #212529; // Gray-900
   --Branco: #{$color-branco};
   --Gray-900: #{$color-gray-900};
 }
-
 
 // Bootstrap variable overrides
 
