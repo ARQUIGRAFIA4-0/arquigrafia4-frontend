@@ -9,6 +9,8 @@ module.exports = {
     {
       files: [
         "cypress/**/*.js",
+        "cypress/**/*.jsx",
+        "cypress/**/*.cy.jsx",
         "src/**/*.cy.js",
         "src/**/*.cy.jsx",
         "src/**/*.cy.ts",
@@ -22,6 +24,11 @@ module.exports = {
       globals: {
         cy: "readonly",
         Cypress: "readonly",
+      },
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
       },
       rules: {},
     },
