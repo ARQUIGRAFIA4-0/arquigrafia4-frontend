@@ -57,6 +57,27 @@
   --placeholder-fs: 12px;
   --placeholder-fw: 400;
   --placeholder-lh: 150%;
+
+  // realistic CSS shadows
+  --shadow-color: 0deg 0% 66%;
+  --shadow-elevation-low:
+    0.4px 0.3px 0.7px hsl(var(--shadow-color) / 0.04),
+    0.7px 0.6px 1.3px -0.2px hsl(var(--shadow-color) / 0.22),
+    1.4px 1.3px 2.8px -0.4px hsl(var(--shadow-color) / 0.4);
+  --shadow-elevation-medium:
+    0.4px 0.3px 0.7px hsl(var(--shadow-color) / 0.05),
+    1.7px 1.5px 3.3px -0.1px hsl(var(--shadow-color) / 0.18),
+    3.5px 3.1px 6.8px -0.2px hsl(var(--shadow-color) / 0.32),
+    7.2px 6.4px 13.9px -0.4px hsl(var(--shadow-color) / 0.46);
+  --shadow-elevation-high:
+    0.4px 0.3px 0.7px hsl(var(--shadow-color) / 0.04),
+    3.4px 3px 6.6px hsl(var(--shadow-color) / 0.11),
+    6px 5.3px 11.6px -0.1px hsl(var(--shadow-color) / 0.17),
+    8.8px 7.8px 17px -0.1px hsl(var(--shadow-color) / 0.24),
+    12.5px 11px 24.1px -0.2px hsl(var(--shadow-color) / 0.3),
+    17.5px 15.5px 33.8px -0.3px hsl(var(--shadow-color) / 0.37),
+    24.5px 21.8px 47.5px -0.3px hsl(var(--shadow-color) / 0.43),
+    34.2px 30.3px 66.1px -0.4px hsl(var(--shadow-color) / 0.49);
 }
 
 @media (min-width: 768px) {
@@ -168,7 +189,6 @@ a {
 
 // ********** Dropdown **********
 
-
 /* Utilitário para ocultar o caret */
 .dropdown-toggle.no-caret::after,
 .dropdown-toggle.no-caret::before {
@@ -227,6 +247,37 @@ a {
   mask-position: center;
   -webkit-mask-size: contain;
   mask-size: contain;
+}
+
+// Temas de Dropdown
+.dropdown-menu.menu-dark {
+  --bs-dropdown-bg: var(--Preto);
+  --bs-dropdown-color: var(--Branco);
+  --bs-dropdown-link-color: var(--Branco);
+  --bs-dropdown-link-hover-bg: #2a2a2a;
+  --bs-dropdown-link-hover-color: var(--Branco);
+  --bs-dropdown-link-active-bg: #3a3a3a;
+  --bs-dropdown-link-active-color: var(--Branco);
+  --bs-dropdown-link-disabled-color: var(--Cinza_C);
+  --bs-dropdown-border-color: transparent;
+  --bs-dropdown-border-width: 0;
+  box-shadow: var(--shadow-elevation-medium);
+  border: 0;
+}
+
+.dropdown-menu.menu-light {
+  --bs-dropdown-bg: var(--Branco);
+  --bs-dropdown-color: var(--Gray-900);
+  --bs-dropdown-link-color: var(--Gray-900);
+  --bs-dropdown-link-hover-bg: #f5f5f5;
+  --bs-dropdown-link-hover-color: var(--Gray-900);
+  --bs-dropdown-link-active-bg: #ececec;
+  --bs-dropdown-link-active-color: var(--Gray-900);
+  --bs-dropdown-link-disabled-color: var(--Cinza_C);
+  --bs-dropdown-border-color: transparent;
+  --bs-dropdown-border-width: 0;
+  box-shadow: var(--shadow-elevation-medium);
+  border: 0;
 }
 
 // ********** Input **********
