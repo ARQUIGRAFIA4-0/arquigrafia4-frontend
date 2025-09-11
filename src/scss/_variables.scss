@@ -23,6 +23,12 @@ $color-preto: #1f1f1f; // Preto
 $color-off-white: #faf9f9; // Off_white
 $color-branco: #ffffff; // Branco
 $color-gray-900: #212529; // Gray-900
+$color-positivo-e: hsla(90, 87%, 21%, 1); // Positivo_E
+$color-positivo-m: hsla(94, 45%, 42%, 1); // Positivo_M
+$color-positivo-c: hsla(91, 63%, 90%, 1); // Positivo_C
+$color-negativo-e: hsla(359, 80%, 41%, 1); // Negativo_E
+$color-negativo-m: hsla(355, 100%, 42%, 1); // Negativo_M
+$color-negativo-c: hsla(359, 100%, 96%, 1); // Negativo_C
 
 // Bootstrap theme overrides
 $primary: $color-laranja-e;
@@ -47,6 +53,12 @@ $btn-padding-x-sm: 0.725rem;
   --Off_white: #{$color-off-white};
   --Branco: #{$color-branco};
   --Gray-900: #{$color-gray-900};
+  --Positivo_E: #{$color-positivo-e};
+  --Positivo_M: #{$color-positivo-m};
+  --Positivo_C: #{$color-positivo-c};
+  --Negativo_E: #{$color-negativo-e};
+  --Negativo_M: #{$color-negativo-m};
+  --Negativo_C: #{$color-negativo-c};
 }
 
 // Bootstrap variable overrides
