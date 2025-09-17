@@ -1,0 +1,32 @@
+.nav-underline .nav-link {
+  font-weight: 600;
+  font-size: 24px;
+  color: #b3b3b3;
+  position: relative;
+  display: inline-block;
+}
+
+.nav-underline .nav-link:hover {
+  color: var(--Laranja_E);
+  font-weight: 600;
+}
+
+.nav-underline .nav-link:active {
+  font-weight: 700;
+}
+
+.nav-underline .nav-link.active,
+.nav-underline .nav-link.show {
+  color: var(--Laranja_E);
+  font-weight: 700;
+}
+
+// cria um pseudo-elemento para garantir espaco e evitar que a tab expanda e empurre outros itens.
+.nav-underline .nav-link[data-label]::after {
+  content: attr(data-label);
+  font-weight: 700;
+  visibility: hidden;
+  display: block;
+  height: 0;
+  overflow: hidden;
+}
