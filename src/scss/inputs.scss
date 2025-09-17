@@ -1,0 +1,58 @@
+input::placeholder,
+textarea::placeholder {
+  color: var(--placeholder-color);
+  font-size: var(--placeholder-fs);
+  font-style: italic;
+  font-weight: var(--placeholder-fw);
+  line-height: var(--placeholder-lh);
+}
+
+.form-check-input[type="radio"]:checked {
+  background-color: transparent;
+}
+
+.form-check-input[type="radio"] {
+  border-color: var(--Preto);
+}
+.form-check-input[type="radio"]:checked {
+  border-color: var(--Preto);
+}
+
+.valid-feedback,
+.invalid-feedback {
+  width: 100%;
+  text-align: right;
+}
+
+.form-control,
+.form-select {
+  border-color: var(--Preto);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--Preto);
+  box-shadow: none;
+}
+
+.form-check-input {
+  border-color: var(--Preto);
+}
+
+.form-control.is-valid,
+.form-control.is-invalid,
+.was-validated .form-control:valid,
+.was-validated .form-control:invalid {
+  background-image: none !important;
+  padding-right: inherit;
+  box-shadow: none;
+}
+
+.form-select.is-valid,
+.form-select.is-invalid,
+.was-validated .form-select:valid,
+.was-validated .form-select:invalid {
+  background-image: none !important;
+  padding-right: inherit;
+  box-shadow: none;
+}

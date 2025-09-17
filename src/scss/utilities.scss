@@ -1,0 +1,70 @@
+$bg-color-utilities: (
+  "azul-e": "--Azul_E",
+  "azul-m": "--Azul_M",
+  "azul-c": "--Azul_C",
+  "laranja-e": "--Laranja_E",
+  "laranja-m": "--Laranja_M",
+  "laranja-c": "--Laranja_C",
+  "cinza-e": "--Cinza_E",
+  "cinza-m": "--Cinza_M",
+  "cinza-c": "--Cinza_C",
+  "positivo-e": "--Positivo_E",
+  "positivo-m": "--Positivo_M",
+  "positivo-c": "--Positivo_C",
+  "negativo-e": "--Negativo_E",
+  "negativo-m": "--Negativo_M",
+  "negativo-c": "--Negativo_C",
+  "preto": "--Preto",
+  "off-white": "--Off_white",
+  "branco": "--Branco",
+);
+
+@each $suffix, $css-var in $bg-color-utilities {
+  .bg-#{$suffix} {
+    background-color: var(#{$css-var}) !important;
+  }
+}
+
+@each $suffix, $css-var in $bg-color-utilities {
+  .text-#{$suffix} {
+    color: var(#{$css-var}) !important;
+  }
+}
+
+@each $suffix, $css-var in $bg-color-utilities {
+  .border-#{$suffix} {
+    border-color: var(#{$css-var}) !important;
+  }
+}
+
+$border-start-width-scale: (
+  1: 1px,
+  2: 2px,
+  3: 3px,
+  4: 4px,
+  5: 5px,
+);
+
+@each $k, $v in $border-start-width-scale {
+  .border-start-#{$k} {
+    border-inline-start-width: $v !important;
+  }
+}
+
+@each $k, $v in $border-start-width-scale {
+  .border-end-#{$k} {
+    border-inline-end-width: $v !important;
+  }
+}
+
+@each $k, $v in $border-start-width-scale {
+  .border-top-#{$k} {
+    border-top-width: $v !important;
+  }
+}
+
+@each $k, $v in $border-start-width-scale {
+  .border-bottom-#{$k} {
+    border-bottom-width: $v !important;
+  }
+}
