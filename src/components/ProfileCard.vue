@@ -8,6 +8,7 @@ const store = useAuthStore();
 const user = computed(() => store.loggedUser);
 
 const profileData = ref(null);
+const showFullProfile = ref(false);
 
 onMounted(async () => {
   if (route.path === "/eu") {
@@ -27,6 +28,18 @@ onMounted(async () => {
           <p>{{ profileData?.data.address || "Não informado" }}</p>
         </div>
       </div>
+    </div>
+    <div v-if="showFullProfile" class="profile-card__content">
+      <div class="profile-card__bio">
+        <h3>Bio</h3>
+        <p>{{ profileData?.data.bio }}</p>
+      </div>
+    </div>
+    <div class="profile-card__chevron-icon">
+      <i :class="[
+        showFullProfile ? 'bi bi-chevron-compact-up' : 'bi bi-chevron-compact-down',
+        'chevron-icon'
+      ]" @click="showFullProfile = !showFullProfile" aria-label="Mostrar mais"></i>
     </div>
   </div>
 </template>
