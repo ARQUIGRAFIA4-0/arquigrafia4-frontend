@@ -32,5 +32,95 @@ onMounted(async () => {
 </template>
 
 <style lang="scss" scoped>
+@import "@/scss/variables";
+$breakpoint-md: 768px;
 
+@mixin md {
+    @media (min-width: #{$breakpoint-md}) {
+        @content;
+    }
+}
+
+.profile-card {
+    background-color: #faf9f9;
+    border-radius: 16px;
+    padding: 24px 16px;
+    box-shadow: 1px 1px 4px 1px #0000001A;
+
+    @include md {
+        margin-right: 20px;
+        padding: 24px 24px;
+    }
+
+    &__header {
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 8px;
+
+        @include md {
+            gap: 0;
+            margin-bottom: 16px;
+        }
+    }
+
+    &__image {
+        width: 70px;
+        height: 70px;
+        background-color: $color-laranja-e;
+
+        @include md {
+            margin-bottom: 12px
+        }
+    }
+
+    &__title {
+        @include md {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h2 {
+            font-family: "DM Sans";
+            font-weight: 500;
+            font-style: Medium;
+            font-size: 16px;
+            line-height: 150%;
+            letter-spacing: 0%;
+            text-align: center;
+
+            @include md {
+                font-size: 20px;
+            }
+        }
+    }
+
+    &__address {
+        display: flex;
+        flex-direction: row;
+        gap: 5px;
+
+        p {
+            color: $color-cinza-m;
+            font-family: "DM Sans";
+            font-weight: 400;
+            font-style: 9pt Regular;
+            font-size: 12px;
+            line-height: 115%;
+            letter-spacing: 0%;
+
+            @include md {
+                font-size: 14px;
+                margin-bottom: 0;
+            }
+        }
+
+        .bi-geo-alt {
+            font-size: 12px;
+            color: #636262;
+        }
+    }
+}
 </style>
