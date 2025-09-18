@@ -51,6 +51,21 @@ function getAge(birthdate) {
         <h3>Bio</h3>
         <p>{{ profileData?.data.bio }}</p>
       </div>
+      <div v-if="getColumns(['gender', 'birthdate', 'race']) > 0"
+        :class="getColumns(['gender', 'birthdate', 'race']) === 3 ? 'row row-cols-3' : 'row row-cols-2'">
+        <div v-if="profileData?.data.gender" class="col">
+          <h3>Gênero</h3>
+          <p>{{ profileData.data.gender }}</p>
+        </div>
+        <div v-if="profileData?.data.birthdate" class="col">
+          <h3>Idade</h3>
+          <p>{{ getAge(profileData.data.birthdate) }} anos</p>
+        </div>
+        <div v-if="profileData?.data.race" class="col">
+          <h3>Raça</h3>
+          <p>{{ profileData.data.race }}</p>
+        </div>
+      </div>
     </div>
     <div class="profile-card__chevron-icon">
       <i :class="[
