@@ -15,6 +15,11 @@ onMounted(async () => {
     profileData.value = await store.getProfileById(user.value.id);
   }
 });
+
+function getColumns(keys) {
+  const data = profileData?.value?.data || {};
+  return keys.filter(key => Boolean(data[key])).length;
+}
 </script>
 
 <template>
