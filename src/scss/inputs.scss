@@ -9,12 +9,10 @@ textarea::placeholder {
 
 .form-check-input[type="radio"]:checked {
   background-color: transparent;
+  border-color: var(--Preto);
 }
 
 .form-check-input[type="radio"] {
-  border-color: var(--Preto);
-}
-.form-check-input[type="radio"]:checked {
   border-color: var(--Preto);
 }
 
