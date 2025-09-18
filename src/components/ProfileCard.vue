@@ -20,6 +20,18 @@ function getColumns(keys) {
   const data = profileData?.value?.data || {};
   return keys.filter(key => Boolean(data[key])).length;
 }
+
+function getAge(birthdate) {
+  if (!birthdate) return "";
+  const birth = new Date(birthdate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
 </script>
 
 <template>
@@ -148,7 +160,7 @@ $breakpoint-md: 768px;
 
     margin-bottom: 30px;
 
-    h4 {
+    h3 {
       color: #636262;
       font-weight: 700;
       font-size: 16px;
