@@ -66,6 +66,16 @@ function getAge(birthdate) {
           <p>{{ profileData.data.race }}</p>
         </div>
       </div>
+      <div v-if="getColumns(['profession', 'scholarity']) > 0" class="row row-cols-2">
+        <div v-if="profileData?.data.profession" class="col">
+          <h3>Profissão</h3>
+          <p>{{ profileData.data.profession }}</p>
+        </div>
+        <div v-if="profileData?.data.scholarity" class="col">
+          <h3>Escolaridade</h3>
+          <p>{{ profileData.data.scholarity }}</p>
+        </div>
+      </div>
     </div>
     <div class="profile-card__chevron-icon">
       <i :class="[
