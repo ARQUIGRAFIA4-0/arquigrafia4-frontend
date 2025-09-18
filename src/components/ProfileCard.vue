@@ -135,5 +135,41 @@ $breakpoint-md: 768px;
       color: #636262;
     }
   }
+
+  &__content {
+    >*+* {
+      margin-top: 30px;
+    }
+
+    margin-bottom: 30px;
+
+    h4 {
+      color: #636262;
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 115%;
+      letter-spacing: 0%;
+    }
+
+    p {
+      color: #636262;
+      font-weight: 300;
+      font-size: 14px;
+      line-height: 125%;
+      letter-spacing: 0%;
+      margin-bottom: 0;
+    }
+  }
+
+  &__chevron-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    i {
+      cursor: pointer;
+      font-size: 28px;
+    }
+  }
 }
 </style>
