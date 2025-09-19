@@ -2,11 +2,11 @@
 
 <template>
   <ul class="profile-nav">
-    <li>Imagens</li>
-    <li>Álbuns</li>
-    <li>Percursos</li>
-    <li>Obras</li>
-    <li>Avaliações</li>
+    <li @click="$emit('select', 'Imagens')">Imagens</li>
+    <li @click="$emit('select', 'Álbuns')">Álbuns</li>
+    <li @click="$emit('select', 'Percursos')">Percursos</li>
+    <li @click="$emit('select', 'Obras')">Obras</li>
+    <li @click="$emit('select', 'Avaliações')">Avaliações</li>
   </ul>
 </template>
 
