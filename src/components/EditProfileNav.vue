@@ -2,10 +2,10 @@
 
 <template>
   <ul class="edit-profile-nav">
-    <li>Dados pessoais</li>
-    <li>Dados profissionais</li>
-    <li>Temas de interesse</li>
-    <li>Coletivos</li>
+    <li @click="$emit('select', 'Dados pessoais')">Dados pessoais</li>
+    <li @click="$emit('select', 'Dados profissionais')">Dados profissionais</li>
+    <li @click="$emit('select', 'Temas de interesse')">Temas de interesse</li>
+    <li @click="$emit('select', 'Coletivos')">Coletivos</li>
   </ul>
 </template>
 
