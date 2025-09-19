@@ -1,12 +1,12 @@
 <script setup>
 import { ref } from "vue";
 import ProfileCard from "@/components/ProfileCard.vue";
-import ProfileNav from "../../components/ProfileNav.vue";
-import ProfileWorks from "../../components/ProfileWorks.vue";
-import ProfileAlbums from "../../components/ProfileAlbums.vue";
-import ProfileRoutes from "../../components/ProfileRoutes.vue";
-import ProfileReviews from "../../components/ProfileReviews.vue";
-import ProfileImageGrid from "../../components/ProfileImages.vue";
+import ProfileNav from "@/components/ProfileNav.vue";
+import ProfileWorks from "@/components/ProfileWorks.vue";
+import ProfileAlbums from "@/components/ProfileAlbums.vue";
+import ProfileRoutes from "@/components/ProfileRoutes.vue";
+import ProfileReviews from "@/components/ProfileReviews.vue";
+import ProfileImages from "@/components/ProfileImages.vue";
 
 const selectedTab = ref("Imagens");
 </script>
@@ -20,7 +20,7 @@ const selectedTab = ref("Imagens");
     <div class="col-12 col-md-7">
       <div class="profile-container__content">
         <ProfileNav :selected="selectedTab" @select="selectedTab = $event" />
-        <ProfileImageGrid v-if="selectedTab === 'Imagens'" />
+        <ProfileImages v-if="selectedTab === 'Imagens'" />
         <ProfileAlbums v-if="selectedTab === 'Álbuns'" />
         <ProfileRoutes v-if="selectedTab === 'Percursos'" />
         <ProfileWorks v-if="selectedTab === 'Obras'" />

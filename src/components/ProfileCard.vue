@@ -11,7 +11,7 @@ const profileData = ref(null);
 const showFullProfile = ref(false);
 
 onMounted(async () => {
-  if (route.path === "/eu") {
+  if (["/eu", "/eu/editar"].includes(route.path)) {
     profileData.value = await store.getProfileById(user.value.id);
   }
 });
