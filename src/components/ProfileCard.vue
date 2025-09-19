@@ -76,6 +76,21 @@ function getAge(birthdate) {
           <p>{{ profileData.data.scholarity }}</p>
         </div>
       </div>
+      <div v-if="profileData?.data.socials" class="profile-card__socials">
+        <h3>Redes</h3>
+        <div class="profile-card__socials-icons">
+          <div v-if="profileData?.data.socials.lattes">
+            <a :href="profileData.data.socials.lattes" target="_blank" rel="noopener noreferrer">
+              <i class="bi bi-1-circle-fill"></i>
+            </a>
+          </div>
+          <div v-if="profileData?.data.socials.orcid">
+            <a :href="profileData.data.socials.orcid" target="_blank" rel="noopener noreferrer">
+              <i class="bi bi-2-circle-fill"></i>
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="profile-card__chevron-icon">
       <i :class="[
