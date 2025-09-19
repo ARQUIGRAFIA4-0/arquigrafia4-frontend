@@ -5,38 +5,171 @@
 
 // Bring in Bootstrap
 @import "bootstrap/scss/bootstrap";
+@import "sliders";
+@import "dropdowns";
+@import "buttons";
+@import "inputs";
+@import "alerts";
+@import "tabs";
+@import "utilities";
 
 // Import Bootstrap Icons w/ custom path to fonts folder
 // $bootstrap-icons-font-dir: "../node_modules/bootstrap-icons/font/fonts";
 // @import "bootstrap-icons/font/fonts/bootstrap-icons";
 
-// Custom styles
+// Design System - Tokens de tipografia (mobile-first)
+:root {
+  /* Menu principal - selecionado */
+  --menu-sel-color: var(--Cinza_E);
+  --menu-sel-fs: 18px;
+  --menu-sel-fw: 900;
+  --menu-sel-lh: 100%;
+  --menu-sel-ls: -1.08px;
+
+  /* Submenu - selecionado */
+  --submenu-sel-color: var(--Laranja_E);
+  --submenu-sel-fs: 12px;
+  --submenu-sel-fw: 800;
+  --submenu-sel-lh: 150%;
+
+  /* Headings e textos */
+  --h1-color: var(--Cinza_E);
+  --h1-fs: 30px;
+  --h1-fw: 500;
+  --h1-lh: 150%;
+
+  --h2-color: var(--Cinza_E);
+  --h2-fs: 20px;
+  --h2-fw: 500;
+  --h2-lh: 150%;
+
+  --h3-color: var(--Gray-900);
+  --h3-fs: 16px;
+  --h3-fw: 500;
+  --h3-lh: 150%;
+
+  --p-color: var(--Gray-900);
+  --p-fs: 14px;
+  --p-fw: 400;
+  --p-lh: 125%;
+
+  /* Botão (texto) */
+  --btn-uni-color: var(--Laranja_E);
+  --btn-uni-fs: 14px;
+  --btn-uni-fw: 400;
+  --btn-uni-lh: 150%;
+
+  /* Placeholder */
+  --placeholder-color: var(--Cinza_M);
+  --placeholder-fs: 12px;
+  --placeholder-fw: 400;
+  --placeholder-lh: 150%;
+
+  // realistic CSS shadows
+  --shadow-color: 0deg 0% 66%;
+  --shadow-elevation-low:
+    0.4px 0.3px 0.7px hsl(var(--shadow-color) / 0.04),
+    0.7px 0.6px 1.3px -0.2px hsl(var(--shadow-color) / 0.22),
+    1.4px 1.3px 2.8px -0.4px hsl(var(--shadow-color) / 0.4);
+  --shadow-elevation-medium:
+    0.4px 0.3px 0.7px hsl(var(--shadow-color) / 0.05),
+    1.7px 1.5px 3.3px -0.1px hsl(var(--shadow-color) / 0.18),
+    3.5px 3.1px 6.8px -0.2px hsl(var(--shadow-color) / 0.32),
+    7.2px 6.4px 13.9px -0.4px hsl(var(--shadow-color) / 0.46);
+  --shadow-elevation-high:
+    0.4px 0.3px 0.7px hsl(var(--shadow-color) / 0.04),
+    3.4px 3px 6.6px hsl(var(--shadow-color) / 0.11),
+    6px 5.3px 11.6px -0.1px hsl(var(--shadow-color) / 0.17),
+    8.8px 7.8px 17px -0.1px hsl(var(--shadow-color) / 0.24),
+    12.5px 11px 24.1px -0.2px hsl(var(--shadow-color) / 0.3),
+    17.5px 15.5px 33.8px -0.3px hsl(var(--shadow-color) / 0.37),
+    24.5px 21.8px 47.5px -0.3px hsl(var(--shadow-color) / 0.43),
+    34.2px 30.3px 66.1px -0.4px hsl(var(--shadow-color) / 0.49);
+}
+
+@media (min-width: 768px) {
+  :root {
+    /* Menu principal - selecionado (desktop) */
+    --menu-sel-fs: 24px;
+    --menu-sel-fw: 700;
+    --menu-sel-lh: 100%;
+    --menu-sel-ls: -1.44px;
+
+    /* Submenu - selecionado (desktop) */
+    --submenu-sel-fs: 20px;
+    --submenu-sel-fw: 700;
+    --submenu-sel-lh: 100%;
+
+    /* Headings (desktop) */
+    --h1-fs: 30px;
+    --h1-fw: 500;
+    --h1-lh: 150%;
+
+    --h2-fs: 20px;
+    --h2-fw: 500;
+    --h2-lh: 150%;
+
+    --h3-fs: 16px;
+    --h3-fw: 500;
+    --h3-lh: 150%;
+
+    /* Placeholder (desktop) */
+    --placeholder-fs: 14px;
+  }
+}
+
+/* ********************************* */
+/* ********  ESTILOS GLOBAIS  ******** */
+/* ********************************* */
+
 body {
-  // margin-top: 60px;
+  font-family: "DM Sans";
   overflow-x: hidden;
+  color: var(--Cinza_E);
+}
+
+h1 {
+  color: var(--h1-color);
+  font-size: var(--h1-fs);
+  font-weight: var(--h1-fw);
+  line-height: var(--h1-lh);
+}
+
+h2 {
+  color: var(--h2-color);
+  font-size: var(--h2-fs);
+  font-weight: var(--h2-fw);
+  line-height: var(--h2-lh);
+}
+
+h3 {
+  color: var(--h3-color);
+  font-size: var(--h3-fs);
+  font-weight: var(--h3-fw);
+  line-height: var(--h3-lh);
+}
+
+p {
+  color: var(--p-color);
+  font-size: var(--p-fs);
+  font-weight: var(--p-fw);
+  line-height: var(--p-lh);
+}
+
+a {
+  color: var(--p-color);
+  font-size: var(--p-fs);
+  font-weight: var(--p-fw);
+  line-height: var(--p-lh);
+}
+
+hr {
+  border-color: #a6a6a6;
 }
 
 .home-display {
   background: url("../assets/casa-com-plantas.jpg");
   background-position: center;
-}
-
-.txt-white {
-  color: $white;
-}
-
-.nav-link {
-  font-weight: 600;
-  font-size: 24px;
-  color: #b3b3b3;
-}
-
-.nav-link:hover {
-  color: $black;
-}
-
-.nav-link:active {
-  font-weight: 700;
 }
 
 .logo {
@@ -45,44 +178,4 @@ body {
 
 .bi {
   font-size: 20px;
-}
-
-.dropdown-toggle {
-  background-color: white; /* Custom blue */
-  color: $base-text-color;
-  border: 0px;
-  padding: 10px 0px;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.dropdown-toggle:hover {
-  background-color: white;
-  color: $base-text-color;
-}
-
-.dropdown-toggle::after {
-  display: none !important;
-}
-
-.dropdown-menu {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-  min-width: 200px;
-  padding: 10px;
-  border-width: 0px;
-  border-top: none;
-  margin-top: -1px;
-  border-top-right-radius: 0;
-  border-top-left-radius: 0;
-}
-
-.btn {
-  --bs-btn-active-color: $base-text-color;
-  --bs-btn-active-bg: white;
-}
-
-hr {
-  border-color: #a6a6a6;
 }

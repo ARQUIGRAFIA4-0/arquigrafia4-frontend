@@ -9,17 +9,59 @@ $nav-link-padding-x: 0.5rem;
 
 $base-text-color: #2f2f2f;
 
-// Bootstrap variable overrides
-$primary: #2f2f2f;
+// Design tokens - colors
+$color-cinza-e: #2f2f2f; // Cinza_E
+$color-cinza-m: #636262; // Cinza_M
+$color-cinza-c: #a6a6a6; // Cinza_C
+$color-laranja-e: #aa4f28; // Laranja_E (accent)
+$color-laranja-m: #d27d30; // Laranja_M
+$color-laranja-c: #f6ddc6; // Laranja_C
+$color-azul-e: #0f59a5; // Azul_E
+$color-azul-m: #0f89e1; // Azul_M
+$color-azul-c: #b7dcf6; // Azul_C
+$color-preto: #1f1f1f; // Preto
+$color-off-white: #faf9f9; // Off_white
+$color-branco: #ffffff; // Branco
+$color-gray-900: #212529; // Gray-900
+$color-positivo-e: hsla(90, 87%, 21%, 1); // Positivo_E
+$color-positivo-m: hsla(94, 45%, 42%, 1); // Positivo_M
+$color-positivo-c: hsla(91, 63%, 90%, 1); // Positivo_C
+$color-negativo-e: hsla(359, 80%, 41%, 1); // Negativo_E
+$color-negativo-m: hsla(355, 100%, 42%, 1); // Negativo_M
+$color-negativo-c: hsla(359, 100%, 96%, 1); // Negativo_C
+
+// Bootstrap theme overrides
+$primary: $color-laranja-e;
+$secondary: $color-preto;
+
+$btn-padding-x: 0.975rem;
+$btn-padding-x-sm: 0.725rem;
 
 // CSS Custom Properties
 :root {
-  --bs-primary: #{$primary};
-  --bs-primary-rgb: 47, 47, 47;
-  --bs-btn-bg: var(--bs-primary);
-  --bs-btn-border-color: var(--bs-primary);
-  --bs-btn-hover-bg: #404040;
-  --bs-btn-hover-border-color: #404040;
-  --bs-btn-active-bg: #404040;
-  --bs-btn-active-border-color: #404040;
+  /* Design tokens - colors */
+  --Cinza_E: #{$color-cinza-e};
+  --Cinza_M: #{$color-cinza-m};
+  --Cinza_C: #{$color-cinza-c};
+  --Laranja_E: #{$color-laranja-e};
+  --Laranja_M: #{$color-laranja-m};
+  --Laranja_C: #{$color-laranja-c};
+  --Azul_E: #{$color-azul-e};
+  --Azul_M: #{$color-azul-m};
+  --Azul_C: #{$color-azul-c};
+  --Preto: #{$color-preto};
+  --Off_white: #{$color-off-white};
+  --Branco: #{$color-branco};
+  --Gray-900: #{$color-gray-900};
+  --Positivo_E: #{$color-positivo-e};
+  --Positivo_M: #{$color-positivo-m};
+  --Positivo_C: #{$color-positivo-c};
+  --Negativo_E: #{$color-negativo-e};
+  --Negativo_M: #{$color-negativo-m};
+  --Negativo_C: #{$color-negativo-c};
 }
+
+// Bootstrap variable overrides
+
+// Override Bootstrap radio styles: black inner dot
+$form-check-radio-checked-bg-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3E%3Ccircle r='3' fill='%231f1f1f'/%3E%3C/svg%3E");
