@@ -1,4 +1,9 @@
-<script setup></script>
+<script setup>
+import { defineProps } from "vue";
+const props = defineProps({
+  selected: String
+});
+</script>
 
 <template>
   <ul class="edit-profile-nav">
