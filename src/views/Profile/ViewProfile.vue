@@ -1,12 +1,33 @@
+<script setup>
+import { ref } from "vue";
+import ProfileCard from "@/components/ProfileCard.vue";
+import ProfileNav from "../../components/ProfileNav.vue";
+import ProfileWorks from "../../components/ProfileWorks.vue";
+import ProfileAlbums from "../../components/ProfileAlbums.vue";
+import ProfileRoutes from "../../components/ProfileRoutes.vue";
+import ProfileReviews from "../../components/ProfileReviews.vue";
+import ProfileImageGrid from "../../components/ProfileImages.vue";
+
+const selectedTab = ref("Imagens");
+</script>
+
 <template>
-  <div class="container">
-    <h1 class="my-4">Meu Perfil</h1>
-    <!-- Add content here -->
+  <div class="profile-container">
+    <div class="col-12 col-md-4">
+      <ProfileCard />
+    </div>
+    <div class="d-none d-md-block col-md-1"></div>
+    <div class="col-12 col-md-7">
+      <div class="profile-container__content">
+        <ProfileNav :selected="selectedTab" @select="selectedTab = $event" />
+        <ProfileImageGrid v-if="selectedTab === 'Imagens'" />
+        <ProfileAlbums v-if="selectedTab === 'Álbuns'" />
+        <ProfileRoutes v-if="selectedTab === 'Percursos'" />
+        <ProfileWorks v-if="selectedTab === 'Obras'" />
+        <ProfileReviews v-if="selectedTab === 'Avaliações'" />
+      </div>
+    </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: "ViewProfile",
-};
-</script>
+<style lang="scss" scoped></style>
