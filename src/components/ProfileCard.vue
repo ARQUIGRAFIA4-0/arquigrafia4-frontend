@@ -139,6 +139,7 @@ $breakpoint-md: 768px;
     width: 70px;
     height: 70px;
     background-color: $color-laranja-e;
+    border-radius: 10px;
 
     @include md {
       margin-bottom: 12px
