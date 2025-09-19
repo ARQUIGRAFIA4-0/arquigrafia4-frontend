@@ -218,6 +218,21 @@ $breakpoint-md: 768px;
     }
   }
 
+  &__socials {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    >*+* {
+      margin-top: 8px;
+    }
+  }
+
+  &__socials-icons {
+    display: flex;
+    gap: 20px;
+  }
+
   &__chevron-icon {
     display: flex;
     flex-direction: column;
