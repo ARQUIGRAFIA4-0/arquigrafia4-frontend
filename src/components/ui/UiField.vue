@@ -4,7 +4,7 @@
       v-if="label"
       class="d-flex flex-row justify-content-between w-100 mb-1"
     >
-      <label class="form-label text-cinza-e fw-bold" :for="inputId">{{ label }}</label>
+      <label class="form-label text-cinza-e h3" :for="inputId">{{ label }}</label>
       <div v-if="explain" class="flex-grow-0" style="margin-right: 12px">
         <button
           type="button"

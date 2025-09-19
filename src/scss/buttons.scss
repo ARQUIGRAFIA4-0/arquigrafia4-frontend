@@ -1,0 +1,17 @@
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  vertical-align: middle;
+}
+
+.btn-icon > .bi,
+.btn-icon > i[class^="bi"] {
+  display: inline-block;
+  line-height: 1;
+}
+/* .btn {
+  //--bs-btn-active-color: $base-text-color;
+  //--bs-btn-active-bg: white;
+} */
