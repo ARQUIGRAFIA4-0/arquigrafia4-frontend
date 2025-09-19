@@ -1,12 +1,17 @@
-<script setup></script>
+<script setup>
+import { defineProps } from "vue";
+const props = defineProps({
+  selected: String
+});
+</script>
 
 <template>
   <ul class="profile-nav">
-    <li @click="$emit('select', 'Imagens')">Imagens</li>
-    <li @click="$emit('select', 'Álbuns')">Álbuns</li>
-    <li @click="$emit('select', 'Percursos')">Percursos</li>
-    <li @click="$emit('select', 'Obras')">Obras</li>
-    <li @click="$emit('select', 'Avaliações')">Avaliações</li>
+    <li @click="$emit('select', 'Imagens')" :class="{ 'profile-nav--selected': props.selected === 'Imagens' }">Imagens</li>
+    <li @click="$emit('select', 'Álbuns')" :class="{ 'profile-nav--selected': props.selected === 'Álbuns' }">Álbuns</li>
+    <li @click="$emit('select', 'Percursos')" :class="{ 'profile-nav--selected': props.selected === 'Percursos' }">Percursos</li>
+    <li @click="$emit('select', 'Obras')" :class="{ 'profile-nav--selected': props.selected === 'Obras' }">Obras</li>
+    <li @click="$emit('select', 'Avaliações')" :class="{ 'profile-nav--selected': props.selected === 'Avaliações' }">Avaliações</li>
   </ul>
 </template>
 
