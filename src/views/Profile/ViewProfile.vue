@@ -30,4 +30,28 @@ const selectedTab = ref("Imagens");
   </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
+.profile-container {
+  width: 100%;
+  padding: 0 32px;
+
+  @include md {
+    display: flex;
+    padding: 0 48px;
+  }
+
+  &__content {
+    @include md {
+      padding: 32px 0;
+    }
+  }
+}
+</style>
