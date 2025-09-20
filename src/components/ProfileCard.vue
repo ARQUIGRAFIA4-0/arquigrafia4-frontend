@@ -1,23 +1,21 @@
 <script setup>
-import { useRoute } from "vue-router";
-import { useAuthStore } from "@/store/auth";
-import { ref, computed, onMounted } from "vue";
+import { defineProps, ref } from "vue";
 
-const route = useRoute();
-const store = useAuthStore();
-const user = computed(() => store.loggedUser);
-
-const profileData = ref(null);
-const showFullProfile = ref(false);
-
-onMounted(async () => {
-  if (["/eu", "/eu/editar"].includes(route.path)) {
-    profileData.value = await store.getProfileById(user.value.id);
+const props = defineProps({
+  profileData: {
+    type: Object,
+    default: null
+  },
+  user: {
+    type: Object,
+    required: null
   }
 });
 
+const showFullProfile = ref(false);
+
 function getColumns(keys) {
-  const data = profileData?.value?.data || {};
+  const data = props.profileData?.data || {};
   return keys.filter(key => Boolean(data[key])).length;
 }
 
@@ -39,53 +37,53 @@ function getAge(birthdate) {
     <div class="profile-card__header">
       <div class="profile-card__image"></div>
       <div class="profile-card__title">
-        <h2>{{ user.name }}</h2>
+        <h2>{{ user?.name }}</h2>
         <div class="profile-card__address">
           <i class="bi bi-geo-alt"></i>
-          <p>{{ profileData?.data.address || "Não informado" }}</p>
+          <p>{{ props.profileData?.data.address || "Não informado" }}</p>
         </div>
       </div>
     </div>
     <div v-if="showFullProfile" class="profile-card__content">
       <div class="profile-card__bio">
         <h3>Bio</h3>
-        <p>{{ profileData?.data.bio }}</p>
+        <p>{{ props.profileData?.data.bio }}</p>
       </div>
       <div v-if="getColumns(['gender', 'birthdate', 'race']) > 0"
         :class="getColumns(['gender', 'birthdate', 'race']) === 3 ? 'row row-cols-3' : 'row row-cols-2'">
-        <div v-if="profileData?.data.gender" class="col">
+        <div v-if="props.profileData?.data.gender" class="col">
           <h3>Gênero</h3>
-          <p>{{ profileData.data.gender }}</p>
+          <p>{{ props.profileData.data.gender }}</p>
         </div>
-        <div v-if="profileData?.data.birthdate" class="col">
+        <div v-if="props.profileData?.data.birthdate" class="col">
           <h3>Idade</h3>
-          <p>{{ getAge(profileData.data.birthdate) }} anos</p>
+          <p>{{ getAge(props.profileData.data.birthdate) }} anos</p>
         </div>
-        <div v-if="profileData?.data.race" class="col">
+        <div v-if="props.profileData?.data.race" class="col">
           <h3>Raça</h3>
-          <p>{{ profileData.data.race }}</p>
+          <p>{{ props.profileData.data.race }}</p>
         </div>
       </div>
       <div v-if="getColumns(['profession', 'scholarity']) > 0" class="row row-cols-2">
-        <div v-if="profileData?.data.profession" class="col">
+        <div v-if="props.profileData?.data.profession" class="col">
           <h3>Profissão</h3>
-          <p>{{ profileData.data.profession }}</p>
+          <p>{{ props.profileData.data.profession }}</p>
         </div>
-        <div v-if="profileData?.data.scholarity" class="col">
+        <div v-if="props.profileData?.data.scholarity" class="col">
           <h3>Escolaridade</h3>
-          <p>{{ profileData.data.scholarity }}</p>
+          <p>{{ props.profileData.data.scholarity }}</p>
         </div>
       </div>
-      <div v-if="profileData?.data.socials" class="profile-card__socials">
+      <div v-if="props.profileData?.data.socials" class="profile-card__socials">
         <h3>Redes</h3>
         <div class="profile-card__socials-icons">
-          <div v-if="profileData?.data.socials.lattes">
-            <a :href="profileData.data.socials.lattes" target="_blank" rel="noopener noreferrer">
+          <div v-if="props.profileData?.data.socials.lattes">
+            <a :href="props.profileData.data.socials.lattes" target="_blank" rel="noopener noreferrer">
               <i class="bi bi-1-circle-fill"></i>
             </a>
           </div>
-          <div v-if="profileData?.data.socials.orcid">
-            <a :href="profileData.data.socials.orcid" target="_blank" rel="noopener noreferrer">
+          <div v-if="props.profileData?.data.socials.orcid">
+            <a :href="props.profileData.data.socials.orcid" target="_blank" rel="noopener noreferrer">
               <i class="bi bi-2-circle-fill"></i>
             </a>
           </div>
