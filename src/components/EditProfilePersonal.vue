@@ -68,10 +68,18 @@ function handleLogout() {
   store.logout();
   router.push('/');
 }
+
+function handleCancel() {
+  router.push('/eu');
+}
 </script>
 
 <template>
-  <button type="button" @click="handleLogout">Sair do perfil</button>
+  <form @submit.prevent="updatePersonalData">
+    <button type="button" @click="handleLogout">Sair do perfil</button>
+    <button type="button" @click="handleCancel">Cancelar</button>
+    <button type="submit">Salvar alterações</button>
+  </form>
 </template>
 
 <style lang="scss" scoped>
