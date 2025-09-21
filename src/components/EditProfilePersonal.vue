@@ -39,6 +39,31 @@ watch(() => props.profileData, (newValue) => {
   orcid.value = newValue?.data?.socials?.orcid || '';
 }, { immediate: true });
 
+async function updatePersonalData() {
+  try {
+    const payload = {
+      user_id: props.userData.id,
+      ...props.profileData.data,
+      address: address.value,
+      bio: bio.value,
+      gender: gender.value,
+      birthdate: birthdate.value,
+      race: race.value,
+      profession: profession.value,
+      scholarity: scholarity.value,
+      socials: {
+        ...props.profileData.data.socials,
+        lattes: lattes.value,
+        orcid: orcid.value,
+      }
+    };
+    await store.updateProfile(props.profileData.data.id, payload);
+    router.push('/eu');
+  } catch (error) {
+    console.error("Erro ao atualizar perfil.");
+  }
+}
+
 function handleLogout() {
   store.logout();
   router.push('/');
