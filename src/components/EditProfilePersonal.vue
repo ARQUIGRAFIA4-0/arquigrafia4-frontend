@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from "@/store/auth";
 
@@ -15,6 +16,16 @@ const props = defineProps({
 
 const store = useAuthStore();
 const router = useRouter();
+
+const address = ref('');
+const bio = ref('');
+const gender = ref('');
+const birthdate = ref('');
+const race = ref('');
+const profession = ref('');
+const scholarity = ref('');
+const lattes = ref('');
+const orcid = ref('');
 
 function handleLogout() {
   store.logout();
