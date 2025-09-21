@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from "@/store/auth";
 
@@ -26,6 +26,18 @@ const profession = ref('');
 const scholarity = ref('');
 const lattes = ref('');
 const orcid = ref('');
+
+watch(() => props.profileData, (newValue) => {
+  address.value = newValue?.data?.address || '';
+  bio.value = newValue?.data?.bio || '';
+  gender.value = newValue?.data?.gender || '';
+  birthdate.value = newValue?.data?.birthdate || '';
+  race.value = newValue?.data?.race || '';
+  profession.value = newValue?.data?.profession || '';
+  scholarity.value = newValue?.data?.scholarity || '';
+  lattes.value = newValue?.data?.socials?.lattes || '';
+  orcid.value = newValue?.data?.socials?.orcid || '';
+}, { immediate: true });
 
 function handleLogout() {
   store.logout();
