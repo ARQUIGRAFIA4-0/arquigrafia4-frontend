@@ -98,13 +98,10 @@ function handleCancel() {
 
 <template>
   <form @submit.prevent="updatePersonalData">
-    <label for="scholarity">Escolaridade</label>
-    <input id="scholarity" type="text" v-model="scholarity" style="width: 100%;" />
-    <div class="form-check form-switch">
-      <input class="form-check-input" type="checkbox" role="switch" id="scholarity_public" v-model="scholarityPublic">
-      <label class="form-check-label" for="scholarity_public">Exibir informação em meu perfil público.</label>
+    <div class="profile-form__account-button">
+      <button type="button" @click="handleLogout">Sair do perfil</button>
+      <i class="bi bi-arrow-right"></i>
     </div>
-    <button type="button" @click="handleLogout">Sair do perfil</button>
     <button type="button" @click="handleCancel">Cancelar</button>
     <button type="submit">Salvar alterações</button>
   </form>
@@ -117,6 +114,45 @@ $breakpoint-md: 768px;
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
     @content;
+  }
+}
+
+.profile-form {
+  &__account-button {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0px;
+    border-bottom: 1px solid #A6A6A6;
+    margin-bottom: 44px;
+
+    button {
+      background: transparent;
+      border: none;
+      color: #000;
+      cursor: pointer;
+      font-weight: 700;
+      font-style: Bold;
+      font-size: 12px;
+      line-height: 125%;
+      letter-spacing: 0%;
+
+      @include md {
+        font-size: 14px;
+      }
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    i {
+      font-size: 22px;
+      color: #636262;
+
+      @include md {
+        font-size: 24px;
+      }
+    }
   }
 }
 </style>
