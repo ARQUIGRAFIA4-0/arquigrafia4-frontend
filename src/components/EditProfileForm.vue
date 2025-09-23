@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import UiField from './ui/UiField.vue';
 import { useAuthStore } from "@/store/auth";
 
 const props = defineProps({
@@ -26,6 +27,17 @@ const profession = ref('');
 const scholarity = ref('');
 const lattes = ref('');
 const orcid = ref('');
+
+const scholarityOptions = [
+  "Fundamental Incompleto",
+  "Fundamental Completo",
+  "Médio Incompleto",
+  "Médio Completo",
+  "Superior Incompleto",
+  "Superior Completo",
+  "Mestrado",
+  "Doutorado"
+];
 
 const addressPublic = ref();
 const genderPublic = ref();
@@ -98,6 +110,35 @@ function handleCancel() {
 
 <template>
   <form @submit.prevent="updatePersonalData">
+    <!-- Nome -->
+    <!-- Data de nascimento e Localização -->
+    <!-- Gênero e Raça -->
+    <!-- Bio -->
+    <!-- Escolaridade e Profissão -->
+    <div class="row">
+      <div class="col-12 col-md-6">
+        <UiField id="scholarity" label="Escolaridade" explain="Selecione sua escolaridade.">
+          <div class="dropdown">
+            <button class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between"
+              type="button" data-bs-toggle="dropdown">
+              {{ scholarity || "Nível" }}
+            </button>
+            <ul class="w-100 dropdown-menu menu-light">
+              <li v-for="option in scholarityOptions" :key="option">
+                <button class="dropdown-item" type="button" @click="scholarity = option">
+                  {{ option }}
+                </button>
+              </li>
+            </ul>
+          </div>
+        </UiField>
+        <div class="form-check form-switch mt-2 form-check-reverse">
+          <input class="form-check-input" type="checkbox" role="switch" id="scholarity_public"
+            v-model="scholarityPublic" switch>
+          <label class="form-check-label" for="scholarity_public">Exibir informação em meu perfil público.</label>
+        </div>
+      </div>
+    </div>
     <div class="profile-form__account-button">
       <button type="button" @click="handleLogout">Sair do perfil</button>
       <i class="bi bi-arrow-right"></i>
@@ -154,5 +195,13 @@ $breakpoint-md: 768px;
       }
     }
   }
+}
+
+.form-check-label {
+  font-weight: 500;
+  font-style: Medium;
+  font-size: 12px;
+  line-height: 125%;
+  letter-spacing: 0%;
 }
 </style>
