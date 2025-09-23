@@ -27,6 +27,13 @@ const scholarity = ref('');
 const lattes = ref('');
 const orcid = ref('');
 
+const addressPublic = ref();
+const genderPublic = ref();
+const birthdatePublic = ref();
+const racePublic = ref();
+const professionPublic = ref();
+const scholarityPublic = ref();
+
 watch(() => props.profileData, (newValue) => {
   address.value = newValue?.data?.address || '';
   bio.value = newValue?.data?.bio || '';
@@ -37,6 +44,13 @@ watch(() => props.profileData, (newValue) => {
   scholarity.value = newValue?.data?.scholarity || '';
   lattes.value = newValue?.data?.socials?.lattes || '';
   orcid.value = newValue?.data?.socials?.orcid || '';
+
+  addressPublic.value = newValue?.data?.configurations?.address || true;
+  genderPublic.value = newValue?.data?.configurations?.gender || true;
+  birthdatePublic.value = newValue?.data?.configurations?.birthdate || true;
+  racePublic.value = newValue?.data?.configurations?.race || true;
+  professionPublic.value = newValue?.data?.configurations?.profession || true;
+  scholarityPublic.value = newValue?.data?.configurations?.scholarity || true;
 }, { immediate: true });
 
 async function updatePersonalData() {
