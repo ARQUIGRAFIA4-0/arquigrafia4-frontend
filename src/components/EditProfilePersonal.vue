@@ -69,6 +69,14 @@ async function updatePersonalData() {
         ...props.profileData.data.socials,
         lattes: lattes.value,
         orcid: orcid.value,
+      },
+      configurations: {
+        address: addressPublic.value,
+        gender: genderPublic.value,
+        birthdate: birthdatePublic.value,
+        race: racePublic.value,
+        profession: professionPublic.value,
+        scholarity: scholarityPublic.value
       }
     };
     await store.updateProfile(props.profileData.data.id, payload);
