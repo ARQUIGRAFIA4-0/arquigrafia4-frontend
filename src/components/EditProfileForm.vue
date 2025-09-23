@@ -98,6 +98,12 @@ function handleCancel() {
 
 <template>
   <form @submit.prevent="updatePersonalData">
+    <label for="scholarity">Escolaridade</label>
+    <input id="scholarity" type="text" v-model="scholarity" style="width: 100%;" />
+    <div class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" role="switch" id="scholarity_public" v-model="scholarityPublic">
+      <label class="form-check-label" for="scholarity_public">Exibir informação em meu perfil público.</label>
+    </div>
     <button type="button" @click="handleLogout">Sair do perfil</button>
     <button type="button" @click="handleCancel">Cancelar</button>
     <button type="submit">Salvar alterações</button>
