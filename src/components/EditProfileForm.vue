@@ -112,6 +112,18 @@ function handleCancel() {
   <form @submit.prevent="updatePersonalData">
     <!-- Nome -->
     <!-- Data de nascimento e Localização -->
+    <div class="row mb-4">
+      <div class="col-12 col-md-6">
+        <UiField id="birthdate" label="Data de nascimento" explain="Digite sua data de nascimento.">
+          <input type="text" class="form-control" id="birthdate" v-model="birthdate" placeholder="Sua data de nascimento" />
+        </UiField>
+        <div class="form-check form-switch mt-2 form-check-reverse">
+          <input class="form-check-input" type="checkbox" role="switch" id="birthdate_public"
+            v-model="birthdatePublic" switch>
+          <label class="form-check-label" for="birthdate_public">Exibir informação em meu perfil público.</label>
+        </div>
+      </div>
+    </div>
     <!-- Gênero e Raça -->
     <div class="row mb-4">
       <div class="col-12 col-md-6">
