@@ -113,6 +113,30 @@ function handleCancel() {
     <!-- Nome -->
     <!-- Data de nascimento e Localização -->
     <!-- Gênero e Raça -->
+    <div class="row mb-4">
+      <div class="col-12 col-md-6">
+        <UiField id="gender" label="Gênero" explain="Selecione seu gênero.">
+          <div class="dropdown">
+            <button class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between"
+              type="button" data-bs-toggle="dropdown">
+              {{ gender || "Selecione" }}
+            </button>
+            <ul class="w-100 dropdown-menu menu-light">
+              <li v-for="option in genderOptions" :key="option">
+                <button class="dropdown-item" type="button" @click="gender = option">
+                  {{ option }}
+                </button>
+              </li>
+            </ul>
+          </div>
+        </UiField>
+        <div class="form-check form-switch mt-2 form-check-reverse">
+          <input class="form-check-input" type="checkbox" role="switch" id="gender_public" v-model="genderPublic"
+            switch>
+          <label class="form-check-label" for="gender_public">Exibir informação em meu perfil público.</label>
+        </div>
+      </div>
+    </div>
     <!-- Bio -->
     <div class="row mb-5">
       <div class="col-12">
