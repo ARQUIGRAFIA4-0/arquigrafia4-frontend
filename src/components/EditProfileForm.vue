@@ -153,8 +153,7 @@ function handleCancel() {
           </div>
         </UiField>
         <div class="form-check form-switch mt-2 form-check-reverse">
-          <input class="form-check-input" type="checkbox" role="switch" id="race_public" v-model="racePublic"
-            switch>
+          <input class="form-check-input" type="checkbox" role="switch" id="race_public" v-model="racePublic" switch>
           <label class="form-check-label" for="race_public">Exibir informação em meu perfil público.</label>
         </div>
       </div>
@@ -172,7 +171,7 @@ function handleCancel() {
       </div>
     </div>
     <!-- Escolaridade e Profissão -->
-    <div class="row">
+    <div class="row mb-5">
       <div class="col-12 col-md-6">
         <UiField id="scholarity" label="Escolaridade" explain="Selecione sua escolaridade.">
           <div class="dropdown">
@@ -206,7 +205,11 @@ function handleCancel() {
         </div>
       </div>
     </div>
-    <div class="profile-form__account-button">
+    <div class="profile-form__account-button mb-2">
+      <button type="button">Alterar senha</button>
+      <i class="bi bi-arrow-right"></i>
+    </div>
+    <div class="profile-form__account-button mb-5">
       <button type="button" @click="handleLogout">Sair do perfil</button>
       <i class="bi bi-arrow-right"></i>
     </div>
@@ -231,7 +234,6 @@ $breakpoint-md: 768px;
     justify-content: space-between;
     padding: 8px 0px;
     border-bottom: 1px solid #A6A6A6;
-    margin-bottom: 44px;
 
     button {
       background: transparent;
