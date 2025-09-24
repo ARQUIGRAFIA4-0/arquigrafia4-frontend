@@ -123,6 +123,16 @@ function handleCancel() {
           <label class="form-check-label" for="birthdate_public">Exibir informação em meu perfil público.</label>
         </div>
       </div>
+      <div class="col-12 col-md-6">
+        <UiField id="address" label="Sua localização" explain="Digite sua localização.">
+          <input type="text" class="form-control" id="address" v-model="address" placeholder="Sua cidade, estado ou país" />
+        </UiField>
+        <div class="form-check form-switch mt-2 form-check-reverse">
+          <input class="form-check-input" type="checkbox" role="switch" id="address_public"
+            v-model="addressPublic" switch>
+          <label class="form-check-label" for="address_public">Exibir informação em meu perfil público.</label>
+        </div>
+      </div>
     </div>
     <!-- Gênero e Raça -->
     <div class="row mb-4">
