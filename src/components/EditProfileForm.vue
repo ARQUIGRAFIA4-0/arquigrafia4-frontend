@@ -114,6 +114,17 @@ function handleCancel() {
     <!-- Data de nascimento e Localização -->
     <!-- Gênero e Raça -->
     <!-- Bio -->
+    <div class="row mb-5">
+      <div class="col-12">
+        <UiField id="bio" label="Mini biografia" explain="Conte um pouco sobre você.">
+          <textarea id="bio" class="form-control" v-model="bio" rows="5"
+            placeholder="Digite sua mini biografia"></textarea>
+        </UiField>
+        <div class="feedback">
+          Máximo 500 caracteres.
+        </div>
+      </div>
+    </div>
     <!-- Escolaridade e Profissão -->
     <div class="row">
       <div class="col-12 col-md-6">
@@ -213,5 +224,20 @@ $breakpoint-md: 768px;
   font-size: 12px;
   line-height: 125%;
   letter-spacing: 0%;
+}
+
+.feedback {
+  display: block;
+  width: 100%;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 115%;
+  text-align: right;
+  margin-top: 8px;
+
+  @include md {
+    font-size: 12px;
+  }
 }
 </style>
