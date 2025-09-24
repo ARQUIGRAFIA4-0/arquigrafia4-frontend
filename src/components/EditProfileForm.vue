@@ -50,7 +50,8 @@ watch(() => props.profileData, (newValue) => {
   address.value = newValue?.data?.address || '';
   bio.value = newValue?.data?.bio || '';
   gender.value = newValue?.data?.gender || '';
-  birthdate.value = newValue?.data?.birthdate || '';
+  const rawBirthdate = newValue?.data?.birthdate || '';
+  birthdate.value = rawBirthdate ? rawBirthdate.slice(0, 10) : '';
   race.value = newValue?.data?.race || '';
   profession.value = newValue?.data?.profession || '';
   scholarity.value = newValue?.data?.scholarity || '';
