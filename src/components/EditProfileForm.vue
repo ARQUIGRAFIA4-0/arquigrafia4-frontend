@@ -18,6 +18,7 @@ const props = defineProps({
 const store = useAuthStore();
 const router = useRouter();
 
+const name = ref('');
 const address = ref('');
 const bio = ref('');
 const gender = ref('');
@@ -64,6 +65,10 @@ watch(() => props.profileData, (newValue) => {
   racePublic.value = newValue?.data?.configurations?.race || true;
   professionPublic.value = newValue?.data?.configurations?.profession || true;
   scholarityPublic.value = newValue?.data?.configurations?.scholarity || true;
+}, { immediate: true });
+
+watch(() => props.userData, (newValue) => {
+  name.value = newValue?.name || '';
 }, { immediate: true });
 
 async function updatePersonalData() {
@@ -116,7 +121,7 @@ function handleCancel() {
       <div class="col-12">
         <UiField id="name" label="Nome" explain="Digite seu nome.">
           <input type="text" class="form-control" id="name" v-model="name"
-            placeholder="Adicione seu nome" />
+            placeholder="Adicione seu nome" autocomplete="name" />
         </UiField>
       </div>
     </div>
@@ -136,7 +141,7 @@ function handleCancel() {
       <div class="col-12 col-md-6">
         <UiField id="address" label="Sua localização" explain="Digite sua localização.">
           <input type="text" class="form-control" id="address" v-model="address"
-            placeholder="Sua cidade, estado ou país" />
+            placeholder="Sua cidade, estado ou país" autocomplete="address-line1" />
         </UiField>
         <div class="form-check form-switch mt-2 form-check-reverse">
           <input class="form-check-input" type="checkbox" role="switch" id="address_public"
