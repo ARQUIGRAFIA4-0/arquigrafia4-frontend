@@ -138,6 +138,16 @@ function handleCancel() {
           <label class="form-check-label" for="scholarity_public">Exibir informação em meu perfil público.</label>
         </div>
       </div>
+      <div class="col-12 col-md-6">
+        <UiField id="profession" label="Profissão" explain="Digite sua profissão.">
+          <input type="text" class="form-control" id="profession" v-model="profession" placeholder="Sua ocupação" />
+        </UiField>
+        <div class="form-check form-switch mt-2 form-check-reverse">
+          <input class="form-check-input" type="checkbox" role="switch" id="profession_public"
+            v-model="professionPublic" switch>
+          <label class="form-check-label" for="profession_public">Exibir informação em meu perfil público.</label>
+        </div>
+      </div>
     </div>
     <div class="profile-form__account-button">
       <button type="button" @click="handleLogout">Sair do perfil</button>
