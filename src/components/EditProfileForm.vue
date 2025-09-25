@@ -72,14 +72,17 @@ watch(() => props.userData, (newValue) => {
 }, { immediate: true });
 
 async function updatePersonalData() {
-  try {
-    const payload = {
-      name: name.value,
-      email: props.userData.email
-    };
-    await store.updateUser(props.userData.id, payload);
-  } catch (error) {
-    console.error("Erro ao atualizar user.");
+  // Atualiza user apenas se o nome foi alterado
+  if (name.value !== props.userData.name) {
+    try {
+      const payload = {
+        name: name.value,
+        email: props.userData.email
+      };
+      await store.updateUser(props.userData.id, payload);
+    } catch (error) {
+      console.error("Erro ao atualizar user.");
+    }
   }
 
   try {
@@ -130,8 +133,8 @@ function handleCancel() {
     <div class="row mb-4">
       <div class="col-12">
         <UiField id="name" label="Nome" explain="Digite seu nome.">
-          <input type="text" class="form-control" id="name" v-model="name"
-            placeholder="Adicione seu nome" autocomplete="name" />
+          <input type="text" class="form-control" id="name" v-model="name" placeholder="Adicione seu nome"
+            autocomplete="name" />
         </UiField>
       </div>
     </div>
@@ -143,8 +146,8 @@ function handleCancel() {
             placeholder="Sua data de nascimento" />
         </UiField>
         <div class="form-check form-switch mt-2 form-check-reverse">
-          <input class="form-check-input" type="checkbox" role="switch" id="birthdate_public"
-            v-model="birthdatePublic" switch>
+          <input class="form-check-input" type="checkbox" role="switch" id="birthdate_public" v-model="birthdatePublic"
+            switch>
           <label class="form-check-label" for="birthdate_public">Exibir informação em meu perfil público.</label>
         </div>
       </div>
@@ -154,8 +157,8 @@ function handleCancel() {
             placeholder="Sua cidade, estado ou país" autocomplete="address-line1" />
         </UiField>
         <div class="form-check form-switch mt-2 form-check-reverse">
-          <input class="form-check-input" type="checkbox" role="switch" id="address_public"
-            v-model="addressPublic" switch>
+          <input class="form-check-input" type="checkbox" role="switch" id="address_public" v-model="addressPublic"
+            switch>
           <label class="form-check-label" for="address_public">Exibir informação em meu perfil público.</label>
         </div>
       </div>
