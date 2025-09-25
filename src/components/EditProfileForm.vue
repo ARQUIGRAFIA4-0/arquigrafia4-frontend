@@ -74,6 +74,16 @@ watch(() => props.userData, (newValue) => {
 async function updatePersonalData() {
   try {
     const payload = {
+      name: name.value,
+      email: props.userData.email
+    };
+    await store.updateUser(props.userData.id, payload);
+  } catch (error) {
+    console.error("Erro ao atualizar user.");
+  }
+
+  try {
+    const payload = {
       user_id: props.userData.id,
       ...props.profileData.data,
       address: address.value,
