@@ -59,12 +59,13 @@ watch(() => props.profileData, (newValue) => {
   lattes.value = newValue?.data?.socials?.lattes || '';
   orcid.value = newValue?.data?.socials?.orcid || '';
 
-  addressPublic.value = newValue?.data?.configurations?.address || true;
-  genderPublic.value = newValue?.data?.configurations?.gender || true;
-  birthdatePublic.value = newValue?.data?.configurations?.birthdate || true;
-  racePublic.value = newValue?.data?.configurations?.race || true;
-  professionPublic.value = newValue?.data?.configurations?.profession || true;
-  scholarityPublic.value = newValue?.data?.configurations?.scholarity || true;
+  const config = newValue?.data?.configurations || {};
+  addressPublic.value = 'address' in config ? config.address : true;
+  genderPublic.value = 'gender' in config ? config.gender : true;
+  birthdatePublic.value = 'birthdate' in config ? config.birthdate : true;
+  racePublic.value = 'race' in config ? config.race : true;
+  professionPublic.value = 'profession' in config ? config.profession : true;
+  scholarityPublic.value = 'scholarity' in config ? config.scholarity : true;
 }, { immediate: true });
 
 watch(() => props.userData, (newValue) => {
