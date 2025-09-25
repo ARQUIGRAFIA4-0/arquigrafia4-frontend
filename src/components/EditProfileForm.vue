@@ -157,7 +157,8 @@ function handleCancel() {
           <div class="dropdown">
             <button class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between"
               type="button" data-bs-toggle="dropdown">
-              {{ gender || "Selecione" }}
+              <span v-if="!gender" class="profile-form__dropdown-placeholder">Selecione</span>
+              {{ gender }}
             </button>
             <ul class="w-100 dropdown-menu menu-light">
               <li v-for="option in genderOptions" :key="option">
@@ -179,7 +180,8 @@ function handleCancel() {
           <div class="dropdown">
             <button class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between"
               type="button" data-bs-toggle="dropdown">
-              {{ race || "Selecione" }}
+              <span v-if="!race" class="profile-form__dropdown-placeholder">Selecione</span>
+              {{ race }}
             </button>
             <ul class="w-100 dropdown-menu menu-light">
               <li v-for="option in raceOptions" :key="option">
@@ -215,7 +217,8 @@ function handleCancel() {
           <div class="dropdown">
             <button class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between"
               type="button" data-bs-toggle="dropdown">
-              {{ scholarity || "Nível" }}
+              <span v-if="!scholarity" class="profile-form__dropdown-placeholder">Nível</span>
+              {{ scholarity }}
             </button>
             <ul class="w-100 dropdown-menu menu-light">
               <li v-for="option in scholarityOptions" :key="option">
@@ -301,6 +304,11 @@ $breakpoint-md: 768px;
         font-size: 24px;
       }
     }
+  }
+
+  &__dropdown-placeholder {
+    color: #636262;
+    font-style: Italic;
   }
 }
 
