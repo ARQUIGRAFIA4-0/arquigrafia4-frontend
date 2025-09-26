@@ -38,12 +38,21 @@ export default [
   // Profile routes
   {
     path: "/eu",
-    name: "view-profile",
+    name: "my-profile",
     component: () => import("../views/Profile/ViewProfile.vue"),
   },
   {
     path: "/eu/editar",
-    name: "edit-profile",
+    name: "edit-my-profile",
     component: () => import("../views/Profile/EditProfile.vue"),
+  },
+  {
+    path: "/profile",
+    redirect: "/",
+  },
+  {
+    path: "/profile/:id",
+    name: "view-profile",
+    component: () => import("../views/Profile/ViewProfile.vue")
   },
 ];
