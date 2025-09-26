@@ -17,6 +17,7 @@ const props = defineProps({
 
 const store = useAuthStore();
 const router = useRouter();
+const today = new Date().toISOString().slice(0, 10);
 
 const name = ref('');
 const address = ref('');
@@ -143,7 +144,7 @@ function handleCancel() {
     <div class="row mb-4">
       <div class="col-12 col-md-6">
         <UiField id="birthdate" label="Data de nascimento" explain="Digite sua data de nascimento.">
-          <input type="date" class="form-control" id="birthdate" v-model="birthdate"
+          <input type="date" class="form-control" id="birthdate" v-model="birthdate" :max="today"
             placeholder="Sua data de nascimento" />
         </UiField>
         <div class="form-check form-switch mt-2 form-check-reverse">
