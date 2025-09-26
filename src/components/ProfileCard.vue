@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, ref } from "vue";
+import { defineProps, ref, onMounted } from "vue";
 
 const props = defineProps({
   profileData: {
@@ -13,6 +13,18 @@ const props = defineProps({
 });
 
 const showFullProfile = ref(false);
+const isMobile = ref(window.innerWidth < 768);
+
+function handleResize() {
+  isMobile.value = window.innerWidth < 768;
+  if (!isMobile.value) {
+    showFullProfile.value = true;
+  }
+}
+
+onMounted(() => {
+  handleResize();
+});
 
 function getColumns(keys) {
   const data = props.profileData?.data || {};
@@ -90,7 +102,7 @@ function getAge(birthdate) {
         </div>
       </div>
     </div>
-    <div class="profile-card__chevron-icon">
+    <div class="profile-card__chevron-icon" v-if="isMobile">
       <i :class="[
         showFullProfile ? 'bi bi-chevron-compact-up' : 'bi bi-chevron-compact-down',
         'chevron-icon'
