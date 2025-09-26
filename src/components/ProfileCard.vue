@@ -79,12 +79,12 @@ function getAge(birthdate) {
         <div class="profile-card__socials-icons">
           <div v-if="props.profileData?.data.socials.lattes">
             <a :href="props.profileData.data.socials.lattes" target="_blank" rel="noopener noreferrer">
-              <i class="bi bi-1-circle-fill"></i>
+              <img src="@/assets/logo_lattes.png" alt="Lattes" style="width: 24px; height: 24px;" />
             </a>
           </div>
           <div v-if="props.profileData?.data.socials.orcid">
             <a :href="props.profileData.data.socials.orcid" target="_blank" rel="noopener noreferrer">
-              <i class="bi bi-2-circle-fill"></i>
+              <img src="@/assets/logo_orcid.png" alt="Orcid" style="width: 24px; height: 24px;" />
             </a>
           </div>
         </div>
