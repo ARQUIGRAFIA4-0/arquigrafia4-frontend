@@ -39,6 +39,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          strip_components: 1
           source: "dist/*"
           target: ${{ secrets.REMOTE_PATH }}/dist
           rm: true
