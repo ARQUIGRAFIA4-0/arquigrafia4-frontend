@@ -35,7 +35,11 @@ function handleDrop(event) {
   isDragging.value = false;
   const files = Array.from(event.dataTransfer.files);
   const filteredFiles = files.filter(file => file.type.startsWith("image/"));
-  
+
+  if (filteredFiles.length > maxUploadFiles) {
+    alert(`Você pode enviar no máximo ${maxUploadFiles} imagens.`);
+    return;
+  }
   imagesToUpload.value = filteredFiles;
 }
 </script>
