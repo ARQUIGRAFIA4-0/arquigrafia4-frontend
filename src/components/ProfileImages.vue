@@ -3,6 +3,7 @@ import { ref } from 'vue';
 const images = ref([]);
 const fileInputRef = ref();
 const imagesToUpload = ref([]);
+const maxUploadFiles = 10;
 
 function openFileDialog() {
   fileInputRef.value.click();
@@ -10,6 +11,11 @@ function openFileDialog() {
 
 function handleFiles(event) {
   const files = Array.from(event.target.files);
+
+  if (files.length > maxUploadFiles) {
+    alert(`Você pode enviar no máximo ${maxUploadFiles} imagens.`);
+    return;
+  }
   imagesToUpload.value = files;
 }
 </script>
