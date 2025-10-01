@@ -34,8 +34,9 @@ function handleDrop(event) {
   event.preventDefault();
   isDragging.value = false;
   const files = Array.from(event.dataTransfer.files);
-
-  imagesToUpload.value = files;
+  const filteredFiles = files.filter(file => file.type.startsWith("image/"));
+  
+  imagesToUpload.value = filteredFiles;
 }
 </script>
 
