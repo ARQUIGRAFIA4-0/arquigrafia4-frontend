@@ -1,7 +1,19 @@
 <script setup>
+import { ref } from 'vue';
+const images = ref([]);
 </script>
 
 <template>
+  <div v-if="images.length === 0">
+    <div class="upload-box">
+      <h1>Você ainda não tem<br>contribuições.</h1>
+      <i class="bi bi-plus-circle-fill upload-box__icon"></i>
+      <div class="upload-box__instructions">
+        <p>clique aqui ou arraste um ou<br>mais arquivos para esta área.</p>
+        <p>limite aceito: 10 imagens</p>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style lang="scss" scoped>
