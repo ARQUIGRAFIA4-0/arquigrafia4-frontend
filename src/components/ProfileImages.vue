@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 const images = ref([]);
+const fileInputRef = ref();
 </script>
 
 <template>
@@ -12,6 +13,7 @@ const images = ref([]);
         <p>clique aqui ou arraste um ou<br>mais arquivos para esta área.</p>
         <p>limite aceito: 10 imagens</p>
       </div>
+      <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*" />
     </div>
   </div>
 </template>
