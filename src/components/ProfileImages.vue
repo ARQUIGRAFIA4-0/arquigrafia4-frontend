@@ -29,12 +29,20 @@ function handleDragLeave(event) {
   event.preventDefault();
   isDragging.value = false;
 }
+
+function handleDrop(event) {
+  event.preventDefault();
+  isDragging.value = false;
+  const files = Array.from(event.dataTransfer.files);
+
+  imagesToUpload.value = files;
+}
 </script>
 
 <template>
   <div v-if="images.length === 0">
     <div class="upload-box" :class="{ 'upload-box--dragging': isDragging }" @click="openFileDialog"
-      @dragover="handleDragOver" @dragleave="handleDragLeave">
+      @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
       <h1>Você ainda não tem<br>contribuições.</h1>
       <i class="bi bi-plus-circle-fill upload-box__icon"></i>
       <div class="upload-box__instructions">
