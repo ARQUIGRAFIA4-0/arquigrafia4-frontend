@@ -7,10 +7,10 @@ const props = defineProps({
 
 <template>
   <ul class="edit-profile-nav">
-    <li @click="$emit('select', 'Dados pessoais')" :class="{ 'edit-profile-nav--selected': props.selected === 'Dados pessoais' }">Dados pessoais</li>
-    <li @click="$emit('select', 'Dados profissionais')" :class="{ 'edit-profile-nav--selected': props.selected === 'Dados profissionais' }">Dados profissionais</li>
-    <li @click="$emit('select', 'Temas de interesse')" :class="{ 'edit-profile-nav--selected': props.selected === 'Temas de interesse' }">Temas de interesse</li>
-    <li @click="$emit('select', 'Coletivos')" :class="{ 'edit-profile-nav--selected': props.selected === 'Coletivos' }">Coletivos</li>
+    <li @click="$emit('select', 'personalRef')" :class="{ 'edit-profile-nav--selected': props.selected === 'personalRef' }">Dados pessoais</li>
+    <li @click="$emit('select', 'professionalRef')" :class="{ 'edit-profile-nav--selected': props.selected === 'professionalRef' }">Dados profissionais</li>
+    <li @click="$emit('select', 'interestRef')" :class="{ 'edit-profile-nav--selected': props.selected === 'interestRef' }">Temas de interesse</li>
+    <li @click="$emit('select', 'collectiveRef')" :class="{ 'edit-profile-nav--selected': props.selected === 'collectiveRef' }">Coletivos</li>
   </ul>
 </template>
 
