@@ -6,9 +6,9 @@ const props = defineProps({
     type: Object,
     default: null
   },
-  user: {
+  userData: {
     type: Object,
-    required: null
+    default: null
   }
 });
 
@@ -42,6 +42,11 @@ function getAge(birthdate) {
   }
   return age;
 }
+
+function checkSocials(socials) {
+  if (!socials) return false;
+  return Object.values(socials).some(val => !!val);
+}
 </script>
 
 <template>
@@ -49,7 +54,7 @@ function getAge(birthdate) {
     <div class="profile-card__header">
       <div class="profile-card__image"></div>
       <div class="profile-card__title">
-        <h2>{{ user?.name }}</h2>
+        <h2>{{ userData?.user?.name }}</h2>
         <div class="profile-card__address">
           <i class="bi bi-geo-alt"></i>
           <p>{{ props.profileData?.data.address || "Não informado" }}</p>
@@ -57,7 +62,7 @@ function getAge(birthdate) {
       </div>
     </div>
     <div v-if="showFullProfile" class="profile-card__content">
-      <div class="profile-card__bio">
+      <div v-if="props.profileData?.data.bio" class="profile-card__bio">
         <h3>Bio</h3>
         <p>{{ props.profileData?.data.bio }}</p>
       </div>
@@ -86,12 +91,12 @@ function getAge(birthdate) {
           <p>{{ props.profileData.data.scholarity }}</p>
         </div>
       </div>
-      <div v-if="props.profileData?.data.socials" class="profile-card__socials">
+      <div v-if="checkSocials(props.profileData?.data.socials)" class="profile-card__socials">
         <h3>Redes</h3>
         <div class="profile-card__socials-icons">
           <div v-if="props.profileData?.data.socials.lattes">
             <a :href="props.profileData.data.socials.lattes" target="_blank" rel="noopener noreferrer">
-              <img src="@/assets/logo_lattes.png" alt="Lattes" style="width: 24px; height: 24px;" />
+              <img src="@/assets/logo_lattes.svg" alt="Lattes" style="width: 24px; height: 24px;" />
             </a>
           </div>
           <div v-if="props.profileData?.data.socials.orcid">
@@ -128,7 +133,6 @@ $breakpoint-md: 768px;
   box-shadow: 1px 1px 4px 1px #0000001A;
 
   @include md {
-    margin-right: 20px;
     padding: 24px 24px;
   }
 
