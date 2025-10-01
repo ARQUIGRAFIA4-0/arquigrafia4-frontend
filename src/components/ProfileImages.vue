@@ -26,6 +26,62 @@ $breakpoint-md: 768px;
   }
 }
 
+.upload-box {
+  >*+* {
+    margin-top: 1.5rem;
+  }
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #FAF9F9;
+  border: 2px solid #636262;
+  width: 100%;
+  border-radius: 7px;
+  border-width: 2px;
+  padding: 80px 0;
+  box-shadow: 4px 4px 8px 0px #000000;
+  cursor: pointer;
+
+  &--dragging {
+    background-color: rgba(#B46013, 0.6);
+  }
+
+  h1 {
+    font-weight: 500;
+    font-size: 30px;
+    line-height: 150%;
+    letter-spacing: 0%;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  &__icon {
+    font-size: 50px;
+    color: #0F59A5;
+  }
+
+  &__instructions {
+    >*+* {
+      margin-top: 1.5rem;
+    }
+
+    p {
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 20px;
+      text-align: center;
+      vertical-align: middle;
+      text-transform: lowercase;
+    }
+  }
+
+  &__input {
+    display: none;
+  }
+}
+
 .item-card {
   &__image {
     border-radius: 8px 8px 0 0;
