@@ -5,6 +5,8 @@ const fileInputRef = ref();
 const imagesToUpload = ref([]);
 const maxUploadFiles = 10;
 const isDragging = ref(false);
+const showAlert = ref(false);
+const alertMessage = ref("");
 
 function openFileDialog() {
   fileInputRef.value.click();
@@ -14,7 +16,8 @@ function handleFiles(event) {
   const files = Array.from(event.target.files);
 
   if (files.length > maxUploadFiles) {
-    alert(`Você pode enviar no máximo ${maxUploadFiles} imagens.`);
+    alertMessage.value = `Você pode enviar no máximo ${maxUploadFiles} imagens.`;
+    showAlert.value = true;
     return;
   }
   imagesToUpload.value = files;
@@ -37,11 +40,13 @@ function handleDrop(event) {
   const filteredFiles = files.filter(file => file.type.startsWith("image/"));
 
   if (filteredFiles.length === 0) {
-    alert("Você pode enviar apenas arquivos de imagem.");
+    alertMessage.value = `Você pode enviar apenas arquivos de imagem.`;
+    showAlert.value = true;
     return;
   }
   if (filteredFiles.length > maxUploadFiles) {
-    alert(`Você pode enviar no máximo ${maxUploadFiles} imagens.`);
+    alertMessage.value = `Você pode enviar no máximo ${maxUploadFiles} imagens.`;
+    showAlert.value = true;
     return;
   }
   imagesToUpload.value = filteredFiles;
