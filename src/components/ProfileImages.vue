@@ -2,18 +2,28 @@
 import { ref } from 'vue';
 const images = ref([]);
 const fileInputRef = ref();
+const imagesToUpload = ref([]);
+
+function openFileDialog() {
+  fileInputRef.value.click();
+}
+
+function handleFiles(event) {
+  const files = Array.from(event.target.files);
+  imagesToUpload.value = files;
+}
 </script>
 
 <template>
   <div v-if="images.length === 0">
-    <div class="upload-box">
+    <div class="upload-box" @click="openFileDialog">
       <h1>Você ainda não tem<br>contribuições.</h1>
       <i class="bi bi-plus-circle-fill upload-box__icon"></i>
       <div class="upload-box__instructions">
         <p>clique aqui ou arraste um ou<br>mais arquivos para esta área.</p>
         <p>limite aceito: 10 imagens</p>
       </div>
-      <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*" />
+      <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*" @change="handleFiles" />
     </div>
   </div>
 </template>
@@ -43,7 +53,7 @@ $breakpoint-md: 768px;
   border-radius: 7px;
   border-width: 2px;
   padding: 80px 0;
-  box-shadow: 4px 4px 8px 0px #000000;
+  box-shadow: 4px 4px 8px 0px #0000001A;
   cursor: pointer;
 
   &--dragging {
