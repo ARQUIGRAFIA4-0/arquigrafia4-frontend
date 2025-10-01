@@ -66,14 +66,17 @@ function handleDrop(event) {
       <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*" @change="handleFiles" />
     </div>
   </div>
-  <div class="upload-box__alert" v-if="showAlert">
-    <div class="alert alert-danger bg-negativo-c fs-6 text-negativo-e border border-danger border-start-3" role="alert">
-      <i class="bi bi-exclamation-triangle-fill text-negativo-e" />
-      {{ alertMessage }}
-      <button type="button" class="btn-close text-negativo-e" data-bs-dismiss="alert" aria-label="Close"
-        @click="showAlert = false" />
+  <transition name="fade">
+    <div class="upload-box__alert" v-if="showAlert">
+      <div class="alert alert-danger bg-negativo-c fs-6 text-negativo-e border border-danger border-start-3"
+        role="alert">
+        <i class="bi bi-exclamation-triangle-fill text-negativo-e" />
+        {{ alertMessage }}
+        <button type="button" class="btn-close text-negativo-e" data-bs-dismiss="alert" aria-label="Close"
+          @click="showAlert = false" />
+      </div>
     </div>
-  </div>
+  </transition>
 </template>
 
 <style lang="scss" scoped>
@@ -145,6 +148,21 @@ $breakpoint-md: 768px;
     position: absolute;
     top: 80px;
   }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.fade-enter-to,
+.fade-leave-from {
+  opacity: 1;
 }
 
 .item-card {
