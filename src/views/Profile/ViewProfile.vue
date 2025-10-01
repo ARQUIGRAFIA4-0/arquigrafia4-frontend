@@ -14,7 +14,7 @@ const route = useRoute();
 const store = useAuthStore();
 
 const isCurrentUser = computed(() => ["/eu", "/eu/"].includes(route.path));
-const currentUserData = computed(() => ({ user: store.loggedUser }));
+const currentUserData = computed(() => store.loggedUser);
 const currentProfileData = ref(null);
 const otherUserData = ref(null);
 const otherProfileData = ref(null);
@@ -22,7 +22,7 @@ const selectedTab = ref("Imagens");
 
 onMounted(async () => {
   if (["/eu", "/eu/"].includes(route.path)) {
-    currentProfileData.value = await store.getProfileById(currentUserData.value.user.id);
+    currentProfileData.value = await store.getProfileById(currentUserData.value.id);
   }
   else if (route.path.startsWith("/profile") && route.params.id) {
     otherUserData.value = await store.getUser(route.params.id);

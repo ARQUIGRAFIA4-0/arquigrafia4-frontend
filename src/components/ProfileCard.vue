@@ -54,7 +54,7 @@ function checkSocials(socials) {
     <div class="profile-card__header">
       <div class="profile-card__image"></div>
       <div class="profile-card__title">
-        <h2>{{ userData?.user?.name }}</h2>
+        <h2>{{ userData?.name }}</h2>
         <div class="profile-card__address">
           <i class="bi bi-geo-alt"></i>
           <p>{{ props.profileData?.data.address || "Não informado" }}</p>
