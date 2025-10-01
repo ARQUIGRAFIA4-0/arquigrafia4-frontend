@@ -4,6 +4,7 @@ const images = ref([]);
 const fileInputRef = ref();
 const imagesToUpload = ref([]);
 const maxUploadFiles = 10;
+const isDragging = ref(false);
 
 function openFileDialog() {
   fileInputRef.value.click();
@@ -18,11 +19,22 @@ function handleFiles(event) {
   }
   imagesToUpload.value = files;
 }
+
+function handleDragOver(event) {
+  event.preventDefault();
+  isDragging.value = true;
+}
+
+function handleDragLeave(event) {
+  event.preventDefault();
+  isDragging.value = false;
+}
 </script>
 
 <template>
   <div v-if="images.length === 0">
-    <div class="upload-box" @click="openFileDialog">
+    <div class="upload-box" :class="{ 'upload-box--dragging': isDragging }" @click="openFileDialog"
+      @dragover="handleDragOver" @dragleave="handleDragLeave">
       <h1>Você ainda não tem<br>contribuições.</h1>
       <i class="bi bi-plus-circle-fill upload-box__icon"></i>
       <div class="upload-box__instructions">
