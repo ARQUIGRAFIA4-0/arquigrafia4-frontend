@@ -12,25 +12,34 @@ import ProfileImages from "@/components/ProfileImages.vue";
 
 const route = useRoute();
 const store = useAuthStore();
-const user = computed(() => store.loggedUser);
 
-const profileData = ref(null);
+const isCurrentUser = computed(() => ["/eu", "/eu/"].includes(route.path));
+const currentUserData = computed(() => ({ user: store.loggedUser }));
+const currentProfileData = ref(null);
+const otherUserData = ref(null);
+const otherProfileData = ref(null);
 const selectedTab = ref("Imagens");
 
 onMounted(async () => {
   if (["/eu", "/eu/"].includes(route.path)) {
-    profileData.value = await store.getProfileById(user.value.id);
+    currentProfileData.value = await store.getProfileById(currentUserData.value.user.id);
+  }
+  else if (route.path.startsWith("/profile") && route.params.id) {
+    otherUserData.value = await store.getUser(route.params.id);
+    otherProfileData.value = await store.getProfileById(route.params.id);
   }
 });
 </script>
 
 <template>
-  <div class="profile-container">
-    <div class="col-12 col-md-4">
-      <ProfileCard :profileData="profileData" :user="user" />
+  <div class="profile-container row">
+    <div class="col-12 col-md-3">
+      <ProfileCard 
+        :userData="isCurrentUser ? currentUserData : otherUserData"
+        :profileData="isCurrentUser ? currentProfileData : otherProfileData" />
     </div>
     <div class="d-none d-md-block col-md-1"></div>
-    <div class="col-12 col-md-7">
+    <div class="col-12 col-md-8">
       <div class="profile-container__content">
         <ProfileNav :selected="selectedTab" @select="selectedTab = $event" />
         <ProfileImages v-if="selectedTab === 'Imagens'" />
@@ -59,12 +68,6 @@ $breakpoint-md: 768px;
   @include md {
     display: flex;
     padding: 0 48px;
-  }
-
-  &__content {
-    @include md {
-      padding: 32px 0;
-    }
   }
 }
 </style>
