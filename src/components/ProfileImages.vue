@@ -66,6 +66,14 @@ function handleDrop(event) {
       <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*" @change="handleFiles" />
     </div>
   </div>
+  <div class="upload-box__alert" v-if="showAlert">
+    <div class="alert alert-danger bg-negativo-c fs-6 text-negativo-e border border-danger border-start-3" role="alert">
+      <i class="bi bi-exclamation-triangle-fill text-negativo-e" />
+      {{ alertMessage }}
+      <button type="button" class="btn-close text-negativo-e" data-bs-dismiss="alert" aria-label="Close"
+        @click="showAlert = false" />
+    </div>
+  </div>
 </template>
 
 <style lang="scss" scoped>
@@ -131,6 +139,11 @@ $breakpoint-md: 768px;
 
   &__input {
     display: none;
+  }
+
+  &__alert {
+    position: absolute;
+    top: 80px;
   }
 }
 
