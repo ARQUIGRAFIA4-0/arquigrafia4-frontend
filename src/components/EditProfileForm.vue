@@ -269,8 +269,14 @@ function handleCancel() {
       <button type="button" @click="handleLogout">Sair do perfil</button>
       <i class="bi bi-arrow-right"></i>
     </div>
-    <button type="button" @click="handleCancel">Cancelar</button>
-    <button type="submit">Salvar alterações</button>
+    <div class="row row-cols-2 g-3">
+      <div class="col">
+        <button class="btn btn-outline-secondary btn-sm w-100" @click="handleCancel">Cancelar</button>
+      </div>
+      <div class="col">
+        <button class="btn btn-secondary btn-sm w-100" type="submit">Salvar alterações</button>
+      </div>
+    </div>
   </form>
 </template>
 
