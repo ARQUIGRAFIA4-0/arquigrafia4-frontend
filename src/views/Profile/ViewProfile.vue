@@ -18,6 +18,7 @@ const currentUserData = computed(() => store.loggedUser);
 const currentProfileData = ref(null);
 const otherUserData = ref(null);
 const otherProfileData = ref(null);
+const userImages = ref([]);
 const selectedTab = ref("Imagens");
 
 onMounted(async () => {
@@ -42,7 +43,7 @@ onMounted(async () => {
     <div class="col-12 col-md-8">
       <div class="profile-container__content">
         <ProfileNav :selected="selectedTab" @select="selectedTab = $event" />
-        <ProfileImages v-if="selectedTab === 'Imagens'" />
+        <ProfileImages v-if="selectedTab === 'Imagens'" :userImages="userImages" :isCurrentUser="isCurrentUser" />
         <ProfileAlbums v-if="selectedTab === 'Álbuns'" />
         <ProfileRoutes v-if="selectedTab === 'Percursos'" />
         <ProfileWorks v-if="selectedTab === 'Obras'" />

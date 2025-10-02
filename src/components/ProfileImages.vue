@@ -1,6 +1,17 @@
 <script setup>
 import { ref } from 'vue';
-const images = ref([]);
+
+const props = defineProps({
+  userImages: {
+    type: Array,
+    default: () => []
+  },
+  isCurrentUser: {
+    type: Boolean,
+    default: false
+  }
+});
+
 const fileInputRef = ref();
 const imagesToUpload = ref([]);
 const maxUploadFiles = 10;
@@ -54,7 +65,7 @@ function handleDrop(event) {
 </script>
 
 <template>
-  <div v-if="images.length === 0">
+  <div v-if="props.userImages.length === 0 && props.isCurrentUser">
     <div class="upload-box" :class="{ 'upload-box--dragging': isDragging }" @click="openFileDialog"
       @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
       <h1>Você ainda não tem<br>contribuições.</h1>
@@ -65,6 +76,9 @@ function handleDrop(event) {
       </div>
       <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*" @change="handleFiles" />
     </div>
+  </div>
+  <div v-if="props.userImages.length === 0 && !props.isCurrentUser">
+    <h2>Este usuário ainda não enviou nenhuma imagem.</h2>
   </div>
   <transition name="fade">
     <div class="upload-box__alert" v-if="showAlert">
