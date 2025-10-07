@@ -1,6 +1,9 @@
 <template>
   <div id="toolbar" class="d-flex flex-row justify-content-between gap-4">
-    <div id="view-mode-container" class="d-flex align-items-center rounded-3">
+    <div
+      id="view-mode-container"
+      class="d-flex align-items-center rounded-3 bg-white"
+    >
       <div class="dropdown dropup">
         <button
           id="view-mode-dropdown"
@@ -10,27 +13,17 @@
           data-bs-offset="0,16"
           aria-expanded="false"
         >
-          <i class="bi bi-grid" />
+          <i :class="['bi', viewIconClass]" />
         </button>
         <ul class="dropdown-menu menu-dark mt-3">
-          <li>
-            <button class="dropdown-item" @click="setViewMode('grid')">
-              <i class="bi bi-image me-2" /> Mar de imagens
-            </button>
-          </li>
-          <li>
-            <button class="dropdown-item" @click="setViewMode('map')">
-              <i class="bi bi-geo-alt me-2" /> Mapa
-            </button>
-          </li>
-          <li>
-            <button class="dropdown-item" @click="setViewMode('grid')">
-              <i class="bi bi-grid-3x3-gap me-2" /> Grade
-            </button>
-          </li>
-          <li>
-            <button class="dropdown-item" @click="setViewMode('mosaic')">
-              <i class="bi bi-layout-text-window-reverse me-2" /> Mosaico
+          <li v-for="option in viewOptions" :key="option.selection">
+            <button
+              class="dropdown-item"
+              :class="{ active: currentViewSelection === option.selection }"
+              @click="setViewMode(option.mode, option.selection)"
+            >
+              <i :class="['bi', getViewIcon(option.selection), 'me-2']" />
+              {{ option.label }}
             </button>
           </li>
         </ul>
@@ -38,7 +31,7 @@
     </div>
     <div
       id="search-mode-container"
-      class="d-flex align-items-center p-2 px-3 rounded-3 gap-3 flex-fill"
+      class="d-flex align-items-center p-2 px-3 rounded-3 gap-3 flex-fill bg-white"
     >
       <div class="dropdown dropup">
         <button
@@ -49,49 +42,23 @@
           data-bs-offset="0,16"
           aria-expanded="false"
         >
-          <i class="bi bi-search" />
+          <i :class="['bi', searchIconClass]" />
         </button>
         <ul class="dropdown-menu menu-dark mt-3">
-          <li>
+          <li v-for="option in searchOptions" :key="option.mode">
             <button
               class="dropdown-item"
-              :class="{ active: currentSearchMode === 'avancada' }"
-              @click="setSearchMode('avancada')"
+              :class="{ active: currentSearchMode === option.mode }"
+              @click="setSearchMode(option.mode)"
             >
-              <i class="bi bi-sliders me-2" /> Busca avançada
-            </button>
-          </li>
-          <li>
-            <button
-              class="dropdown-item"
-              :class="{ active: currentSearchMode === 'textual' }"
-              @click="setSearchMode('textual')"
-            >
-              <i class="bi bi-type me-2" /> Busca textual
-            </button>
-          </li>
-          <li>
-            <button
-              class="dropdown-item"
-              :class="{ active: currentSearchMode === 'data' }"
-              @click="setSearchMode('data')"
-            >
-              <i class="bi bi-calendar3 me-2" /> Busca por data
-            </button>
-          </li>
-          <li>
-            <button
-              class="dropdown-item"
-              :class="{ active: currentSearchMode === 'cor' }"
-              @click="setSearchMode('cor')"
-            >
-              <i class="bi bi-palette me-2" /> Busca por cor
+              <i :class="['bi', getSearchIcon(option.mode), 'me-2']" />
+              {{ option.label }}
             </button>
           </li>
         </ul>
       </div>
 
-      <!-- Área de entrada da busca (apenas layout; alternância será implementada depois) -->
+      <!-- Área de entrada da busca -->
       <div class="d-flex align-items-center flex-grow-1">
         <!-- Textual (padrão visível) -->
         <div
@@ -107,21 +74,37 @@
           />
         </div>
 
-        <!-- Avançada (placeholder – oculto por padrão) -->
+        <!-- Avançada -->
         <div
           class="w-100"
           id="search-input-avancada"
           v-show="currentSearchMode === 'avancada'"
         >
-          <input
-            type="text"
-            class="form-control"
-            placeholder="Configurar filtros avançados"
-            disabled
-          />
+          <div
+            class="advanced-filters-container d-flex align-items-center flex-wrap gap-2"
+          >
+            <template v-if="hasAdvancedFilters">
+              <button
+                v-for="chip in visibleAdvancedChips"
+                :key="chip.uid"
+                class="btn btn-info btn-sm btn-tag"
+                type="button"
+              >
+                {{ chip.label }}
+              </button>
+              <button
+                v-if="advancedChipsOverflow > 0"
+                key="advanced-chips-overflow"
+                class="btn btn-info btn-sm btn-tag"
+                type="button"
+              >
+                +{{ advancedChipsOverflow }}
+              </button>
+            </template>
+          </div>
         </div>
 
-        <!-- Data (intervalo – oculto por padrão) -->
+        <!-- Data -->
         <div
           class="w-100"
           id="search-input-data"
@@ -134,7 +117,7 @@
           </div>
         </div>
 
-        <!-- Cor (oculto por padrão) -->
+        <!-- Cor -->
         <div
           class="w-100"
           id="search-input-cor"
@@ -144,7 +127,7 @@
             <input
               type="range"
               class="form-range form-range-sm form-range-hue w-100"
-              style="min-width: 250px;"
+              style="min-width: 250px"
               min="0"
               max="360"
               v-model="hue"
@@ -154,8 +137,12 @@
         </div>
       </div>
 
-      <button id="confirm-search" class="btn btn-sm btn-secondary" @click="onConfirm">
-        <i class="bi bi-arrow-right" />
+      <button
+        id="confirm-search"
+        class="btn btn-sm btn-secondary"
+        @click="onPrimaryAction"
+      >
+        <i :class="['bi', primaryActionIcon]" />
       </button>
     </div>
   </div>
@@ -166,6 +153,19 @@ import { ref, computed } from "vue";
 
 defineOptions({ name: "AppToolbar" });
 
+const props = defineProps({
+  advancedFilters: {
+    type: Object,
+    default: () => ({
+      terms: [],
+      locations: [],
+      tags: [],
+      use: null,
+    }),
+  },
+});
+
+const currentViewSelection = ref("grid");
 const currentSearchMode = ref("textual");
 const textQuery = ref("");
 const startDate = ref("");
@@ -175,19 +175,143 @@ const hue = ref(36);
 function hslToHex(h, s, l) {
   const sNorm = s / 100;
   const lNorm = l / 100;
-  const k = n => (n + h / 30) % 12;
+  const k = (n) => (n + h / 30) % 12;
   const a = sNorm * Math.min(lNorm, 1 - lNorm);
-  const f = n => lNorm - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-  const toHex = x => Math.round(x * 255).toString(16).padStart(2, "0");
+  const f = (n) =>
+    lNorm - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const toHex = (x) =>
+    Math.round(x * 255)
+      .toString(16)
+      .padStart(2, "0");
   return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
 }
 
 const colorHex = computed(() => hslToHex(Number(hue.value), 100, 50));
 
-const emit = defineEmits(["confirm", "view-change"]);
+const emit = defineEmits(["confirm", "view-change", "open-advanced-search"]);
+
+const viewOptions = [
+  { selection: "mar", label: "Mar de imagens", mode: "grid" },
+  { selection: "map", label: "Mapa", mode: "map" },
+  { selection: "grid", label: "Grade", mode: "grid" },
+  { selection: "mosaic", label: "Mosaico", mode: "mosaic" },
+];
+
+const searchOptions = [
+  { mode: "avancada", label: "Busca avançada" },
+  { mode: "textual", label: "Busca textual" },
+  { mode: "data", label: "Busca por data" },
+  { mode: "cor", label: "Busca por cor" },
+];
+
+function getViewIcon(selection) {
+  switch (selection) {
+    case "mar":
+      return "bi-image";
+    case "map":
+      return "bi-map";
+    case "mosaic":
+      return "bi-grid-1x2";
+    case "grid":
+    default:
+      return "bi-grid";
+  }
+}
+
+function getSearchIcon(mode) {
+  switch (mode) {
+    case "avancada":
+      return "bi-gear";
+    case "data":
+      return "bi-calendar2-week";
+    case "cor":
+      return "bi-palette";
+    case "textual":
+    default:
+      return "bi-search";
+  }
+}
+
+const viewIconClass = computed(() => getViewIcon(currentViewSelection.value));
+
+const searchIconClass = computed(() => getSearchIcon(currentSearchMode.value));
+
+const hasAdvancedFilters = computed(() => {
+  const filters = props.advancedFilters || {};
+  return (
+    (filters.terms && filters.terms.length > 0) ||
+    (filters.locations && filters.locations.length > 0) ||
+    (filters.tags && filters.tags.length > 0) ||
+    Boolean(filters.use)
+  );
+});
+
+const advancedChips = computed(() => {
+  const filters = props.advancedFilters || {};
+  const chips = [];
+
+  (filters.terms || []).forEach((term, index) => {
+    chips.push({
+      uid: `term-${index}-${term.value}`,
+      type: "term",
+      index,
+      label: term.label || term.value,
+    });
+  });
+
+  (filters.locations || []).forEach((location, index) => {
+    chips.push({
+      uid: `location-${index}-${location}`,
+      type: "location",
+      index,
+      label: `Localização: ${location}`,
+    });
+  });
+
+  (filters.tags || []).forEach((tag, index) => {
+    chips.push({
+      uid: `tag-${index}-${tag}`,
+      type: "tag",
+      index,
+      label: `Tag: ${tag}`,
+    });
+  });
+
+  if (filters.use) {
+    chips.push({
+      uid: `use-${filters.use}`,
+      type: "use",
+      label:
+        filters.use === "commercial"
+          ? "Uso: Permite uso comercial"
+          : "Uso: Não permite uso comercial",
+    });
+  }
+
+  return chips;
+});
+
+const MAX_VISIBLE_ADVANCED_CHIPS = 2;
+
+const visibleAdvancedChips = computed(() =>
+  advancedChips.value.slice(0, MAX_VISIBLE_ADVANCED_CHIPS)
+);
+
+const advancedChipsOverflow = computed(() =>
+  Math.max(advancedChips.value.length - MAX_VISIBLE_ADVANCED_CHIPS, 0)
+);
+
+const isAdvancedMode = computed(() => currentSearchMode.value === "avancada");
+
+const primaryActionIcon = computed(() =>
+  isAdvancedMode.value ? "bi-pencil-square" : "bi-arrow-right"
+);
 
 function setSearchMode(mode) {
   currentSearchMode.value = mode;
+  if (mode === "avancada") {
+    emit("open-advanced-search");
+  }
 }
 
 function onConfirm() {
@@ -200,7 +324,7 @@ function onConfirm() {
       value = colorHex.value || null;
       break;
     case "avancada":
-      value = null;
+      value = props.advancedFilters || null;
       break;
     case "textual":
     default:
@@ -209,8 +333,17 @@ function onConfirm() {
   emit("confirm", { mode: currentSearchMode.value, value });
 }
 
-function setViewMode(mode) {
+function setViewMode(mode, selection = mode) {
+  currentViewSelection.value = selection;
   emit("view-change", mode);
+}
+
+function onPrimaryAction() {
+  if (isAdvancedMode.value) {
+    emit("open-advanced-search");
+    return;
+  }
+  onConfirm();
 }
 </script>
 
@@ -221,7 +354,6 @@ function setViewMode(mode) {
   padding: 12px;
 }
 
-/* Botão de confirmação: quadrado e levemente menor */
 #toolbar #confirm-search {
   width: 32px;
   height: 32px;
@@ -232,7 +364,6 @@ function setViewMode(mode) {
   justify-content: center;
 }
 
-/* Mais afastamento entre toggle e menu, e garantindo z-index adequado */
 #toolbar .dropdown-menu {
   margin-top: 14px !important;
 }
@@ -260,5 +391,9 @@ function setViewMode(mode) {
   mask-position: center;
   -webkit-mask-size: contain;
   mask-size: contain;
+}
+
+.advanced-filters-container {
+  min-height: 36px;
 }
 </style>
