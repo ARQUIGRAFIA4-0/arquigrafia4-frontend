@@ -16,7 +16,30 @@ export const useSubjectsStore = defineStore("subjects", () => {
     }
   }
 
+  async function addVRACSubject(term, authHeader) {
+    if (!term || typeof term !== 'string' || !term.trim()) {
+      throw Error("O termo é obrigatório e deve ser uma string não vazia.");
+    }
+
+    try {
+      const response = await axios.post(
+        "/api/vrac-subjects",
+        { term, type: "otherTopic", vocab: "ARQUIGRAFIA" },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": authHeader,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error("Não foi possível adicionar o termo. Tente novamente.");
+    }
+  }
+
   return {
-    getVRACSubjects
+    getVRACSubjects,
+    addVRACSubject,
   };
 });
