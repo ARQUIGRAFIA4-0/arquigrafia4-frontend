@@ -366,6 +366,7 @@ export const useAuthStore = defineStore("auth", () => {
     digitRefs,
     verificationEmail,
     isLoggedIn,
+    authHeader,
     pageTitle,
     showPassword,
     showConfirmPassword,
