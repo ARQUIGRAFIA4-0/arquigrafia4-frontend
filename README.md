@@ -29,6 +29,11 @@ Compila minimizado e mais demorado, necessário para deploy no servidor:
 
     npm run build
 
+## Testes
+
+- `npm run test:open` abre a interface do Cypress.
+- `npm run test:run` executa os testes de forma headless.
+
 **Lista de comandos**
 
     git clone https://github.com/ARQUIGRAFIA4-0/arquigrafia4-frontend.git -b develop
