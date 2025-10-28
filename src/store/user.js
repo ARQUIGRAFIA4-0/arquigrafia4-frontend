@@ -16,5 +16,19 @@ export const useUsersStore = defineStore("users", () => {
     }
   }
 
-  return { getUser };
+  async function updateUser(authHeader, userId, newUserData) {
+    try {
+      const response = await axios.put(`/api/users/${userId}`, newUserData, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authHeader,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error("Não foi possível atualizar o usuário.");
+    }
+  }
+
+  return { getUser, updateUser };
 });
