@@ -1,35 +1,74 @@
 <template>
-  <div class="container-fluid p-4">
+  <div>
+    <div class="tabs-container px-3 px-md-4">
+      <ul class="nav nav-underline tabs-nav">
+        <li class="nav-item">
+          <button
+            class="nav-link active"
+            aria-current="page"
+            data-label="Acervo"
+          >
+            Acervo
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" data-label="Percurso">Percurso</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" data-label="Colecoes">Coleções</button>
+        </li>
+      </ul>
+    </div>
+
     <template v-if="viewMode === 'grid'">
-      <view-grid />
+      <div class="px-3 px-md-4 pb-4 pt-2" data-cy="view-grid">
+        <view-grid />
+      </div>
     </template>
 
     <template v-else-if="viewMode === 'mosaic'">
-      <view-mosaic />
+      <div data-cy="view-mosaic">
+        <view-mosaic />
+      </div>
     </template>
 
     <template v-else>
-      <view-map />
+      <div data-cy="view-map">
+        <view-map />
+      </div>
     </template>
-    <div class="toolbar">
+    <div class="toolbar" data-cy="toolbar">
       <template v-if="isMobile">
         <page-toolbar-mobile
-          :current-view="viewMode"
-          @open-view-menu="() => (drawerViewMenu = true)"
-          @open-search-text="() => (drawerSearchText = true)"
-          @open-search-color="() => (drawerSearchColor = true)"
-          @open-search-date="() => (drawerSearchDate = true)"
+          :view-selection="viewSelection"
+          :search-mode="searchMode"
+          data-cy="toolbar-mobile"
+          @search-mode-change="handleMobileSearchModeChange"
+          @open-view-menu="openViewMenu"
+          @open-search-text="openSearchText"
+          @open-search-color="openSearchColor"
+          @open-search-date="openSearchDate"
         />
       </template>
       <template v-else>
         <page-toolbar
+          :search-mode="searchMode"
+          :text-query="textQuery"
+          :date-range="dateRange"
+          :color="selectedColor"
           :advanced-filters="advancedFilters"
+          :view-selection="viewSelection"
+          :map-settings="mapSettings"
+          data-cy="toolbar-desktop"
+          @search-mode-change="handleToolbarSearchModeChange"
+          @update:text-query="handleTextQueryUpdate"
+          @update:date-range="handleDateRangeUpdate"
+          @update:color="handleColorUpdate"
+          @update:map-settings="handleMapSettingsUpdate"
           @view-change="handleViewChange"
-          @toggle-date-picker="handleDatePicker"
-          @toggle-color-picker="handleColorPicker"
+          @view-subcontrol="handleToolbarViewSubcontrol"
           @open-advanced-search="openAdvancedSearch"
-          @remove-advanced-chip="removeAdvancedChip"
-          @confirm="onConfirmSearch"
+          @confirm="handleToolbarConfirm"
         />
       </template>
     </div>
@@ -37,39 +76,46 @@
     <!-- Mobile Drawers -->
     <mobile-drawer-view-menu
       v-model="drawerViewMenu"
-      @select="selectViewMode"
+      @select="handleMobileViewChange"
     />
 
     <mobile-drawer-search-text
       v-model="drawerSearchText"
-      @confirm="onConfirmSearch"
+      :filters="advancedFilters"
+      @update:filters="handleAdvancedFiltersUpdate"
+      @open="handleDrawerTextOpen"
+      @confirm="confirmAdvancedDrawer"
     />
 
     <mobile-drawer-search-color
       v-model="drawerSearchColor"
       :available-colors="availableColors"
       :value="selectedColor"
-      @update:value="(v) => (selectedColor = v)"
-      @confirm="onConfirmColor"
+      @update:value="handleColorUpdate"
+      @open="handleDrawerColorOpen"
+      @confirm="confirmColor"
     />
 
     <mobile-drawer-search-date
       v-model="drawerSearchDate"
-      @confirm="onConfirmDate"
+      :value="dateRange"
+      @update:value="handleDateRangeUpdate"
+      @open="handleDrawerDateOpen"
+      @confirm="confirmDate"
     />
 
     <advanced-search-modal
       v-model="modalAdvancedSearch"
       :filters="advancedFilters"
-      @confirm="onConfirmAdvanced"
+      @confirm="confirmAdvancedSearch"
     />
   </div>
 </template>
 
-<script>
-import { ref } from "vue";
-import { storeToRefs } from "pinia";
-import { uiStore } from "@/store/ui";
+<script setup>
+import { computed, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useRouteQuery } from "@vueuse/router";
 import PageToolbar from "@/components/Toolbar.vue";
 import PageToolbarMobile from "@/components/ToolbarMobile.vue";
 import MobileDrawerSearchDate from "@/components/homepage/MobileDrawerSearchDate.vue";
@@ -81,147 +127,236 @@ import ViewGrid from "@/components/homepage/ViewGrid.vue";
 import ViewMap from "@/components/homepage/ViewMap.vue";
 import ViewMosaic from "@/components/homepage/ViewMosaic.vue";
 import { useBreakpoints } from "@vueuse/core";
+import {
+  selectionToViewMode,
+  selectionToViewRoute,
+  viewRouteToSelection,
+} from "@/constants/viewModes";
+import { useSearchQuery } from "@/composables/useSearchQuery";
 
-export default {
-  name: "HomePage",
-  components: {
-    PageToolbar,
-    PageToolbarMobile,
-    MobileDrawerSearchDate,
-    MobileDrawerSearchColor,
-    MobileDrawerViewMenu,
-    MobileDrawerSearchText,
-    AdvancedSearchModal,
-    ViewGrid,
-    ViewMap,
-    ViewMosaic,
+const route = useRoute();
+const router = useRouter();
+const breakpoints = useBreakpoints({ md: 768 });
+const isMobile = breakpoints.smaller("md");
+
+const viewSelection = ref(viewRouteToSelection(route.params.viewMode));
+const viewMode = computed(() => selectionToViewMode(viewSelection.value));
+
+const { searchMode, loadSnapshot, setSearchMode, submitSearch } =
+  useSearchQuery();
+
+const textQuery = ref("");
+const dateRange = ref({ start: "", end: "" });
+const selectedColor = ref(null);
+const advancedFilters = ref({
+  terms: [],
+  locations: [],
+  tags: [],
+  use: null,
+});
+const mapSettingsQuery = useRouteQuery("map-settings", "2d");
+
+function normalizeMapSettings(value) {
+  return value === "3d" ? "3d" : "2d";
+}
+
+const mapSettings = ref(normalizeMapSettings(mapSettingsQuery.value));
+
+watch(
+  mapSettingsQuery,
+  (value) => {
+    mapSettings.value = normalizeMapSettings(value);
   },
-  setup() {
-    const store = uiStore();
-    const { viewMode } = storeToRefs(store);
-    const breakpoints = useBreakpoints({ md: 768 });
-    const isMobile = breakpoints.smaller("md");
+  { immediate: false }
+);
 
-    const handleViewChange = (mode) => {
-      store.setViewMode(mode);
-    };
+const drawerViewMenu = ref(false);
+const drawerSearchText = ref(false);
+const drawerSearchColor = ref(false);
+const drawerSearchDate = ref(false);
+const modalAdvancedSearch = ref(false);
 
-    const handleDatePicker = () => {
-      console.log("Toggle date picker");
-    };
+const availableColors = ref([
+  "#000000",
+  "#EF4444",
+  "#F59E0B",
+  "#10B981",
+  "#3B82F6",
+  "#8B5CF6",
+]);
 
-    const handleColorPicker = () => {
-      console.log("Toggle color picker");
-    };
-
-    // Drawer state (mobile)
-    const drawerViewMenu = ref(false);
-    const drawerSearchText = ref(false);
-    const drawerSearchColor = ref(false);
-    const drawerSearchDate = ref(false);
-    const modalAdvancedSearch = ref(false);
-    const advancedFilters = ref({
-      terms: [],
-      locations: [],
-      tags: [],
-      use: null,
-    });
-
-    // Simple demo data/state for search drawers
-    const availableColors = ref([
-      "#000000",
-      "#EF4444",
-      "#F59E0B",
-      "#10B981",
-      "#3B82F6",
-      "#8B5CF6",
-    ]);
-    const selectedColor = ref(null);
-
-    const selectViewMode = (mode) => {
-      store.setViewMode(mode);
-      drawerViewMenu.value = false;
-    };
-
-    const onConfirmColor = (color) => {
-      console.log("Search color:", color);
-      drawerSearchColor.value = false;
-    };
-    const onConfirmDate = (payload) => {
-      console.log("Search date:", payload);
-    };
-    const openAdvancedSearch = () => {
-      modalAdvancedSearch.value = true;
-    };
-
-    const applyAdvancedFilters = (payload) => {
-      advancedFilters.value = {
-        terms: payload.terms || [],
-        locations: payload.locations || [],
-        tags: payload.tags || [],
-        use: payload.use || null,
+function syncFromSnapshot(mode) {
+  const snapshot = loadSnapshot(mode);
+  switch (snapshot.mode) {
+    case "textual":
+      textQuery.value = snapshot.value || "";
+      break;
+    case "data":
+      dateRange.value = {
+        start: snapshot.value?.start || "",
+        end: snapshot.value?.end || "",
       };
-    };
+      break;
+    case "cor":
+      selectedColor.value = snapshot.value || null;
+      break;
+    case "avancada":
+      advancedFilters.value = {
+        terms: snapshot.value?.terms || [],
+        locations: snapshot.value?.locations || [],
+        tags: snapshot.value?.tags || [],
+        use: snapshot.value?.use || null,
+      };
+      break;
+    default:
+      break;
+  }
+}
 
-    const onConfirmAdvanced = (payload) => {
-      applyAdvancedFilters(payload);
-      console.log("Advanced search confirm:", payload);
-      modalAdvancedSearch.value = false;
-    };
+syncFromSnapshot(searchMode.value);
 
-    const removeAdvancedChip = (chip) => {
-      const updated = { ...advancedFilters.value };
-      switch (chip.type) {
-        case "term":
-          updated.terms = [...(updated.terms || [])];
-          updated.terms.splice(chip.index, 1);
-          break;
-        case "location":
-          updated.locations = [...(updated.locations || [])];
-          updated.locations.splice(chip.index, 1);
-          break;
-        case "tag":
-          updated.tags = [...(updated.tags || [])];
-          updated.tags.splice(chip.index, 1);
-          break;
-        case "use":
-          updated.use = null;
-          break;
-        default:
-          break;
-      }
-      applyAdvancedFilters(updated);
-    };
+watch(
+  () => searchMode.value,
+  (mode) => {
+    syncFromSnapshot(mode);
+  }
+);
 
-    const onConfirmSearch = (payload) => {
-      // TODO: conectar com API/estado quando a busca estiver implementada
-      console.log("Search confirm:", payload);
-    };
-
-    return {
-      viewMode,
-      isMobile,
-      handleViewChange,
-      handleDatePicker,
-      handleColorPicker,
-      onConfirmSearch,
-      drawerViewMenu,
-      drawerSearchText,
-      drawerSearchColor,
-      drawerSearchDate,
-      modalAdvancedSearch,
-      advancedFilters,
-      availableColors,
-      selectedColor,
-      onConfirmColor,
-      onConfirmDate,
-      onConfirmAdvanced,
-      openAdvancedSearch,
-      removeAdvancedChip,
-      selectViewMode,
-    };
+watch(
+  () => route.params.viewMode,
+  (newViewMode) => {
+    viewSelection.value = viewRouteToSelection(newViewMode);
   },
-};
+  { immediate: true }
+);
+
+function updateRoute(selection) {
+  const targetRoute = selectionToViewRoute(selection);
+  if (targetRoute === route.params.viewMode) {
+    return;
+  }
+
+  router.push({
+    name: "explore",
+    params: { viewMode: targetRoute },
+    query: route.query,
+    hash: route.hash,
+  });
+}
+
+function handleViewChange({ selection }) {
+  viewSelection.value = selection;
+  updateRoute(selection);
+}
+
+function handleToolbarConfirm({ mode, value }) {
+  submitSearch({ mode, value });
+}
+
+async function handleToolbarSearchModeChange(mode) {
+  await setSearchMode(mode, { replace: true });
+  syncFromSnapshot(mode);
+}
+
+function handleTextQueryUpdate(value) {
+  textQuery.value = value;
+}
+
+function handleDateRangeUpdate(range) {
+  dateRange.value = { ...range };
+}
+
+function handleColorUpdate(color) {
+  selectedColor.value = color;
+}
+
+function updateMapSettings(value) {
+  const normalized = normalizeMapSettings(value);
+  mapSettings.value = normalized;
+  mapSettingsQuery.value = normalized;
+}
+
+function handleMapSettingsUpdate(value) {
+  updateMapSettings(value);
+}
+
+function openAdvancedSearch() {
+  modalAdvancedSearch.value = true;
+}
+
+function confirmAdvancedSearch(payload) {
+  handleAdvancedFiltersUpdate(payload);
+  submitSearch({ mode: "avancada", value: advancedFilters.value });
+  modalAdvancedSearch.value = false;
+}
+
+function handleToolbarViewSubcontrol(payload) {
+  updateMapSettings(payload.value);
+}
+
+function handleDrawerTextOpen() {
+  syncFromSnapshot("avancada");
+}
+
+function handleDrawerColorOpen() {
+  syncFromSnapshot("cor");
+}
+
+function handleDrawerDateOpen() {
+  syncFromSnapshot("data");
+}
+
+function confirmColor(color) {
+  selectedColor.value = color;
+  submitSearch({ mode: "cor", value: color });
+  drawerSearchColor.value = false;
+}
+
+function confirmDate(range) {
+  dateRange.value = { ...range };
+  submitSearch({ mode: "data", value: range });
+  drawerSearchDate.value = false;
+}
+
+function confirmAdvancedDrawer({ value }) {
+  handleAdvancedFiltersUpdate(value);
+  submitSearch({ mode: "avancada", value: advancedFilters.value });
+  drawerSearchText.value = false;
+}
+
+function handleMobileSearchModeChange(mode) {
+  handleToolbarSearchModeChange(mode);
+}
+
+function handleMobileViewChange({ selection }) {
+  updateRoute(selection);
+  viewSelection.value = selection;
+}
+
+function openViewMenu() {
+  drawerViewMenu.value = true;
+}
+
+function openSearchText() {
+  drawerSearchText.value = true;
+}
+
+function openSearchColor() {
+  drawerSearchColor.value = true;
+}
+
+function openSearchDate() {
+  drawerSearchDate.value = true;
+}
+
+function handleAdvancedFiltersUpdate(filters) {
+  advancedFilters.value = {
+    terms: filters?.terms || [],
+    locations: filters?.locations || [],
+    tags: filters?.tags || [],
+    use: filters?.use || null,
+  };
+}
 </script>
 
 <style scoped>
@@ -229,13 +364,21 @@ export default {
   min-height: 100vh; /* Ensure full page height */
 }
 
+.tabs-container {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.tabs-nav {
+  max-width: 560px;
+}
+
 .toolbar {
   position: fixed;
-  bottom: 0;
+  bottom: 32px;
   left: 50%;
   transform: translateX(-50%);
   max-width: fit-content;
-  padding-bottom: 32px;
   z-index: 1000;
 }
 </style>
