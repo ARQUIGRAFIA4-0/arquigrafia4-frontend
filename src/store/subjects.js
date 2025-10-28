@@ -2,12 +2,11 @@ import { defineStore } from "pinia";
 import axios from "../axios";
 
 export const useSubjectsStore = defineStore("subjects", () => {
-  async function getVRACSubjects(authHeader) {
+  async function getVRACSubjects() {
     try {
       const response = await axios.get("/api/vrac-subjects", {
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": authHeader,
+          "Content-Type": "application/json"
         },
       });
       return response.data;
@@ -16,7 +15,7 @@ export const useSubjectsStore = defineStore("subjects", () => {
     }
   }
 
-  async function addVRACSubject(term, authHeader) {
+  async function addVRACSubject(term) {
     if (!term || typeof term !== 'string' || !term.trim()) {
       throw Error("O termo é obrigatório e deve ser uma string não vazia.");
     }
@@ -27,8 +26,7 @@ export const useSubjectsStore = defineStore("subjects", () => {
         { term, type: "otherTopic", vocab: "ARQUIGRAFIA" },
         {
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": authHeader,
+            "Content-Type": "application/json"
           },
         }
       );
