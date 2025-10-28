@@ -31,8 +31,25 @@ export const useProfilesStore = defineStore("profiles", () => {
     }
   }
 
+  async function updateProfile(authHeader, profileId, updatedProfileData) {
+    try {
+      await axios.put(`/api/profiles/${profileId}`, updatedProfileData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": authHeader,
+          }
+        }
+      );
+      return true;
+    } catch (error) {
+      throw Error("Não foi possível atualizar o perfil.");
+    }
+  }
+
   return {
     getPublicProfileById,
-    getProfileById
+    getProfileById,
+    updateProfile
   };
 });
