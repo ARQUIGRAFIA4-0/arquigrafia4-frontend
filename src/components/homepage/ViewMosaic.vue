@@ -1,42 +1,28 @@
 <template>
   <div class="container-fluid mosaic-container">
-    <masonry-wall
-      :items="items"
-      :column-width="columnWidths"
-      :gap="8"
-      :min-columns="1"
-      :max-columns="7"
-      class="masonry-grid"
-    >
-      <template #default="slotProps">
-        <mosaic-card
-          v-if="slotProps && slotProps.item"
-          :id="slotProps.item.id"
-          :title="slotProps.item.title"
-          :image-url="slotProps.item.src"
-          :aspect-ratio="slotProps.item.aspectRatio"
+    <MosaicWall :images="mosaicItems" @reach-end="handleReachEnd">
+      <template #item="{ image }">
+        <MosaicCard
+          v-if="image"
+          :id="image.id"
+          :title="image.title"
+          :image-url="image.src"
+          :aspect-ratio="image.aspectRatio"
         />
       </template>
-    </masonry-wall>
-
-    <div v-if="isLoading" class="text-center my-4">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-    </div>
+    </MosaicWall>
   </div>
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { ref, watch } from "vue";
 import MosaicCard from "@/components/MosaicCard.vue";
-import { api } from "@/services/api";
+import MosaicWall from "@/components/MosaicWall.vue";
+import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 
-const isLoading = ref(false);
-const items = ref([]);
-const columnWidths = [320, 200, 280, 260, 210, 220, 300];
-const currentPage = ref(1);
-const hasMore = ref(true);
+const isProcessing = ref(false);
+const mosaicItems = ref([]);
+const processedIds = new Set();
 
 const preloadImageDimensions = (url) => {
   return new Promise((resolve) => {
@@ -71,21 +57,20 @@ const preloadImageDimensions = (url) => {
   });
 };
 
-const loadImages = async () => {
-  if (isLoading.value || !hasMore.value) {
+const processItems = async (sourceItems) => {
+  const pendingItems = sourceItems.filter((item) => !processedIds.has(item.id));
+
+  if (pendingItems.length === 0) {
     return;
   }
 
-  isLoading.value = true;
+  isProcessing.value = true;
   try {
-    const response = await api.getImages(currentPage.value);
-    const responseItems = response?.items ?? [];
-
     const resolvedItems = await Promise.all(
-      responseItems.map(async (item) => {
+      pendingItems.map(async (item) => {
         try {
           const dimensions = await preloadImageDimensions(item.imageUrl);
-          
+
           if (
             !dimensions ||
             dimensions.width === 1 ||
@@ -112,37 +97,39 @@ const loadImages = async () => {
     );
 
     const newItems = resolvedItems.filter((item) => item !== null);
-    items.value = [...items.value, ...newItems];
-    hasMore.value = Boolean(response?.hasMore);
-    currentPage.value += 1;
+    newItems.forEach((item) => processedIds.add(item.id));
+    mosaicItems.value = [...mosaicItems.value, ...newItems];
   } catch (error) {
-    console.error("Error loading images:", error);
+    console.error("Error processing items:", error);
   } finally {
-    isLoading.value = false;
+    isProcessing.value = false;
   }
 };
 
-const handleScroll = () => {
-  const scrollPosition = window.innerHeight + window.scrollY;
-  const pageBottom = document.documentElement.offsetHeight - 1000;
+const {
+  items: rawItems,
+  hasNextPage,
+  fetchNextPage,
+  isFetchingNextPage,
+} = useImagesInfiniteQuery({ initialLimit: 100 });
 
-  if (scrollPosition >= pageBottom) {
-    loadImages();
+const tryFetchNextPage = () => {
+  if (!hasNextPage.value || isFetchingNextPage.value) {
+    return;
   }
+
+  fetchNextPage();
 };
 
-onMounted(() => {
-  loadImages();
-  window.addEventListener("scroll", handleScroll, { passive: true });
-});
+const handleReachEnd = () => {
+  tryFetchNextPage();
+};
 
-onBeforeUnmount(() => {
-  window.removeEventListener("scroll", handleScroll);
-});
+watch(
+  () => rawItems.value,
+  async (newItems) => {
+    await processItems(newItems ?? []);
+  },
+  { immediate: true }
+);
 </script>
-
-<style scoped>
-.mosaic-container {
-  min-height: 100vh;
-}
-</style>
