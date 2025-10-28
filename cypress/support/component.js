@@ -22,16 +22,30 @@ import 'bootstrap'
 
 import { mount as vueMount } from 'cypress/vue'
 import { createPinia } from 'pinia'
+import { createRouter, createWebHistory } from 'vue-router'
+import rootRoutes from '../../src/router/routes'
+import DefaultLayout from '../../src/layouts/DefaultLayout.vue'
 
 // Mount with global plugins pre-configured (Pinia, etc.)
 Cypress.Commands.add('mount', (component, options = {}) => {
   const pinia = createPinia()
 
+  const router = createRouter({
+    history: createWebHistory(),
+    routes: [
+      {
+        path: '/',
+        component: DefaultLayout,
+        children: rootRoutes,
+      },
+    ],
+  })
+
   const mergedOptions = {
     ...options,
     global: {
       ...(options.global || {}),
-      plugins: [...(options.global?.plugins || []), pinia],
+      plugins: [...(options.global?.plugins || []), pinia, router],
     },
   }
 
