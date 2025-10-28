@@ -2,52 +2,49 @@
   <ui-mobile-drawer
     id="drawer-view-menu"
     :model-value="modelValue"
-    @update:modelValue="$emit('update:modelValue', $event)"
+    @update:modelValue="updateModelValue"
     title="Modo de visualização"
     backdrop="true"
   >
     <div class="list-group list-group-flush">
       <button
+        v-for="option in viewOptionsList"
+        :key="option.selection"
         class="list-group-item list-group-item-action"
-        @click="$emit('select', 'mar')"
+        @click="onSelect(option.selection)"
       >
-        <i class="bi bi-image"></i> Mar de imagens
-      </button>
-      <button
-        class="list-group-item list-group-item-action"
-        @click="$emit('select', 'grid')"
-      >
-        <i class="bi bi-grid"></i> Grade
-      </button>
-      <button
-        class="list-group-item list-group-item-action"
-        @click="$emit('select', 'mosaic')"
-      >
-        <i class="bi bi-grid-1x2"></i> Mosaico
-      </button>
-      <button
-        class="list-group-item list-group-item-action"
-        @click="$emit('select', 'map')"
-      >
-        <i class="bi bi-map"></i> Mapa
+        <i :class="['bi', selectionToViewIcon(option.selection)]"></i>
+        {{ option.label }}
       </button>
     </div>
   </ui-mobile-drawer>
 </template>
 
-<script>
+<script setup>
+import { computed } from "vue";
 import UiMobileDrawer from "@/components/ui/UiMobileDrawer.vue";
+import { selectionToViewIcon, viewOptions } from "@/constants/viewModes";
 
-export default {
-  name: "MobileDrawerViewMenu",
-  components: { UiMobileDrawer },
-  props: {
-    modelValue: {
-      type: Boolean,
-      required: true,
-    },
+defineOptions({ name: "MobileDrawerViewMenu" });
+
+defineProps({
+  modelValue: {
+    type: Boolean,
+    required: true,
   },
-  emits: ["update:modelValue", "select"],
+});
+
+const emit = defineEmits(["update:modelValue", "select"]);
+
+const viewOptionsList = computed(() => viewOptions());
+
+const updateModelValue = (value) => {
+  emit("update:modelValue", value);
+};
+
+const onSelect = (selection) => {
+  emit("select", { selection });
+  emit("update:modelValue", false);
 };
 </script>
 

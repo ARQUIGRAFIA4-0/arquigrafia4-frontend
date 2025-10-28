@@ -153,140 +153,165 @@
   </ui-mobile-drawer>
 </template>
 
-<script>
-import { ref, computed } from "vue";
+<script setup>
+import { computed, ref, watch } from "vue";
 import UiMobileDrawer from "@/components/ui/UiMobileDrawer.vue";
 
-export default {
-  name: "MobileDrawerSearchText",
-  components: { UiMobileDrawer },
-  props: {
-    modelValue: {
-      type: Boolean,
-      default: false,
-    },
+defineOptions({ name: "MobileDrawerSearchText" });
+
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    default: false,
   },
-  emits: ["update:modelValue", "confirm"],
-  setup(props, { emit }) {
-    const open = computed({
-      get: () => props.modelValue,
-      set: (value) => emit("update:modelValue", value),
-    });
-
-    const fieldOptions = ref([
-      { value: "all", label: "Todos os campos" },
-      { value: "author", label: "Autoria" },
-      { value: "tag", label: "Tag" },
-      { value: "location", label: "Localização" },
-      { value: "title", label: "Título" },
-    ]);
-    const selectedField = ref("all");
-    const textQueryInput = ref("");
-    const searchTerms = ref([]); // { field, value, label }
-
-    const selectedFieldLabel = computed(() => {
-      const found = fieldOptions.value.find(
-        (f) => f.value === selectedField.value
-      );
-      return found ? found.label : "Todos os campos";
-    });
-
-    const addSearchTerm = () => {
-      const value = textQueryInput.value.trim();
-      if (!value) return;
-      const fieldLabel =
-        fieldOptions.value.find((f) => f.value === selectedField.value)
-          ?.label || "Termo";
-      searchTerms.value.push({
-        field: selectedField.value,
-        value,
-        label: `${fieldLabel}: ${value}`,
-      });
-      textQueryInput.value = "";
-    };
-    const removeSearchTerm = (index) => {
-      searchTerms.value.splice(index, 1);
-    };
-
-    const locationSuggestions = ref([
-      "São Paulo",
-      "Rio de Janeiro",
-      "Brasilia",
-      "Jaú",
-      "Ribeirão Preto",
-      "Londrina",
-      "Mauá",
-      "Itu",
-      "Ouro Preto",
-      "Praia Grande",
-    ]);
-    const selectedLocations = ref([]);
-    const toggleLocation = (city) => {
-      const i = selectedLocations.value.indexOf(city);
-      if (i >= 0) selectedLocations.value.splice(i, 1);
-      else selectedLocations.value.push(city);
-    };
-
-    const tagSuggestions = ref([
-      "Concreto",
-      "Público",
-      "Ferro",
-      "Vidro",
-      "Alvenaria",
-      "Vegetação",
-      "Fachada",
-      "Edifício",
-      "Prédio",
-      "Pilar",
-    ]);
-    const selectedTags = ref([]);
-    const toggleTag = (tag) => {
-      const i = selectedTags.value.indexOf(tag);
-      if (i >= 0) selectedTags.value.splice(i, 1);
-      else selectedTags.value.push(tag);
-    };
-
-    const selectedUse = ref(null); // 'commercial' | 'nonCommercial' | null
-    const setUse = (use) => {
-      selectedUse.value = selectedUse.value === use ? null : use;
-    };
-
-    const confirm = () => {
-      const payload = {
-        terms: searchTerms.value,
-        locations: selectedLocations.value,
-        tags: selectedTags.value,
-        use: selectedUse.value,
-      };
-      emit("confirm", payload);
-      open.value = false;
-    };
-
-    return {
-      open,
-      // fields
-      fieldOptions,
-      selectedField,
-      selectedFieldLabel,
-      textQueryInput,
-      searchTerms,
-      addSearchTerm,
-      removeSearchTerm,
-      // suggestions
-      locationSuggestions,
-      selectedLocations,
-      toggleLocation,
-      tagSuggestions,
-      selectedTags,
-      toggleTag,
-      // use
-      selectedUse,
-      setUse,
-      // actions
-      confirm,
-    };
+  filters: {
+    type: Object,
+    default: () => ({
+      terms: [],
+      locations: [],
+      tags: [],
+      use: null,
+    }),
   },
+});
+
+const emit = defineEmits([
+  "update:modelValue",
+  "update:filters",
+  "confirm",
+  "open",
+]);
+
+const open = computed({
+  get: () => props.modelValue,
+  set: (value) => emit("update:modelValue", value),
+});
+
+const fieldOptions = ref([
+  { value: "all", label: "Todos os campos" },
+  { value: "author", label: "Autoria" },
+  { value: "tag", label: "Tag" },
+  { value: "location", label: "Localização" },
+  { value: "title", label: "Título" },
+]);
+const selectedField = ref("all");
+const textQueryInput = ref("");
+const searchTerms = ref([]); // { field, value, label }
+const selectedLocations = ref([]);
+const selectedTags = ref([]);
+const selectedUse = ref(null);
+
+watch(
+  () => props.filters,
+  (filters) => {
+    searchTerms.value = (filters?.terms || []).map((term) => ({
+      field: term.field,
+      value: term.value,
+      label: term.label,
+    }));
+    selectedLocations.value = [...(filters?.locations || [])];
+    selectedTags.value = [...(filters?.tags || [])];
+    selectedUse.value = filters?.use || null;
+  },
+  { immediate: true }
+);
+
+const emitFiltersUpdate = () => {
+  emit("update:filters", {
+    terms: searchTerms.value,
+    locations: selectedLocations.value,
+    tags: selectedTags.value,
+    use: selectedUse.value,
+  });
 };
+
+const selectedFieldLabel = computed(() => {
+  const found = fieldOptions.value.find((f) => f.value === selectedField.value);
+  return found ? found.label : "Todos os campos";
+});
+
+function addSearchTerm() {
+  const value = textQueryInput.value.trim();
+  if (!value) return;
+  const fieldLabel =
+    fieldOptions.value.find((f) => f.value === selectedField.value)?.label ||
+    "Termo";
+  searchTerms.value.push({
+    field: selectedField.value,
+    value,
+    label: `${fieldLabel}: ${value}`,
+  });
+  textQueryInput.value = "";
+  emitFiltersUpdate();
+}
+
+function removeSearchTerm(index) {
+  searchTerms.value.splice(index, 1);
+  emitFiltersUpdate();
+}
+
+const locationSuggestions = ref([
+  "São Paulo",
+  "Rio de Janeiro",
+  "Brasilia",
+  "Jaú",
+  "Ribeirão Preto",
+  "Londrina",
+  "Mauá",
+  "Itu",
+  "Ouro Preto",
+  "Praia Grande",
+]);
+function toggleLocation(city) {
+  const i = selectedLocations.value.indexOf(city);
+  if (i >= 0) selectedLocations.value.splice(i, 1);
+  else selectedLocations.value.push(city);
+  emitFiltersUpdate();
+}
+
+const tagSuggestions = ref([
+  "Concreto",
+  "Público",
+  "Ferro",
+  "Vidro",
+  "Alvenaria",
+  "Vegetação",
+  "Fachada",
+  "Edifício",
+  "Prédio",
+  "Pilar",
+]);
+function toggleTag(tag) {
+  const i = selectedTags.value.indexOf(tag);
+  if (i >= 0) selectedTags.value.splice(i, 1);
+  else selectedTags.value.push(tag);
+  emitFiltersUpdate();
+}
+
+function setUse(use) {
+  selectedUse.value = selectedUse.value === use ? null : use;
+  emitFiltersUpdate();
+}
+
+function confirm() {
+  const payload = {
+    terms: searchTerms.value,
+    locations: selectedLocations.value,
+    tags: selectedTags.value,
+    use: selectedUse.value,
+  };
+  emit("confirm", { mode: "avancada", value: payload });
+  open.value = false;
+}
+
+watch(
+  () => props.modelValue,
+  (isOpen, wasOpen) => {
+    if (isOpen && !wasOpen) {
+      emit("open");
+    }
+  }
+);
 </script>
 
 <style scoped>

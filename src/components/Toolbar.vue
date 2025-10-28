@@ -2,7 +2,7 @@
   <div id="toolbar" class="d-flex flex-row justify-content-between gap-4">
     <div
       id="view-mode-container"
-      class="d-flex align-items-center rounded-3 bg-white"
+      class="d-flex align-items-center rounded-3 bg-white gap-2"
     >
       <div class="dropdown dropup">
         <button
@@ -16,18 +16,39 @@
           <i :class="['bi', viewIconClass]" />
         </button>
         <ul class="dropdown-menu menu-dark mt-3">
-          <li v-for="option in viewOptions" :key="option.selection">
+          <li v-for="option in viewOptionsList" :key="option.selection">
             <button
               class="dropdown-item"
               :class="{ active: currentViewSelection === option.selection }"
               @click="setViewMode(option.mode, option.selection)"
             >
-              <i :class="['bi', getViewIcon(option.selection), 'me-2']" />
+              <i
+                :class="['bi', selectionToViewIcon(option.selection), 'me-2']"
+              />
               {{ option.label }}
             </button>
           </li>
         </ul>
       </div>
+      <span
+        v-if="currentViewSubcontrol"
+        class="toolbar-divider"
+        aria-hidden="true"
+      />
+      <button
+        v-if="currentViewSubcontrol"
+        :class="[
+          'btn btn-icon btn-subcontrol',
+          { active: isMapSubcontrolActive },
+        ]"
+        type="button"
+        :title="currentViewSubcontrol.label"
+        :aria-label="currentViewSubcontrol.label"
+        :aria-pressed="isMapSubcontrolActive"
+        @click="onViewSubcontrol"
+      >
+        <i :class="['bi', currentViewSubcontrol.icon]" />
+      </button>
     </div>
     <div
       id="search-mode-container"
@@ -70,7 +91,7 @@
             type="text"
             class="form-control"
             placeholder="Digite o termo de busca"
-            v-model="textQuery"
+            v-model="textModel"
           />
         </div>
 
@@ -111,9 +132,9 @@
           v-show="currentSearchMode === 'data'"
         >
           <div class="d-flex align-items-center gap-2">
-            <input type="date" class="form-control" v-model="startDate" />
+            <input type="date" class="form-control" v-model="startDateModel" />
             <span class="text-branco">a</span>
-            <input type="date" class="form-control" v-model="endDate" />
+            <input type="date" class="form-control" v-model="endDateModel" />
           </div>
         </div>
 
@@ -132,6 +153,7 @@
               max="360"
               v-model="hue"
               :style="{ '--hue': hue }"
+              @input="onHueInput"
             />
           </div>
         </div>
@@ -149,11 +171,34 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { computed, ref, watch } from "vue";
+import hslToHex from "@/helpers/hslToHex";
+import hexToHue from "@/helpers/hexToHue";
+import {
+  selectionToViewIcon,
+  selectionToViewRoute,
+  viewOptions,
+} from "@/constants/viewModes";
 
 defineOptions({ name: "AppToolbar" });
 
 const props = defineProps({
+  searchMode: {
+    type: String,
+    required: true,
+  },
+  textQuery: {
+    type: String,
+    default: "",
+  },
+  dateRange: {
+    type: Object,
+    default: () => ({ start: "", end: "" }),
+  },
+  color: {
+    type: String,
+    default: "",
+  },
   advancedFilters: {
     type: Object,
     default: () => ({
@@ -163,39 +208,59 @@ const props = defineProps({
       use: null,
     }),
   },
+  viewSelection: {
+    type: String,
+    default: "grid",
+  },
+  mapSettings: {
+    type: String,
+    default: "2d",
+  },
 });
 
-const currentViewSelection = ref("grid");
-const currentSearchMode = ref("textual");
-const textQuery = ref("");
-const startDate = ref("");
-const endDate = ref("");
-const hue = ref(36);
+const emit = defineEmits([
+  "confirm",
+  "view-change",
+  "open-advanced-search",
+  "view-subcontrol",
+  "search-mode-change",
+  "update:text-query",
+  "update:date-range",
+  "update:color",
+  "update:map-settings",
+]);
 
-function hslToHex(h, s, l) {
-  const sNorm = s / 100;
-  const lNorm = l / 100;
-  const k = (n) => (n + h / 30) % 12;
-  const a = sNorm * Math.min(lNorm, 1 - lNorm);
-  const f = (n) =>
-    lNorm - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-  const toHex = (x) =>
-    Math.round(x * 255)
-      .toString(16)
-      .padStart(2, "0");
-  return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
-}
+const DEFAULT_HUE = 36;
+const hue = ref(DEFAULT_HUE);
+
+watch(
+  () => props.color,
+  (newColor) => {
+    if (typeof newColor === "string" && newColor.length > 0) {
+      const nextHue = hexToHue(newColor);
+      hue.value = nextHue ?? DEFAULT_HUE;
+    }
+  },
+  { immediate: true }
+);
 
 const colorHex = computed(() => hslToHex(Number(hue.value), 100, 50));
 
-const emit = defineEmits(["confirm", "view-change", "open-advanced-search"]);
+const currentSearchMode = computed(() => props.searchMode || "textual");
+const currentViewSelection = computed(() => props.viewSelection || "grid");
 
-const viewOptions = [
-  { selection: "mar", label: "Mar de imagens", mode: "grid" },
-  { selection: "map", label: "Mapa", mode: "map" },
-  { selection: "grid", label: "Grade", mode: "grid" },
-  { selection: "mosaic", label: "Mosaico", mode: "mosaic" },
-];
+const viewOptionsList = computed(() => viewOptions());
+
+const currentViewOption = computed(
+  () =>
+    viewOptionsList.value.find(
+      (option) => option.selection === currentViewSelection.value
+    ) || null
+);
+
+const currentViewSubcontrol = computed(
+  () => currentViewOption.value?.subcontrol || null
+);
 
 const searchOptions = [
   { mode: "avancada", label: "Busca avançada" },
@@ -203,20 +268,6 @@ const searchOptions = [
   { mode: "data", label: "Busca por data" },
   { mode: "cor", label: "Busca por cor" },
 ];
-
-function getViewIcon(selection) {
-  switch (selection) {
-    case "mar":
-      return "bi-image";
-    case "map":
-      return "bi-map";
-    case "mosaic":
-      return "bi-grid-1x2";
-    case "grid":
-    default:
-      return "bi-grid";
-  }
-}
 
 function getSearchIcon(mode) {
   switch (mode) {
@@ -232,8 +283,9 @@ function getSearchIcon(mode) {
   }
 }
 
-const viewIconClass = computed(() => getViewIcon(currentViewSelection.value));
-
+const viewIconClass = computed(() =>
+  selectionToViewIcon(currentViewSelection.value)
+);
 const searchIconClass = computed(() => getSearchIcon(currentSearchMode.value));
 
 const hasAdvancedFilters = computed(() => {
@@ -301,41 +353,94 @@ const advancedChipsOverflow = computed(() =>
   Math.max(advancedChips.value.length - MAX_VISIBLE_ADVANCED_CHIPS, 0)
 );
 
+const textModel = computed({
+  get: () => props.textQuery ?? "",
+  set: (value) => emit("update:text-query", value),
+});
+
+const dateRangeValue = computed(() => ({
+  start: props.dateRange?.start ?? "",
+  end: props.dateRange?.end ?? "",
+}));
+
+const startDateModel = computed({
+  get: () => dateRangeValue.value.start,
+  set: (value) => {
+    emit("update:date-range", { ...dateRangeValue.value, start: value });
+  },
+});
+
+const endDateModel = computed({
+  get: () => dateRangeValue.value.end,
+  set: (value) => {
+    emit("update:date-range", { ...dateRangeValue.value, end: value });
+  },
+});
+
 const isAdvancedMode = computed(() => currentSearchMode.value === "avancada");
+
+const isMapSubcontrolActive = computed(() => props.mapSettings === "3d");
 
 const primaryActionIcon = computed(() =>
   isAdvancedMode.value ? "bi-pencil-square" : "bi-arrow-right"
 );
 
-function setSearchMode(mode) {
-  currentSearchMode.value = mode;
+function onHueInput() {
+  const nextColor = hslToHex(Number(hue.value), 100, 50);
+  emit("update:color", nextColor);
+}
+
+async function handleSearchModeChange(mode) {
+  if (currentSearchMode.value === mode) {
+    if (mode === "avancada") {
+      emit("open-advanced-search");
+    }
+    return;
+  }
+
+  emit("search-mode-change", mode);
+
   if (mode === "avancada") {
     emit("open-advanced-search");
   }
 }
 
-function onConfirm() {
-  let value;
+function setSearchMode(mode) {
+  handleSearchModeChange(mode);
+}
+
+function resolveConfirmValue() {
   switch (currentSearchMode.value) {
     case "data":
-      value = { start: startDate.value || null, end: endDate.value || null };
-      break;
+      return {
+        start: dateRangeValue.value.start || null,
+        end: dateRangeValue.value.end || null,
+      };
     case "cor":
-      value = colorHex.value || null;
-      break;
+      return props.color || colorHex.value || null;
     case "avancada":
-      value = props.advancedFilters || null;
-      break;
+      return props.advancedFilters || null;
     case "textual":
     default:
-      value = textQuery.value || null;
+      return textModel.value || null;
   }
+}
+
+function onConfirm() {
+  const value = resolveConfirmValue();
   emit("confirm", { mode: currentSearchMode.value, value });
 }
 
 function setViewMode(mode, selection = mode) {
-  currentViewSelection.value = selection;
-  emit("view-change", mode);
+  if (currentViewSelection.value === selection) {
+    return;
+  }
+
+  emit("view-change", {
+    selection,
+    mode,
+    route: selectionToViewRoute(selection),
+  });
 }
 
 function onPrimaryAction() {
@@ -344,6 +449,22 @@ function onPrimaryAction() {
     return;
   }
   onConfirm();
+}
+
+function onViewSubcontrol() {
+  const subcontrol = currentViewSubcontrol.value;
+  if (!subcontrol) {
+    return;
+  }
+
+  const nextValue = isMapSubcontrolActive.value ? "2d" : "3d";
+  emit("update:map-settings", nextValue);
+  emit("view-subcontrol", {
+    selection: currentViewSelection.value,
+    mode: currentViewOption.value?.mode || null,
+    subcontrol: subcontrol.id || null,
+    value: nextValue,
+  });
 }
 </script>
 
@@ -395,5 +516,33 @@ function onPrimaryAction() {
 
 .advanced-filters-container {
   min-height: 36px;
+}
+
+.toolbar-divider {
+  display: inline-block;
+  width: 1px;
+  height: 24px;
+  background-color: var(--cinza-400, rgba(0, 0, 0, 1));
+}
+
+#toolbar .btn-subcontrol {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#toolbar .btn-subcontrol.active {
+  background-color: var(--Laranja_E);
+  color: var(--Branco);
+  border: none;
+}
+
+#toolbar .btn-subcontrol.active > .bi,
+#toolbar .btn-subcontrol.active > i[class^="bi"] {
+  color: currentColor;
 }
 </style>

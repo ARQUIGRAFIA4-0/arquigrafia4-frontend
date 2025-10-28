@@ -1,8 +1,83 @@
+import { defineComponent, h, reactive } from "vue";
 import Toolbar from "./Toolbar.vue";
+
+const createAdvancedFilters = (overrides = {}) => ({
+  terms: [],
+  locations: [],
+  tags: [],
+  use: null,
+  ...overrides,
+});
+
+const createDateRange = (overrides = {}) => ({
+  start: "",
+  end: "",
+  ...overrides,
+});
+
+function mountToolbar(options = {}) {
+  const ControlledToolbar = defineComponent({
+    name: "ControlledToolbar",
+    setup() {
+      const state = reactive({
+        searchMode: options.searchMode ?? "textual",
+        textQuery: options.textQuery ?? "",
+        dateRange: createDateRange(options.dateRange),
+        color: options.color ?? "",
+        advancedFilters: createAdvancedFilters(options.advancedFilters),
+        viewSelection: options.viewSelection ?? "grid",
+        mapSettings: options.mapSettings ?? "2d",
+      });
+
+      return () =>
+        h(Toolbar, {
+          searchMode: state.searchMode,
+          textQuery: state.textQuery,
+          dateRange: state.dateRange,
+          color: state.color,
+          advancedFilters: state.advancedFilters,
+          viewSelection: state.viewSelection,
+          mapSettings: state.mapSettings,
+          onConfirm: options.onConfirm,
+          onOpenAdvancedSearch: options.onOpenAdvancedSearch,
+          onViewSubcontrol: (payload) => {
+            state.mapSettings = payload.value;
+            options.onViewSubcontrol?.(payload);
+          },
+          onSearchModeChange: (mode) => {
+            state.searchMode = mode;
+            options.onSearchModeChange?.(mode);
+          },
+          onViewChange: (payload) => {
+            state.viewSelection = payload.selection;
+            options.onViewChange?.(payload);
+          },
+          "onUpdate:text-query": (value) => {
+            state.textQuery = value;
+            options.onUpdateTextQuery?.(value);
+          },
+          "onUpdate:date-range": (range) => {
+            state.dateRange = createDateRange(range);
+            options.onUpdateDateRange?.(range);
+          },
+          "onUpdate:color": (color) => {
+            state.color = color;
+            options.onUpdateColor?.(color);
+          },
+          "onUpdate:map-settings": (value) => {
+            state.mapSettings = value;
+            options.onUpdateMapSettings?.(value);
+          },
+        });
+    },
+  });
+
+  return cy.mount(ControlledToolbar);
+}
 
 describe("<Toolbar />", () => {
   it("renderiza modo textual por padrão e esconde os demais", () => {
-    cy.mount(() => <Toolbar />);
+    mountToolbar();
 
     cy.get("#search-input-textual").should("be.visible");
     cy.get("#search-input-avancada").should("not.be.visible");
@@ -11,7 +86,7 @@ describe("<Toolbar />", () => {
   });
 
   it("alterna modos de busca e atualiza estado ativo", () => {
-    cy.mount(() => <Toolbar />);
+    mountToolbar();
 
     const openDropdown = () => cy.get("#search-mode-dropdown").click();
     const clickItem = (label) =>
@@ -79,7 +154,7 @@ describe("<Toolbar />", () => {
 
   it("emite confirm ao buscar por texto", () => {
     const onConfirm = cy.stub().as("onConfirm");
-    cy.mount(() => <Toolbar onConfirm={onConfirm} />);
+    mountToolbar({ onConfirm });
 
     cy.get('#search-input-textual input[type="text"]').type("casa");
     cy.get("#confirm-search").click();
@@ -93,7 +168,7 @@ describe("<Toolbar />", () => {
 
   it("emite valor nulo quando a busca textual está vazia", () => {
     const onConfirm = cy.stub().as("onConfirm");
-    cy.mount(() => <Toolbar onConfirm={onConfirm} />);
+    mountToolbar({ onConfirm });
 
     cy.get("#confirm-search").click();
     cy.get("@onConfirm").its("firstCall.args.0").should("deep.equal", {
@@ -111,13 +186,11 @@ describe("<Toolbar />", () => {
       tags: ["Arquitetura"],
       use: "commercial",
     };
-    cy.mount(() => (
-      <Toolbar
-        onConfirm={onConfirm}
-        onOpenAdvancedSearch={onOpenAdvancedSearch}
-        advancedFilters={filtros}
-      />
-    ));
+    mountToolbar({
+      onConfirm,
+      onOpenAdvancedSearch,
+      advancedFilters: filtros,
+    });
 
     cy.get("#search-mode-dropdown").click();
     cy.contains(".dropdown-menu .dropdown-item", "Busca avançada").click();
@@ -134,7 +207,7 @@ describe("<Toolbar />", () => {
 
   it("emite confirm para busca por data", () => {
     const onConfirm = cy.stub().as("onConfirm");
-    cy.mount(() => <Toolbar onConfirm={onConfirm} />);
+    mountToolbar({ onConfirm });
 
     cy.get("#search-mode-dropdown").click();
     cy.contains(".dropdown-menu .dropdown-item", "Busca por data").click();
@@ -152,7 +225,7 @@ describe("<Toolbar />", () => {
 
   it("emite confirm para busca por cor", () => {
     const onConfirm = cy.stub().as("onConfirm");
-    cy.mount(() => <Toolbar onConfirm={onConfirm} />);
+    mountToolbar({ onConfirm });
 
     cy.get("#search-mode-dropdown").click();
     cy.contains(".dropdown-menu .dropdown-item", "Busca por cor").click();
@@ -169,7 +242,7 @@ describe("<Toolbar />", () => {
 
   it("emite view-change para todas as opções de visualização", () => {
     const onViewChange = cy.stub().as("onViewChange");
-    cy.mount(() => <Toolbar onViewChange={onViewChange} />);
+    mountToolbar({ onViewChange });
 
     const openViewDropdown = () => cy.get("#view-mode-dropdown").click();
     const clickViewItem = (label) =>
@@ -194,37 +267,98 @@ describe("<Toolbar />", () => {
     assertViewDropdownIcon("Grade", "bi-grid");
     assertViewDropdownIcon("Mosaico", "bi-grid-1x2");
 
+    const assertViewChangeCall = (index, expected) =>
+      cy
+        .get("@onViewChange")
+        .invoke("getCall", index)
+        .its("args.0")
+        .should("deep.equal", expected);
+
     // Mar de imagens -> grid
     openViewDropdown();
     clickViewItem("Mar de imagens");
-    cy.get("@onViewChange").should("have.been.calledWith", "grid");
     assertViewIcon("bi-image");
+    assertViewChangeCall(0, {
+      selection: "mar",
+      mode: "grid",
+      route: "mar",
+    });
 
     // Mapa -> map
     openViewDropdown();
     clickViewItem("Mapa");
-    cy.get("@onViewChange").should("have.been.calledWith", "map");
     assertViewIcon("bi-map");
+    assertViewChangeCall(1, {
+      selection: "map",
+      mode: "map",
+      route: "map",
+    });
 
     // Grade -> grid
     openViewDropdown();
     clickViewItem("Grade");
-    cy.get("@onViewChange").should("have.been.calledWith", "grid");
     assertViewIcon("bi-grid");
+    assertViewChangeCall(2, {
+      selection: "grid",
+      mode: "grid",
+      route: "grid",
+    });
 
     // Mosaico -> mosaic
     openViewDropdown();
     clickViewItem("Mosaico");
-    cy.get("@onViewChange").should("have.been.calledWith", "mosaic");
     assertViewIcon("bi-grid-1x2");
+    assertViewChangeCall(3, {
+      selection: "mosaic",
+      mode: "mosaic",
+      route: "mosaic",
+    });
+    cy.get("@onViewChange").its("callCount").should("eq", 4);
+  });
 
-    // Ensure total calls count
-    cy.get("@onViewChange").should("have.callCount", 4);
+  it("alternar subcontrole do mapa atualiza query e estado", () => {
+    const onViewSubcontrol = cy.stub().as("onViewSubcontrol");
+    const onUpdateMapSettings = cy.stub().as("onUpdateMapSettings");
+    mountToolbar({ onViewSubcontrol, onUpdateMapSettings });
+
+    const openViewDropdown = () => cy.get("#view-mode-dropdown").click();
+
+    openViewDropdown();
+    cy.contains(".dropdown-menu .dropdown-item", "Mapa").click();
+
+    cy.get(".btn-subcontrol").as("mapToggle");
+
+    cy.get("@mapToggle")
+      .should("not.have.class", "active")
+      .and("have.attr", "aria-pressed", "false");
+
+    cy.get("@mapToggle").click();
+
+    cy.get("@mapToggle")
+      .should("have.class", "active")
+      .and("have.attr", "aria-pressed", "true");
+    cy.get("@onUpdateMapSettings").should("have.been.calledWith", "3d");
+    cy.get("@onViewSubcontrol")
+      .invoke("getCall", 0)
+      .its("args.0")
+      .should("include", { value: "3d" });
+
+    cy.get("@mapToggle").click();
+
+    cy.get("@mapToggle")
+      .should("not.have.class", "active")
+      .and("have.attr", "aria-pressed", "false");
+    cy.get("@onUpdateMapSettings").should("have.been.calledWith", "2d");
+    cy.get("@onViewSubcontrol")
+      .invoke("getCall", 1)
+      .its("args.0")
+      .should("include", { value: "2d" });
+    cy.get("@onViewSubcontrol").its("callCount").should("eq", 2);
   });
 
   it("abre a configuração de filtros avançados quando selecionado sem filtros", () => {
     const onOpenAdvancedSearch = cy.stub().as("onOpenAdvancedSearch");
-    cy.mount(() => <Toolbar onOpenAdvancedSearch={onOpenAdvancedSearch} />);
+    mountToolbar({ onOpenAdvancedSearch });
 
     cy.get("#search-mode-dropdown").click();
     cy.contains(".dropdown-menu .dropdown-item", "Busca avançada").click();
@@ -247,12 +381,7 @@ describe("<Toolbar />", () => {
     };
     const onOpenAdvancedSearch = cy.stub().as("onOpenAdvancedSearch");
 
-    cy.mount(() => (
-      <Toolbar
-        advancedFilters={filtros}
-        onOpenAdvancedSearch={onOpenAdvancedSearch}
-      />
-    ));
+    mountToolbar({ advancedFilters: filtros, onOpenAdvancedSearch });
 
     cy.get("#search-mode-dropdown").click();
     cy.contains(".dropdown-menu .dropdown-item", "Busca avançada").click();

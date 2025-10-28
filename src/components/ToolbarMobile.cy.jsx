@@ -1,56 +1,80 @@
+import { defineComponent, reactive } from "vue";
 import ToolbarMobile from "./ToolbarMobile.vue";
 
+const mountMobileToolbar = (initial = {}) => {
+  const searchModeChangeSpy = cy.stub().as("searchModeChangeSpy");
+  const openViewSpy = cy.stub().as("openViewSpy");
+  const openTextSpy = cy.stub().as("openTextSpy");
+  const openColorSpy = cy.stub().as("openColorSpy");
+  const openDateSpy = cy.stub().as("openDateSpy");
+
+  const Wrapper = defineComponent({
+    components: { ToolbarMobile },
+    setup() {
+      const state = reactive({
+        viewSelection: initial.viewSelection ?? "grid",
+        searchMode: initial.searchMode ?? "textual",
+      });
+
+      const handleSearchModeChange = (mode) => {
+        state.searchMode = mode;
+        searchModeChangeSpy(mode);
+      };
+
+      return () => (
+        <ToolbarMobile
+          viewSelection={state.viewSelection}
+          searchMode={state.searchMode}
+          onSearchModeChange={handleSearchModeChange}
+          onOpenViewMenu={() => openViewSpy()}
+          onOpenSearchText={() => openTextSpy()}
+          onOpenSearchColor={() => openColorSpy()}
+          onOpenSearchDate={() => openDateSpy()}
+        />
+      );
+    },
+  });
+
+  cy.mount(() => <Wrapper />);
+};
+
 describe("<ToolbarMobile />", () => {
-  it("renders two button groups", () => {
-    cy.mount(() => <ToolbarMobile />);
-
-    cy.get("#view-group").should("exist");
-    cy.get("#search-group").should("exist");
-  });
-
-  it("shows correct icon for current view (default grid)", () => {
-    cy.mount(() => <ToolbarMobile />);
+  it("renderiza ícones com base no modo atual", () => {
+    mountMobileToolbar({ viewSelection: "grid" });
     cy.get("#view-mode-button i").should("have.class", "bi-grid");
-  });
+    cy.get("#search-text-button").should("have.class", "active");
 
-  it("shows correct icon for current view (mosaic)", () => {
-    cy.mount(() => <ToolbarMobile currentView="mosaic" />);
+    cy.then(() => mountMobileToolbar({ viewSelection: "mosaic" }));
     cy.get("#view-mode-button i").should("have.class", "bi-grid-1x2");
-  });
 
-  it("shows correct icon for current view (map)", () => {
-    cy.mount(() => <ToolbarMobile currentView="map" />);
+    cy.then(() => mountMobileToolbar({ viewSelection: "map" }));
     cy.get("#view-mode-button i").should("have.class", "bi-map");
   });
 
-  it("shows correct icon for current view (mar)", () => {
-    cy.mount(() => <ToolbarMobile currentView="mar" />);
-    cy.get("#view-mode-button i").should("have.class", "bi-image");
-  });
-
-  it("emits open events when buttons are clicked", () => {
-    const onOpenViewMenu = cy.stub().as("onOpenViewMenu");
-    const onOpenSearchText = cy.stub().as("onOpenSearchText");
-    const onOpenSearchColor = cy.stub().as("onOpenSearchColor");
-    const onOpenSearchDate = cy.stub().as("onOpenSearchDate");
-
-    cy.mount(() => (
-      <ToolbarMobile
-        onOpenViewMenu={onOpenViewMenu}
-        onOpenSearchText={onOpenSearchText}
-        onOpenSearchColor={onOpenSearchColor}
-        onOpenSearchDate={onOpenSearchDate}
-      />
-    ));
+  it("emite eventos de abertura de menus", () => {
+    mountMobileToolbar();
 
     cy.get("#view-mode-button").click();
     cy.get("#search-text-button").click();
     cy.get("#search-color-button").click();
     cy.get("#search-date-button").click();
 
-    cy.get("@onOpenViewMenu").should("have.been.calledOnce");
-    cy.get("@onOpenSearchText").should("have.been.calledOnce");
-    cy.get("@onOpenSearchColor").should("have.been.calledOnce");
-    cy.get("@onOpenSearchDate").should("have.been.calledOnce");
+    cy.get("@openViewSpy").should("have.been.calledOnce");
+    cy.get("@openTextSpy").should("have.been.calledOnce");
+    cy.get("@openColorSpy").should("have.been.calledOnce");
+    cy.get("@openDateSpy").should("have.been.calledOnce");
+  });
+
+  it("emite alteração de modo de busca ao clicar nos botões", () => {
+    mountMobileToolbar();
+
+    cy.get("#search-color-button").click();
+    cy.get("@searchModeChangeSpy").should("have.been.calledWith", "cor");
+
+    cy.get("#search-date-button").click();
+    cy.get("@searchModeChangeSpy").should("have.been.calledWith", "data");
+
+    cy.get("#search-text-button").click();
+    cy.get("@searchModeChangeSpy").should("have.been.calledWith", "textual");
   });
 });

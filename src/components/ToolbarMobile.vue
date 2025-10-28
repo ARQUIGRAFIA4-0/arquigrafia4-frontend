@@ -12,7 +12,7 @@
         class="btn btn-icon"
         type="button"
         aria-label="Selecionar modo de visualização"
-        @click="emit('open-view-menu')"
+        @click="openViewMenu"
       >
         <i :class="['bi', viewIconClass]" />
       </button>
@@ -24,28 +24,28 @@
     >
       <button
         id="search-text-button"
-        class="btn btn-icon"
+        :class="searchButtonClasses('textual')"
         type="button"
         aria-label="Buscar por texto"
-        @click="emit('open-search-text')"
+        @click="handleSearchButton('textual', 'open-search-text')"
       >
         <i class="bi bi-search" />
       </button>
       <button
         id="search-color-button"
-        class="btn btn-icon"
+        :class="searchButtonClasses('cor')"
         type="button"
         aria-label="Buscar por cor"
-        @click="emit('open-search-color')"
+        @click="handleSearchButton('cor', 'open-search-color')"
       >
         <i class="bi bi-palette" />
       </button>
       <button
         id="search-date-button"
-        class="btn btn-icon"
+        :class="searchButtonClasses('data')"
         type="button"
         aria-label="Buscar por data"
-        @click="emit('open-search-date')"
+        @click="handleSearchButton('data', 'open-search-date')"
       >
         <i class="bi bi-calendar2-week" />
       </button>
@@ -58,22 +58,27 @@ import { computed } from "vue";
 
 defineOptions({ name: "ToolbarMobile" });
 
+const props = defineProps({
+  viewSelection: {
+    type: String,
+    default: "grid",
+  },
+  searchMode: {
+    type: String,
+    default: "textual",
+  },
+});
+
 const emit = defineEmits([
   "open-view-menu",
   "open-search-text",
   "open-search-color",
   "open-search-date",
+  "search-mode-change",
 ]);
 
-const props = defineProps({
-  currentView: {
-    type: String,
-    default: "grid",
-  },
-});
-
 const viewIconClass = computed(() => {
-  switch (props.currentView) {
+  switch (props.viewSelection) {
     case "mar":
       return "bi-image";
     case "map":
@@ -85,6 +90,25 @@ const viewIconClass = computed(() => {
       return "bi-grid";
   }
 });
+
+const isSearchModeActive = (mode) => props.searchMode === mode;
+
+function handleSearchButton(mode, eventName) {
+  if (props.searchMode !== mode) {
+    emit("search-mode-change", mode);
+  }
+  emit(eventName);
+}
+
+const searchButtonClasses = (mode) => [
+  "btn",
+  "btn-icon",
+  { active: isSearchModeActive(mode) },
+];
+
+function openViewMenu() {
+  emit("open-view-menu");
+}
 </script>
 
 <style scoped>
