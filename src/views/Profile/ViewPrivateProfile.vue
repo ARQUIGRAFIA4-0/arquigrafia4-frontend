@@ -18,4 +18,25 @@ onMounted(async () => {
 });
 
 </script>
+
 <template></template>
+
+<style lang="scss" scoped>
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
+.profile-container {
+  width: 100%;
+  padding: 0 32px;
+
+  @include md {
+    display: flex;
+    padding: 0 48px;
+  }
+}
+</style>
