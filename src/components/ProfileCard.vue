@@ -1,19 +1,23 @@
 <script setup>
-import { defineProps, ref, onMounted } from "vue";
+import { defineProps, ref, onMounted, watch } from "vue";
 
 const props = defineProps({
-  profileData: {
-    type: Object,
-    default: null
-  },
-  userData: {
-    type: Object,
-    default: null
-  }
+  userData: { type: Object, default: null },
+  publicProfileData: { type: Object, default: null },
+  privateProfileData: { type: Object, default: null }
 });
 
+const currentProfileData = ref({});
 const showFullProfile = ref(false);
 const isMobile = ref(window.innerWidth < 768);
+
+watch(
+  () => [props.privateProfileData, props.publicProfileData],
+  ([privateData, publicData]) => {
+    currentProfileData.value = privateData || publicData || {};
+  },
+  { immediate: true }
+);
 
 function handleResize() {
   isMobile.value = window.innerWidth < 768;
@@ -27,7 +31,7 @@ onMounted(() => {
 });
 
 function getColumns(keys) {
-  const data = props.profileData?.data || {};
+  const data = currentProfileData.value?.data || {};
   return keys.filter(key => Boolean(data[key])).length;
 }
 
@@ -57,50 +61,50 @@ function checkSocials(socials) {
         <h2>{{ userData?.name }}</h2>
         <div class="profile-card__address">
           <i class="bi bi-geo-alt"></i>
-          <p>{{ props.profileData?.data.address || "Não informado" }}</p>
+          <p>{{ currentProfileData?.data?.address || "Não informado" }}</p>
         </div>
       </div>
     </div>
     <div v-if="showFullProfile" class="profile-card__content">
-      <div v-if="props.profileData?.data.bio" class="profile-card__bio">
+      <div v-if="currentProfileData?.data?.bio" class="profile-card__bio">
         <h3>Bio</h3>
-        <p>{{ props.profileData?.data.bio }}</p>
+        <p>{{ currentProfileData.data.bio }}</p>
       </div>
       <div v-if="getColumns(['gender', 'birthdate', 'race']) > 0"
         :class="getColumns(['gender', 'birthdate', 'race']) === 3 ? 'row row-cols-3' : 'row row-cols-2'">
-        <div v-if="props.profileData?.data.gender" class="col">
+        <div v-if="currentProfileData?.data?.gender" class="col">
           <h3>Gênero</h3>
-          <p>{{ props.profileData.data.gender }}</p>
+          <p>{{ currentProfileData.data.gender }}</p>
         </div>
-        <div v-if="props.profileData?.data.birthdate" class="col">
+        <div v-if="currentProfileData?.data?.birthdate" class="col">
           <h3>Idade</h3>
-          <p>{{ getAge(props.profileData.data.birthdate) }} anos</p>
+          <p>{{ getAge(currentProfileData.data.birthdate) }} anos</p>
         </div>
-        <div v-if="props.profileData?.data.race" class="col">
+        <div v-if="currentProfileData?.data?.race" class="col">
           <h3>Raça</h3>
-          <p>{{ props.profileData.data.race }}</p>
+          <p>{{ currentProfileData.data.race }}</p>
         </div>
       </div>
       <div v-if="getColumns(['profession', 'scholarity']) > 0" class="row row-cols-2">
-        <div v-if="props.profileData?.data.profession" class="col">
+        <div v-if="currentProfileData?.data?.profession" class="col">
           <h3>Profissão</h3>
-          <p>{{ props.profileData.data.profession }}</p>
+          <p>{{ currentProfileData.data.profession }}</p>
         </div>
-        <div v-if="props.profileData?.data.scholarity" class="col">
+        <div v-if="currentProfileData?.data?.scholarity" class="col">
           <h3>Escolaridade</h3>
-          <p>{{ props.profileData.data.scholarity }}</p>
+          <p>{{ currentProfileData.data.scholarity }}</p>
         </div>
       </div>
-      <div v-if="checkSocials(props.profileData?.data.socials)" class="profile-card__socials">
+      <div v-if="checkSocials(currentProfileData?.data?.socials)" class="profile-card__socials">
         <h3>Redes</h3>
         <div class="profile-card__socials-icons">
-          <div v-if="props.profileData?.data.socials.lattes">
-            <a :href="props.profileData.data.socials.lattes" target="_blank" rel="noopener noreferrer">
+          <div v-if="currentProfileData?.data?.socials.lattes">
+            <a :href="currentProfileData.data.socials.lattes" target="_blank" rel="noopener noreferrer">
               <img src="@/assets/logo_lattes.svg" alt="Lattes" style="width: 24px; height: 24px;" />
             </a>
           </div>
-          <div v-if="props.profileData?.data.socials.orcid">
-            <a :href="props.profileData.data.socials.orcid" target="_blank" rel="noopener noreferrer">
+          <div v-if="currentProfileData?.data?.socials.orcid">
+            <a :href="currentProfileData.data.socials.orcid" target="_blank" rel="noopener noreferrer">
               <img src="@/assets/logo_orcid.png" alt="Orcid" style="width: 24px; height: 24px;" />
             </a>
           </div>
