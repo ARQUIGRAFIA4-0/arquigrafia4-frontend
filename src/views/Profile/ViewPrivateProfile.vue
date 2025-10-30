@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useAuthStore } from "../../store/auth";
 import { useProfilesStore } from "../../store/profiles";
+import ProfileCard from "@/components/ProfileCard.vue";
 import ProfileNav from "@/components/ProfileNav.vue";
 import ProfileWorks from "@/components/ProfileWorks.vue";
 import ProfileAlbums from "@/components/ProfileAlbums.vue";
@@ -30,7 +31,10 @@ onMounted(async () => {
 
 <template>
   <div class="profile-container row">
-    <div class="col-12 col-md-3"></div>
+    <div class="col-12 col-md-3">
+      <ProfileCard :userData="currentUserData" :publicProfileData="publicProfileData"
+        :privateProfileData="privateProfileData" />
+    </div>
     <div class="d-none d-md-block col-md-1"></div>
     <div class="col-12 col-md-8">
       <div class="profile-container__content">
