@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useAuthStore } from "../../store/auth";
 import { useProfilesStore } from "../../store/profiles";
 import ProfileCard from "@/components/ProfileCard.vue";
@@ -27,6 +27,10 @@ onMounted(() => {
   window.addEventListener('resize', () => {
     isMobile.value = window.innerWidth < 768;
   });
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
 });
 
 onMounted(async () => {
