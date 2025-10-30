@@ -18,6 +18,10 @@ const currentProfileData = computed(() => {
   return props.publicProfileData || {};
 });
 
+function toggleProfileView() {
+  viewingPrivateProfile.value = !viewingPrivateProfile.value;
+}
+
 function handleResize() {
   isMobile.value = window.innerWidth < 768;
   if (!isMobile.value) {
