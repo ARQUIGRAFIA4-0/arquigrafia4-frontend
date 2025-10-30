@@ -143,9 +143,11 @@ $breakpoint-md: 768px;
   border-radius: 16px;
   padding: 24px 16px;
   box-shadow: 1px 1px 4px 1px #0000001A;
+  margin-bottom: 54px;
 
   @include md {
     padding: 24px 24px;
+    margin-bottom: 0px;
   }
 
   &__header {
@@ -173,11 +175,9 @@ $breakpoint-md: 768px;
   }
 
   &__title {
-    @include md {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 
     h2 {
       font-family: "DM Sans";
