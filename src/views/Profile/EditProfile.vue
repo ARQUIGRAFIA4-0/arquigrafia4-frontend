@@ -5,13 +5,24 @@ import { ref, computed, onMounted } from "vue";
 
 const authStore = useAuthStore();
 const profilesStore = useProfilesStore();
+const isMobile = ref(window.innerWidth < 768);
 const userAuthHeader = computed(() => authStore.authHeader);
 
 const userData = computed(() => authStore.loggedUser);
-const profileData = ref(null);
+const privateProfileData = ref(null);
 
 onMounted(async () => {
-  profileData.value = await profilesStore.getProfileById(userAuthHeader.value, userData.value.id);
+  privateProfileData.value = await profilesStore.getProfileById(userAuthHeader.value, userData.value.id);
+});
+
+onMounted(() => {
+  window.addEventListener('resize', () => {
+    isMobile.value = window.innerWidth < 768;
+  });
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
 });
 </script>
 

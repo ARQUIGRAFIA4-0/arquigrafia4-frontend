@@ -23,15 +23,15 @@ const privateProfileData = ref(null);
 const userImages = ref([]);
 const selectedTab = ref("Imagens");
 
+onMounted(async () => {
+  publicProfileData.value = await profilesStore.getPublicProfileById(currentUserData.value.id);
+  privateProfileData.value = await profilesStore.getProfileById(currentUserAuthHeader.value, currentUserData.value.id);
+});
+
 onMounted(() => {
   window.addEventListener('resize', () => {
     isMobile.value = window.innerWidth < 768;
   });
-});
-
-onMounted(async () => {
-  publicProfileData.value = await profilesStore.getPublicProfileById(currentUserData.value.id);
-  privateProfileData.value = await profilesStore.getProfileById(currentUserAuthHeader.value, currentUserData.value.id);
 });
 
 onUnmounted(() => {
