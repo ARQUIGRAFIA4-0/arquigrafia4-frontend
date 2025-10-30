@@ -1,7 +1,8 @@
 <script setup>
 import { useAuthStore } from "@/store/auth";
 import { useProfilesStore } from "../../store/profiles";
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import ProfileCard from "@/components/ProfileCard.vue";
 
 const authStore = useAuthStore();
 const profilesStore = useProfilesStore();
@@ -26,7 +27,15 @@ onUnmounted(() => {
 });
 </script>
 
-<template></template>
+<template>
+  <div class="profile-container row">
+    <div class="col-12 col-md-3">
+      <ProfileCard :userData="userData" :privateProfileData="privateProfileData" :isMobile="isMobile" />
+    </div>
+    <div class="d-none d-md-block col-md-1"></div>
+    <div class="col-12 col-md-8 row"></div>
+  </div>
+</template>
 
 <style lang="scss" scoped>
 $breakpoint-md: 768px;
