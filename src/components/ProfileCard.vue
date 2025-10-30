@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, ref, onMounted, watch } from "vue";
+import { defineProps, ref, onMounted, computed } from "vue";
 
 const props = defineProps({
   userData: { type: Object, default: null },
@@ -7,17 +7,16 @@ const props = defineProps({
   privateProfileData: { type: Object, default: null }
 });
 
-const currentProfileData = ref({});
+const viewingPrivateProfile = ref(true);
 const showFullProfile = ref(false);
 const isMobile = ref(window.innerWidth < 768);
 
-watch(
-  () => [props.privateProfileData, props.publicProfileData],
-  ([privateData, publicData]) => {
-    currentProfileData.value = privateData || publicData || {};
-  },
-  { immediate: true }
-);
+const currentProfileData = computed(() => {
+  if (viewingPrivateProfile.value && props.privateProfileData) {
+    return props.privateProfileData;
+  }
+  return props.publicProfileData || {};
+});
 
 function handleResize() {
   isMobile.value = window.innerWidth < 768;
@@ -109,6 +108,11 @@ function checkSocials(socials) {
             </a>
           </div>
         </div>
+      </div>
+      <div v-if="props.privateProfileData" class="profile-card__toggle-profile-visibility">
+        <button @click="toggleProfileView" class="btn btn-secondary btn-sm btn-icon">
+          <i class="bi bi-eye" /> {{ viewingPrivateProfile ? "Ver perfil público" : "Ver perfil privado" }}
+        </button>
       </div>
     </div>
     <div class="profile-card__chevron-icon" v-if="isMobile">
@@ -250,6 +254,12 @@ $breakpoint-md: 768px;
   &__socials-icons {
     display: flex;
     gap: 20px;
+  }
+
+  &__toggle-profile-visibility {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   &__chevron-icon {
