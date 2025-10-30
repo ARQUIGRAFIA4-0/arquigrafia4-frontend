@@ -4,6 +4,7 @@ import { useProfilesStore } from "../../store/profiles";
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import ProfileCard from "@/components/ProfileCard.vue";
 import EditProfileNav from '@/components/EditProfileNav.vue';
+import EditProfileForm from "@/components/EditProfileForm.vue";
 
 const authStore = useAuthStore();
 const profilesStore = useProfilesStore();
@@ -56,6 +57,10 @@ function scrollToSection(refName) {
     <div class="col-12 col-md-8 row">
       <div class="col-12 col-md-12 mt-md-0 mt-5">
         <EditProfileNav :selected="selectedTab" @select="handleNavSelect" />
+      </div>
+      <div class="col-12 col-md-8">
+        <EditProfileForm v-if="privateProfileData" :userData="userData" :profileData="privateProfileData"
+          ref="editProfileFormRef" />
       </div>
     </div>
   </div>
