@@ -29,15 +29,14 @@ onMounted(() => {
   });
 });
 
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize);
-});
-
 onMounted(async () => {
   publicProfileData.value = await profilesStore.getPublicProfileById(currentUserData.value.id);
   privateProfileData.value = await profilesStore.getProfileById(currentUserAuthHeader.value, currentUserData.value.id);
 });
 
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
 </script>
 
 <template>

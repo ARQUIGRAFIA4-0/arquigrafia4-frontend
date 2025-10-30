@@ -3,6 +3,13 @@ import { useRoute } from "vue-router";
 import { ref, onMounted, onUnmounted } from "vue";
 import { useUsersStore } from "../../store/users";
 import { useProfilesStore } from "../../store/profiles";
+import ProfileCard from "@/components/ProfileCard.vue";
+import ProfileNav from "@/components/ProfileNav.vue";
+import ProfileWorks from "@/components/ProfileWorks.vue";
+import ProfileAlbums from "@/components/ProfileAlbums.vue";
+import ProfileRoutes from "@/components/ProfileRoutes.vue";
+import ProfileReviews from "@/components/ProfileReviews.vue";
+import ProfileImages from "@/components/ProfileImages.vue";
 
 const route = useRoute();
 const usersStore = useUsersStore();
@@ -11,6 +18,9 @@ const isMobile = ref(window.innerWidth < 768);
 
 const userData = ref(null);
 const publicProfileData = ref(null);
+
+const userImages = ref([]);
+const selectedTab = ref("Imagens");
 
 onMounted(() => {
     window.addEventListener('resize', () => {
@@ -30,6 +40,22 @@ onUnmounted(() => {
 </script>
 
 <template>
+    <div :class="['profile-container', isMobile ? '' : 'row']">
+        <div class="col-12 col-md-3">
+            <ProfileCard :userData="userData" :publicProfileData="publicProfileData" :isMobile="isMobile" />
+        </div>
+        <div class="d-none d-md-block col-md-1"></div>
+        <div class="col-12 col-md-8">
+            <div class="profile-container__content">
+                <ProfileNav :selected="selectedTab" @select="selectedTab = $event" />
+                <ProfileImages v-if="selectedTab === 'Imagens'" :userImages="userImages" :isCurrentUser="false" />
+                <ProfileAlbums v-if="selectedTab === 'Álbuns'" />
+                <ProfileRoutes v-if="selectedTab === 'Percursos'" />
+                <ProfileWorks v-if="selectedTab === 'Obras'" />
+                <ProfileReviews v-if="selectedTab === 'Avaliações'" />
+            </div>
+        </div>
+    </div>
 </template>
 
 <style lang="scss" scoped>
