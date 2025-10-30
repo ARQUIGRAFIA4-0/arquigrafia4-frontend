@@ -27,7 +27,7 @@ function handleFiles(event) {
   const files = Array.from(event.target.files);
 
   if (files.length > maxUploadFiles) {
-    alertMessage.value = `Você pode enviar no máximo ${maxUploadFiles} imagens.`;
+    alertMessage.value = `Você pode enviar no máximo ${maxUploadFiles} imagens por upload.`;
     showAlert.value = true;
     return;
   }
@@ -56,7 +56,7 @@ function handleDrop(event) {
     return;
   }
   if (filteredFiles.length > maxUploadFiles) {
-    alertMessage.value = `Você pode enviar no máximo ${maxUploadFiles} imagens.`;
+    alertMessage.value = `Você pode enviar no máximo ${maxUploadFiles} imagens por upload.`;
     showAlert.value = true;
     return;
   }
@@ -77,8 +77,11 @@ function handleDrop(event) {
       <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*" @change="handleFiles" />
     </div>
   </div>
-  <div v-if="props.userImages.length === 0 && !props.isCurrentUser">
-    <h2>Este usuário ainda não enviou nenhuma imagem.</h2>
+  <div v-if="props.userImages.length === 0 && !props.isCurrentUser" class="no-photo-alert">
+    <div class="alert alert-dark bg-off-white alert-light border border-dark border-start-3" role="alert">
+      <i class="bi bi-exclamation-circle-fill text-dark"></i>
+      Este usuário não tem imagens no Arquigrafia.
+    </div>
   </div>
   <transition name="fade">
     <div class="upload-box__alert" v-if="showAlert">
@@ -162,6 +165,10 @@ $breakpoint-md: 768px;
     position: absolute;
     top: 80px;
   }
+}
+
+.no-photo-alert {
+  display: flex;
 }
 
 .fade-enter-active,
