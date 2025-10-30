@@ -39,7 +39,7 @@ export default [
   {
     path: "/eu",
     name: "my-profile",
-    component: () => import("../views/Profile/ViewProfile.vue"),
+    component: () => import("../views/Profile/ViewPrivateProfile.vue"),
   },
   {
     path: "/eu/editar",
@@ -53,6 +53,6 @@ export default [
   {
     path: "/profile/:id",
     name: "view-profile",
-    component: () => import("../views/Profile/ViewProfile.vue")
+    component: () => import("../views/Profile/ViewPublicProfile.vue")
   },
 ];
