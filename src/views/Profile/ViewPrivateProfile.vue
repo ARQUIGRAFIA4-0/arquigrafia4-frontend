@@ -12,6 +12,7 @@ import ProfileImages from "@/components/ProfileImages.vue";
 
 const authStore = useAuthStore();
 const profilesStore = useProfilesStore();
+const isMobile = ref(window.innerWidth < 768);
 
 const currentUserData = ref(authStore.loggedUser);
 const currentUserAuthHeader = computed(() => authStore.authHeader);
@@ -22,6 +23,12 @@ const privateProfileData = ref(null);
 const userImages = ref([]);
 const selectedTab = ref("Imagens");
 
+onMounted(() => {
+  window.addEventListener('resize', () => {
+    isMobile.value = window.innerWidth < 768;
+  });
+});
+
 onMounted(async () => {
   publicProfileData.value = await profilesStore.getPublicProfileById(currentUserData.value.id);
   privateProfileData.value = await profilesStore.getProfileById(currentUserAuthHeader.value, currentUserData.value.id);
@@ -30,7 +37,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="profile-container row">
+  <div :class="['profile-container', isMobile ? '' : 'row']">
     <div class="col-12 col-md-3">
       <ProfileCard :userData="currentUserData" :publicProfileData="publicProfileData"
         :privateProfileData="privateProfileData" />
