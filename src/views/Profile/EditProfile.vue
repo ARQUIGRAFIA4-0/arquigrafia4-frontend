@@ -1,12 +1,18 @@
-<template>
-  <div class="container">
-    <h1 class="my-4">Editar Perfil</h1>
-    <!-- Add content here -->
-  </div>
-</template>
+<script setup>
+import { useAuthStore } from "@/store/auth";
+import { useProfilesStore } from "../../store/profiles";
+import { ref, computed, onMounted } from "vue";
 
-<script>
-export default {
-  name: "EditProfile",
-};
+const authStore = useAuthStore();
+const profilesStore = useProfilesStore();
+const userAuthHeader = computed(() => authStore.authHeader);
+
+const userData = computed(() => authStore.loggedUser);
+const profileData = ref(null);
+
+onMounted(async () => {
+  profileData.value = await profilesStore.getProfileById(userAuthHeader.value, userData.value.id);
+});
 </script>
+<template></template>
+<style scoped></style>
