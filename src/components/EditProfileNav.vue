@@ -9,7 +9,7 @@ const props = defineProps({
   <ul class="edit-profile-nav">
     <li @click="$emit('select', 'personalRef')" :class="{ 'edit-profile-nav--selected': props.selected === 'personalRef' }">Dados pessoais</li>
     <li @click="$emit('select', 'professionalRef')" :class="{ 'edit-profile-nav--selected': props.selected === 'professionalRef' }">Dados profissionais</li>
-    <li @click="$emit('select', 'interestRef')" :class="{ 'edit-profile-nav--selected': props.selected === 'interestRef' }">Temas de interesse</li>
+    <li @click="$emit('select', 'interestsRef')" :class="{ 'edit-profile-nav--selected': props.selected === 'interestsRef' }">Temas de interesse</li>
     <li @click="$emit('select', 'collectiveRef')" :class="{ 'edit-profile-nav--selected': props.selected === 'collectiveRef' }">Coletivos</li>
   </ul>
 </template>

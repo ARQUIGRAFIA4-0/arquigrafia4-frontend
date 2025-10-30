@@ -3,6 +3,7 @@ import { useAuthStore } from "@/store/auth";
 import { useProfilesStore } from "../../store/profiles";
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import ProfileCard from "@/components/ProfileCard.vue";
+import EditProfileNav from '@/components/EditProfileNav.vue';
 
 const authStore = useAuthStore();
 const profilesStore = useProfilesStore();
@@ -12,6 +13,9 @@ const userAuthHeader = computed(() => authStore.authHeader);
 const userData = computed(() => authStore.loggedUser);
 const publicProfileData = ref(null);
 const privateProfileData = ref(null);
+
+const selectedTab = ref("personalRef");
+const editProfileFormRef = ref(null);
 
 onMounted(async () => {
   publicProfileData.value = await profilesStore.getPublicProfileById(userData.value.id);
@@ -27,6 +31,19 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
+
+function handleNavSelect(refName) {
+  selectedTab.value = refName;
+  scrollToSection(refName);
+}
+
+function scrollToSection(refName) {
+  if (!editProfileFormRef.value || !refName) return;
+  const target = editProfileFormRef.value[refName];
+  if (target?.$el || target) {
+    (target?.$el || target).scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
 </script>
 
 <template>
@@ -36,7 +53,11 @@ onUnmounted(() => {
         :isMobile="isMobile" />
     </div>
     <div class="d-none d-md-block col-md-1"></div>
-    <div class="col-12 col-md-8 row"></div>
+    <div class="col-12 col-md-8 row">
+      <div class="col-12 col-md-12 mt-md-0 mt-5">
+        <EditProfileNav :selected="selectedTab" @select="handleNavSelect" />
+      </div>
+    </div>
   </div>
 </template>
 
