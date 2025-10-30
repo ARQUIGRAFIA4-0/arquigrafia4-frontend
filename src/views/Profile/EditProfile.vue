@@ -10,9 +10,11 @@ const isMobile = ref(window.innerWidth < 768);
 const userAuthHeader = computed(() => authStore.authHeader);
 
 const userData = computed(() => authStore.loggedUser);
+const publicProfileData = ref(null);
 const privateProfileData = ref(null);
 
 onMounted(async () => {
+  publicProfileData.value = await profilesStore.getPublicProfileById(userData.value.id);
   privateProfileData.value = await profilesStore.getProfileById(userAuthHeader.value, userData.value.id);
 });
 
@@ -28,9 +30,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="profile-container row">
+  <div :class="['profile-container', isMobile ? '' : 'row']">
     <div class="col-12 col-md-3">
-      <ProfileCard :userData="userData" :privateProfileData="privateProfileData" :isMobile="isMobile" />
+      <ProfileCard :userData="userData" :publicProfileData="publicProfileData" :privateProfileData="privateProfileData"
+        :isMobile="isMobile" />
     </div>
     <div class="d-none d-md-block col-md-1"></div>
     <div class="col-12 col-md-8 row"></div>
