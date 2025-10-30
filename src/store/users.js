@@ -2,12 +2,11 @@ import { defineStore } from "pinia";
 import axios from "../axios";
 
 export const useUsersStore = defineStore("users", () => {
-  async function getUser(authHeader, userId) {
+  async function getUser(userId) {
     try {
       const response = await axios.get(`/api/users/${userId}`, {
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": authHeader,
+          "Content-Type": "application/json"
         },
       });
       return response.data.user;
