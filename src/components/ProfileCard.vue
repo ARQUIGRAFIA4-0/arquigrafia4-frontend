@@ -1,15 +1,15 @@
 <script setup>
-import { defineProps, ref, onMounted, computed } from "vue";
+import { defineProps, ref, computed, watch } from "vue";
 
 const props = defineProps({
   userData: { type: Object, default: null },
   publicProfileData: { type: Object, default: null },
-  privateProfileData: { type: Object, default: null }
+  privateProfileData: { type: Object, default: null },
+  isMobile: { type: Boolean, default: false }
 });
 
 const viewingPrivateProfile = ref(true);
 const showFullProfile = ref(false);
-const isMobile = ref(window.innerWidth < 768);
 
 const currentProfileData = computed(() => {
   if (viewingPrivateProfile.value && props.privateProfileData) {
@@ -18,20 +18,15 @@ const currentProfileData = computed(() => {
   return props.publicProfileData || {};
 });
 
+watch(() => props.isMobile, (newValue) => {
+  if (!newValue) {
+    showFullProfile.value = true;
+  }
+}, { immediate: true });
+
 function toggleProfileView() {
   viewingPrivateProfile.value = !viewingPrivateProfile.value;
 }
-
-function handleResize() {
-  isMobile.value = window.innerWidth < 768;
-  if (!isMobile.value) {
-    showFullProfile.value = true;
-  }
-}
-
-onMounted(() => {
-  handleResize();
-});
 
 function getColumns(keys) {
   const data = currentProfileData.value?.data || {};

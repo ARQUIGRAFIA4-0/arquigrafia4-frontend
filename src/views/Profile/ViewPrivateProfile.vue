@@ -44,7 +44,7 @@ onMounted(async () => {
   <div :class="['profile-container', isMobile ? '' : 'row']">
     <div class="col-12 col-md-3">
       <ProfileCard :userData="currentUserData" :publicProfileData="publicProfileData"
-        :privateProfileData="privateProfileData" />
+        :privateProfileData="privateProfileData" :isMobile="isMobile" />
     </div>
     <div class="d-none d-md-block col-md-1"></div>
     <div class="col-12 col-md-8">
