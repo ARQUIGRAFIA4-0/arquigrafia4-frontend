@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
   userImages: {
@@ -9,7 +9,18 @@ const props = defineProps({
   isCurrentUser: {
     type: Boolean,
     default: false
+  },
+  userData: {
+    type: Object,
+    default: null
   }
+});
+
+const firstName = computed(() => {
+  if (props.userData && props.userData.name) {
+    return props.userData.name.split(" ")[0];
+  }
+  return 'Este usuário';
 });
 
 const fileInputRef = ref();
@@ -80,7 +91,7 @@ function handleDrop(event) {
   <div v-if="props.userImages.length === 0 && !props.isCurrentUser" class="no-photo-alert">
     <div class="alert alert-dark bg-off-white alert-light border border-dark border-start-3" role="alert">
       <i class="bi bi-exclamation-circle-fill text-dark"></i>
-      Este usuário não tem imagens no Arquigrafia.
+      {{ firstName }} ainda não tem imagens no Arquigrafia.
     </div>
   </div>
   <transition name="fade">
