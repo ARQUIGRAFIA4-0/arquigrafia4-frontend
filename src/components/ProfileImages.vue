@@ -23,6 +23,13 @@ const firstName = computed(() => {
   return 'Este usuário';
 });
 
+const imagePreviews = computed(() =>
+  imagesToUpload.value.map(file => ({
+    file,
+    url: URL.createObjectURL(file)
+  }))
+);
+
 const fileInputRef = ref();
 const imagesToUpload = ref([]);
 const maxUploadFiles = 10;
