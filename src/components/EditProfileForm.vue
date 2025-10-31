@@ -355,6 +355,21 @@ function handleCancel() {
           </button>
         </div>
       </UiField>
+      <ul>
+        <UiField class="mb-3" v-for="([key, value], idx) in Object.entries(socials).filter(([_, v]) => v)" :key="key">
+          <div class="input-group input-group-sm">
+            <button class="btn btn-primary bg-preto border-preto fw-normal" aria-expanded="false" disabled="true">
+              {{ socialOptions[key] }}
+            </button>
+            <input :value="value" disabled="true" class="form-control border-azul-e border-end-0 bg-branco"
+              placeholder="" />
+            <button class="btn btn-light btn-sm border-azul-e border-start-0 bg-transparent" type="button"
+              aria-label="Remover" @click="removeSocial(key)">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </UiField>
+      </ul>
     </div>
     <div class="profile-form__account-button mb-2">
       <button type="button">Alterar senha</button>
@@ -449,5 +464,13 @@ $breakpoint-md: 768px;
   @include md {
     font-size: 12px;
   }
+}
+
+.btn.bg-preto[disabled],
+.btn.bg-preto:disabled {
+  background-color: #000 !important;
+  color: #fff !important;
+  opacity: 1 !important;
+  border-color: #000 !important;
 }
 </style>
