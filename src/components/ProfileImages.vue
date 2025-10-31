@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onUnmounted } from 'vue';
 
 const props = defineProps({
   userImages: {
@@ -29,6 +29,10 @@ const imagePreviews = computed(() =>
     url: URL.createObjectURL(file)
   }))
 );
+
+onUnmounted(() => {
+  imagePreviews.value.forEach(preview => URL.revokeObjectURL(preview.url));
+});
 
 const fileInputRef = ref();
 const imagesToUpload = ref([]);
