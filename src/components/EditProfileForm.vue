@@ -63,12 +63,31 @@ const scholarityOptions = [
   "Doutorado"
 ];
 
-const addressPublic = ref();
-const genderPublic = ref();
-const birthdatePublic = ref();
-const racePublic = ref();
-const professionPublic = ref();
-const scholarityPublic = ref();
+const genderOptions = [
+  "Homem cis",
+  "Mulher cis",
+  "Homem trans",
+  "Mulher trans",
+  "Não-binário",
+  "Prefiro não informar"
+]
+
+const raceOptions = [
+  "Branca",
+  "Preta",
+  "Parda",
+  "Amarela",
+  "Indígena",
+  "Prefiro não informar"
+];
+
+const socialOptions = {
+  lattes: "Lattes",
+  orcid: "Orcid",
+  linkedin: "Linkedin",
+  facebook: "Facebook",
+  instagram: "Instagram"
+};
 
 watch(() => props.profileData, (newValue) => {
   address.value = newValue?.data?.address || '';
