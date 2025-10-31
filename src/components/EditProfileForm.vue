@@ -42,6 +42,13 @@ const socials = ref({
   instagram: ''
 });
 
+const addressPublic = ref();
+const genderPublic = ref();
+const birthdatePublic = ref();
+const racePublic = ref();
+const professionPublic = ref();
+const scholarityPublic = ref();
+
 const scholarityOptions = [
   "Fundamental Incompleto",
   "Fundamental Completo",
