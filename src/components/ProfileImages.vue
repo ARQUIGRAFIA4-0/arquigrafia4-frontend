@@ -88,10 +88,10 @@ function handleDrop(event) {
       <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*" @change="handleFiles" />
     </div>
   </div>
-  <div v-if="props.userImages.length === 0 && !props.isCurrentUser" class="no-photo-alert">
-    <div class="alert alert-dark bg-off-white alert-light border border-dark border-start-3" role="alert">
+  <div v-if="props.userImages.length === 0 && !props.isCurrentUser">
+    <div class="no-photo-alert-box alert alert-dark bg-off-white alert-light border border-dark border-start-3" role="alert">
       <i class="bi bi-exclamation-circle-fill text-dark"></i>
-      {{ firstName }} ainda não tem imagens no Arquigrafia.
+      <span>{{ firstName }} ainda não tem imagens no Arquigrafia.</span>
     </div>
   </div>
   <transition name="fade">
@@ -178,8 +178,16 @@ $breakpoint-md: 768px;
   }
 }
 
-.no-photo-alert {
-  display: flex;
+.no-photo-alert-box {
+  display: inline-flex;
+  align-items: center;
+  height: auto;
+  padding: 0.5rem 1rem;
+  word-break: break-word;
+
+  i {
+    margin-right: 0.5rem;
+  }
 }
 
 .fade-enter-active,
