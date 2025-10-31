@@ -26,20 +26,20 @@ const subjectsStore = useSubjectsStore();
 const userAuthHeader = computed(() => authStore.authHeader);
 const today = new Date().toISOString().slice(0, 10);
 
-const name = ref('');
-const address = ref('');
-const bio = ref('');
-const gender = ref('');
-const birthdate = ref('');
-const race = ref('');
-const profession = ref('');
-const scholarity = ref('');
+const name = ref("");
+const address = ref("");
+const bio = ref("");
+const gender = ref("");
+const birthdate = ref("");
+const race = ref("");
+const profession = ref("");
+const scholarity = ref("");
 const socials = ref({
-  lattes: '',
-  orcid: '',
-  linkedin: '',
-  facebook: '',
-  instagram: ''
+  lattes: "",
+  orcid: "",
+  linkedin: "",
+  facebook: "",
+  instagram: ""
 });
 
 const addressPublic = ref();
@@ -48,6 +48,9 @@ const birthdatePublic = ref();
 const racePublic = ref();
 const professionPublic = ref();
 const scholarityPublic = ref();
+
+const selectedSocialOption = ref("");
+const selectedSocialValue = ref("");
 
 const scholarityOptions = [
   "Fundamental Incompleto",
