@@ -12,19 +12,19 @@
 
       <!-- Image Gallery Column (8 cols) -->
       <div class="col-12 col-md-8">
-        <Mosaic />
+        <ViewMosaic />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import Mosaic from "../../components/Mosaic.vue";
+import ViewMosaic from "@/components/homepage/ViewMosaic.vue";
 import LoginForm from "../../components/LoginForm.vue";
 
 export default {
   components: {
-    Mosaic,
+    ViewMosaic,
     LoginForm,
   },
   methods: {
@@ -54,8 +54,6 @@ export default {
 </script>
 
 <style scoped>
-/* Remove unused mosaic styles */
-
 /* Optional: Add some padding or borders if needed */
 .nav-tabs {
   border-bottom: 1px solid #dee2e6; /* Standard Bootstrap border */

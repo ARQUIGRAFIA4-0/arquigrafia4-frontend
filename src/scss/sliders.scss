@@ -164,6 +164,7 @@
   height: var(--track-h);
   background: var(--selection-color);
   border-radius: var(--range-track-radius, 999px);
+  pointer-events: none;
 }
 
 // Stacked inputs (lower and upper) overlayed

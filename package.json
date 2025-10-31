@@ -5,6 +5,9 @@
   "private": true,
   "repository": "twbs/examples",
   "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
   "stackblitz": {
     "startCommand": "npm start"
   },
@@ -21,10 +24,15 @@
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
+    "@tanstack/vue-query": "^5.90.5",
+    "@vueuse/core": "^13.9.0",
+    "@vueuse/router": "^13.9.0",
+    "@yeger/vue-masonry-wall": "^5.1.1",
     "axios": "^1.7.7",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
     "imagesloaded": "^5.0.0",
+    "maplibre-gl": "^4.5.0",
     "masonry-layout": "^4.2.2",
     "pinia": "^2.2.2",
     "vue": "^3.4.21",
