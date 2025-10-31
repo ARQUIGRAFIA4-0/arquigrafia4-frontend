@@ -95,7 +95,14 @@ function handleDrop(event) {
 </script>
 
 <template>
-  <div v-if="imagePreviews.length > 0"></div>
+  <div v-if="imagePreviews.length > 0">
+    <div class="preview-box">
+      <div v-for="(preview, index) in imagePreviews" :key="index" class="preview-box__item">
+        <img :src="preview.url" :alt="preview.file.name" class="preview-box__image" />
+        <button @click="removeImage(index)" class="preview-box__remove-btn">&times;</button>
+      </div>
+    </div>
+  </div>
   <div v-else>
     <div v-if="props.userImages.length === 0 && props.isCurrentUser">
       <div class="upload-box" :class="{ 'upload-box--dragging': isDragging }" @click="openFileDialog"
@@ -153,6 +160,7 @@ $breakpoint-md: 768px;
   background-color: #FAF9F9;
   border: 2px solid #636262;
   width: 100%;
+  min-height: 500px;
   border-radius: 7px;
   border-width: 2px;
   padding: 80px 0;
