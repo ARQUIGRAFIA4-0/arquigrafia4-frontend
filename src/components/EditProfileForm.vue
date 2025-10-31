@@ -89,6 +89,18 @@ const socialOptions = {
   instagram: "Instagram"
 };
 
+const personalRef = ref(null);
+const professionalRef = ref(null);
+const interestsRef = ref(null);
+const collectiveRef = ref(null);
+
+defineExpose({
+  personalRef,
+  professionalRef,
+  interestsRef,
+  collectiveRef
+});
+
 watch(() => props.profileData, (newValue) => {
   address.value = newValue?.data?.address || '';
   bio.value = newValue?.data?.bio || '';
