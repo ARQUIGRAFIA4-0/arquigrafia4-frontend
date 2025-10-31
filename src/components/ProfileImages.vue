@@ -30,6 +30,14 @@ const isDragging = ref(false);
 const showAlert = ref(false);
 const alertMessage = ref("");
 
+function removeImage(index) {
+  imagesToUpload.value.splice(index, 1);
+}
+
+function clearImages() {
+  imagesToUpload.value = [];
+}
+
 function openFileDialog() {
   fileInputRef.value.click();
 }
