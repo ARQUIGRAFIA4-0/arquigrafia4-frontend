@@ -202,7 +202,7 @@ function handleCancel() {
 <template>
   <form @submit.prevent="updatePersonalData">
     <!-- Nome -->
-    <div class="row mb-4">
+    <div ref="personalRef" class="row mb-4">
       <div class="col-12">
         <UiField id="name" label="Nome" explain="Digite seu nome.">
           <input type="text" class="form-control" id="name" v-model="name" placeholder="Adicione seu nome"
@@ -296,7 +296,7 @@ function handleCancel() {
       </div>
     </div>
     <!-- Escolaridade e Profissão -->
-    <div class="row mb-5">
+    <div ref="professionalRef" class="row mb-5">
       <div class="col-12 col-md-6">
         <UiField id="scholarity" label="Escolaridade" explain="Selecione sua escolaridade.">
           <div class="dropdown">
@@ -330,6 +330,31 @@ function handleCancel() {
           <label class="form-check-label" for="profession_public">Exibir informação em meu perfil público.</label>
         </div>
       </div>
+    </div>
+    <!-- Redes -->
+    <div class="row gy-3 mb-5">
+      <UiField label="Suas redes"
+        explain="Escolha uma rede social, digite o link do seu perfil nessa rede e clique no botão (+) para adicionar à lista.">
+        <div class="input-group input-group-sm">
+          <button class="btn btn-primary dropdown-toggle bg-azul-e border-azul-e fw-normal" type="button"
+            data-bs-toggle="dropdown" aria-expanded="false">
+            {{ socialOptions[selectedSocialOption] || "Selecione" }}
+          </button>
+          <ul class="dropdown-menu menu-light">
+            <li v-for="([key, name]) in Object.entries(socialOptions).filter(([key]) => !socials[key])" :key="key">
+              <button class="dropdown-item" type="button" @click="selectedSocialOption = key">
+                {{ name }}
+              </button>
+            </li>
+          </ul>
+          <input v-model="selectedSocialValue" class="form-control border-azul-e border-end-0"
+            placeholder="https://www.redesocial.com/seuperfil" />
+          <button class="btn btn-light btn-sm border-azul-e border-start-0 bg-transparent" type="button"
+            aria-label="Adicionar" @click="addSocial" :disabled="!selectedSocialOption || !selectedSocialValue">
+            <i class="bi bi-plus-square-fill fs-8"></i>
+          </button>
+        </div>
+      </UiField>
     </div>
     <div class="profile-form__account-button mb-2">
       <button type="button">Alterar senha</button>
