@@ -102,6 +102,10 @@ function handleDrop(event) {
         <button @click="removeImage(index)" class="preview-box__remove-btn">&times;</button>
       </div>
     </div>
+    <div class="preview-actions-bar">
+      <button @click="clearImages" class="btn btn-secondary">Cancelar</button>
+      <button class="btn btn-primary">Enviar imagens</button>
+    </div>
   </div>
   <div v-else>
     <div v-if="props.userImages.length === 0 && props.isCurrentUser">
