@@ -1,17 +1,44 @@
 <script setup>
-import { defineProps } from "vue";
+import { defineProps, computed } from "vue";
+
 const props = defineProps({
-  selected: String
+  selected: String,
+  isCurrentUser: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const navItems = computed(() => {
+  const publicNavItems = [
+    { label: 'Imagens', value: 'Imagens' },
+    { label: 'Álbuns', value: 'Álbuns' },
+    { label: 'Percursos', value: 'Percursos' },
+    { label: 'Obras', value: 'Obras' },
+    { label: 'Avaliações', value: 'Avaliações' }
+  ];
+
+    const privateNavItems = [
+    { label: 'Minhas imagens', value: 'Imagens' },
+    { label: 'Meus álbuns', value: 'Álbuns' },
+    { label: 'Meus percursos', value: 'Percursos' },
+    { label: 'Obras', value: 'Obras' },
+    { label: 'Minhas avaliações', value: 'Avaliações' }
+  ];
+
+  if (props.isCurrentUser) {
+    return privateNavItems;
+  }
+  return publicNavItems;
 });
 </script>
 
 <template>
   <ul class="profile-nav">
-    <li @click="$emit('select', 'Imagens')" :class="{ 'profile-nav--selected': props.selected === 'Imagens' }">Imagens</li>
-    <li @click="$emit('select', 'Álbuns')" :class="{ 'profile-nav--selected': props.selected === 'Álbuns' }">Álbuns</li>
-    <li @click="$emit('select', 'Percursos')" :class="{ 'profile-nav--selected': props.selected === 'Percursos' }">Percursos</li>
-    <li @click="$emit('select', 'Obras')" :class="{ 'profile-nav--selected': props.selected === 'Obras' }">Obras</li>
-    <li @click="$emit('select', 'Avaliações')" :class="{ 'profile-nav--selected': props.selected === 'Avaliações' }">Avaliações</li>
+    <li v-for="item in navItems" :key="item.value" @click="$emit('select', item.value)"
+      :class="{ 'profile-nav--selected': props.selected === item.value }">
+      {{ item.label }}
+    </li>
   </ul>
 </template>
 

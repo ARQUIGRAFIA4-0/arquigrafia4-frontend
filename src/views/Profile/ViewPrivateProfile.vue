@@ -48,7 +48,7 @@ onUnmounted(() => {
     <div class="d-none d-md-block col-md-1"></div>
     <div class="col-12 col-md-8">
       <div class="profile-container__content">
-        <ProfileNav :selected="selectedTab" @select="selectedTab = $event" />
+        <ProfileNav :selected="selectedTab" @select="selectedTab = $event" :isCurrentUser="true" />
         <ProfileImages v-if="selectedTab === 'Imagens'" :userImages="userImages" :isCurrentUser="true" />
         <ProfileAlbums v-if="selectedTab === 'Álbuns'" />
         <ProfileRoutes v-if="selectedTab === 'Percursos'" />
