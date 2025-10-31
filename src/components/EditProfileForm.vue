@@ -131,6 +131,17 @@ watch(() => props.userData, (newValue) => {
   name.value = newValue?.name || '';
 }, { immediate: true });
 
+function addSocial() {
+  if (!selectedSocialOption.value || !selectedSocialValue.value.trim()) return;
+  socials.value[selectedSocialOption.value] = selectedSocialValue.value.trim();
+  selectedSocialOption.value = '';
+  selectedSocialValue.value = '';
+}
+
+function removeSocial(key) {
+  socials.value[key] = '';
+}
+
 async function updatePersonalData() {
   // Atualiza user apenas se o nome foi alterado
   if (name.value !== props.userData.name) {
