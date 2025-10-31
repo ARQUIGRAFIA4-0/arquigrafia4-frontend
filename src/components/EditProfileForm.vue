@@ -34,8 +34,13 @@ const birthdate = ref('');
 const race = ref('');
 const profession = ref('');
 const scholarity = ref('');
-const lattes = ref('');
-const orcid = ref('');
+const socials = ref({
+  lattes: '',
+  orcid: '',
+  linkedin: '',
+  facebook: '',
+  instagram: ''
+});
 
 const scholarityOptions = [
   "Fundamental Incompleto",
