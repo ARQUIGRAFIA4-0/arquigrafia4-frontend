@@ -95,22 +95,27 @@ function handleDrop(event) {
 </script>
 
 <template>
-  <div v-if="props.userImages.length === 0 && props.isCurrentUser">
-    <div class="upload-box" :class="{ 'upload-box--dragging': isDragging }" @click="openFileDialog"
-      @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
-      <h1>Você ainda não tem<br>contribuições.</h1>
-      <i class="bi bi-plus-circle-fill upload-box__icon"></i>
-      <div class="upload-box__instructions">
-        <p>clique aqui ou arraste um ou<br>mais arquivos para esta área.</p>
-        <p>limite aceito: 10 imagens</p>
+  <div v-if="imagePreviews.length > 0"></div>
+  <div v-else>
+    <div v-if="props.userImages.length === 0 && props.isCurrentUser">
+      <div class="upload-box" :class="{ 'upload-box--dragging': isDragging }" @click="openFileDialog"
+        @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
+        <h1>Você ainda não tem<br>contribuições.</h1>
+        <i class="bi bi-plus-circle-fill upload-box__icon"></i>
+        <div class="upload-box__instructions">
+          <p>clique aqui ou arraste um ou<br>mais arquivos para esta área.</p>
+          <p>limite aceito: 10 imagens</p>
+        </div>
+        <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*"
+          @change="handleFiles" />
       </div>
-      <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*" @change="handleFiles" />
     </div>
-  </div>
-  <div v-if="props.userImages.length === 0 && !props.isCurrentUser">
-    <div class="no-photo-alert-box alert alert-dark bg-off-white alert-light border border-dark border-start-3" role="alert">
-      <i class="bi bi-exclamation-circle-fill text-dark"></i>
-      <span>{{ firstName }} ainda não tem imagens no Arquigrafia.</span>
+    <div v-if="props.userImages.length === 0 && !props.isCurrentUser">
+      <div class="alert alert-dark bg-off-white alert-light border border-dark border-start-3 no-photo-alert-box"
+        role="alert">
+        <i class="bi bi-exclamation-circle-fill text-dark"></i>
+        <span>{{ firstName }} ainda não tem imagens no Arquigrafia.</span>
+      </div>
     </div>
   </div>
   <transition name="fade">
