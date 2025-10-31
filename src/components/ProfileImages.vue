@@ -152,6 +152,28 @@ $breakpoint-md: 768px;
   }
 }
 
+.preview-actions-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  box-shadow: 2px -2px 5px 2px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+
+  button {
+    font-weight: 400;
+    font-style: 9pt;
+    font-size: 14px;
+    line-height: 150%;
+    letter-spacing: 0%;
+  }
+}
+
 .upload-box {
   >*+* {
     margin-top: 1.5rem;
