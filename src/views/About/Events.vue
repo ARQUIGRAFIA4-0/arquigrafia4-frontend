@@ -7,6 +7,6 @@
 
 <script>
 export default {
-  name: 'EventsPage'
-}
+  name: "EventsPage",
+};
 </script>

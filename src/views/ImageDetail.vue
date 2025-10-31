@@ -4,52 +4,57 @@
       <!-- Image Section -->
       <div class="col-md-8">
         <div class="image-container">
-          <div v-if="loading" class="loading-overlay d-flex align-items-center justify-content-center">
+          <div
+            v-if="loading"
+            class="loading-overlay d-flex align-items-center justify-content-center"
+          >
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
-          <img 
+          <img
             v-if="image"
-            :src="image.imageUrl" 
+            :src="image.imageUrl"
             :alt="image.title"
             class="img-fluid rounded"
             @load="loading = false"
-          >
+          />
         </div>
       </div>
 
       <!-- Metadata Section -->
       <div class="col-md-4">
-        <h1 class="h3 mb-4">{{ image?.title || 'Loading...' }}</h1>
-        
+        <h1 class="h3 mb-4">{{ image?.title || "Loading..." }}</h1>
+
         <!-- Basic Info -->
         <div class="metadata-section">
           <h2 class="h5 mb-3">Information</h2>
           <dl class="row">
             <dt class="col-sm-4">Author</dt>
-            <dd class="col-sm-8">{{ image?.author || 'Unknown' }}</dd>
-            
+            <dd class="col-sm-8">{{ image?.author || "Unknown" }}</dd>
+
             <dt class="col-sm-4">Date</dt>
-            <dd class="col-sm-8">{{ image?.date || '-' }}</dd>
-            
+            <dd class="col-sm-8">{{ image?.date || "-" }}</dd>
+
             <dt class="col-sm-4">Location</dt>
-            <dd class="col-sm-8">{{ image?.location || '-' }}</dd>
+            <dd class="col-sm-8">{{ image?.location || "-" }}</dd>
           </dl>
         </div>
 
         <!-- Description -->
         <div class="metadata-section">
           <h2 class="h5 mb-3">Description</h2>
-          <p class="text-muted">{{ image?.description || 'No description available.' }}</p>
+          <p class="text-muted">
+            {{ image?.description || "No description available." }}
+          </p>
         </div>
 
         <!-- Tags -->
         <div class="metadata-section" v-if="image?.tags?.length">
           <h2 class="h5 mb-3">Tags</h2>
           <div class="tags">
-            <span 
-              v-for="tag in image.tags" 
+            <span
+              v-for="tag in image.tags"
               :key="tag"
               class="badge bg-light text-dark me-2 mb-2"
             >
@@ -78,8 +83,8 @@
       <div class="col-12">
         <ul class="nav nav-tabs">
           <li class="nav-item">
-            <button 
-              class="nav-link" 
+            <button
+              class="nav-link"
               :class="{ active: activeTab === 'comments' }"
               @click="activeTab = 'comments'"
             >
@@ -87,8 +92,8 @@
             </button>
           </li>
           <li class="nav-item">
-            <button 
-              class="nav-link" 
+            <button
+              class="nav-link"
               :class="{ active: activeTab === 'suggestions' }"
               @click="activeTab = 'suggestions'"
             >
@@ -106,13 +111,23 @@
               </div>
             </div>
             <div v-else>
-              <div v-for="comment in comments" :key="comment.id" class="comment mb-4">
+              <div
+                v-for="comment in comments"
+                :key="comment.id"
+                class="comment mb-4"
+              >
                 <div class="d-flex align-items-start">
-                  <img :src="comment.avatarUrl" class="rounded-circle me-3" alt="Avatar">
+                  <img
+                    :src="comment.avatarUrl"
+                    class="rounded-circle me-3"
+                    alt="Avatar"
+                  />
                   <div>
                     <h6 class="mb-1">{{ comment.author }}</h6>
                     <p class="mb-1">{{ comment.content }}</p>
-                    <small class="text-muted">{{ new Date(comment.date).toLocaleDateString() }}</small>
+                    <small class="text-muted">{{
+                      new Date(comment.date).toLocaleDateString()
+                    }}</small>
                   </div>
                 </div>
               </div>
@@ -127,9 +142,17 @@
               </div>
             </div>
             <div v-else>
-              <div v-for="suggestion in suggestions" :key="suggestion.id" class="suggestion mb-4">
+              <div
+                v-for="suggestion in suggestions"
+                :key="suggestion.id"
+                class="suggestion mb-4"
+              >
                 <div class="d-flex align-items-start">
-                  <img :src="suggestion.avatarUrl" class="rounded-circle me-3" alt="Avatar">
+                  <img
+                    :src="suggestion.avatarUrl"
+                    class="rounded-circle me-3"
+                    alt="Avatar"
+                  />
                   <div class="flex-grow-1">
                     <h6 class="mb-1">{{ suggestion.author }}</h6>
                     <div class="suggestion-content p-3 rounded">
@@ -137,15 +160,19 @@
                         <strong>Campo:</strong> {{ suggestion.field }}
                       </p>
                       <p class="mb-2">
-                        <strong>Valor atual:</strong> {{ suggestion.currentValue }}
+                        <strong>Valor atual:</strong>
+                        {{ suggestion.currentValue }}
                       </p>
                       <p class="mb-2">
-                        <strong>Sugestão:</strong> {{ suggestion.suggestedValue }}
+                        <strong>Sugestão:</strong>
+                        {{ suggestion.suggestedValue }}
                       </p>
                       <p class="mb-2">
                         <strong>Justificativa:</strong> {{ suggestion.reason }}
                       </p>
-                      <small class="text-muted">{{ new Date(suggestion.date).toLocaleDateString() }}</small>
+                      <small class="text-muted">{{
+                        new Date(suggestion.date).toLocaleDateString()
+                      }}</small>
                     </div>
                   </div>
                 </div>
@@ -159,57 +186,64 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
 
 // Mock API services
 const fetchImageDetails = async (id) => {
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 500));
   return {
     id,
     title: `Image ${id}`,
     imageUrl: `https://www.arquigrafia.org.br/arquigrafia-images/${id}_view.jpg`,
-    author: 'John Doe',
-    date: '2024-03-20',
-    location: 'São Paulo, Brazil',
-    description: 'A beautiful architectural photograph showcasing modern design elements.',
-    tags: ['architecture', 'modern', 'brazil']
+    author: "John Doe",
+    date: "2024-03-20",
+    location: "São Paulo, Brazil",
+    description:
+      "A beautiful architectural photograph showcasing modern design elements.",
+    tags: ["architecture", "modern", "brazil"],
   };
 };
 
 const fetchComments = async (imageId) => {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  return [{
-    id: 1,
-    author: 'Maria Silva',
-    avatarUrl: 'https://i.pravatar.cc/40?u=maria',
-    content: 'Excelente registro da arquitetura modernista brasileira! A composição destaca muito bem os elementos geométricos.',
-    date: '2025-06-01T14:30:00Z'
-  }];
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  return [
+    {
+      id: 1,
+      author: "Maria Silva",
+      avatarUrl: "https://i.pravatar.cc/40?u=maria",
+      content:
+        "Excelente registro da arquitetura modernista brasileira! A composição destaca muito bem os elementos geométricos.",
+      date: "2025-06-01T14:30:00Z",
+    },
+  ];
 };
 
 const fetchSuggestions = async (imageId) => {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  return [{
-    id: 1,
-    author: 'Carlos Santos',
-    avatarUrl: 'https://i.pravatar.cc/40?u=carlos',
-    field: 'date',
-    currentValue: '2024-03-20',
-    suggestedValue: '1968',
-    reason: 'Esta obra foi construída em 1968, conforme registros históricos do IAB-SP.',
-    date: '2025-06-01T15:45:00Z',
-    status: 'pending'
-  }];
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  return [
+    {
+      id: 1,
+      author: "Carlos Santos",
+      avatarUrl: "https://i.pravatar.cc/40?u=carlos",
+      field: "date",
+      currentValue: "2024-03-20",
+      suggestedValue: "1968",
+      reason:
+        "Esta obra foi construída em 1968, conforme registros históricos do IAB-SP.",
+      date: "2025-06-01T15:45:00Z",
+      status: "pending",
+    },
+  ];
 };
 
 export default {
-  name: 'ImageDetail',
+  name: "ImageDetail",
   setup() {
     const route = useRoute();
     const image = ref(null);
     const loading = ref(true);
-    const activeTab = ref('comments');
+    const activeTab = ref("comments");
     const comments = ref([]);
     const suggestions = ref([]);
     const loadingComments = ref(false);
@@ -220,7 +254,7 @@ export default {
       try {
         comments.value = await fetchComments(imageId);
       } catch (error) {
-        console.error('Error loading comments:', error);
+        console.error("Error loading comments:", error);
       } finally {
         loadingComments.value = false;
       }
@@ -231,7 +265,7 @@ export default {
       try {
         suggestions.value = await fetchSuggestions(imageId);
       } catch (error) {
-        console.error('Error loading suggestions:', error);
+        console.error("Error loading suggestions:", error);
       } finally {
         loadingSuggestions.value = false;
       }
@@ -241,12 +275,9 @@ export default {
       try {
         const imageId = route.params.id;
         image.value = await fetchImageDetails(imageId);
-        await Promise.all([
-          loadComments(imageId),
-          loadSuggestions(imageId)
-        ]);
+        await Promise.all([loadComments(imageId), loadSuggestions(imageId)]);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error("Error fetching data:", error);
       } finally {
         loading.value = false;
       }
@@ -259,10 +290,10 @@ export default {
       comments,
       suggestions,
       loadingComments,
-      loadingSuggestions
+      loadingSuggestions,
     };
-  }
-}
+  },
+};
 </script>
 
 <style scoped>
@@ -330,13 +361,14 @@ dt {
 }
 
 .nav-link.active {
-  color: #AA4F28 !important;
+  color: #aa4f28 !important;
   font-weight: 600;
   border: none;
-  border-bottom: 2px solid #AA4F28;
+  border-bottom: 2px solid #aa4f28;
 }
 
-.comment, .suggestion {
+.comment,
+.suggestion {
   background-color: #fff;
   transition: all 0.2s ease;
 }

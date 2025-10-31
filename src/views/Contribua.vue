@@ -3,8 +3,8 @@
     <!-- Tabs -->
     <ul class="nav nav-tabs mb-4">
       <li class="nav-item" v-for="(tab, index) in tabs" :key="index">
-        <button 
-          class="nav-link" 
+        <button
+          class="nav-link"
           :class="{ active: activeTab === tab.id }"
           @click="activeTab = tab.id"
         >
@@ -17,7 +17,7 @@
     <div class="tab-content">
       <!-- Envie imagens -->
       <div v-if="activeTab === 'images'" class="tab-pane active">
-        <div 
+        <div
           class="dropzone"
           @dragover.prevent="handleDragOver"
           @dragleave.prevent="handleDragLeave"
@@ -34,8 +34,11 @@
               accept="image/*"
               class="d-none"
               @change="handleFileSelect"
+            />
+            <button
+              class="btn btn-outline-secondary mt-2"
+              @click="$refs.fileInput.click()"
             >
-            <button class="btn btn-outline-secondary mt-2" @click="$refs.fileInput.click()">
               Selecionar arquivos
             </button>
           </div>
@@ -56,46 +59,47 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      activeTab: 'images',
-      isDragging: false,
-      tabs: [
-        { id: 'images', label: 'Envie imagens' },
-        { id: 'works', label: 'Cadastre obras' },
-        { id: 'routes', label: 'Crie percursos' },
-        { id: 'evaluate', label: 'Avalie imagens' }
-      ]
-    }
-  },
-  methods: {
-    handleDragOver() {
-      this.isDragging = true
-    },
-    handleDragLeave() {
-      this.isDragging = false
-    },
-    handleDrop(e) {
-      this.isDragging = false
-      const files = [...e.dataTransfer.files]
-      this.handleFiles(files)
-    },
-    handleFileSelect(e) {
-      const files = [...e.target.files]
-      this.handleFiles(files)
-    },
-    handleFiles(files) {
-      // Filter for images only
-      const imageFiles = files.filter(file => file.type.startsWith('image/'))
-      if (imageFiles.length) {
-        console.log('Received images:', imageFiles)
-        // TODO: Handle file upload
-      }
-    }
+<script setup>
+import { ref } from "vue";
+
+const activeTab = ref("images");
+const isDragging = ref(false);
+const fileInput = ref(null);
+
+const tabs = [
+  { id: "images", label: "Envie imagens" },
+  { id: "works", label: "Cadastre obras" },
+  { id: "routes", label: "Crie percursos" },
+  { id: "evaluate", label: "Avalie imagens" },
+];
+
+const handleDragOver = () => {
+  isDragging.value = true;
+};
+
+const handleDragLeave = () => {
+  isDragging.value = false;
+};
+
+const handleDrop = (e) => {
+  isDragging.value = false;
+  const files = [...e.dataTransfer.files];
+  handleFiles(files);
+};
+
+const handleFileSelect = (e) => {
+  const files = [...e.target.files];
+  handleFiles(files);
+};
+
+const handleFiles = (files) => {
+  // Filter for images only
+  const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+  if (imageFiles.length) {
+    console.log("Received images:", imageFiles);
+    // TODO: Handle file upload
   }
-}
+};
 </script>
 
 <style scoped>
@@ -117,10 +121,10 @@ export default {
 }
 
 .nav-link.active {
-  color: #AA4F28 !important;
+  color: #aa4f28 !important;
   font-weight: 600;
   border: none;
-  border-bottom: 2px solid #AA4F28;
+  border-bottom: 2px solid #aa4f28;
 }
 
 .dropzone {
@@ -134,7 +138,7 @@ export default {
 
 .dropzone-active {
   background-color: #e9ecef;
-  border-color: #AA4F28;
+  border-color: #aa4f28;
 }
 
 .dropzone-content {

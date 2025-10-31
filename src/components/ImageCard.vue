@@ -6,13 +6,13 @@
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
-      <img 
-        :src="imageUrl" 
-        class="card-img-top" 
+      <img
+        :src="imageUrl"
+        class="card-img-top"
         :alt="title"
         @load="loading = false"
         @error="handleImageError"
-      >
+      />
     </div>
     <div class="card-body">
       <h5 class="card-title text-truncate" :title="title">{{ title }}</h5>
@@ -21,47 +21,47 @@
 </template>
 
 <script>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 export default {
-  name: 'ImageCard',
+  name: "ImageCard",
   props: {
     id: {
       type: [String, Number],
-      required: true
+      required: true,
     },
     imageUrl: {
       type: String,
-      default: 'https://via.placeholder.com/300x200'
+      default: "https://via.placeholder.com/300x200",
     },
     title: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
   setup(props) {
-    const router = useRouter()
-    const loading = ref(true)
-    const hasError = ref(false)
+    const router = useRouter();
+    const loading = ref(true);
+    const hasError = ref(false);
 
     const handleImageError = () => {
-      loading.value = false
-      hasError.value = true
-    }
+      loading.value = false;
+      hasError.value = true;
+    };
 
     const handleClick = () => {
-      router.push(`/image/${props.id}`)
-    }
+      router.push(`/image/${props.id}`);
+    };
 
     return {
       loading,
       hasError,
       handleImageError,
-      handleClick
-    }
-  }
-}
+      handleClick,
+    };
+  },
+};
 </script>
 
 <style scoped>

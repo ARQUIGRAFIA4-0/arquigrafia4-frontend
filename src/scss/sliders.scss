@@ -1,0 +1,208 @@
+.form-range {
+  --range-track-h: 20px;
+  --range-track-bg: var(--Cinza_C);
+  --range-track-radius: 999px;
+  --range-thumb-size: calc(var(--range-track-h) * 1.6);
+  --range-thumb-border: 8px solid var(--Preto);
+  --range-thumb-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  --range-focus-ring: 0 0 0 4px rgba(255, 255, 255, 0.25); // Laranja_E @ 25%
+  appearance: none;
+  width: 100%;
+  height: var(--range-thumb-size);
+  background: transparent;
+  padding: 0;
+}
+
+.form-range.form-range-sm {
+  --range-track-h: 6px;
+  --range-thumb-border: 4px solid var(--Preto);
+  --range-thumb-size: 14px;
+}
+
+.form-range.form-range-primary {
+  color: var(--Laranja_E);
+  --range-thumb-bg: var(--Cinza_E);
+}
+
+// WebKit
+.form-range::-webkit-slider-runnable-track {
+  height: var(--range-track-h);
+  background: var(--range-track-bg);
+  border-radius: var(--range-track-radius);
+}
+
+.form-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: var(--range-thumb-size);
+  height: var(--range-thumb-size);
+  background-color: var(--range-thumb-bg);
+  border-radius: 50%;
+  border: var(--range-thumb-border);
+  margin-top: calc((var(--range-track-h) - var(--range-thumb-size)) / 2);
+  box-shadow: var(--range-thumb-shadow);
+}
+
+.form-range:focus {
+  outline: none;
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: var(--range-thumb-shadow), var(--range-focus-ring);
+}
+
+.form-range:active::-webkit-slider-thumb,
+.form-range:focus::-webkit-slider-thumb,
+.form-range:focus-visible::-webkit-slider-thumb {
+  background-color: var(--range-thumb-bg);
+}
+
+// Firefox
+.form-range::-moz-range-track {
+  height: var(--range-track-h);
+  background: var(--range-track-bg);
+  border-radius: var(--range-track-radius);
+}
+
+.form-range::-moz-range-thumb {
+  width: var(--range-thumb-size);
+  height: var(--range-thumb-size);
+  background-color: var(--range-thumb-bg);
+  border-radius: 50%;
+  border: var(--range-thumb-border);
+  box-shadow: var(--range-thumb-shadow);
+}
+
+.form-range:active::-moz-range-thumb,
+.form-range:focus::-moz-range-thumb,
+.form-range:focus-visible::-moz-range-thumb {
+  background-color: var(--range-thumb-bg);
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  box-shadow: var(--range-thumb-shadow), var(--range-focus-ring);
+}
+
+.form-range:disabled {
+  opacity: 0.5;
+}
+
+.form-range.form-range-hue {
+  // default hue for static rendering; update via inline style="--hue: <0-360>"
+  --hue: 200;
+  --range-track-bg: linear-gradient(
+    to right,
+    #f00 0%,
+    #ff0 16.66%,
+    #0f0 33.33%,
+    #0ff 50%,
+    #00f 66.66%,
+    #f0f 83.33%,
+    #f00 100%
+  );
+  color: hsl(var(--hue), 100%, 50%);
+}
+
+// Saturation picker: 0% -> 100% saturation for a given hue at 50% lightness
+.form-range.form-range-saturation {
+  --hue: 200;
+  --range-track-bg: linear-gradient(
+    to right,
+    hsl(var(--hue), 0%, 50%),
+    hsl(var(--hue), 100%, 50%)
+  );
+  color: hsl(var(--hue), 100%, 50%);
+}
+
+// Lightness picker: 0% (black) -> 50% (color) -> 100% (white)
+.form-range.form-range-lightness {
+  --hue: 200;
+  --range-track-bg: linear-gradient(
+    to right,
+    hsl(var(--hue), 100%, 0%),
+    hsl(var(--hue), 100%, 50%),
+    hsl(var(--hue), 100%, 100%)
+  );
+  color: hsl(var(--hue), 100%, 50%);
+}
+
+.form-range-dual {
+  // Dimensions are derived from container-level vars to keep inputs in sync
+  --track-h: var(--range-track-h, 20px);
+  --thumb-size: var(--range-thumb-size, calc(var(--track-h) * 1.6));
+  --track-bg: var(--range-track-bg, var(--Cinza_C));
+  --selection-color: currentColor;
+  --min: 0%;
+  --max: 100%;
+  position: relative;
+  height: var(--thumb-size);
+}
+
+.form-range-dual.form-range-primary {
+  --range-thumb-bg: var(--Cinza_E);
+  color: var(--Preto);
+}
+
+// Base track
+.form-range-dual::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - (var(--track-h) / 2));
+  height: var(--track-h);
+  background: var(--track-bg);
+  border-radius: var(--range-track-radius, 999px);
+}
+
+// Selection fill between min and max
+.form-range-dual::after {
+  content: "";
+  position: absolute;
+  left: var(--min);
+  width: calc(var(--max) - var(--min));
+  top: calc(50% - (var(--track-h) / 2));
+  height: var(--track-h);
+  background: var(--selection-color);
+  border-radius: var(--range-track-radius, 999px);
+  pointer-events: none;
+}
+
+// Stacked inputs (lower and upper) overlayed
+.form-range-dual > .form-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: var(--thumb-size);
+  background: transparent;
+  padding: 0;
+  pointer-events: none; // allow thumbs to be interactive only
+}
+
+// Hide native tracks; only show thumbs
+.form-range-dual > .form-range::-webkit-slider-runnable-track {
+  background: transparent;
+}
+.form-range-dual > .form-range::-moz-range-track {
+  background: transparent;
+}
+
+// Make thumbs interactive and above the selection layer
+.form-range-dual > .form-range::-webkit-slider-thumb {
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+}
+.form-range-dual > .form-range::-moz-range-thumb {
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.form-range-dual.form-range-sm {
+  --range-track-h: 6px;
+}
+
+.form-range-dual.form-range-sm > .form-range {
+  --range-thumb-size: 14px;
+  --range-thumb-border: 4px solid var(--Preto);
+}

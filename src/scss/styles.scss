@@ -5,38 +5,152 @@
 
 // Bring in Bootstrap
 @import "bootstrap/scss/bootstrap";
+@import "sliders";
+@import "dropdowns";
+@import "buttons";
+@import "tags";
+@import "inputs";
+@import "alerts";
+@import "tabs";
+@import "utilities";
+@import "cards";
 
 // Import Bootstrap Icons w/ custom path to fonts folder
 // $bootstrap-icons-font-dir: "../node_modules/bootstrap-icons/font/fonts";
 // @import "bootstrap-icons/font/fonts/bootstrap-icons";
 
-// Custom styles
+// Design System - Tokens de tipografia (mobile-first)
+:root {
+  /* Headings e textos */
+  --h1-color: var(--Cinza_E);
+  --h1-fs: 30px;
+  --h1-fw: 500;
+  --h1-lh: 150%;
+
+  --h2-color: var(--Cinza_E);
+  --h2-fs: 16px;
+  --h2-fw: 500;
+  --h2-lh: 150%;
+
+  --h3-color: var(--Gray-900);
+  --h3-fs: 16px;
+  --h3-fw: 500;
+  --h3-lh: 150%;
+
+  --p-color: var(--Gray-900);
+  --p-fs: 14px;
+  --p-fw: 400;
+  --p-lh: 125%;
+
+  /* Botão (texto) */
+  --btn-uni-color: var(--Laranja_E);
+  --btn-uni-fs: 14px;
+  --btn-uni-fw: 400;
+  --btn-uni-lh: 150%;
+
+  /* Placeholder */
+  --placeholder-color: var(--Cinza_M);
+  --placeholder-fs: 12px;
+  --placeholder-fw: 400;
+  --placeholder-lh: 150%;
+
+  /* Shadows */
+  --shadow-color-rgb: 17, 24, 39;
+  --shadow-elevation-low:
+    0 1px 2px 0 rgba(var(--shadow-color-rgb), 0.1),
+    0 1px 3px 1px rgba(var(--shadow-color-rgb), 0.08);
+  --shadow-elevation-medium:
+    0 4px 6px -1px rgba(var(--shadow-color-rgb), 0.1),
+    0 2px 4px -1px rgba(var(--shadow-color-rgb), 0.06);
+  --shadow-elevation-high:
+    0 10px 15px -3px rgba(var(--shadow-color-rgb), 0.12),
+    0 4px 6px -4px rgba(var(--shadow-color-rgb), 0.08),
+    0 20px 25px -5px rgba(var(--shadow-color-rgb), 0.05);
+}
+
+@media (min-width: 768px) {
+  :root {
+    /* Menu principal - selecionado (desktop) */
+    --menu-sel-fs: 24px;
+    --menu-sel-fw: 700;
+    --menu-sel-lh: 100%;
+    --menu-sel-ls: -1.44px;
+
+    /* Submenu - selecionado (desktop) */
+    --submenu-sel-fs: 20px;
+    --submenu-sel-fw: 700;
+    --submenu-sel-lh: 100%;
+
+    /* Headings (desktop) */
+    --h1-fs: 30px;
+    --h1-fw: 500;
+    --h1-lh: 150%;
+
+    --h2-fs: 20px;
+    --h2-fw: 500;
+    --h2-lh: 150%;
+
+    --h3-fs: 16px;
+    --h3-fw: 500;
+    --h3-lh: 150%;
+
+    /* Placeholder (desktop) */
+    --placeholder-fs: 14px;
+  }
+}
+
+/* ********************************* */
+/* ********  ESTILOS GLOBAIS  ******** */
+/* ********************************* */
+
 body {
-  // margin-top: 60px;
+  font-family: "DM Sans";
   overflow-x: hidden;
+  color: var(--Cinza_E);
+}
+
+h1 {
+  color: var(--h1-color);
+  font-size: var(--h1-fs);
+  font-weight: var(--h1-fw);
+  line-height: var(--h1-lh);
+}
+
+h2 {
+  color: var(--h2-color);
+  font-size: var(--h2-fs);
+  font-weight: var(--h2-fw);
+  line-height: var(--h2-lh);
+}
+
+h3 {
+  color: var(--h3-color);
+  font-size: var(--h3-fs);
+  font-weight: var(--h3-fw);
+  line-height: var(--h3-lh);
+}
+
+p {
+  color: var(--p-color);
+  font-size: var(--p-fs);
+  font-weight: var(--p-fw);
+  line-height: var(--p-lh);
+}
+
+a {
+  color: var(--p-color);
+  font-size: var(--p-fs);
+  font-weight: var(--p-fw);
+  line-height: var(--p-lh);
+}
+
+hr {
+  border-color: #a6a6a6;
 }
 
 .home-display {
   background: url("../assets/casa-com-plantas.jpg");
   background-position: center;
-}
-
-.txt-white {
-  color: $white;
-}
-
-.nav-link {
-  font-weight: 600;
-  font-size: 24px;
-  color: #b3b3b3;
-}
-
-.nav-link:hover {
-  color: $black;
-}
-
-.nav-link:active {
-  font-weight: 700;
 }
 
 .logo {
@@ -45,44 +159,4 @@ body {
 
 .bi {
   font-size: 20px;
-}
-
-.dropdown-toggle {
-  background-color: white; /* Custom blue */
-  color: $base-text-color;
-  border: 0px;
-  padding: 10px 0px;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.dropdown-toggle:hover {
-  background-color: white;
-  color: $base-text-color;
-}
-
-.dropdown-toggle::after {
-  display: none !important;
-}
-
-.dropdown-menu {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-  min-width: 200px;
-  padding: 10px;
-  border-width: 0px;
-  border-top: none;
-  margin-top: -1px; 
-  border-top-right-radius: 0;
-  border-top-left-radius: 0;
-}
-
-.btn {
-  --bs-btn-active-color: $base-text-color;
-  --bs-btn-active-bg: white;
-}
-
-hr {
-  border-color: #A6A6A6;
 }
