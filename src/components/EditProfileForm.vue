@@ -143,16 +143,21 @@ function removeSocial(key) {
 }
 
 async function updatePersonalData() {
-  // Atualiza user apenas se o nome foi alterado
+  // Atualiza user somente se o nome foi alterado
   if (name.value !== props.userData.name) {
     try {
       const payload = {
         name: name.value,
         email: props.userData.email
       };
-      await store.updateUser(props.userData.id, payload);
+      // Atualiza dados do usuário no banco de dados
+      const response = await usersStore.updateUser(userAuthHeader.value, props.userData.id, payload);
+      // Atualiza o estado reativo do usuário após alteração no banco de dados
+      loggedUser.value = response.user;
+      // Atualiza dados do usuário no local storage
+      localStorage.setItem("loggedUser", JSON.stringify(response.user));
     } catch (error) {
-      console.error("Erro ao atualizar user.");
+      throw new Error('Erro ao atualizar dados do/a usuário/a.');
     }
   }
 
