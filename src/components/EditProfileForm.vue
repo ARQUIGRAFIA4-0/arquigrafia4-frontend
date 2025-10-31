@@ -1,8 +1,11 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import UiField from './ui/UiField.vue';
 import { useAuthStore } from "@/store/auth";
+import { useUsersStore } from '../store/users';
+import { useSubjectsStore } from "@/store/subjects";
+import { useProfilesStore } from '../store/profiles';
 
 const props = defineProps({
   profileData: {
@@ -15,8 +18,12 @@ const props = defineProps({
   }
 });
 
-const store = useAuthStore();
 const router = useRouter();
+const authStore = useAuthStore();
+const usersStore = useUsersStore();
+const profilesStore = useProfilesStore();
+const subjectsStore = useSubjectsStore();
+const userAuthHeader = computed(() => authStore.authHeader);
 const today = new Date().toISOString().slice(0, 10);
 
 const name = ref('');
