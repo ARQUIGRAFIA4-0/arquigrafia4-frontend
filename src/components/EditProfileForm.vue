@@ -76,8 +76,13 @@ watch(() => props.profileData, (newValue) => {
   race.value = newValue?.data?.race || '';
   profession.value = newValue?.data?.profession || '';
   scholarity.value = newValue?.data?.scholarity || '';
-  lattes.value = newValue?.data?.socials?.lattes || '';
-  orcid.value = newValue?.data?.socials?.orcid || '';
+  socials.value = {
+    lattes: newValue?.data?.socials?.lattes || '',
+    orcid: newValue?.data?.socials?.orcid || '',
+    linkedin: newValue?.data?.socials?.linkedin || '',
+    facebook: newValue?.data?.socials?.facebook || '',
+    instagram: newValue?.data?.socials?.instagram || ''
+  };
 
   const config = newValue?.data?.configurations || {};
   addressPublic.value = 'address' in config ? config.address : true;
@@ -117,11 +122,7 @@ async function updatePersonalData() {
       race: race.value,
       profession: profession.value,
       scholarity: scholarity.value,
-      socials: {
-        ...props.profileData.data.socials,
-        lattes: lattes.value,
-        orcid: orcid.value,
-      },
+      socials: socials.value,
       configurations: {
         address: addressPublic.value,
         gender: genderPublic.value,
@@ -131,7 +132,7 @@ async function updatePersonalData() {
         scholarity: scholarityPublic.value
       }
     };
-    await store.updateProfile(props.profileData.data.id, payload);
+    await profilesStore.updateProfile(userAuthHeader.value, props.profileData.data.id, payload);
     router.push('/eu');
   } catch (error) {
     console.error("Erro ao atualizar perfil.");
@@ -139,7 +140,7 @@ async function updatePersonalData() {
 }
 
 function handleLogout() {
-  store.logout();
+  authStore.logout();
   router.push('/');
 }
 
