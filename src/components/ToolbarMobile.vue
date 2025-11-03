@@ -83,6 +83,8 @@ const viewIconClass = computed(() => {
       return "bi-image";
     case "map":
       return "bi-map";
+    case "mosaic-outro":
+      return "bi-grid-3x3-gap";
     case "mosaic":
       return "bi-grid-1x2";
     case "grid":
