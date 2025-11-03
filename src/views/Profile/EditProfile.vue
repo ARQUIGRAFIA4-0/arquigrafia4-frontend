@@ -24,14 +24,16 @@ onMounted(async () => {
 });
 
 onMounted(() => {
-  window.addEventListener('resize', () => {
-    isMobile.value = window.innerWidth < 768;
-  });
+  window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
+
+function handleResize() {
+  isMobile.value = window.innerWidth < 768;
+}
 
 function handleNavSelect(refName) {
   selectedTab.value = refName;

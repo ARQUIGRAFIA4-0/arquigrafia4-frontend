@@ -22,20 +22,22 @@ const publicProfileData = ref(null);
 const userImages = ref([]);
 const selectedTab = ref("Imagens");
 
-onMounted(() => {
-    window.addEventListener('resize', () => {
-        isMobile.value = window.innerWidth < 768;
-    });
-});
-
 onMounted(async () => {
     userData.value = await usersStore.getUser(route.params.id);
     publicProfileData.value = await profilesStore.getPublicProfileById(route.params.id);
 });
 
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+});
+
 onUnmounted(() => {
     window.removeEventListener('resize', handleResize);
 });
+
+function handleResize() {
+  isMobile.value = window.innerWidth < 768;
+}
 
 </script>
 
