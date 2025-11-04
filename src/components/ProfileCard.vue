@@ -106,6 +106,31 @@ function checkSocials(socials) {
               <img src="@/assets/logo_orcid.png" alt="Orcid" style="width: 24px; height: 24px;" />
             </a>
           </div>
+          <div v-if="currentProfileData?.data?.socials.facebook">
+            <a :href="currentProfileData.data.socials.facebook" target="_blank" rel="noopener noreferrer">
+              <img src="@/assets/logo_facebook.svg" alt="Facebook" style="width: 24px; height: 24px;" />
+            </a>
+          </div>
+          <div v-if="currentProfileData?.data?.socials.instagram">
+            <a :href="currentProfileData.data.socials.instagram" target="_blank" rel="noopener noreferrer">
+              <img src="@/assets/logo_instagram.svg" alt="Instagram" style="width: 24px; height: 24px;" />
+            </a>
+          </div>
+          <div v-if="currentProfileData?.data?.socials.linkedin">
+            <a :href="currentProfileData.data.socials.linkedin" target="_blank" rel="noopener noreferrer">
+              <img src="@/assets/logo_linkedin.svg" alt="LinkedIn" style="width: 24px; height: 24px;" />
+            </a>
+          </div>
+          <div v-if="currentProfileData?.data?.socials.whatsapp">
+            <a :href="currentProfileData.data.socials.whatsapp" target="_blank" rel="noopener noreferrer">
+              <img src="@/assets/logo_whatsapp.svg" alt="WhatsApp" style="width: 24px; height: 24px;" />
+            </a>
+          </div>
+          <div v-if="currentProfileData?.data?.socials.x">
+            <a :href="currentProfileData.data.socials.x" target="_blank" rel="noopener noreferrer">
+              <img src="@/assets/logo_x.svg" alt="X" style="width: 24px; height: 24px;" />
+            </a>
+          </div>
         </div>
       </div>
       <div v-if="props.privateProfileData" class="profile-card__toggle-profile-visibility">
