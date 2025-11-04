@@ -99,6 +99,11 @@ function handleDrop(event) {
 <template>
   <div v-if="imagePreviews.length > 0">
     <div class="preview-box">
+      <div v-if="imagePreviews.length < 10">
+        <div class="preview-box__add-item">
+          <i class="bi bi-plus-circle-fill"></i>
+        </div>
+      </div>
       <div v-for="(preview, index) in imagePreviews" :key="index" class="preview-box__item">
         <img :src="preview.url" :alt="preview.file.name" class="preview-box__image" />
         <button @click="removeImage(index)" class="preview-box__remove-btn">&times;</button>
