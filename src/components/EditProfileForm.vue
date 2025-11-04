@@ -89,7 +89,7 @@ const socialOptions = {
   facebook: {label: "Facebook", placeholder: "http://facebook.com/seu_id_facebook"},
   instagram: {label: "Instagram", placeholder: "http://instagram.com/seu_id_instagram"},
   linkedin: {label: "Linkedin", placeholder: "http://linkedin.com/in/seu_id_linkedin"},
-  whatsapp: {label: "Whatsapp", placeholder: "DDD + Telefone: XX999999999"},
+  whatsapp: {label: "Whatsapp", placeholder: "Digite o DDD + Telefone: XX999999999"},
   x: {label: "X", placeholder: "http://x.com/seu_id_x"}
 };
 

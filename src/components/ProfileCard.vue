@@ -122,7 +122,7 @@ function checkSocials(socials) {
             </a>
           </div>
           <div v-if="currentProfileData?.data?.socials.whatsapp">
-            <a :href="currentProfileData.data.socials.whatsapp" target="_blank" rel="noopener noreferrer">
+            <a :href="`https://wa.me/${currentProfileData.data.socials.whatsapp}`" target="_blank" rel="noopener noreferrer">
               <img src="@/assets/logo_whatsapp.svg" alt="WhatsApp" />
             </a>
           </div>
