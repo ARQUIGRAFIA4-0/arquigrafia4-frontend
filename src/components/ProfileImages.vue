@@ -35,6 +35,7 @@ onUnmounted(() => {
 });
 
 const fileInputRef = ref();
+const secondaryFileInputRef = ref();
 const imagesToUpload = ref([]);
 const maxUploadFiles = 10;
 const isDragging = ref(false);
@@ -64,6 +65,32 @@ function uploadImages(event) {
   }
   imagesToUpload.value = files;
   event.target.value = null;
+}
+
+function appendImagesToUpload(event) {
+  const newFiles = Array.from(event.target.files);
+
+  const currentFiles = imagesToUpload.value;
+  const totalFiles = currentFiles.length + newFiles.length;
+  if (totalFiles > maxUploadFiles) {
+    alertMessage.value = `Você pode enviar um máximo ${maxUploadFiles} imagens por upload. Por gentileza, faça múltiplos envios se você deseja enviar um conjunto maior.`;
+    showAlert.value = true;
+    event.target.value = null;
+    return;
+  }
+  // Evita o envio de arquivos duplicados (por verificação de nome e tamanho)
+  const mergedFiles = [...currentFiles];
+  newFiles.forEach(file => {
+    if (!mergedFiles.some(f => f.name === file.name && f.size === file.size)) {
+      mergedFiles.push(file);
+    }
+  });
+  imagesToUpload.value = mergedFiles;
+  event.target.value = null;
+}
+
+function openSecondaryFileDialog() {
+  secondaryFileInputRef.value.click();
 }
 
 function handleDragOver(event) {
