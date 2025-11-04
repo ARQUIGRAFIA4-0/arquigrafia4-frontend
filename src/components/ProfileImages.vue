@@ -129,14 +129,8 @@ function handleDrop(event) {
       <div v-if="imagePreviews.length < 10">
         <label class="preview-box__add-item" @click="openSecondaryFileDialog">
           <i class="bi bi-plus-circle-fill"></i>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            class="upload-box__input"
-            @change="appendImagesToUpload"
-            ref="secondaryFileInputRef"
-          />
+          <input type="file" multiple accept="image/*" class="upload-box__input" @change="appendImagesToUpload"
+            ref="secondaryFileInputRef" />
         </label>
       </div>
       <div v-for="(preview, index) in imagePreviews" :key="index" class="preview-box__item">
@@ -197,7 +191,8 @@ $breakpoint-md: 768px;
 .preview-box {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 1rem;
+  column-gap: 2rem;
+  row-gap: 1rem;
   width: 100%;
   background-color: #FAF9F9;
   border: 2px solid #636262;
@@ -209,10 +204,11 @@ $breakpoint-md: 768px;
 
   @include md {
     min-height: 500px;
+    gap: 1rem;
   }
 
   &__add-item {
-    width: 150px;
+    width: 100%;
     height: 100px;
     display: flex;
     align-items: center;
@@ -220,6 +216,10 @@ $breakpoint-md: 768px;
     border-radius: 8px;
     border: 1px solid #2F2F2F;
     cursor: pointer;
+
+    @include md {
+      width: 150px;
+    }
 
     &:hover {
       background-color: darken(#FAF9F9, 2%);
@@ -241,10 +241,14 @@ $breakpoint-md: 768px;
   }
 
   &__image {
-    width: 150px;
+    width: 100%;
     height: 100px;
     object-fit: cover;
     border-radius: 8px;
+
+    @include md {
+      width: 150px;
+    }
   }
 
   &__remove-btn {
