@@ -277,7 +277,10 @@ $breakpoint-md: 768px;
 
   &__socials-icons {
     display: flex;
+    flex-wrap: wrap;
     gap: 20px;
+    row-gap: 15px;
+    justify-content: center;
   }
 
   &__toggle-profile-visibility {
