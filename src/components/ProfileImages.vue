@@ -159,6 +159,79 @@ $breakpoint-md: 768px;
   }
 }
 
+.preview-box {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  background-color: #FAF9F9;
+  border: 2px solid #636262;
+  border-radius: 7px;
+  border-width: 2px;
+  padding: 20px;
+  box-shadow: 4px 4px 8px 0px #0000001A;
+  align-content: start;
+
+  @include md {
+    min-height: 500px;
+  }
+
+  &__add-item {
+    width: 150px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid #2F2F2F;
+    cursor: pointer;
+
+    &:hover {
+      background-color: darken(#FAF9F9, 2%);
+    }
+
+    i {
+      font-size: 35px;
+      width: 35px;
+      height: 35px;
+      color: #575757;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  &__item {
+    position: relative;
+  }
+
+  &__image {
+    width: 150px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  &__remove-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: $color-laranja-e;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 .preview-actions-bar {
   position: fixed;
   bottom: 0;
