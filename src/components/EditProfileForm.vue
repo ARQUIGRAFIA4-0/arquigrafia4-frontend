@@ -37,9 +37,11 @@ const scholarity = ref("");
 const socials = ref({
   lattes: "",
   orcid: "",
-  linkedin: "",
   facebook: "",
-  instagram: ""
+  instagram: "",
+  linkedin: "",
+  whatsapp: "",
+  x: ""
 });
 
 const addressPublic = ref();
@@ -84,9 +86,11 @@ const raceOptions = [
 const socialOptions = {
   lattes: "Lattes",
   orcid: "Orcid",
-  linkedin: "Linkedin",
   facebook: "Facebook",
-  instagram: "Instagram"
+  instagram: "Instagram",
+  linkedin: "Linkedin",
+  whatsapp: "Whatsapp",
+  x: "X"
 };
 
 const personalRef = ref(null);
@@ -113,9 +117,11 @@ watch(() => props.profileData, (newValue) => {
   socials.value = {
     lattes: newValue?.data?.socials?.lattes || '',
     orcid: newValue?.data?.socials?.orcid || '',
-    linkedin: newValue?.data?.socials?.linkedin || '',
     facebook: newValue?.data?.socials?.facebook || '',
-    instagram: newValue?.data?.socials?.instagram || ''
+    instagram: newValue?.data?.socials?.instagram || '',
+    linkedin: newValue?.data?.socials?.linkedin || '',
+    whatsapp: newValue?.data?.socials?.whatsapp || '',
+    x: newValue?.data?.socials?.x || ''
   };
 
   const config = newValue?.data?.configurations || {};
