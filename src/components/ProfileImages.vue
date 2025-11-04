@@ -53,7 +53,7 @@ function openFileDialog() {
   fileInputRef.value.click();
 }
 
-function handleFiles(event) {
+function uploadImages(event) {
   const files = Array.from(event.target.files);
 
   if (files.length > maxUploadFiles) {
@@ -100,9 +100,17 @@ function handleDrop(event) {
   <div v-if="imagePreviews.length > 0">
     <div class="preview-box">
       <div v-if="imagePreviews.length < 10">
-        <div class="preview-box__add-item">
+        <label class="preview-box__add-item" @click="openSecondaryFileDialog">
           <i class="bi bi-plus-circle-fill"></i>
-        </div>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            class="upload-box__input"
+            @change="appendImagesToUpload"
+            ref="secondaryFileInputRef"
+          />
+        </label>
       </div>
       <div v-for="(preview, index) in imagePreviews" :key="index" class="preview-box__item">
         <img :src="preview.url" :alt="preview.file.name" class="preview-box__image" />
@@ -125,7 +133,7 @@ function handleDrop(event) {
           <p>limite aceito: 10 imagens</p>
         </div>
         <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*"
-          @change="handleFiles" />
+          @change="uploadImages" />
       </div>
     </div>
     <div v-if="props.userImages.length === 0 && !props.isCurrentUser">
