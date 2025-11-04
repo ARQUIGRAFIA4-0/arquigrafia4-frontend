@@ -57,11 +57,13 @@ function handleFiles(event) {
   const files = Array.from(event.target.files);
 
   if (files.length > maxUploadFiles) {
-    alertMessage.value = `Você pode enviar um máximo ${maxUploadFiles} imagens por upload. Por gentileza faça múltiplos envios se você deseja enviar um conjunto maior.`;
+    alertMessage.value = `Você pode enviar um máximo ${maxUploadFiles} imagens por upload. Por gentileza, faça múltiplos envios se você deseja enviar um conjunto maior.`;
     showAlert.value = true;
+    event.target.value = null;
     return;
   }
   imagesToUpload.value = files;
+  event.target.value = null;
 }
 
 function handleDragOver(event) {
@@ -86,7 +88,7 @@ function handleDrop(event) {
     return;
   }
   if (filteredFiles.length > maxUploadFiles) {
-    alertMessage.value = `Você pode enviar um máximo ${maxUploadFiles} imagens por upload. Por gentileza faça múltiplos envios se você deseja enviar um conjunto maior.`;
+    alertMessage.value = `Você pode enviar um máximo ${maxUploadFiles} imagens por upload. Por gentileza, faça múltiplos envios se você deseja enviar um conjunto maior.`;
     showAlert.value = true;
     return;
   }
@@ -235,8 +237,7 @@ $breakpoint-md: 768px;
     top: 80px;
     left: 50%;
     transform: translateX(-50%);
-    width: 50%;
-    max-width: 70%;
+    max-width: 50%;
   }
 }
 
