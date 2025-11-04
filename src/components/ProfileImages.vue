@@ -57,7 +57,7 @@ function handleFiles(event) {
   const files = Array.from(event.target.files);
 
   if (files.length > maxUploadFiles) {
-    alertMessage.value = `Você pode enviar no máximo ${maxUploadFiles} imagens por upload.`;
+    alertMessage.value = `Você pode enviar um máximo ${maxUploadFiles} imagens por upload. Por gentileza faça múltiplos envios se você deseja enviar um conjunto maior.`;
     showAlert.value = true;
     return;
   }
@@ -86,7 +86,7 @@ function handleDrop(event) {
     return;
   }
   if (filteredFiles.length > maxUploadFiles) {
-    alertMessage.value = `Você pode enviar no máximo ${maxUploadFiles} imagens por upload.`;
+    alertMessage.value = `Você pode enviar um máximo ${maxUploadFiles} imagens por upload. Por gentileza faça múltiplos envios se você deseja enviar um conjunto maior.`;
     showAlert.value = true;
     return;
   }
@@ -103,7 +103,7 @@ function handleDrop(event) {
       </div>
     </div>
     <div class="preview-actions-bar">
-      <button @click="clearImages" class="btn btn-secondary">Cancelar</button>
+      <button @click="clearImages" class="btn btn-outline-secondary">Cancelar</button>
       <button class="btn btn-primary">Enviar imagens</button>
     </div>
   </div>
@@ -122,7 +122,7 @@ function handleDrop(event) {
       </div>
     </div>
     <div v-if="props.userImages.length === 0 && !props.isCurrentUser">
-      <div class="alert alert-dark bg-off-white alert-light border border-dark border-start-3 no-photo-alert-box"
+      <div class="alert alert-dark bg-off-white alert-light border border-dark border-start-3 no-images-banner"
         role="alert">
         <i class="bi bi-exclamation-circle-fill text-dark"></i>
         <span>{{ firstName }} ainda não tem imagens no Arquigrafia.</span>
@@ -131,10 +131,10 @@ function handleDrop(event) {
   </div>
   <transition name="fade">
     <div class="upload-box__alert" v-if="showAlert">
-      <div class="alert alert-danger bg-negativo-c fs-6 text-negativo-e border border-danger border-start-3"
+      <div class="alert alert-danger h-auto bg-negativo-c fs-6 text-negativo-e border border-danger border-start-3"
         role="alert">
         <i class="bi bi-exclamation-triangle-fill text-negativo-e" />
-        {{ alertMessage }}
+        <span>{{ alertMessage }}</span>
         <button type="button" class="btn-close text-negativo-e" data-bs-dismiss="alert" aria-label="Close"
           @click="showAlert = false" />
       </div>
@@ -233,10 +233,14 @@ $breakpoint-md: 768px;
   &__alert {
     position: absolute;
     top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50%;
+    max-width: 70%;
   }
 }
 
-.no-photo-alert-box {
+.no-images-banner {
   display: inline-flex;
   align-items: center;
   height: auto;
