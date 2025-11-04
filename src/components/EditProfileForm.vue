@@ -84,13 +84,13 @@ const raceOptions = [
 ];
 
 const socialOptions = {
-  lattes: "Lattes",
-  orcid: "Orcid",
-  facebook: "Facebook",
-  instagram: "Instagram",
-  linkedin: "Linkedin",
-  whatsapp: "Whatsapp",
-  x: "X"
+  lattes: {label: "Lattes", placeholder: "http://lattes.cnpq.br/seu_id_lattes"},
+  orcid: {label: "Orcid", placeholder: "http://orcid.org/seu_id_orcid"},
+  facebook: {label: "Facebook", placeholder: "http://facebook.com/seu_id_facebook"},
+  instagram: {label: "Instagram", placeholder: "http://instagram.com/seu_id_instagram"},
+  linkedin: {label: "Linkedin", placeholder: "http://linkedin.com/in/seu_id_linkedin"},
+  whatsapp: {label: "Whatsapp", placeholder: "DDD + Telefone: XX999999999"},
+  x: {label: "X", placeholder: "http://x.com/seu_id_x"}
 };
 
 const personalRef = ref(null);
@@ -344,17 +344,17 @@ function handleCancel() {
         <div class="input-group input-group-sm">
           <button class="btn btn-primary dropdown-toggle bg-azul-e border-azul-e fw-normal" type="button"
             data-bs-toggle="dropdown" aria-expanded="false">
-            {{ socialOptions[selectedSocialOption] || "Selecione" }}
+            {{ socialOptions[selectedSocialOption]?.label || "Selecione" }}
           </button>
           <ul class="dropdown-menu menu-light">
-            <li v-for="([key, name]) in Object.entries(socialOptions).filter(([key]) => !socials[key])" :key="key">
+            <li v-for="([key, social]) in Object.entries(socialOptions).filter(([key]) => !socials[key])" :key="key">
               <button class="dropdown-item" type="button" @click="selectedSocialOption = key">
-                {{ name }}
+                {{ social.label }}
               </button>
             </li>
           </ul>
           <input v-model="selectedSocialValue" class="form-control border-azul-e border-end-0"
-            placeholder="https://www.redesocial.com/seuperfil" />
+            :placeholder="socialOptions[selectedSocialOption]?.placeholder || 'Selecione uma rede social'" />
           <button class="btn btn-light btn-sm border-azul-e border-start-0 bg-transparent" type="button"
             aria-label="Adicionar" @click="addSocial" :disabled="!selectedSocialOption || !selectedSocialValue">
             <i class="bi bi-plus-square-fill fs-8"></i>
@@ -365,7 +365,7 @@ function handleCancel() {
         <UiField class="mb-3" v-for="([key, value], idx) in Object.entries(socials).filter(([_, v]) => v)" :key="key">
           <div class="input-group input-group-sm">
             <button class="btn btn-primary bg-preto border-preto fw-normal" aria-expanded="false" disabled="true">
-              {{ socialOptions[key] }}
+              {{ socialOptions[key]?.label }}
             </button>
             <input :value="value" disabled="true" class="form-control border-azul-e border-end-0 bg-branco"
               placeholder="" />
