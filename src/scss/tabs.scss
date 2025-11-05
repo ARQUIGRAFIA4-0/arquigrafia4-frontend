@@ -1,32 +1,52 @@
 .nav-underline .nav-link {
-  font-weight: 600;
-  font-size: 24px;
-  color: #b3b3b3;
+  font-weight: 500;
+  font-size: 20px;
+  color: #1f1f1f;
   position: relative;
   display: inline-block;
+  --bs-nav-underline-border-width: 4px;
 }
 
 .nav-underline .nav-link:hover {
   color: var(--Laranja_E);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .nav-underline .nav-link:active {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .nav-underline .nav-link.active,
 .nav-underline .nav-link.show {
   color: var(--Laranja_E);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 // cria um pseudo-elemento para garantir espaco e evitar que a tab expanda e empurre outros itens.
 .nav-underline .nav-link[data-label]::after {
   content: attr(data-label);
-  font-weight: 700;
+  font-weight: 600;
   visibility: hidden;
   display: block;
   height: 0;
   overflow: hidden;
+}
+
+@media (max-width: 575.98px) {
+  .nav-underline {
+    gap: 0.5rem;
+  }
+
+  .nav-underline .nav-link {
+    font-size: 12px;
+    --bs-nav-link-padding-y: 0.375rem;
+    --bs-nav-link-padding-x: 0.75rem;
+    --bs-nav-underline-border-width: 3px;
+    padding-top: 0.25rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .nav-underline .nav-link[data-label]::after {
+    font-size: inherit;
+  }
 }
