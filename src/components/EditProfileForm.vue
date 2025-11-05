@@ -397,7 +397,7 @@ function handleCancel() {
 </template>
 
 <style lang="scss" scoped>
-@import "@/scss/variables";
+@use "@/scss/variables" as *;
 $breakpoint-md: 768px;
 
 @mixin md {
