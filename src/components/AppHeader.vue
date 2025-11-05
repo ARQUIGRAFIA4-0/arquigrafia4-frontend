@@ -16,12 +16,12 @@
         <ul class="dropdown-menu dropdown-menu-end">
           <template v-if="isLoggedIn">
             <li>
-              <router-link class="dropdown-item" to="/profile"
+              <router-link class="dropdown-item" to="/eu"
                 >Ver perfil</router-link
               >
             </li>
             <li>
-              <router-link class="dropdown-item" to="/profile/edit"
+              <router-link class="dropdown-item" to="/eu/editar"
                 >Editar perfil</router-link
               >
             </li>
