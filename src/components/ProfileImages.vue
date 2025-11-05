@@ -35,7 +35,6 @@ onUnmounted(() => {
 });
 
 const fileInputRef = ref();
-const secondaryFileInputRef = ref();
 const imagesToUpload = ref([]);
 const maxUploadFiles = 10;
 const isDragging = ref(false);
@@ -89,10 +88,6 @@ function appendImagesToUpload(event) {
   event.target.value = null;
 }
 
-function openSecondaryFileDialog() {
-  secondaryFileInputRef.value.click();
-}
-
 function handleDragOver(event) {
   event.preventDefault();
   isDragging.value = true;
@@ -127,10 +122,9 @@ function handleDrop(event) {
   <div v-if="imagePreviews.length > 0">
     <div class="preview-box">
       <div v-if="imagePreviews.length < 10">
-        <label class="preview-box__add-item" @click="openSecondaryFileDialog">
+        <label class="preview-box__add-item">
           <i class="bi bi-plus-circle-fill"></i>
-          <input type="file" multiple accept="image/*" class="upload-box__input" @change="appendImagesToUpload"
-            ref="secondaryFileInputRef" />
+          <input class="upload-box__input" type="file" multiple accept="image/*" @change="appendImagesToUpload" />
         </label>
       </div>
       <div v-for="(preview, index) in imagePreviews" :key="index" class="preview-box__item">
