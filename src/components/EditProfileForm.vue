@@ -84,13 +84,13 @@ const raceOptions = [
 ];
 
 const socialOptions = {
-  lattes: {label: "Lattes", placeholder: "http://lattes.cnpq.br/seu_id_lattes"},
-  orcid: {label: "Orcid", placeholder: "http://orcid.org/seu_id_orcid"},
-  facebook: {label: "Facebook", placeholder: "http://facebook.com/seu_id_facebook"},
-  instagram: {label: "Instagram", placeholder: "http://instagram.com/seu_id_instagram"},
-  linkedin: {label: "Linkedin", placeholder: "http://linkedin.com/in/seu_id_linkedin"},
-  whatsapp: {label: "Whatsapp", placeholder: "Digite o DDD + Telefone: XX999999999"},
-  x: {label: "X", placeholder: "http://x.com/seu_id_x"}
+  lattes: { label: "Lattes", placeholder: "http://lattes.cnpq.br/seu_id_lattes" },
+  orcid: { label: "Orcid", placeholder: "http://orcid.org/seu_id_orcid" },
+  facebook: { label: "Facebook", placeholder: "http://facebook.com/seu_id_facebook" },
+  instagram: { label: "Instagram", placeholder: "http://instagram.com/seu_id_instagram" },
+  linkedin: { label: "Linkedin", placeholder: "http://linkedin.com/in/seu_id_linkedin" },
+  whatsapp: { label: "Whatsapp", placeholder: "Digite o DDD + Telefone: XX999999999" },
+  x: { label: "X", placeholder: "http://x.com/seu_id_x" }
 };
 
 const personalRef = ref(null);
@@ -214,10 +214,13 @@ function handleCancel() {
           <input type="text" class="form-control" id="name" v-model="name" placeholder="Adicione seu nome"
             autocomplete="name" />
         </UiField>
+        <div class="d-flex flex-row-reverse mt-2">
+          <label class="form-check-label">Preenchimento obrigatório.</label>
+        </div>
       </div>
     </div>
     <!-- Data de nascimento e Localização -->
-    <div class="row mb-4">
+    <div class="row mb-4 gy-4 gy-md-0">
       <div class="col-12 col-md-6">
         <UiField id="birthdate" label="Data de nascimento" explain="Digite sua data de nascimento.">
           <input type="date" class="form-control" id="birthdate" v-model="birthdate" :max="today"
@@ -242,7 +245,7 @@ function handleCancel() {
       </div>
     </div>
     <!-- Gênero e Raça -->
-    <div class="row mb-4">
+    <div class="row mb-4 gy-4 gy-md-0">
       <div class="col-12 col-md-6">
         <UiField id="gender" label="Gênero" explain="Selecione seu gênero.">
           <div class="dropdown">
@@ -290,7 +293,7 @@ function handleCancel() {
       </div>
     </div>
     <!-- Bio -->
-    <div class="row mb-5">
+    <div class="row mb-4 mb-md-5">
       <div class="col-12">
         <UiField id="bio" label="Mini biografia" explain="Conte um pouco sobre você.">
           <textarea id="bio" class="form-control" v-model="bio" rows="5"
@@ -302,7 +305,7 @@ function handleCancel() {
       </div>
     </div>
     <!-- Escolaridade e Profissão -->
-    <div ref="professionalRef" class="row mb-5">
+    <div ref="professionalRef" class="row mb-4 mb-md-5 gy-4 gy-md-0">
       <div class="col-12 col-md-6">
         <UiField id="scholarity" label="Escolaridade" explain="Selecione sua escolaridade.">
           <div class="dropdown">

@@ -180,6 +180,7 @@ function handleDrop(event) {
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
+@use "sass:color";
 $breakpoint-md: 768px;
 
 @mixin md {
@@ -222,7 +223,7 @@ $breakpoint-md: 768px;
     }
 
     &:hover {
-      background-color: darken(#FAF9F9, 2%);
+      background-color: color.scale(#FAF9F9, $lightness: -2%);
     }
 
     i {
