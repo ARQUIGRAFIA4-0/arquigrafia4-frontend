@@ -49,7 +49,7 @@ const containerStyle = computed(() => {
 });
 
 const handleClick = () => {
-  router.push(`/image/${props.id}`);
+  router.push(`/explore/dados/image/${props.id}`);
 };
 </script>
 

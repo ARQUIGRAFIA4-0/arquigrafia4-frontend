@@ -42,9 +42,22 @@ export default [
     },
   },
   {
-    path: "/image/:id",
-    name: "image-detail",
+    path: "/explore/dados/image/:id",
+    name: "image-detail-dados",
     component: () => import("../views/ImageDetail.vue"),
+    meta: { section: "dados" },
+  },
+  {
+    path: "/explore/comentarios/image/:id",
+    name: "image-detail-comentarios",
+    component: () => import("../views/ImageDetail.vue"),
+    meta: { section: "comentarios" },
+  },
+  {
+    path: "/explore/relacionadas/image/:id",
+    name: "image-detail-relacionadas",
+    component: () => import("../views/ImageDetail.vue"),
+    meta: { section: "relacionadas" },
   },
   {
     path: "/login",
