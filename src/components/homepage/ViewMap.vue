@@ -26,9 +26,9 @@ const MAP_PITCH_2D = 0;
 const MAP_PITCH_3D = 60;
 
 const initialState = {
-  lng: -46.6388,
-  lat: -23.5489,
-  zoom: 1,
+  lng: -51.9253,
+  lat: -14.235,
+  zoom: 3,
 };
 
 const PLACEHOLDER_IMAGE_URL = "https://placehold.co/320x180?text=Imagem";

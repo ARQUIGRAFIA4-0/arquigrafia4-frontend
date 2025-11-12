@@ -2,7 +2,10 @@
   <div>
     <div class="row g-4">
       <div v-for="item in items" :key="item.id" class="col-6 col-md-4 col-lg-2">
-        <RouterLink :to="`/image/${item.id}`" class="view-grid__link">
+        <RouterLink
+          :to="`/explore/dados/image/${item.id}`"
+          class="view-grid__link"
+        >
           <UiCard class="h-100 view-grid__card">
             <template #image>
               <div class="view-grid__image-wrapper">

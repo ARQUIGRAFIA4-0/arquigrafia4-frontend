@@ -96,5 +96,13 @@ describe("Inputs (Bootstrap styles)", () => {
         </div>
       </div>
     ));
+
+    cy.get("input.form-control, textarea.form-control").each(($element) => {
+      cy.wrap($element).should(
+        "have.css",
+        "background-color",
+        "rgb(250, 249, 249)"
+      );
+    });
   });
 });
