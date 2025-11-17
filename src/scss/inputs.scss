@@ -27,10 +27,19 @@ textarea::placeholder {
   border-color: var(--Preto);
 }
 
+.form-control {
+  background-color: var(--Off_white);
+}
+
 .form-control:focus,
 .form-select:focus {
   border-color: var(--Preto);
   box-shadow: none;
+}
+
+.form-control:disabled,
+.form-control[readonly] {
+  background-color: var(--Off_white);
 }
 
 .form-check-input {
