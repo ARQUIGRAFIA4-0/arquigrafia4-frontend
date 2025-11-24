@@ -152,6 +152,38 @@ function removeSocial(key) {
   socials.value[key] = '';
 }
 
+function handleProfileImageChange(event) {
+  const uploadedFile = event.target.files[0];
+  if (!uploadedFile) return;
+
+  // Validação do arquivo de imagem
+  const reader = new FileReader();
+
+  reader.onerror = () => {
+    alert('Erro ao ler o arquivo. Por favor, selecione uma imagem válida.');
+  };
+
+  reader.onload = (e) => {
+    const img = new Image();
+
+    img.onerror = () => {
+      alert('O arquivo selecionado não é uma imagem válida.');
+      profileImageFile.value = null;
+      profileImageURLPreview.value = '';
+    };
+
+    img.onload = () => {
+      // Imagem válida
+      profileImageFile.value = uploadedFile;
+      profileImageURLPreview.value = e.target.result;
+    };
+
+    img.src = e.target.result;
+  };
+
+  reader.readAsDataURL(uploadedFile);
+}
+
 function openProfileImageDialog() {
   profileImageInputRef.value?.click();
 }
