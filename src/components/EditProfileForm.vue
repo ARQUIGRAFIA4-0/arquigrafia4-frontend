@@ -156,6 +156,13 @@ function handleProfileImageChange(event) {
   const uploadedFile = event.target.files[0];
   if (!uploadedFile) return;
 
+  // Verifica o tamanho do arquivo (2MB)
+  const maxSize = 2 * 1024 * 1024;
+  if (uploadedFile.size > maxSize) {
+    alert('Por favor, selecione uma imagem de no máximo 2MB.');
+    return;
+  }
+
   // Validação do arquivo de imagem
   const reader = new FileReader();
 
