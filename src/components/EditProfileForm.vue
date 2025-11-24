@@ -54,6 +54,10 @@ const scholarityPublic = ref();
 const selectedSocialOption = ref("");
 const selectedSocialValue = ref("");
 
+const profileImageFile = ref(null);
+const profileImageURLPreview = ref("");
+const profileImageInputRef = ref(null);
+
 const scholarityOptions = [
   "Fundamental Incompleto",
   "Fundamental Completo",
@@ -146,6 +150,10 @@ function addSocial() {
 
 function removeSocial(key) {
   socials.value[key] = '';
+}
+
+function openProfileImageDialog() {
+  profileImageInputRef.value?.click();
 }
 
 async function updatePersonalData() {
