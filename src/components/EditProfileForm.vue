@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/auth";
 import { useUsersStore } from '../store/users';
 import { useSubjectsStore } from "@/store/subjects";
 import { useProfilesStore } from '../store/profiles';
+import defaultProfileImage from '@/assets/profile_image.png';
 
 const props = defineProps({
   profileData: {
@@ -254,6 +255,21 @@ function handleCancel() {
 
 <template>
   <form @submit.prevent="updatePersonalData">
+    <!-- Foto de Perfil-->
+    <div class="profile-form__profile-image row mb-4">
+      <h3>Foto de perfil</h3>
+      <div class="d-flex flex-row gap-3 align-items-end">
+        <div class="profile-image-preview">
+          <img :src="profileImageURLPreview || defaultProfileImage" alt="Foto de perfil" />
+        </div>
+        <button type="button" class="btn btn-outline-secondary lh-1" @click="openProfileImageDialog">
+          Alterar imagem
+        </button>
+      </div>
+      <input type="file" accept="image/*" ref="profileImageInputRef" @change="handleProfileImageChange"
+        class="d-none" />
+      <label class="mt-2">Selecione imagens de até 2MB.</label>
+    </div>
     <!-- Nome -->
     <div ref="personalRef" class="row mb-4">
       <div class="col-12">
