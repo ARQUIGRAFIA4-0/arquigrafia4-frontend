@@ -473,6 +473,51 @@ $breakpoint-md: 768px;
 }
 
 .profile-form {
+  &__profile-image {
+    h3 {
+      font-weight: 500;
+      font-style: Medium;
+      font-size: 14px;
+      line-height: 150%;
+      letter-spacing: 0%;
+
+      @include md {
+        font-size: 16px;
+      }
+    }
+
+    .profile-image-preview {
+      width: 70px;
+      height: 70px;
+      background-color: $color-laranja-e;
+      border-radius: 10px;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 0;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        padding: 0;
+      }
+    }
+
+    button {
+      height: fit-content;
+    }
+
+    label {
+      font-weight: 400;
+      font-style: 9pt;
+      font-size: 12px;
+      line-height: 115%;
+      letter-spacing: 0%;
+    }
+  }
+
   &__account-button {
     display: flex;
     justify-content: space-between;
