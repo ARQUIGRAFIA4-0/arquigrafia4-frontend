@@ -138,9 +138,9 @@ function checkSocials(socials) {
         </div>
       </div>
       <div v-if="props.privateProfileData" class="profile-card__toggle-profile-visibility">
-        <button @click="toggleProfileView" class="btn btn-secondary btn-sm btn-icon">
-          <i class="bi bi-eye" /> {{ viewingPrivateProfile ? "Ver perfil público" : "Ver perfil privado" }}
-        </button>
+        <a :href="`/profile/${userData?.id}`" target="_blank" class="btn btn-secondary btn-sm btn-icon">
+          <i class="bi bi-eye" /> Ver perfil público
+        </a>
       </div>
     </div>
     <div class="profile-card__chevron-icon" v-if="isMobile">
