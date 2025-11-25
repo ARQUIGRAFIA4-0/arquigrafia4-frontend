@@ -77,7 +77,7 @@ const genderOptions = [
   "Mulher trans",
   "Não-binário",
   "Prefiro não informar"
-]
+];
 
 const raceOptions = [
   "Branca",

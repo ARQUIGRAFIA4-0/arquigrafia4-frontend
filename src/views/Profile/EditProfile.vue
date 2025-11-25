@@ -21,9 +21,7 @@ const editProfileFormRef = ref(null);
 onMounted(async () => {
   publicProfileData.value = await profilesStore.getPublicProfileById(userData.value.id);
   privateProfileData.value = await profilesStore.getProfileById(userAuthHeader.value, userData.value.id);
-});
-
-onMounted(() => {
+  
   window.addEventListener('resize', handleResize);
 });
 

@@ -57,7 +57,7 @@ function uploadImages(event) {
   const files = Array.from(event.target.files);
 
   if (files.length > maxUploadFiles) {
-    alertMessage.value = `Você pode enviar um máximo ${maxUploadFiles} imagens por upload. Por gentileza, faça múltiplos envios se você deseja enviar um conjunto maior.`;
+    alertMessage.value = `Você pode enviar um máximo de ${maxUploadFiles} imagens por upload. Por gentileza, faça múltiplos envios se você deseja enviar um conjunto maior.`;
     showAlert.value = true;
     event.target.value = null;
     return;
@@ -72,7 +72,7 @@ function appendImagesToUpload(event) {
   const currentFiles = imagesToUpload.value;
   const totalFiles = currentFiles.length + newFiles.length;
   if (totalFiles > maxUploadFiles) {
-    alertMessage.value = `Você pode enviar um máximo ${maxUploadFiles} imagens por upload. Por gentileza, faça múltiplos envios se você deseja enviar um conjunto maior.`;
+    alertMessage.value = `Você pode enviar um máximo de ${maxUploadFiles} imagens por upload. Por gentileza, faça múltiplos envios se você deseja enviar um conjunto maior.`;
     showAlert.value = true;
     event.target.value = null;
     return;
@@ -110,7 +110,7 @@ function handleDrop(event) {
     return;
   }
   if (filteredFiles.length > maxUploadFiles) {
-    alertMessage.value = `Você pode enviar um máximo ${maxUploadFiles} imagens por upload. Por gentileza, faça múltiplos envios se você deseja enviar um conjunto maior.`;
+    alertMessage.value = `Você pode enviar um máximo de ${maxUploadFiles} imagens por upload. Por gentileza, faça múltiplos envios se você deseja enviar um conjunto maior.`;
     showAlert.value = true;
     return;
   }
