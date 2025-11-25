@@ -206,8 +206,8 @@ async function updatePersonalData() {
       };
       // Atualiza dados do usuário no banco de dados
       const response = await usersStore.updateUser(userAuthHeader.value, props.userData.id, payload);
-      // Atualiza o estado reativo do usuário após alteração no banco de dados
-      loggedUser.value = response.user;
+      // Atualiza o estado reativo do usuário no authStore
+      authStore.loggedUser = response.user;
       // Atualiza dados do usuário no local storage
       localStorage.setItem("loggedUser", JSON.stringify(response.user));
     } catch (error) {

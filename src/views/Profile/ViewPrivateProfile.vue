@@ -14,7 +14,7 @@ const authStore = useAuthStore();
 const profilesStore = useProfilesStore();
 const isMobile = ref(window.innerWidth < 768);
 
-const currentUserData = ref(authStore.loggedUser);
+const currentUserData = computed(() => authStore.loggedUser);
 const currentUserAuthHeader = computed(() => authStore.authHeader);
 
 const publicProfileData = ref(null);
