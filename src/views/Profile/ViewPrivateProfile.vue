@@ -26,9 +26,7 @@ const selectedTab = ref("Imagens");
 onMounted(async () => {
   publicProfileData.value = await profilesStore.getPublicProfileById(currentUserData.value.id);
   privateProfileData.value = await profilesStore.getProfileById(currentUserAuthHeader.value, currentUserData.value.id);
-});
-
-onMounted(() => {
+  
   window.addEventListener('resize', handleResize);
 });
 
