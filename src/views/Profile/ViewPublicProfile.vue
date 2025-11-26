@@ -23,11 +23,9 @@ const userImages = ref([]);
 const selectedTab = ref("Imagens");
 
 onMounted(async () => {
-    userData.value = await usersStore.getUser(route.params.id);
-    publicProfileData.value = await profilesStore.getPublicProfileById(route.params.id);
-});
-
-onMounted(() => {
+  userData.value = await usersStore.getUser(route.params.id);
+  publicProfileData.value = await profilesStore.getPublicProfileById(route.params.id);
+  
   window.addEventListener('resize', handleResize);
 });
 
