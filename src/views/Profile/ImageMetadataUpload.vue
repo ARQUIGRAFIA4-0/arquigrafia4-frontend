@@ -20,11 +20,11 @@
     </transition>
 
     <div class="row align-items-start gy-4 metadata-upload__layout">
-      <div class="col-12 col-md-5 order-1 order-md-1">
+      <div class="col-12 col-md-6 order-1 order-md-1">
         <ImagePreviewPanel @upload-error="handleUploadError" />
       </div>
 
-      <div class="col-12 col-md-7 order-2 order-md-2">
+      <div class="col-12 col-md-6 order-2 order-md-2">
         <div
           class="d-flex flex-column flex-md-row justify-content-start align-items-start align-items-md-center gap-3 bg-white py-2"
         >
