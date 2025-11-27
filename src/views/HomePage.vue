@@ -32,12 +32,6 @@
       </div>
     </template>
 
-    <template v-else-if="viewMode === 'mosaicOutro'">
-      <div data-cy="view-mosaic-outro">
-        <view-mosaic-outro />
-      </div>
-    </template>
-
     <template v-else>
       <div data-cy="view-map">
         <view-map />
@@ -132,7 +126,6 @@ import AdvancedSearchModal from "@/components/homepage/AdvancedSearchModal.vue";
 import ViewGrid from "@/components/homepage/ViewGrid.vue";
 import ViewMap from "@/components/homepage/ViewMap.vue";
 import ViewMosaic from "@/components/homepage/ViewMosaic.vue";
-import ViewMosaicOutro from "@/components/homepage/ViewMosaicOutro.vue";
 import { useBreakpoints } from "@vueuse/core";
 import {
   selectionToViewMode,
