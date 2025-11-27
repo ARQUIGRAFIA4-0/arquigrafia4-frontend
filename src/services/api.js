@@ -116,7 +116,26 @@ const getImageComments = async (imageId) => {
     },
   ];
 };
-         
+
+const getPublishingIdentities = async () => {
+  await delay(300);
+  return [
+    {
+      id: 1,
+      name: "Lero Lero",
+      avatar: null,
+      initials: "LL",
+      type: "organization",
+    },
+    {
+      id: 2,
+      name: "Lina Bo Bardi",
+      avatar: "https://i.pravatar.cc/40?u=maria",
+      type: "user",
+    },
+  ];
+};
+
 const createEmptyFeatureCollection = () => ({
   type: "FeatureCollection",
   features: [],
@@ -211,4 +230,5 @@ export const api = {
   getGeoJSON,
   getImageDetails,
   getImageComments,
+  getPublishingIdentities,
 };
