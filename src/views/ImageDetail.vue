@@ -114,12 +114,7 @@ const loadComments = async (imageId) => {
 };
 
 const goBack = () => {
-  if (typeof window !== "undefined" && window.history.length > 1) {
-    router.back();
-    return;
-  }
-
-  router.push({ name: "explore" });
+  router.push({ name: "explore", params: { viewMode: "mosaic" } });
 };
 
 const handleDownload = () => {
