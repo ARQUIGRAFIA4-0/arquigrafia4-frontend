@@ -161,18 +161,30 @@ const handleReportSubmit = (payload) => {
 <style scoped>
 .image-display {
   width: 100%;
-  height: 100%;
-  max-height: 80vh;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(100vh - 220px);
+  max-height: calc(100dvh - 220px);
   object-fit: contain;
+  display: block;
 }
+
 .image-container {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: calc(100vh - 220px);
+  max-height: calc(100dvh - 220px);
+  overflow: hidden;
 }
 
 .loading-overlay {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .floating-menu {
