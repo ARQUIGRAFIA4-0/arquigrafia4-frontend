@@ -2,9 +2,6 @@
   <div class="mosaic-card" @click="handleClick">
     <div class="image-container" :style="containerStyle">
       <img :src="imageUrl" :alt="title" class="card-img" />
-      <div class="hover-overlay">
-        <p class="image-title">{{ title }}</p>
-      </div>
     </div>
   </div>
 </template>
@@ -84,32 +81,5 @@ const handleClick = () => {
 
 .mosaic-card:hover .card-img {
   transform: scale(1.05);
-}
-
-.hover-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.8),
-    rgba(0, 0, 0, 0.2),
-    transparent
-  );
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  display: flex;
-  align-items: flex-end;
-}
-
-.mosaic-card:hover .hover-overlay {
-  opacity: 1;
-}
-
-.image-title {
-  color: white;
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 </style>
