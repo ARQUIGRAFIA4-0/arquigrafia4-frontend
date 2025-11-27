@@ -1,14 +1,13 @@
 <template>
-  <div class="mosaic-card" @click="handleClick">
+  <router-link :to="`/explore/dados/image/${id}`" class="mosaic-card">
     <div class="image-container" :style="containerStyle">
       <img :src="imageUrl" :alt="title" class="card-img" />
     </div>
-  </div>
+  </router-link>
 </template>
 
 <script setup>
 import { computed } from "vue";
-import { useRouter } from "vue-router";
 
 const props = defineProps({
   id: {
@@ -29,8 +28,6 @@ const props = defineProps({
   },
 });
 
-const router = useRouter();
-
 const isValidAspectRatio = computed(() => {
   return Number.isFinite(props.aspectRatio) && props.aspectRatio > 0;
 });
@@ -44,14 +41,12 @@ const containerStyle = computed(() => {
     "--aspect-ratio": props.aspectRatio,
   };
 });
-
-const handleClick = () => {
-  router.push(`/explore/dados/image/${props.id}`);
-};
 </script>
 
 <style scoped>
 .mosaic-card {
+  display: block;
+  text-decoration: none;
   break-inside: avoid;
   cursor: pointer;
   transition: transform 0.3s ease;
