@@ -225,14 +225,33 @@ async function updateUserPassword(newPassword) {
 }
 
 function handlePasswordChange() {
+  // Verifica se a nova senha foi digitada
   if (!newPassword.value) {
     alert('Digite a nova senha.');
     return;
   }
+  
+  // Verifica se a senha tem pelo menos 8 caracteres
+  if (newPassword.value.length < 8) {
+    alert('A senha deve conter pelo menos 8 caracteres.');
+    return;
+  }
+  
+  // Verifica se a senha contém letras e números
+  const hasLetter = /[a-zA-Z]/.test(newPassword.value);
+  const hasNumber = /[0-9]/.test(newPassword.value);
+  
+  if (!hasLetter || !hasNumber) {
+    alert('A senha deve conter letras e números.');
+    return;
+  }
+  
+  // Verifica se a confirmação de senha confere
   if (newPassword.value !== passwordConfirmation.value) {
     alert('As senhas não conferem.');
     return;
   }
+  
   updateUserPassword(newPassword.value)
     .then(() => {
       alert('Senha alterada com sucesso!');
