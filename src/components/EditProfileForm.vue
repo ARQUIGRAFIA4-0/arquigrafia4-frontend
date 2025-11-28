@@ -223,7 +223,24 @@ async function updateUserPassword(newPassword) {
 }
 
 function handlePasswordChange() {
-  // Lógica para alterar a senha do usuário
+  if (!newPassword.value) {
+    alert('Digite a nova senha.');
+    return;
+  }
+  if (newPassword.value !== passwordConfirmation.value) {
+    alert('As senhas não conferem.');
+    return;
+  }
+  updateUserPassword(newPassword.value)
+    .then(() => {
+      alert('Senha alterada com sucesso!');
+      showPasswordModal.value = false;
+      newPassword.value = "";
+      passwordConfirmation.value = "";
+    })
+    .catch(() => {
+      alert('Erro ao alterar a senha.');
+    });
 }
 
 async function updatePersonalData() {
