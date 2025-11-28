@@ -55,6 +55,7 @@ const scholarityPublic = ref();
 const selectedSocialOption = ref("");
 const selectedSocialValue = ref("");
 
+// Refs para upload de imagem de perfil
 const profileImageFile = ref(null);
 const profileImageURLPreview = ref("");
 const profileImageInputRef = ref(null);
@@ -97,6 +98,11 @@ const socialOptions = {
   whatsapp: { label: "Whatsapp", placeholder: "Digite o DDD + Telefone: XX999999999" },
   x: { label: "X", placeholder: "http://x.com/seu_id_x" }
 };
+
+// Refs para modal de alteração de senha
+const showPasswordModal = ref(false);
+const newPassword = ref("");
+const passwordConfirmation = ref("");
 
 const personalRef = ref(null);
 const professionalRef = ref(null);
@@ -194,6 +200,16 @@ function handleProfileImageChange(event) {
 
 function openProfileImageDialog() {
   profileImageInputRef.value?.click();
+}
+
+function closePasswordModal() {
+  showPasswordModal.value = false;
+  newPassword.value = "";
+  passwordConfirmation.value = "";
+}
+
+function handlePasswordChange() {
+  // Lógica para alterar a senha do usuário
 }
 
 async function updatePersonalData() {
@@ -443,14 +459,37 @@ function handleCancel() {
         </UiField>
       </ul>
     </div>
+    <!-- Botão de alteração de senha -->
     <div class="profile-form__account-button mb-2">
-      <button type="button">Alterar senha</button>
+      <button type="button" @click="showPasswordModal = true">Alterar senha</button>
       <i class="bi bi-arrow-right"></i>
     </div>
+    <!-- Modal de alteração de senha -->
+    <div v-if="showPasswordModal">
+      <div>
+        <h4>Alterar senha</h4>
+        <div>
+          <label for="newPassword">Nova senha</label>
+          <input type="password" id="newPassword" v-model="newPassword" />
+          <small>Sua senha deve conter pelo menos 8 dígitos com letras e números.</small>
+        </div>
+        <div>
+          <label for="passwordConfirmation">Confirme a nova senha</label>
+          <input type="password" id="passwordConfirmation" v-model="passwordConfirmation" />
+          <small>Este campo deve ser idêntico ao anterior.</small>
+        </div>
+        <div>
+          <button type="button" @click="closePasswordModal">Cancelar</button>
+          <button type="button" @click="handlePasswordChange">Salvar</button>
+        </div>
+      </div>
+    </div>
+    <!-- Botão de log out -->
     <div class="profile-form__account-button mb-5">
       <button type="button" @click="handleLogout">Sair do perfil</button>
       <i class="bi bi-arrow-right"></i>
     </div>
+    <!-- Botões de submit e cancelamento -->
     <div class="row row-cols-2 g-3">
       <div class="col">
         <button class="btn btn-outline-secondary btn-sm w-100" @click="handleCancel">Cancelar</button>
