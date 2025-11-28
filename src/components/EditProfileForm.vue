@@ -208,6 +208,20 @@ function closePasswordModal() {
   passwordConfirmation.value = "";
 }
 
+async function updateUserPassword(newPassword) {
+  try {
+    const payload = {
+      name: props.userData.name,
+      email: props.userData.email,
+      password: newPassword
+    };
+    // Atualiza a senha do usuário no banco de dados
+    const response = await usersStore.updateUser(userAuthHeader.value, props.userData.id, payload);
+  } catch (error) {
+    throw new Error("Erro ao atualizar a senha do usuário.");
+  }
+}
+
 function handlePasswordChange() {
   // Lógica para alterar a senha do usuário
 }
