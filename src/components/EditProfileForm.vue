@@ -502,22 +502,24 @@ function handleCancel() {
       <i class="bi bi-arrow-right"></i>
     </div>
     <!-- Modal de alteração de senha -->
-    <div v-if="showPasswordModal">
-      <div>
+    <div v-if="showPasswordModal" class="profile-form__password-modal">
+      <div class="profile-form__password-content">
         <h4>Alterar senha</h4>
-        <div>
+        <div class="mb-4">
           <label for="newPassword">Nova senha</label>
-          <input type="password" id="newPassword" v-model="newPassword" />
+          <input type="password" id="newPassword" v-model="newPassword" class="form-control" />
           <small>Sua senha deve conter pelo menos 8 dígitos com letras e números.</small>
         </div>
-        <div>
-          <label for="passwordConfirmation">Confirme a nova senha</label>
-          <input type="password" id="passwordConfirmation" v-model="passwordConfirmation" />
+        <div class="mb-5">
+          <label for="passwordConfirmation">Confirmação nova senha</label>
+          <input type="password" id="passwordConfirmation" v-model="passwordConfirmation" class="form-control" />
           <small>Este campo deve ser idêntico ao anterior.</small>
         </div>
-        <div>
-          <button type="button" @click="closePasswordModal">Cancelar</button>
-          <button type="button" @click="handlePasswordChange">Salvar</button>
+        <div class="d-flex gap-2 justify-content-end">
+          <div class="w-100 d-flex flex-row gap-2">
+            <button type="button" @click="closePasswordModal" class="btn btn-outline-secondary btn-sm w-100">Cancelar</button>
+            <button type="button" @click="handlePasswordChange" class="btn btn-secondary btn-sm w-100">Alterar senha</button>
+          </div>
         </div>
       </div>
     </div>
@@ -594,6 +596,11 @@ $breakpoint-md: 768px;
     }
   }
 
+  &__dropdown-placeholder {
+    color: #636262;
+    font-style: Italic;
+  }
+
   &__account-button {
     display: flex;
     justify-content: space-between;
@@ -630,9 +637,71 @@ $breakpoint-md: 768px;
     }
   }
 
-  &__dropdown-placeholder {
-    color: #636262;
-    font-style: Italic;
+  &__password-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(47, 47, 47, 0.2);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  &__password-content {
+    background-color: #fff;
+
+    @include md {
+      max-width: 580px;
+      border-radius: 16px;
+      gap: 16px;
+      padding: 24px 64px;
+      box-shadow: 4px 4px 8px 0px rgba(0, 0, 0, 0.1);
+    }
+
+    h4 {
+      font-weight: 500;
+      font-style: Medium;
+      font-size: 16px;
+      line-height: 150%;
+      letter-spacing: 0%;
+
+      @include md {
+        font-size: 20px;
+      }
+    }
+
+    label {
+      display: block;
+      font-weight: 500;
+      font-style: Medium;
+      line-height: 150%;
+      letter-spacing: 0%;
+
+      @include md {
+        font-size: 16px;
+        margin-bottom: 8px;
+      }
+    }
+
+    small {
+      display: block;
+      color: #2F2F2F;
+      margin-top: 5px;
+      font-weight: 400;
+      font-style: 9pt;
+      font-size: 10px;
+      line-height: 16px;
+      letter-spacing: 0%;
+
+      @include md {
+        font-size: 14px;
+        line-height: 115%;
+      }
+    }
   }
 }
 
