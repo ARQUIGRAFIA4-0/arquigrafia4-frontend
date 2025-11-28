@@ -103,6 +103,8 @@ const socialOptions = {
 const showPasswordModal = ref(false);
 const newPassword = ref("");
 const passwordConfirmation = ref("");
+const showNewPassword = ref(false);
+const showPasswordConfirmation = ref(false);
 
 const personalRef = ref(null);
 const professionalRef = ref(null);
@@ -507,18 +509,30 @@ function handleCancel() {
         <h4>Alterar senha</h4>
         <div class="mb-4">
           <label for="newPassword">Nova senha</label>
-          <input type="password" id="newPassword" v-model="newPassword" class="form-control" />
+          <div class="position-relative">
+            <input :type="showNewPassword ? 'text' : 'password'" id="newPassword" v-model="newPassword"
+              class="form-control" />
+            <i :class="showNewPassword ? 'bi bi-eye-slash' : 'bi bi-eye'" class="password-toggle-icon"
+              @click="showNewPassword = !showNewPassword"></i>
+          </div>
           <small>Sua senha deve conter pelo menos 8 dígitos com letras e números.</small>
         </div>
         <div class="mb-5">
           <label for="passwordConfirmation">Confirmação nova senha</label>
-          <input type="password" id="passwordConfirmation" v-model="passwordConfirmation" class="form-control" />
+          <div class="position-relative">
+            <input :type="showPasswordConfirmation ? 'text' : 'password'" id="passwordConfirmation"
+              v-model="passwordConfirmation" class="form-control" />
+            <i :class="showPasswordConfirmation ? 'bi bi-eye-slash' : 'bi bi-eye'" class="password-toggle-icon"
+              @click="showPasswordConfirmation = !showPasswordConfirmation"></i>
+          </div>
           <small>Este campo deve ser idêntico ao anterior.</small>
         </div>
         <div class="d-flex gap-2 justify-content-end">
           <div class="w-100 d-flex flex-row gap-2">
-            <button type="button" @click="closePasswordModal" class="btn btn-outline-secondary btn-sm w-100">Cancelar</button>
-            <button type="button" @click="handlePasswordChange" class="btn btn-secondary btn-sm w-100">Alterar senha</button>
+            <button type="button" @click="closePasswordModal"
+              class="btn btn-outline-secondary btn-sm w-100">Cancelar</button>
+            <button type="button" @click="handlePasswordChange" class="btn btn-secondary btn-sm w-100">Alterar
+              senha</button>
           </div>
         </div>
       </div>
@@ -687,6 +701,17 @@ $breakpoint-md: 768px;
       }
     }
 
+    input {
+      @include md {
+        color: #636262;
+        font-size: 14px;
+        font-weight: 400;
+        font-style: Italic;
+        line-height: 150%;
+        letter-spacing: 0%;
+      }
+    }
+
     small {
       display: block;
       color: #2F2F2F;
@@ -701,6 +726,16 @@ $breakpoint-md: 768px;
         font-size: 14px;
         line-height: 115%;
       }
+    }
+
+    .password-toggle-icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #2F2F2F;
+      font-size: 18px;
     }
   }
 }
