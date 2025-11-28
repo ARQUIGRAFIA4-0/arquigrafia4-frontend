@@ -243,6 +243,12 @@ function handlePasswordChange() {
     });
 }
 
+// Desabilita scroll do body ao abrir modal de senha
+watch(showPasswordModal, (val) => {
+  if (val) document.body.style.overflow = 'hidden';
+  else document.body.style.overflow = '';
+});
+
 async function updatePersonalData() {
   // Atualiza user somente se o nome foi alterado
   if (name.value !== props.userData.name) {
