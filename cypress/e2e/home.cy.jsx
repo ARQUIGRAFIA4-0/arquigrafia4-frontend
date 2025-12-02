@@ -186,7 +186,7 @@ describe('Página inicial', () => {
     ensureMosaicView()
   })
 
-  it('realiza busca por termo no mobile e atualiza a URL', () => {
+  it('realiza busca avançada por termo no mobile e atualiza a URL', () => {
     cy.viewport(375, 667)
     visitHome()
 
