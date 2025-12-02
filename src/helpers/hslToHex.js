@@ -1,3 +1,10 @@
+/**
+ * Converte uma cor do modelo HSL para formato hexadecimal
+ * @param {number} h - Matiz (hue) em graus (0-360)
+ * @param {number} s - Saturação em porcentagem (0-100)
+ * @param {number} l - Luminosidade em porcentagem (0-100)
+ * @returns {string} Cor em formato hexadecimal (ex: "#ff0000")
+ */
 export default function hslToHex(h, s, l) {
   const hue = Number.isFinite(Number(h)) ? Number(h) : 0;
   const saturation = Math.max(0, Math.min(100, Number.isFinite(Number(s)) ? Number(s) : 0));
@@ -33,6 +40,11 @@ export default function hslToHex(h, s, l) {
     b = x;
   }
 
+  /**
+   * Converte um valor de canal RGB normalizado para hexadecimal
+   * @param {number} value - Valor do canal (0-1)
+   * @returns {string} Valor hexadecimal de 2 caracteres
+   */
   const toHex = (value) => {
     const channel = Math.round((value + m) * 255);
     return channel.toString(16).padStart(2, "0");

@@ -1,8 +1,16 @@
 // Mock API service for images
-const randomBetween = (min, max) => Math.random() * (max - min) + min;
+import randomBetween from "@/helpers/randomBetween";
+import delay from "@/helpers/delay";
+import normalizeLimit from "@/helpers/normalizeLimit";
+import {
+  createEmptyFeatureCollection,
+  createFeatureCollectionsByType,
+} from "@/helpers/geojson";
 
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
+/**
+ * Gera coordenadas aleatórias dentro da região de São Paulo
+ * @returns {[number, number]} Array com [latitude, longitude] dentro dos limites de SP
+ */
 const randomSaoPauloLatLang = () => {
   const latMin = -23.7;
   const latMax = -23.45;
@@ -15,18 +23,17 @@ const randomSaoPauloLatLang = () => {
   return [lat, lng];
 };
 
+/** @constant {number} DEFAULT_PAGE_LIMIT - Limite padrão de itens por página */
 const DEFAULT_PAGE_LIMIT = 12;
 
-const normalizeLimit = (value, fallback) => {
-  const parsed = Number(value);
-
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return fallback;
-  }
-
-  return Math.floor(parsed);
-};
-
+/**
+ * Gera itens mock simulando uma resposta paginada da API
+ * @param {number} page - Número da página atual
+ * @param {number|Object} limitOrOptions - Limite de itens ou objeto de opções
+ * @param {number} [limitOrOptions.limit] - Limite de itens por página
+ * @param {number} [limitOrOptions.initialLimit] - Limite especial para a primeira página
+ * @returns {Promise<{items: Array<Object>, hasMore: boolean}>} Objeto com itens e indicador de mais páginas
+ */
 const generateMockItems = (page, limitOrOptions = DEFAULT_PAGE_LIMIT) => {
   const options =
     typeof limitOrOptions === "number"
@@ -67,6 +74,11 @@ const generateMockItems = (page, limitOrOptions = DEFAULT_PAGE_LIMIT) => {
   });
 };
 
+/**
+ * Obtém os detalhes completos de uma imagem pelo ID
+ * @param {number|string} id - ID da imagem
+ * @returns {Promise<Object>} Objeto com detalhes da imagem incluindo título, URL, autor, localização, descrição e tags
+ */
 const getImageDetails = async (id) => {
   await delay(500);
   return {
@@ -93,6 +105,11 @@ const getImageDetails = async (id) => {
   };
 };
 
+/**
+ * Obtém os comentários de uma imagem específica
+ * @param {number|string} imageId - ID da imagem
+ * @returns {Promise<Array<Object>>} Array de comentários com id, autor, avatar, conteúdo e data
+ */
 const getImageComments = async (imageId) => {
   await delay(300);
   return [
@@ -117,6 +134,10 @@ const getImageComments = async (imageId) => {
   ];
 };
 
+/**
+ * Obtém as identidades de publicação disponíveis para o usuário
+ * @returns {Promise<Array<Object>>} Array de identidades com id, nome, avatar e tipo (user ou organization)
+ */
 const getPublishingIdentities = async () => {
   await delay(300);
   return [
@@ -136,66 +157,13 @@ const getPublishingIdentities = async () => {
   ];
 };
 
-const createEmptyFeatureCollection = () => ({
-  type: "FeatureCollection",
-  features: [],
-});
-
-const normalizeCoordinates = (latlng) => {
-  if (!Array.isArray(latlng) || latlng.length < 2) {
-    return null;
-  }
-
-  const [lat, lng] = latlng;
-  if (typeof lat !== "number" || typeof lng !== "number") {
-    return null;
-  }
-
-  return [lng, lat];
-};
-
-const createFeatureCollectionsByType = (items = []) => {
-  const buckets = {
-    obra: [],
-    imagem: [],
-  };
-
-  items.forEach((item) => {
-    const coordinates = normalizeCoordinates(item?.latlang);
-    if (!coordinates) return;
-
-    const title = item?.title ?? `Imagem ${item?.id ?? ""}`;
-
-    const feature = {
-      type: "Feature",
-      geometry: {
-        type: "Point",
-        coordinates,
-      },
-      properties: {
-        id: item?.id ?? null,
-        title,
-        imageUrl: item?.imageUrl ?? null,
-        type: item?.type ?? null,
-      },
-    };
-
-    const bucketKey = item?.type === "obra" ? "obra" : "imagem";
-    buckets[bucketKey].push(feature);
-  });
-
-  return {
-    obra: {
-      type: "FeatureCollection",
-      features: buckets.obra,
-    },
-    imagem: {
-      type: "FeatureCollection",
-      features: buckets.imagem,
-    },
-  };
-};
-
+/**
+ * Busca todos os itens mock de todas as páginas disponíveis
+ * @param {Object} options - Opções de paginação
+ * @param {number} [options.limit] - Limite de itens por página
+ * @param {number} [options.initialLimit] - Limite especial para a primeira página
+ * @returns {Promise<Array<Object>>} Array com todos os itens de todas as páginas
+ */
 const fetchAllMockItems = async (options = {}) => {
   const allItems = [];
   let page = 1;
@@ -215,6 +183,13 @@ const fetchAllMockItems = async (options = {}) => {
   return allItems;
 };
 
+/**
+ * Obtém dados GeoJSON de todas as imagens separados por tipo
+ * @param {Object} options - Opções de paginação para busca dos itens
+ * @param {number} [options.limit] - Limite de itens por página
+ * @param {number} [options.initialLimit] - Limite especial para a primeira página
+ * @returns {Promise<{obra: Object, imagem: Object}>} Objeto com FeatureCollections de obras e imagens
+ */
 const getGeoJSON = async (options = {}) => {
   const items = await fetchAllMockItems(options);
   const collections = createFeatureCollectionsByType(items);
@@ -243,6 +218,16 @@ const searchImages = async (params) => {
   };
 };
 
+/**
+ * Objeto de API com métodos para interação com o backend (mock)
+ * @namespace api
+ * @property {Function} getImages - Obtém imagens paginadas
+ * @property {Function} getGeoJSON - Obtém dados GeoJSON das imagens
+ * @property {Function} getImageDetails - Obtém detalhes de uma imagem
+ * @property {Function} getImageComments - Obtém comentários de uma imagem
+ * @property {Function} getPublishingIdentities - Obtém identidades de publicação
+ * @property {Function} searchImages - Busca imagens por parâmetros
+ */
 export const api = {
   getImages: generateMockItems,
   getGeoJSON,
