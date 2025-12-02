@@ -53,7 +53,7 @@ const containerStyle = computed(() => {
 }
 
 .mosaic-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-3px);
 }
 
 .image-container {
@@ -75,6 +75,6 @@ const containerStyle = computed(() => {
 }
 
 .mosaic-card:hover .card-img {
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 </style>
