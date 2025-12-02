@@ -147,7 +147,7 @@
         <button class="btn btn-outline-secondary" @click="open = false">
           Cancelar
         </button>
-        <button class="btn btn-dark" @click="confirm">Busca</button>
+        <button class="btn btn-dark" @click="confirm">Buscar</button>
       </div>
     </div>
   </ui-mobile-drawer>
