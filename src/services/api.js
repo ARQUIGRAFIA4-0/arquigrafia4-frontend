@@ -225,10 +225,29 @@ const getGeoJSON = async (options = {}) => {
   };
 };
 
+/**
+ * Simula uma busca de imagens
+ * Por enquanto retorna sempre vazio para testar o componente NoSearchResults
+ * @param {Object} params - Parâmetros de busca
+ * @param {string} params.mode - Modo de busca (textual, data, cor, avancada)
+ * @param {any} params.value - Valor da busca
+ * @returns {Promise<{items: Array, total: number}>}
+ */
+const searchImages = async (params) => {
+  await delay(500);
+
+  // Simula busca sem resultados
+  return {
+    items: [],
+    total: 0,
+  };
+};
+
 export const api = {
   getImages: generateMockItems,
   getGeoJSON,
   getImageDetails,
   getImageComments,
   getPublishingIdentities,
+  searchImages,
 };

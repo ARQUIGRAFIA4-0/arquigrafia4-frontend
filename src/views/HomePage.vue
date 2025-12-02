@@ -20,7 +20,14 @@
       </ul>
     </div>
 
-    <template v-if="viewMode === 'grid'">
+    <template v-if="hasNoResults">
+      <no-search-results
+        @clear="handleClearSearch"
+        @new-search="handleNewSearch"
+      />
+    </template>
+
+    <template v-else-if="viewMode === 'grid'">
       <div class="px-3 px-md-4 pb-4 pt-2" data-cy="view-grid">
         <view-grid />
       </div>
@@ -126,6 +133,7 @@ import AdvancedSearchModal from "@/components/homepage/AdvancedSearchModal.vue";
 import ViewGrid from "@/components/homepage/ViewGrid.vue";
 import ViewMap from "@/components/homepage/ViewMap.vue";
 import ViewMosaic from "@/components/homepage/ViewMosaic.vue";
+import NoSearchResults from "@/components/homepage/NoSearchResults.vue";
 import { useBreakpoints } from "@vueuse/core";
 import {
   selectionToViewMode,
@@ -133,6 +141,7 @@ import {
   viewRouteToSelection,
 } from "@/constants/viewModes";
 import { useSearchQuery } from "@/composables/useSearchQuery";
+import { api } from "@/services/api";
 
 const route = useRoute();
 const router = useRouter();
@@ -249,8 +258,9 @@ function handleViewChange({ selection }) {
   updateRoute(selection);
 }
 
-function handleToolbarConfirm({ mode, value }) {
+async function handleToolbarConfirm({ mode, value }) {
   submitSearch({ mode, value });
+  await performSearch({ mode, value });
 }
 
 async function handleToolbarSearchModeChange(mode) {
@@ -284,10 +294,11 @@ function openAdvancedSearch() {
   modalAdvancedSearch.value = true;
 }
 
-function confirmAdvancedSearch(payload) {
+async function confirmAdvancedSearch(payload) {
   handleAdvancedFiltersUpdate(payload);
   submitSearch({ mode: "avancada", value: advancedFilters.value });
   modalAdvancedSearch.value = false;
+  await performSearch({ mode: "avancada", value: advancedFilters.value });
 }
 
 function handleToolbarViewSubcontrol(payload) {
@@ -306,22 +317,25 @@ function handleDrawerDateOpen() {
   syncFromSnapshot("data");
 }
 
-function confirmColor(color) {
+async function confirmColor(color) {
   selectedColor.value = color;
   submitSearch({ mode: "cor", value: color });
   drawerSearchColor.value = false;
+  await performSearch({ mode: "cor", value: color });
 }
 
-function confirmDate(range) {
+async function confirmDate(range) {
   dateRange.value = { ...range };
   submitSearch({ mode: "data", value: range });
   drawerSearchDate.value = false;
+  await performSearch({ mode: "data", value: range });
 }
 
-function confirmAdvancedDrawer({ value }) {
+async function confirmAdvancedDrawer({ value }) {
   handleAdvancedFiltersUpdate(value);
   submitSearch({ mode: "avancada", value: advancedFilters.value });
   drawerSearchText.value = false;
+  await performSearch({ mode: "avancada", value: advancedFilters.value });
 }
 
 function handleMobileSearchModeChange(mode) {
@@ -357,11 +371,46 @@ function handleAdvancedFiltersUpdate(filters) {
     use: filters?.use || null,
   };
 }
+
+const hasNoResults = ref(false);
+const isSearching = ref(false);
+
+async function performSearch({ mode, value }) {
+  isSearching.value = true;
+  try {
+    const result = await api.searchImages({ mode, value });
+    hasNoResults.value = result.items.length === 0;
+  } finally {
+    isSearching.value = false;
+  }
+}
+
+function handleClearSearch() {
+  textQuery.value = "";
+  dateRange.value = { start: "", end: "" };
+  selectedColor.value = null;
+  advancedFilters.value = {
+    terms: [],
+    locations: [],
+    tags: [],
+    use: null,
+  };
+  hasNoResults.value = false;
+}
+
+function handleNewSearch() {
+  hasNoResults.value = false;
+  if (isMobile.value) {
+    openSearchText();
+  } else {
+    openAdvancedSearch();
+  }
+}
 </script>
 
 <style scoped>
 .container {
-  min-height: 100vh; /* Ensure full page height */
+  min-height: 100vh;
 }
 
 .tabs-container {
