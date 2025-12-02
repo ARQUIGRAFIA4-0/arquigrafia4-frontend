@@ -665,6 +665,18 @@ const form = ref({ ...defaultForm });
 
 const useSameDataForAll = ref(false);
 
+const extractYearFromExifDate = (exifDate) => {
+  if (!exifDate) return "";
+
+  try {
+    const date = exifDate instanceof Date ? exifDate : new Date(exifDate);
+    if (isNaN(date.getTime())) return "";
+    return date.getFullYear().toString();
+  } catch {
+    return "";
+  }
+};
+
 watch(
   selectedIndex,
   (newIndex) => {
@@ -683,11 +695,20 @@ watch(
           ? { ...currentImage.exif.coordinates }
           : null);
 
+      // Usa data do EXIF se disponível e não houver data salva no metadata
+      const exifYear = extractYearFromExifDate(currentImage.exif?.date);
+      const date = storedMetadata.date || exifYear || defaultForm.date;
+      const dateAccuracy =
+        storedMetadata.dateAccuracy ||
+        (exifYear ? "exact" : defaultForm.dateAccuracy);
+
       form.value = {
         ...defaultForm,
         ...storedMetadata,
         tags,
         coordinates,
+        date,
+        dateAccuracy,
       };
 
       isTitleTouched.value = false;
