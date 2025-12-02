@@ -208,7 +208,7 @@ const getGeoJSON = async (options = {}) => {
  * @param {any} params.value - Valor da busca
  * @returns {Promise<{items: Array, total: number}>}
  */
-const searchImages = async (params) => {
+const searchImages = async () => {
   await delay(500);
 
   // Simula busca sem resultados
