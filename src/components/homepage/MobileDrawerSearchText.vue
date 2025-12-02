@@ -156,6 +156,8 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import UiMobileDrawer from "@/components/ui/UiMobileDrawer.vue";
+import toggleArrayItem from "@/helpers/toggleArrayItem";
+import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 
 defineOptions({ name: "MobileDrawerSearchText" });
 
@@ -166,12 +168,7 @@ const props = defineProps({
   },
   filters: {
     type: Object,
-    default: () => ({
-      terms: [],
-      locations: [],
-      tags: [],
-      use: null,
-    }),
+    default: () => createDefaultAdvancedFilters(),
   },
 });
 
@@ -263,9 +260,7 @@ const locationSuggestions = ref([
   "Praia Grande",
 ]);
 function toggleLocation(city) {
-  const i = selectedLocations.value.indexOf(city);
-  if (i >= 0) selectedLocations.value.splice(i, 1);
-  else selectedLocations.value.push(city);
+  toggleArrayItem(selectedLocations.value, city);
   emitFiltersUpdate();
 }
 
@@ -282,9 +277,7 @@ const tagSuggestions = ref([
   "Pilar",
 ]);
 function toggleTag(tag) {
-  const i = selectedTags.value.indexOf(tag);
-  if (i >= 0) selectedTags.value.splice(i, 1);
-  else selectedTags.value.push(tag);
+  toggleArrayItem(selectedTags.value, tag);
   emitFiltersUpdate();
 }
 

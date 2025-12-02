@@ -142,6 +142,7 @@ import {
 } from "@/constants/viewModes";
 import { useSearchQuery } from "@/composables/useSearchQuery";
 import { api } from "@/services/api";
+import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 
 const route = useRoute();
 const router = useRouter();
@@ -157,12 +158,7 @@ const { searchMode, loadSnapshot, setSearchMode, submitSearch } =
 const textQuery = ref("");
 const dateRange = ref({ start: "", end: "" });
 const selectedColor = ref(null);
-const advancedFilters = ref({
-  terms: [],
-  locations: [],
-  tags: [],
-  use: null,
-});
+const advancedFilters = ref(createDefaultAdvancedFilters());
 const mapSettingsQuery = useRouteQuery("map-settings", "2d");
 
 function normalizeMapSettings(value) {
@@ -211,6 +207,7 @@ function syncFromSnapshot(mode) {
       break;
     case "avancada":
       advancedFilters.value = {
+        ...createDefaultAdvancedFilters(),
         terms: snapshot.value?.terms || [],
         locations: snapshot.value?.locations || [],
         tags: snapshot.value?.tags || [],
@@ -365,6 +362,7 @@ function openSearchDate() {
 
 function handleAdvancedFiltersUpdate(filters) {
   advancedFilters.value = {
+    ...createDefaultAdvancedFilters(),
     terms: filters?.terms || [],
     locations: filters?.locations || [],
     tags: filters?.tags || [],
@@ -389,12 +387,7 @@ function handleClearSearch() {
   textQuery.value = "";
   dateRange.value = { start: "", end: "" };
   selectedColor.value = null;
-  advancedFilters.value = {
-    terms: [],
-    locations: [],
-    tags: [],
-    use: null,
-  };
+  advancedFilters.value = createDefaultAdvancedFilters();
   hasNoResults.value = false;
 }
 

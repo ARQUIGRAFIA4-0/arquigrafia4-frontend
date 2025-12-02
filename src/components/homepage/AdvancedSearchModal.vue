@@ -176,6 +176,8 @@
 
 <script setup>
 import { computed, ref, watch } from "vue";
+import toggleArrayItem from "@/helpers/toggleArrayItem";
+import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 
 defineOptions({
   name: "AdvancedSearchModal",
@@ -188,12 +190,7 @@ const props = defineProps({
   },
   filters: {
     type: Object,
-    default: () => ({
-      terms: [],
-      locations: [],
-      tags: [],
-      use: null,
-    }),
+    default: () => createDefaultAdvancedFilters(),
   },
 });
 
@@ -302,23 +299,11 @@ function removeSearchTerm(index) {
 }
 
 function toggleLocation(city) {
-  const list = selectedLocations.value;
-  const i = list.indexOf(city);
-  if (i >= 0) {
-    list.splice(i, 1);
-  } else {
-    list.push(city);
-  }
+  toggleArrayItem(selectedLocations.value, city);
 }
 
 function toggleTag(tag) {
-  const list = selectedTags.value;
-  const i = list.indexOf(tag);
-  if (i >= 0) {
-    list.splice(i, 1);
-  } else {
-    list.push(tag);
-  }
+  toggleArrayItem(selectedTags.value, tag);
 }
 
 function setUse(use) {

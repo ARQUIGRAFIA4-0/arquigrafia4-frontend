@@ -66,7 +66,7 @@
           <i :class="['bi', searchIconClass]" />
         </button>
         <ul class="dropdown-menu menu-dark mt-3">
-          <li v-for="option in searchOptions" :key="option.mode">
+          <li v-for="option in searchOptionsList" :key="option.mode">
             <button
               class="dropdown-item"
               :class="{ active: currentSearchMode === option.mode }"
@@ -174,11 +174,13 @@
 import { computed, ref, watch } from "vue";
 import hslToHex from "@/helpers/hslToHex";
 import hexToHue from "@/helpers/hexToHue";
+import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 import {
   selectionToViewIcon,
   selectionToViewRoute,
   viewOptions,
 } from "@/constants/viewModes";
+import { getSearchIcon, searchOptions } from "@/constants/searchOptions";
 
 defineOptions({ name: "AppToolbar" });
 
@@ -201,12 +203,7 @@ const props = defineProps({
   },
   advancedFilters: {
     type: Object,
-    default: () => ({
-      terms: [],
-      locations: [],
-      tags: [],
-      use: null,
-    }),
+    default: () => createDefaultAdvancedFilters(),
   },
   viewSelection: {
     type: String,
@@ -262,26 +259,7 @@ const currentViewSubcontrol = computed(
   () => currentViewOption.value?.subcontrol || null
 );
 
-const searchOptions = [
-  { mode: "avancada", label: "Busca avançada" },
-  { mode: "textual", label: "Busca textual" },
-  { mode: "data", label: "Busca por data" },
-  { mode: "cor", label: "Busca por cor" },
-];
-
-function getSearchIcon(mode) {
-  switch (mode) {
-    case "avancada":
-      return "bi-gear";
-    case "data":
-      return "bi-calendar2-week";
-    case "cor":
-      return "bi-palette";
-    case "textual":
-    default:
-      return "bi-search";
-  }
-}
+const searchOptionsList = searchOptions();
 
 const viewIconClass = computed(() =>
   selectionToViewIcon(currentViewSelection.value)

@@ -120,6 +120,11 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import UiMobileDrawer from "@/components/ui/UiMobileDrawer.vue";
+import {
+  parseYearFromDateString,
+  clampYear,
+  setDateYear,
+} from "@/helpers/dateUtils";
 
 defineOptions({ name: "MobileDrawerSearchDate" });
 
@@ -194,32 +199,13 @@ const onYearMaxInput = () => {
 };
 
 const isSyncing = ref(false);
-const clampYear = (y) =>
-  Math.min(
-    Math.max(parseInt(y, 10) || minYearBound, minYearBound),
-    maxYearBound
-  );
-const pad2 = (n) => String(n).padStart(2, "0");
-const formatDate = (year, month = 1, day = 1) =>
-  `${year}-${pad2(month)}-${pad2(day)}`;
-const parseYearFromDateString = (dateStr) => {
-  if (!dateStr) return null;
-  const match = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?$/.exec(dateStr);
-  if (!match) return null;
-  const y = parseInt(match[1], 10);
-  if (Number.isNaN(y)) return null;
-  return clampYear(y);
+const clampYearLocal = (y) => clampYear(y, minYearBound, maxYearBound);
+const parseYearLocal = (dateStr) => {
+  const y = parseYearFromDateString(dateStr);
+  return y !== null ? clampYearLocal(y) : null;
 };
 const ensureYearOrder = () => {
   if (yearMin.value > yearMax.value) yearMax.value = yearMin.value;
-};
-const setDateYear = (dateStr, newYear, isStart) => {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || "");
-  const mm = match ? parseInt(match[2], 10) : isStart ? 1 : 12;
-  const dd = match ? parseInt(match[3], 10) : isStart ? 1 : 31;
-  const safeMonth = Math.min(Math.max(mm, 1), 12);
-  const safeDay = Math.min(Math.max(dd, 1), 31);
-  return formatDate(newYear, safeMonth, safeDay);
 };
 const updateDatesFromYears = () => {
   dateFrom.value = setDateYear(dateFrom.value, yearMin.value, true);
@@ -240,10 +226,10 @@ watch([yearMin, yearMax], () => {
 });
 watch(dateFrom, () => {
   if (isSyncing.value) return;
-  const y = parseYearFromDateString(dateFrom.value);
+  const y = parseYearLocal(dateFrom.value);
   if (y === null) return;
   isSyncing.value = true;
-  yearMin.value = clampYear(y);
+  yearMin.value = clampYearLocal(y);
   ensureYearOrder();
   // Normalize to whole-year boundaries
   updateDatesFromYears();
@@ -251,10 +237,10 @@ watch(dateFrom, () => {
 });
 watch(dateTo, () => {
   if (isSyncing.value) return;
-  const y = parseYearFromDateString(dateTo.value);
+  const y = parseYearLocal(dateTo.value);
   if (y === null) return;
   isSyncing.value = true;
-  yearMax.value = clampYear(y);
+  yearMax.value = clampYearLocal(y);
   ensureYearOrder();
   // Normalize to whole-year boundaries
   updateDatesFromYears();

@@ -17,6 +17,7 @@ import { useRouteQuery } from "@vueuse/router";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import { useIconLayer } from "@/composables/useIconLayer.js";
 import { api } from "@/services/api.js";
+import escapeHtml from "@/helpers/escapeHtml";
 
 const mapInstance = shallowRef(null);
 
@@ -32,14 +33,6 @@ const initialState = {
 };
 
 const PLACEHOLDER_IMAGE_URL = "https://placehold.co/320x180?text=Imagem";
-
-const escapeHtml = (value) =>
-  String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 
 const createPopupCardContent = ({ imageUrl, title }) => {
   const resolvedImageUrl = (() => {
