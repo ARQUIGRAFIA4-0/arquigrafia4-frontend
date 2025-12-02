@@ -3,8 +3,8 @@
     <masonry-wall
       :items="mosaicItems"
       :column-width="columnWidths"
-      :gap="8"
-      :min-columns="1"
+      :gap="5"
+      :min-columns="2"
       :max-columns="7"
       class="masonry-grid"
     >
