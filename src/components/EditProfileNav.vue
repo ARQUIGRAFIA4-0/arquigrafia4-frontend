@@ -31,6 +31,21 @@ $breakpoint-md: 768px;
   margin: 0;
   margin-bottom: 32px;
   padding: 0px 0 0 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+
+  /* Esconde a scrollbar */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  &::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+
+  @include md {
+    overflow-x: visible;
+  }
 
   li {
     margin-right: 32px;
@@ -41,6 +56,7 @@ $breakpoint-md: 768px;
     text-align: center;
     vertical-align: middle;
     cursor: pointer;
+    flex-shrink: 0;
 
     @include md {
       font-size: 20px;
