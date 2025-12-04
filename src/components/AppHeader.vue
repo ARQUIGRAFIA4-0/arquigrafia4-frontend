@@ -105,6 +105,22 @@ const handleLogout = async () => {
 <style lang="scss" scoped>
 @use "@/scss/mixins" as *;
 
+.mobile-nav {
+  position: relative;
+  padding-bottom: 12px;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: -1rem;
+    right: -1rem;
+    height: 1px;
+    background-color: var(--Cinza_C);
+    opacity: 0.5;
+  }
+}
+
 .mobile-nav__options {
   display: flex;
   justify-content: flex-start;
