@@ -363,10 +363,10 @@ function handleCancel() {
           <input type="date" class="form-control" id="birthdate" v-model="birthdate" :max="today"
             placeholder="Sua data de nascimento" />
         </UiField>
-        <div class="form-check form-switch mt-2 form-check-reverse">
+        <div class="d-flex form-check form-switch mt-2 form-check-reverse justify-content-between">
+          <label class="d-flex form-check-label align-items-center" for="birthdate_public">Exibir informação em meu perfil público.</label>
           <input class="form-check-input" type="checkbox" role="switch" id="birthdate_public" v-model="birthdatePublic"
             switch>
-          <label class="form-check-label" for="birthdate_public">Exibir informação em meu perfil público.</label>
         </div>
       </div>
       <div class="col-12 col-md-6">
@@ -374,10 +374,10 @@ function handleCancel() {
           <input type="text" class="form-control" id="address" v-model="address"
             placeholder="Sua cidade, estado ou país" autocomplete="address-line1" />
         </UiField>
-        <div class="form-check form-switch mt-2 form-check-reverse">
+        <div class="d-flex form-check form-switch mt-2 form-check-reverse justify-content-between">
+          <label class="d-flex form-check-label align-items-center" for="address_public">Exibir informação em meu perfil público.</label>
           <input class="form-check-input" type="checkbox" role="switch" id="address_public" v-model="addressPublic"
             switch>
-          <label class="form-check-label" for="address_public">Exibir informação em meu perfil público.</label>
         </div>
       </div>
     </div>
@@ -400,10 +400,10 @@ function handleCancel() {
             </ul>
           </div>
         </UiField>
-        <div class="form-check form-switch mt-2 form-check-reverse">
+        <div class="d-flex form-check form-switch mt-2 form-check-reverse justify-content-between">
+          <label class="d-flex form-check-label align-items-center" for="gender_public">Exibir informação em meu perfil público.</label>
           <input class="form-check-input" type="checkbox" role="switch" id="gender_public" v-model="genderPublic"
             switch>
-          <label class="form-check-label" for="gender_public">Exibir informação em meu perfil público.</label>
         </div>
       </div>
       <div class="col-12 col-md-6">
@@ -423,9 +423,9 @@ function handleCancel() {
             </ul>
           </div>
         </UiField>
-        <div class="form-check form-switch mt-2 form-check-reverse">
+        <div class="d-flex form-check form-switch mt-2 form-check-reverse justify-content-between">
+          <label class="d-flex form-check-label align-items-center" for="race_public">Exibir informação em meu perfil público.</label>
           <input class="form-check-input" type="checkbox" role="switch" id="race_public" v-model="racePublic" switch>
-          <label class="form-check-label" for="race_public">Exibir informação em meu perfil público.</label>
         </div>
       </div>
     </div>
@@ -460,20 +460,20 @@ function handleCancel() {
             </ul>
           </div>
         </UiField>
-        <div class="form-check form-switch mt-2 form-check-reverse">
+        <div class="d-flex form-check form-switch mt-2 form-check-reverse justify-content-between">
+          <label class="d-flex form-check-label align-items-center" for="scholarity_public">Exibir informação em meu perfil público.</label>
           <input class="form-check-input" type="checkbox" role="switch" id="scholarity_public"
             v-model="scholarityPublic" switch>
-          <label class="form-check-label" for="scholarity_public">Exibir informação em meu perfil público.</label>
         </div>
       </div>
       <div class="col-12 col-md-6">
         <UiField id="profession" label="Profissão" explain="Digite sua profissão.">
           <input type="text" class="form-control" id="profession" v-model="profession" placeholder="Sua ocupação" />
         </UiField>
-        <div class="form-check form-switch mt-2 form-check-reverse">
+        <div class="d-flex form-check form-switch mt-2 form-check-reverse justify-content-between">
+          <label class="d-flex form-check-label align-items-center" for="profession_public">Exibir informação em meu perfil público.</label>
           <input class="form-check-input" type="checkbox" role="switch" id="profession_public"
             v-model="professionPublic" switch>
-          <label class="form-check-label" for="profession_public">Exibir informação em meu perfil público.</label>
         </div>
       </div>
     </div>
