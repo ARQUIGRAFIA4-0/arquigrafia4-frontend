@@ -92,6 +92,11 @@ export default [
     component: () => import("../views/Profile/ViewPrivateProfile.vue"),
   },
   {
+    path: "/eu/imagens/metadados",
+    name: "image-metadata",
+    component: () => import("../views/Profile/ImageMetadataUpload.vue"),
+  },
+  {
     path: "/eu/editar",
     name: "edit-my-profile",
     component: () => import("../views/Profile/EditProfile.vue"),

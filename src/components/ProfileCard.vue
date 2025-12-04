@@ -1,5 +1,6 @@
 <script setup>
 import { defineProps, ref, computed, watch } from "vue";
+import profileImageDefault from '@/assets/profile_image.png';
 
 const props = defineProps({
   userData: { type: Object, default: null },
@@ -54,7 +55,9 @@ function checkSocials(socials) {
 <template>
   <div class="profile-card">
     <div class="profile-card__header">
-      <div class="profile-card__image"></div>
+      <div class="profile-card__image">
+        <img :src="currentProfileData?.data?.profile_image || profileImageDefault" alt="Foto de perfil" />
+      </div>
       <div class="profile-card__title">
         <h2>{{ userData?.name }}</h2>
         <div class="profile-card__address">
@@ -122,7 +125,8 @@ function checkSocials(socials) {
             </a>
           </div>
           <div v-if="currentProfileData?.data?.socials.whatsapp">
-            <a :href="`https://wa.me/${currentProfileData.data.socials.whatsapp}`" target="_blank" rel="noopener noreferrer">
+            <a :href="`https://wa.me/${currentProfileData.data.socials.whatsapp}`" target="_blank"
+              rel="noopener noreferrer">
               <img src="@/assets/logo_whatsapp.svg" alt="WhatsApp" />
             </a>
           </div>
@@ -134,9 +138,9 @@ function checkSocials(socials) {
         </div>
       </div>
       <div v-if="props.privateProfileData" class="profile-card__toggle-profile-visibility">
-        <button @click="toggleProfileView" class="btn btn-secondary btn-sm btn-icon">
-          <i class="bi bi-eye" /> {{ viewingPrivateProfile ? "Ver perfil público" : "Ver perfil privado" }}
-        </button>
+        <a :href="`/profile/${userData?.id}`" target="_blank" class="btn btn-secondary btn-sm btn-icon">
+          <i class="bi bi-eye" /> Ver perfil público
+        </a>
       </div>
     </div>
     <div class="profile-card__chevron-icon" v-if="isMobile">
@@ -188,9 +192,19 @@ $breakpoint-md: 768px;
     height: 70px;
     background-color: $color-laranja-e;
     border-radius: 10px;
+    overflow: hidden;
+    padding: 0;
 
     @include md {
       margin-bottom: 12px
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      padding: 0;
     }
   }
 

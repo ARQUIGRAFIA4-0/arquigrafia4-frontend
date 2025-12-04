@@ -1,25 +1,38 @@
 <template>
   <div class="container-fluid mosaic-container">
-    <MosaicWall :images="mosaicItems" @reach-end="handleReachEnd">
-      <template #item="{ image }">
-        <MosaicCard
-          v-if="image"
-          :id="image.id"
-          :title="image.title"
-          :image-url="image.src"
-          :aspect-ratio="image.aspectRatio"
+    <masonry-wall
+      :items="mosaicItems"
+      :column-width="columnWidths"
+      :gap="5"
+      :min-columns="2"
+      :max-columns="7"
+      class="masonry-grid"
+    >
+      <template #default="slotProps">
+        <mosaic-card
+          v-if="slotProps && slotProps.item"
+          :id="slotProps.item.id"
+          :title="slotProps.item.title"
+          :image-url="slotProps.item.src"
+          :aspect-ratio="slotProps.item.aspectRatio"
         />
       </template>
-    </MosaicWall>
+    </masonry-wall>
+
+    <div v-if="isLoading" class="text-center my-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import MosaicCard from "@/components/MosaicCard.vue";
-import MosaicWall from "@/components/MosaicWall.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 
+const columnWidths = [320, 200, 280, 260, 210, 220, 300];
 const isProcessing = ref(false);
 const mosaicItems = ref([]);
 const processedIds = new Set();
@@ -110,8 +123,13 @@ const {
   items: rawItems,
   hasNextPage,
   fetchNextPage,
+  isPending,
   isFetchingNextPage,
 } = useImagesInfiniteQuery({ initialLimit: 100 });
+
+const isLoading = computed(
+  () => isPending.value || isFetchingNextPage.value || isProcessing.value
+);
 
 const tryFetchNextPage = () => {
   if (!hasNextPage.value || isFetchingNextPage.value) {
@@ -121,9 +139,9 @@ const tryFetchNextPage = () => {
   fetchNextPage();
 };
 
-const handleReachEnd = () => {
+/* const handleReachEnd = () => {
   tryFetchNextPage();
-};
+}; */
 
 watch(
   () => rawItems.value,
@@ -132,4 +150,37 @@ watch(
   },
   { immediate: true }
 );
+
+const handleScroll = () => {
+  const scrollPosition = window.innerHeight + window.scrollY;
+  const pageBottom = document.documentElement.offsetHeight - 1000;
+
+  if (scrollPosition >= pageBottom) {
+    tryFetchNextPage();
+  }
+};
+
+const loadImages = async () => {
+  if (!hasNextPage.value) {
+    return;
+  }
+
+  await tryFetchNextPage();
+};
+
+onMounted(() => {
+  loadImages();
+  window.addEventListener("scroll", handleScroll, { passive: true });
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("scroll", handleScroll);
+});
 </script>
+
+<style scoped>
+.mosaic-container {
+  min-height: 100vh;
+}
+</style>
+

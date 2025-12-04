@@ -14,7 +14,7 @@ const authStore = useAuthStore();
 const profilesStore = useProfilesStore();
 const isMobile = ref(window.innerWidth < 768);
 
-const currentUserData = ref(authStore.loggedUser);
+const currentUserData = computed(() => authStore.loggedUser);
 const currentUserAuthHeader = computed(() => authStore.authHeader);
 
 const publicProfileData = ref(null);
@@ -26,9 +26,7 @@ const selectedTab = ref("Imagens");
 onMounted(async () => {
   publicProfileData.value = await profilesStore.getPublicProfileById(currentUserData.value.id);
   privateProfileData.value = await profilesStore.getProfileById(currentUserAuthHeader.value, currentUserData.value.id);
-});
-
-onMounted(() => {
+  
   window.addEventListener('resize', handleResize);
 });
 

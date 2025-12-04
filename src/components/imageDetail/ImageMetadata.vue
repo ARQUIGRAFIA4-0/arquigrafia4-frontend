@@ -58,6 +58,8 @@
           :style-url="mapStyleUrl"
           :center="resolvedMapCenter"
           :zoom="mapZoom"
+          :marker-position="markerPosition"
+          marker-color="#0F89E1"
         />
       </div>
     </div>
@@ -148,6 +150,16 @@ const mapCenter = computed(() => {
 
 const resolvedMapCenter = computed(() => mapCenter.value ?? DEFAULT_CENTER);
 const showMap = computed(() => Boolean(mapCenter.value));
+
+const markerPosition = computed(() => {
+  const center = mapCenter.value;
+  if (!center) {
+    return null;
+  }
+
+  const [lng, lat] = center;
+  return { lng, lat };
+});
 </script>
 
 <style scoped>

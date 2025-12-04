@@ -1,90 +1,82 @@
 <script setup>
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, computed, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
+import { useImageUploadStore } from "@/store/imageUploads";
 
 const props = defineProps({
   userImages: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   isCurrentUser: {
     type: Boolean,
-    default: false
+    default: false,
   },
   userData: {
     type: Object,
-    default: null
-  }
+    default: null,
+  },
 });
 
 const firstName = computed(() => {
   if (props.userData && props.userData.name) {
     return props.userData.name.split(" ")[0];
   }
-  return 'Este usuário';
+  return "Este usuário";
 });
 
+const uploadStore = useImageUploadStore();
+const router = useRouter();
+
 const imagePreviews = computed(() =>
-  imagesToUpload.value.map(file => ({
-    file,
-    url: URL.createObjectURL(file)
+  uploadStore.pendingImages.map((image) => ({
+    file: image.file,
+    url: URL.createObjectURL(image.file),
   }))
 );
 
 onUnmounted(() => {
-  imagePreviews.value.forEach(preview => URL.revokeObjectURL(preview.url));
+  imagePreviews.value.forEach((preview) => URL.revokeObjectURL(preview.url));
 });
 
 const fileInputRef = ref();
-const imagesToUpload = ref([]);
-const maxUploadFiles = 10;
 const isDragging = ref(false);
 const showAlert = ref(false);
 const alertMessage = ref("");
 
 function removeImage(index) {
-  imagesToUpload.value.splice(index, 1);
+  uploadStore.removeImageAt(index);
 }
 
 function clearImages() {
-  imagesToUpload.value = [];
+  uploadStore.clearImages();
 }
 
 function openFileDialog() {
   fileInputRef.value.click();
 }
 
-function uploadImages(event) {
+async function uploadImages(event) {
   const files = Array.from(event.target.files);
 
-  if (files.length > maxUploadFiles) {
-    alertMessage.value = `Você pode enviar um máximo ${maxUploadFiles} imagens por upload. Por gentileza, faça múltiplos envios se você deseja enviar um conjunto maior.`;
+  const result = await uploadStore.setImages(files);
+  if (!result.success) {
+    alertMessage.value = result.message;
     showAlert.value = true;
-    event.target.value = null;
-    return;
   }
-  imagesToUpload.value = files;
+
   event.target.value = null;
 }
 
-function appendImagesToUpload(event) {
+async function appendImagesToUpload(event) {
   const newFiles = Array.from(event.target.files);
 
-  const currentFiles = imagesToUpload.value;
-  const totalFiles = currentFiles.length + newFiles.length;
-  if (totalFiles > maxUploadFiles) {
-    alertMessage.value = `Você pode enviar um máximo ${maxUploadFiles} imagens por upload. Por gentileza, faça múltiplos envios se você deseja enviar um conjunto maior.`;
+  const result = await uploadStore.appendImages(newFiles);
+  if (!result.success) {
+    alertMessage.value = result.message;
     showAlert.value = true;
-    event.target.value = null;
-    return;
   }
-  // Evita o envio de arquivos duplicados (por verificação de nome e tamanho)
-  const mergedFiles = [...currentFiles];
-  newFiles.forEach(file => {
-    if (!mergedFiles.some(f => f.name === file.name && f.size === file.size)) {
-      mergedFiles.push(file);
-    }
-  });
-  imagesToUpload.value = mergedFiles;
+
   event.target.value = null;
 }
 
@@ -98,62 +90,100 @@ function handleDragLeave(event) {
   isDragging.value = false;
 }
 
-function handleDrop(event) {
+async function handleDrop(event) {
   event.preventDefault();
   isDragging.value = false;
   const files = Array.from(event.dataTransfer.files);
-  const filteredFiles = files.filter(file => file.type.startsWith("image/"));
+  const filteredFiles = files.filter((file) => file.type.startsWith("image/"));
 
   if (filteredFiles.length === 0) {
     alertMessage.value = `Você pode enviar apenas arquivos de imagem.`;
     showAlert.value = true;
     return;
   }
-  if (filteredFiles.length > maxUploadFiles) {
-    alertMessage.value = `Você pode enviar um máximo ${maxUploadFiles} imagens por upload. Por gentileza, faça múltiplos envios se você deseja enviar um conjunto maior.`;
+
+  const result = await uploadStore.setImages(filteredFiles);
+  if (!result.success) {
+    alertMessage.value = result.message;
     showAlert.value = true;
-    return;
   }
-  imagesToUpload.value = filteredFiles;
+}
+
+function goToMetadata() {
+  router.push({ name: "image-metadata" });
 }
 </script>
 
 <template>
   <div v-if="imagePreviews.length > 0">
     <div class="preview-box">
-      <div v-if="imagePreviews.length < 10">
+      <div v-if="imagePreviews.length < uploadStore.MAX_FILES">
         <label class="preview-box__add-item">
           <i class="bi bi-plus-circle-fill"></i>
-          <input class="upload-box__input" type="file" multiple accept="image/*" @change="appendImagesToUpload" />
+          <input
+            class="upload-box__input"
+            type="file"
+            multiple
+            accept="image/*"
+            @change="appendImagesToUpload"
+          />
         </label>
       </div>
-      <div v-for="(preview, index) in imagePreviews" :key="index" class="preview-box__item">
-        <img :src="preview.url" :alt="preview.file.name" class="preview-box__image" />
-        <button @click="removeImage(index)" class="preview-box__remove-btn">&times;</button>
+      <div
+        v-for="(preview, index) in imagePreviews"
+        :key="index"
+        class="preview-box__item"
+      >
+        <img
+          :src="preview.url"
+          :alt="preview.file.name"
+          class="preview-box__image"
+        />
+        <button @click="removeImage(index)" class="preview-box__remove-btn">
+          &times;
+        </button>
       </div>
     </div>
     <div class="preview-actions-bar">
-      <button @click="clearImages" class="btn btn-outline-secondary">Cancelar</button>
-      <button class="btn btn-primary">Enviar imagens</button>
+      <button @click="clearImages" class="btn btn-outline-secondary">
+        Cancelar
+      </button>
+      <button class="btn btn-primary" @click="goToMetadata">
+        Enviar imagens
+      </button>
     </div>
   </div>
   <div v-else>
     <div v-if="props.userImages.length === 0 && props.isCurrentUser">
-      <div class="upload-box" :class="{ 'upload-box--dragging': isDragging }" @click="openFileDialog"
-        @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
-        <h1>Você ainda não tem<br>contribuições.</h1>
+      <div
+        class="upload-box"
+        :class="{ 'upload-box--dragging': isDragging }"
+        @click="openFileDialog"
+        @dragover="handleDragOver"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
+      >
+        <h1>Você ainda não tem<br />contribuições.</h1>
         <i class="bi bi-plus-circle-fill upload-box__icon"></i>
         <div class="upload-box__instructions">
-          <p>clique aqui ou arraste um ou<br>mais arquivos para esta área.</p>
-          <p>limite aceito: 10 imagens</p>
+          <p>clique aqui ou arraste um ou<br />mais arquivos para esta área.</p>
+          <p>limite aceito: {{ uploadStore.MAX_FILES }} imagens</p>
         </div>
-        <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*"
-          @change="uploadImages" />
+        <input
+          class="upload-box__input"
+          type="file"
+          ref="fileInputRef"
+          multiple
+          accept="image/*"
+          @change="uploadImages"
+        />
       </div>
     </div>
     <div v-if="props.userImages.length === 0 && !props.isCurrentUser">
-      <div class="alert alert-dark bg-off-white alert-light border border-dark border-start-3 no-images-banner"
-        role="alert">
+      <div
+        class="alert alert-dark bg-off-white alert-light border border-dark border-start-3 no-images-banner"
+        role="alert"
+      >
         <i class="bi bi-exclamation-circle-fill text-dark"></i>
         <span>{{ firstName }} ainda não tem imagens no Arquigrafia.</span>
       </div>
@@ -161,12 +191,19 @@ function handleDrop(event) {
   </div>
   <transition name="fade">
     <div class="upload-box__alert" v-if="showAlert">
-      <div class="alert alert-danger h-auto bg-negativo-c fs-6 text-negativo-e border border-danger border-start-3"
-        role="alert">
+      <div
+        class="alert alert-danger h-auto bg-negativo-c fs-6 text-negativo-e border border-danger border-start-3"
+        role="alert"
+      >
         <i class="bi bi-exclamation-triangle-fill text-negativo-e" />
         <span>{{ alertMessage }}</span>
-        <button type="button" class="btn-close text-negativo-e" data-bs-dismiss="alert" aria-label="Close"
-          @click="showAlert = false" />
+        <button
+          type="button"
+          class="btn-close text-negativo-e"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+          @click="showAlert = false"
+        />
       </div>
     </div>
   </transition>
@@ -189,12 +226,12 @@ $breakpoint-md: 768px;
   column-gap: 2rem;
   row-gap: 1rem;
   width: 100%;
-  background-color: #FAF9F9;
+  background-color: #faf9f9;
   border: 2px solid #636262;
   border-radius: 7px;
   border-width: 2px;
   padding: 20px;
-  box-shadow: 4px 4px 8px 0px #0000001A;
+  box-shadow: 4px 4px 8px 0px #0000001a;
   align-content: start;
 
   @include md {
@@ -209,7 +246,7 @@ $breakpoint-md: 768px;
     align-items: center;
     justify-content: center;
     border-radius: 8px;
-    border: 1px solid #2F2F2F;
+    border: 1px solid #2f2f2f;
     cursor: pointer;
 
     @include md {
@@ -217,7 +254,7 @@ $breakpoint-md: 768px;
     }
 
     &:hover {
-      background-color: color.scale(#FAF9F9, $lightness: -2%);
+      background-color: color.scale(#faf9f9, $lightness: -2%);
     }
 
     i {
@@ -289,7 +326,7 @@ $breakpoint-md: 768px;
 }
 
 .upload-box {
-  >*+* {
+  > * + * {
     margin-top: 1.5rem;
   }
 
@@ -297,18 +334,18 @@ $breakpoint-md: 768px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #FAF9F9;
+  background-color: #faf9f9;
   border: 2px solid #636262;
   width: 100%;
   min-height: 500px;
   border-radius: 7px;
   border-width: 2px;
   padding: 80px 0;
-  box-shadow: 4px 4px 8px 0px #0000001A;
+  box-shadow: 4px 4px 8px 0px #0000001a;
   cursor: pointer;
 
   &--dragging {
-    background-color: rgba(#B46013, 0.6);
+    background-color: rgba(#b46013, 0.6);
   }
 
   h1 {
@@ -322,11 +359,11 @@ $breakpoint-md: 768px;
 
   &__icon {
     font-size: 50px;
-    color: #0F59A5;
+    color: #0f59a5;
   }
 
   &__instructions {
-    >*+* {
+    > * + * {
       margin-top: 1.5rem;
     }
 
@@ -390,7 +427,7 @@ $breakpoint-md: 768px;
   }
 
   &__text {
-    border: 1px solid #E0E0E0;
+    border: 1px solid #e0e0e0;
     border-top: 0;
     padding: 8px 12px;
     border-radius: 0 0 8px 8px;

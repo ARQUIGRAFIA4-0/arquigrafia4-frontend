@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/auth";
 import { useUsersStore } from '../store/users';
 import { useSubjectsStore } from "@/store/subjects";
 import { useProfilesStore } from '../store/profiles';
+import defaultProfileImage from '@/assets/profile_image.png';
 
 const props = defineProps({
   profileData: {
@@ -54,6 +55,10 @@ const scholarityPublic = ref();
 const selectedSocialOption = ref("");
 const selectedSocialValue = ref("");
 
+const profileImageFile = ref(null);
+const profileImageURLPreview = ref("");
+const profileImageInputRef = ref(null);
+
 const scholarityOptions = [
   "Fundamental Incompleto",
   "Fundamental Completo",
@@ -72,7 +77,7 @@ const genderOptions = [
   "Mulher trans",
   "Não-binário",
   "Prefiro não informar"
-]
+];
 
 const raceOptions = [
   "Branca",
@@ -148,6 +153,49 @@ function removeSocial(key) {
   socials.value[key] = '';
 }
 
+function handleProfileImageChange(event) {
+  const uploadedFile = event.target.files[0];
+  if (!uploadedFile) return;
+
+  // Verifica o tamanho do arquivo (2MB)
+  const maxSize = 2 * 1024 * 1024;
+  if (uploadedFile.size > maxSize) {
+    alert('Por favor, selecione uma imagem de no máximo 2MB.');
+    return;
+  }
+
+  // Validação do arquivo de imagem
+  const reader = new FileReader();
+
+  reader.onerror = () => {
+    alert('Erro ao ler o arquivo. Por favor, selecione uma imagem válida.');
+  };
+
+  reader.onload = (e) => {
+    const img = new Image();
+
+    img.onerror = () => {
+      alert('O arquivo selecionado não é uma imagem válida.');
+      profileImageFile.value = null;
+      profileImageURLPreview.value = '';
+    };
+
+    img.onload = () => {
+      // Imagem válida
+      profileImageFile.value = uploadedFile;
+      profileImageURLPreview.value = e.target.result;
+    };
+
+    img.src = e.target.result;
+  };
+
+  reader.readAsDataURL(uploadedFile);
+}
+
+function openProfileImageDialog() {
+  profileImageInputRef.value?.click();
+}
+
 async function updatePersonalData() {
   // Atualiza user somente se o nome foi alterado
   if (name.value !== props.userData.name) {
@@ -158,8 +206,8 @@ async function updatePersonalData() {
       };
       // Atualiza dados do usuário no banco de dados
       const response = await usersStore.updateUser(userAuthHeader.value, props.userData.id, payload);
-      // Atualiza o estado reativo do usuário após alteração no banco de dados
-      loggedUser.value = response.user;
+      // Atualiza o estado reativo do usuário no authStore
+      authStore.loggedUser = response.user;
       // Atualiza dados do usuário no local storage
       localStorage.setItem("loggedUser", JSON.stringify(response.user));
     } catch (error) {
@@ -207,6 +255,21 @@ function handleCancel() {
 
 <template>
   <form @submit.prevent="updatePersonalData">
+    <!-- Foto de Perfil-->
+    <div class="profile-form__profile-image row mb-4">
+      <h3>Foto de perfil</h3>
+      <div class="d-flex flex-row gap-3 align-items-end">
+        <div class="profile-image-preview">
+          <img :src="profileImageURLPreview || defaultProfileImage" alt="Foto de perfil" />
+        </div>
+        <button type="button" class="btn btn-outline-secondary lh-1" @click="openProfileImageDialog">
+          Alterar imagem
+        </button>
+      </div>
+      <input type="file" accept="image/*" ref="profileImageInputRef" @change="handleProfileImageChange"
+        class="d-none" />
+      <label class="mt-2">Selecione imagens de até 2MB.</label>
+    </div>
     <!-- Nome -->
     <div ref="personalRef" class="row mb-4">
       <div class="col-12">
@@ -410,6 +473,51 @@ $breakpoint-md: 768px;
 }
 
 .profile-form {
+  &__profile-image {
+    h3 {
+      font-weight: 500;
+      font-style: Medium;
+      font-size: 14px;
+      line-height: 150%;
+      letter-spacing: 0%;
+
+      @include md {
+        font-size: 16px;
+      }
+    }
+
+    .profile-image-preview {
+      width: 70px;
+      height: 70px;
+      background-color: $color-laranja-e;
+      border-radius: 10px;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 0;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        padding: 0;
+      }
+    }
+
+    button {
+      height: fit-content;
+    }
+
+    label {
+      font-weight: 400;
+      font-style: 9pt;
+      font-size: 12px;
+      line-height: 115%;
+      letter-spacing: 0%;
+    }
+  }
+
   &__account-button {
     display: flex;
     justify-content: space-between;
