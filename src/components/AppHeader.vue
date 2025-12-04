@@ -1,7 +1,6 @@
 <template>
   <header
-    class="app-header d-flex flex-wrap justify-content-between align-items-center pt-3 pb-0 pb-sm-3 mb-3 px-3 px-md-4"
-  >
+    class="app-header d-flex flex-wrap justify-content-between align-items-center pt-3 pb-0 pb-sm-3 mb-3 px-3 px-md-4">
     <div class="logo-column">
       <a href="/" class="logo">
         <img src="../assets/logo.svg" alt="Logo" class="logo" />
@@ -16,27 +15,21 @@
         <ul class="dropdown-menu dropdown-menu-end">
           <template v-if="isLoggedIn">
             <li>
-              <router-link class="dropdown-item" to="/eu"
-                >Ver perfil</router-link
-              >
+              <router-link class="dropdown-item" to="/eu">Ver perfil</router-link>
             </li>
             <li>
-              <router-link class="dropdown-item" to="/eu/editar"
-                >Editar perfil</router-link
-              >
+              <router-link class="dropdown-item" to="/eu/editar">Editar perfil</router-link>
             </li>
-            <li><hr class="dropdown-divider" /></li>
             <li>
-              <a class="dropdown-item" href="#" @click.prevent="handleLogout"
-                >Sair</a
-              >
+              <hr class="dropdown-divider" />
+            </li>
+            <li>
+              <a class="dropdown-item" href="#" @click.prevent="handleLogout">Sair</a>
             </li>
           </template>
           <template v-else>
             <li>
-              <router-link class="dropdown-item" to="/login"
-                >Entrar</router-link
-              >
+              <router-link class="dropdown-item" to="/login">Entrar</router-link>
             </li>
           </template>
         </ul>
@@ -48,19 +41,13 @@
         </span>
         <ul class="dropdown-menu dropdown-menu-end">
           <li>
-            <router-link class="dropdown-item" to="/about/project"
-              >O projeto</router-link
-            >
+            <router-link class="dropdown-item" to="/about/project">O projeto</router-link>
           </li>
           <li>
-            <router-link class="dropdown-item" to="/about/events"
-              >Eventos</router-link
-            >
+            <router-link class="dropdown-item" to="/about/events">Eventos</router-link>
           </li>
           <li>
-            <router-link class="dropdown-item" to="/about/wiki"
-              >Wiki Arquigrafia</router-link
-            >
+            <router-link class="dropdown-item" to="/about/wiki">Wiki Arquigrafia</router-link>
           </li>
         </ul>
       </div>
@@ -70,13 +57,10 @@
       <ul class="nav">
         <li v-for="option in options" :key="option.path" class="nav-item">
           <router-link :to="option.path" class="nav-link">
-            <span
-              :class="
-                route.path.startsWith(option.path)
-                  ? 'text-menu--selected'
-                  : 'text-menu--unselected'
-              "
-            >
+            <span :class="route.path.startsWith(option.path)
+              ? 'text-menu--selected'
+              : 'text-menu--unselected'
+              ">
               {{ option.label }}
             </span>
           </router-link>
@@ -86,17 +70,10 @@
     <!-- Mobile Navigation -->
     <div class="mobile-nav d-sm-none col-12 order-2 mt-3">
       <div class="mobile-nav__options">
-        <router-link
-          v-for="option in options"
-          :key="option.path"
-          :to="option.path"
-          class="mobile-nav__link"
-          :class="
-            route.path.startsWith(option.path)
-              ? 'text-menu--selected'
-              : 'text-menu--unselected'
-          "
-        >
+        <router-link v-for="option in options" :key="option.path" :to="option.path" class="mobile-nav__link" :class="route.path.startsWith(option.path)
+          ? 'text-menu--selected'
+          : 'text-menu--unselected'
+          ">
           {{ option.label }}
         </router-link>
       </div>
@@ -125,7 +102,9 @@ const handleLogout = async () => {
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use "@/scss/mixins" as *;
+
 .mobile-nav__options {
   display: flex;
   justify-content: flex-start;
@@ -138,24 +117,29 @@ const handleLogout = async () => {
 
 .text-menu--selected {
   color: var(--Cinza_E);
-  font-size: 24px;
   font-weight: 900;
+  font-size: 18px;
   line-height: 100%;
   letter-spacing: -1.08px;
+  text-align: center;
+  vertical-align: middle;
+
+  @include md {
+    font-size: 24px;
+  }
 }
 
 .text-menu--unselected {
   color: var(--Cinza_C);
-  font-size: 24px;
-  font-weight: 900;
+  font-weight: 500;
+  font-size: 18px;
   line-height: 100%;
   letter-spacing: -1.08px;
-}
+  text-align: center;
+  vertical-align: middle;
 
-@media (max-width: 575.98px) {
-  .text-menu--selected,
-  .text-menu--unselected {
-    font-size: 18px;
+  @include md {
+    font-size: 24px;
   }
 }
 </style>
