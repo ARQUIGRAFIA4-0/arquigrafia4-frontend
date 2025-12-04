@@ -1,3 +1,24 @@
+<script setup>
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "@/store/auth";
+
+const route = useRoute();
+const router = useRouter();
+const store = useAuthStore(); // Initialize the store
+const isLoggedIn = computed(() => store.isLoggedIn);
+
+const options = [
+  { label: "Explore", path: "/explore", routeName: "explore" },
+  { label: "Colabore", path: "/contribua", routeName: "contribua" },
+];
+
+const handleLogout = async () => {
+  await store.logout();
+  router.push("/"); // Redirect to home page after logout
+};
+</script>
+
 <template>
   <header
     class="app-header d-flex flex-wrap justify-content-between align-items-center pt-3 pb-0 pb-sm-3 mb-3 px-3 px-md-4">
@@ -6,11 +27,11 @@
         <img src="../assets/logo.svg" alt="Logo" class="logo" />
       </a>
     </div>
-    <div class="icons-column order-sm-3 d-flex">
+    <div class="d-flex icons-column order-sm-3 gap-3">
       <!-- Profile Dropdown -->
       <div class="dropdown">
         <span class="profile px-1" role="button" data-bs-toggle="dropdown">
-          <i class="bi bi-person-fill"></i>
+          <i class="bi bi-person-square" :style="{ color: isLoggedIn ? 'var(--Laranja_E)' : 'var(--Cinza_M)' }"></i>
         </span>
         <ul class="dropdown-menu dropdown-menu-end">
           <template v-if="isLoggedIn">
@@ -81,33 +102,12 @@
   </header>
 </template>
 
-<script setup>
-import { computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { useAuthStore } from "@/store/auth";
-
-const route = useRoute();
-const router = useRouter();
-const store = useAuthStore(); // Initialize the store
-const isLoggedIn = computed(() => store.isLoggedIn);
-
-const options = [
-  { label: "Explore", path: "/explore", routeName: "explore" },
-  { label: "Colabore", path: "/contribua", routeName: "contribua" },
-];
-
-const handleLogout = async () => {
-  await store.logout();
-  router.push("/"); // Redirect to home page after logout
-};
-</script>
-
 <style lang="scss" scoped>
 @use "@/scss/mixins" as *;
 
 .mobile-nav {
   position: relative;
-  padding-bottom: 12px;
+  padding-bottom: 15px;
 
   &::after {
     content: '';
