@@ -1,3 +1,8 @@
+/**
+ * Converte uma cor hexadecimal para seu valor de matiz (hue) no modelo HSL
+ * @param {string} hex - Cor em formato hexadecimal (ex: "#ff0000", "#f00", "ff0000")
+ * @returns {number|null} Valor do hue em graus (0-360) ou null se o formato for inválido
+ */
 export default function hexToHue(hex) {
   if (typeof hex !== "string") {
     return null;

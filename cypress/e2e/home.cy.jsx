@@ -186,7 +186,7 @@ describe('Página inicial', () => {
     ensureMosaicView()
   })
 
-  it('realiza busca por termo no mobile e atualiza a URL', () => {
+  it('realiza busca avançada por termo no mobile e atualiza a URL', () => {
     cy.viewport(375, 667)
     visitHome()
 
@@ -199,7 +199,7 @@ describe('Página inicial', () => {
       .type(query)
     cy.get('#drawer-search-text button[aria-label="Buscar"]').click()
     cy.contains('#drawer-search-text .btn-tag', query).should('exist')
-    cy.contains('#drawer-search-text button', 'Busca').click({ force: true })
+    cy.contains('#drawer-search-text button', 'Buscar').click({ force: true })
 
     cy.url({ timeout: 10000 }).should('include', 'searchMode=avancada')
     cy.url().should('include', `q=${encodeURIComponent(query)}`)
@@ -231,7 +231,7 @@ describe('Página inicial', () => {
 
     cy.get('#drawer-search-date input[type="date"]').first().clear().type(start)
     cy.get('#drawer-search-date input[type="date"]').last().clear().type(end)
-    cy.contains('#drawer-search-date button', 'Busca').click({ force: true })
+    cy.contains('#drawer-search-date button', 'Buscar').click({ force: true })
 
     cy.url({ timeout: 10000 }).should('include', 'searchMode=data')
     cy.url().should('include', `dateStart=${start}`)
@@ -246,7 +246,7 @@ describe('Página inicial', () => {
     openMobileTextDrawer()
 
     cy.contains('#drawer-search-text button', 'Concreto').click({ force: true })
-    cy.contains('#drawer-search-text button', 'Busca').click({ force: true })
+    cy.contains('#drawer-search-text button', 'Buscar').click({ force: true })
 
     cy.url({ timeout: 10000 }).should('include', 'searchMode=avancada')
     cy.url().should('include', 'tag=Concreto')

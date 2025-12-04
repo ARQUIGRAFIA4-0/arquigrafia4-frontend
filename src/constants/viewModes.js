@@ -24,14 +24,6 @@ export const VIEW_OPTIONS = [
     showFooter: false,
   },
   {
-    selection: "mosaic-outro",
-    label: "Mosaico",
-    route: "mosaic-outro",
-    mode: "mosaicOutro",
-    icon: "bi-grid-3x3-gap",
-    showFooter: false,
-  },
-  {
     selection: "map",
     label: "Mapa",
     route: "map",

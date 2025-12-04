@@ -6,6 +6,9 @@
           :image="image"
           :loading="loading"
           @load="loading = false"
+          @download="handleDownload"
+          @share="handleShare"
+          @report-submit="handleReportSubmit"
         />
       </div>
 
@@ -111,12 +114,22 @@ const loadComments = async (imageId) => {
 };
 
 const goBack = () => {
-  if (typeof window !== "undefined" && window.history.length > 1) {
-    router.back();
-    return;
-  }
+  router.push({ name: "explore", params: { viewMode: "mosaic" } });
+};
 
-  router.push({ name: "explore" });
+const handleDownload = () => {
+  console.log("Download clicked", image.value);
+  // TODO: implementar lógica de download
+};
+
+const handleShare = () => {
+  console.log("Share clicked", image.value);
+  // TODO: implementar lógica de compartilhamento
+};
+
+const handleReportSubmit = (payload) => {
+  console.log("Report submitted", payload);
+  // TODO: enviar denúncia para a API
 };
 
 onMounted(async () => {

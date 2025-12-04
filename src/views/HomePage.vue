@@ -20,7 +20,14 @@
       </ul>
     </div>
 
-    <template v-if="viewMode === 'grid'">
+    <template v-if="hasNoResults">
+      <no-search-results
+        @clear="handleClearSearch"
+        @new-search="handleNewSearch"
+      />
+    </template>
+
+    <template v-else-if="viewMode === 'grid'">
       <div class="px-3 px-md-4 pb-4 pt-2" data-cy="view-grid">
         <view-grid />
       </div>
@@ -29,12 +36,6 @@
     <template v-else-if="viewMode === 'mosaic'">
       <div data-cy="view-mosaic">
         <view-mosaic />
-      </div>
-    </template>
-
-    <template v-else-if="viewMode === 'mosaicOutro'">
-      <div data-cy="view-mosaic-outro">
-        <view-mosaic-outro />
       </div>
     </template>
 
@@ -132,7 +133,7 @@ import AdvancedSearchModal from "@/components/homepage/AdvancedSearchModal.vue";
 import ViewGrid from "@/components/homepage/ViewGrid.vue";
 import ViewMap from "@/components/homepage/ViewMap.vue";
 import ViewMosaic from "@/components/homepage/ViewMosaic.vue";
-import ViewMosaicOutro from "@/components/homepage/ViewMosaicOutro.vue";
+import NoSearchResults from "@/components/homepage/NoSearchResults.vue";
 import { useBreakpoints } from "@vueuse/core";
 import {
   selectionToViewMode,
@@ -140,6 +141,8 @@ import {
   viewRouteToSelection,
 } from "@/constants/viewModes";
 import { useSearchQuery } from "@/composables/useSearchQuery";
+import { api } from "@/services/api";
+import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 
 const route = useRoute();
 const router = useRouter();
@@ -155,12 +158,7 @@ const { searchMode, loadSnapshot, setSearchMode, submitSearch } =
 const textQuery = ref("");
 const dateRange = ref({ start: "", end: "" });
 const selectedColor = ref(null);
-const advancedFilters = ref({
-  terms: [],
-  locations: [],
-  tags: [],
-  use: null,
-});
+const advancedFilters = ref(createDefaultAdvancedFilters());
 const mapSettingsQuery = useRouteQuery("map-settings", "2d");
 
 function normalizeMapSettings(value) {
@@ -209,6 +207,7 @@ function syncFromSnapshot(mode) {
       break;
     case "avancada":
       advancedFilters.value = {
+        ...createDefaultAdvancedFilters(),
         terms: snapshot.value?.terms || [],
         locations: snapshot.value?.locations || [],
         tags: snapshot.value?.tags || [],
@@ -256,8 +255,9 @@ function handleViewChange({ selection }) {
   updateRoute(selection);
 }
 
-function handleToolbarConfirm({ mode, value }) {
+async function handleToolbarConfirm({ mode, value }) {
   submitSearch({ mode, value });
+  await performSearch({ mode, value });
 }
 
 async function handleToolbarSearchModeChange(mode) {
@@ -291,10 +291,11 @@ function openAdvancedSearch() {
   modalAdvancedSearch.value = true;
 }
 
-function confirmAdvancedSearch(payload) {
+async function confirmAdvancedSearch(payload) {
   handleAdvancedFiltersUpdate(payload);
   submitSearch({ mode: "avancada", value: advancedFilters.value });
   modalAdvancedSearch.value = false;
+  await performSearch({ mode: "avancada", value: advancedFilters.value });
 }
 
 function handleToolbarViewSubcontrol(payload) {
@@ -313,22 +314,25 @@ function handleDrawerDateOpen() {
   syncFromSnapshot("data");
 }
 
-function confirmColor(color) {
+async function confirmColor(color) {
   selectedColor.value = color;
   submitSearch({ mode: "cor", value: color });
   drawerSearchColor.value = false;
+  await performSearch({ mode: "cor", value: color });
 }
 
-function confirmDate(range) {
+async function confirmDate(range) {
   dateRange.value = { ...range };
   submitSearch({ mode: "data", value: range });
   drawerSearchDate.value = false;
+  await performSearch({ mode: "data", value: range });
 }
 
-function confirmAdvancedDrawer({ value }) {
+async function confirmAdvancedDrawer({ value }) {
   handleAdvancedFiltersUpdate(value);
   submitSearch({ mode: "avancada", value: advancedFilters.value });
   drawerSearchText.value = false;
+  await performSearch({ mode: "avancada", value: advancedFilters.value });
 }
 
 function handleMobileSearchModeChange(mode) {
@@ -358,17 +362,48 @@ function openSearchDate() {
 
 function handleAdvancedFiltersUpdate(filters) {
   advancedFilters.value = {
+    ...createDefaultAdvancedFilters(),
     terms: filters?.terms || [],
     locations: filters?.locations || [],
     tags: filters?.tags || [],
     use: filters?.use || null,
   };
 }
+
+const hasNoResults = ref(false);
+const isSearching = ref(false);
+
+async function performSearch({ mode, value }) {
+  isSearching.value = true;
+  try {
+    const result = await api.searchImages({ mode, value });
+    hasNoResults.value = result.items.length === 0;
+  } finally {
+    isSearching.value = false;
+  }
+}
+
+function handleClearSearch() {
+  textQuery.value = "";
+  dateRange.value = { start: "", end: "" };
+  selectedColor.value = null;
+  advancedFilters.value = createDefaultAdvancedFilters();
+  hasNoResults.value = false;
+}
+
+function handleNewSearch() {
+  hasNoResults.value = false;
+  if (isMobile.value) {
+    openSearchText();
+  } else {
+    openAdvancedSearch();
+  }
+}
 </script>
 
 <style scoped>
 .container {
-  min-height: 100vh; /* Ensure full page height */
+  min-height: 100vh;
 }
 
 .tabs-container {

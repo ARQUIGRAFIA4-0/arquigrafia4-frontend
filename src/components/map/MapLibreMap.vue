@@ -1,12 +1,13 @@
 <template>
   <div class="maplibre-map">
     <div ref="mapContainer" class="maplibre-map__canvas"></div>
+    <slot />
   </div>
 </template>
 
 <script setup>
 import { onMounted, onUnmounted, shallowRef, watch } from "vue";
-import { Map } from "maplibre-gl";
+import { Map, Marker } from "maplibre-gl";
 
 const props = defineProps({
   styleUrl: {
@@ -29,12 +30,55 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+  clickable: {
+    type: Boolean,
+    default: false,
+  },
+  markerColor: {
+    type: String,
+    default: "#E53935",
+  },
+  markerPosition: {
+    type: Object,
+    default: null,
+    validator: (value) =>
+      value === null ||
+      (typeof value === "object" &&
+        typeof value.lng === "number" &&
+        typeof value.lat === "number"),
+  },
 });
 
-const emit = defineEmits(["map-ready", "map-load", "map-error"]);
+const emit = defineEmits(["map-ready", "map-load", "map-error", "click"]);
 
 const mapContainer = shallowRef(null);
 const mapInstance = shallowRef(null);
+const markerInstance = shallowRef(null);
+
+const updateMarker = (lngLat) => {
+  const map = mapInstance.value;
+  if (!map) return;
+
+  if (markerInstance.value) {
+    markerInstance.value.remove();
+    markerInstance.value = null;
+  }
+
+  if (lngLat) {
+    const marker = new Marker({ color: props.markerColor })
+      .setLngLat([lngLat.lng, lngLat.lat])
+      .addTo(map);
+    markerInstance.value = marker;
+  }
+};
+
+const handleMapClick = (event) => {
+  if (!props.clickable) return;
+
+  const { lng, lat } = event.lngLat;
+  updateMarker({ lng, lat });
+  emit("click", { lng, lat });
+};
 
 const instantiateMap = () => {
   if (!mapContainer.value) return;
@@ -56,6 +100,9 @@ const instantiateMap = () => {
   const map = new Map(baseOptions);
 
   map.on("load", () => {
+    if (props.markerPosition) {
+      updateMarker(props.markerPosition);
+    }
     emit("map-ready", map);
     emit("map-load", map);
   });
@@ -63,6 +110,8 @@ const instantiateMap = () => {
   map.on("error", (event) => {
     emit("map-error", event?.error ?? event);
   });
+
+  map.on("click", handleMapClick);
 
   mapInstance.value = map;
 };
@@ -86,11 +135,24 @@ watch(
   }
 );
 
+watch(
+  () => props.markerPosition,
+  (position) => {
+    updateMarker(position);
+  },
+  { deep: true }
+);
+
 onMounted(() => {
   instantiateMap();
 });
 
 onUnmounted(() => {
+  if (markerInstance.value) {
+    markerInstance.value.remove();
+    markerInstance.value = null;
+  }
+
   const map = mapInstance.value;
   if (!map) return;
   map.remove?.();

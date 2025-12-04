@@ -28,27 +28,21 @@
         type="button"
         class="menu-button"
         aria-label="Baixar imagem"
+        @click="showDownloadModal = true"
       >
         <i class="bi bi-cloud-download-fill" aria-hidden="true"></i>
       </button>
-      <button
-        type="button"
-        class="menu-button"
-        aria-label="Favoritar imagem"
-      >
+      <button type="button" class="menu-button" aria-label="Favoritar imagem">
         <i class="bi bi-heart" aria-hidden="true"></i>
       </button>
-      <button
-        type="button"
-        class="menu-button"
-        aria-label="Ver álbum"
-      >
+      <button type="button" class="menu-button" aria-label="Ver álbum">
         <i class="bi bi-images" aria-hidden="true"></i>
       </button>
       <button
         type="button"
         class="menu-button"
         aria-label="Compartilhar"
+        @click="showShareModal = true"
       >
         <i class="bi bi-share-fill" aria-hidden="true"></i>
       </button>
@@ -63,22 +57,40 @@
         type="button"
         class="menu-button"
         aria-label="Reportar problema"
+        @click="showReportModal = true"
       >
         <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
       </button>
-      <button
-        type="button"
-        class="menu-button"
-        aria-label="Ampliar imagem"
-      >
+      <button type="button" class="menu-button" aria-label="Ampliar imagem">
         <i class="bi bi-zoom-in" aria-hidden="true"></i>
       </button>
     </div>
+
+    <DownloadModal
+      v-model="showDownloadModal"
+      :image="props.image"
+      @confirm="handleDownloadConfirm"
+    />
+
+    <ShareModal
+      v-model="showShareModal"
+      :image="props.image"
+      @confirm="handleShareConfirm"
+    />
+
+    <ReportModal
+      v-model="showReportModal"
+      :image="props.image"
+      @submit="handleReportSubmit"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import DownloadModal from "./DownloadModal.vue";
+import ReportModal from "./ReportModal.vue";
+import ShareModal from "./ShareModal.vue";
 
 const props = defineProps({
   image: {
@@ -91,13 +103,14 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["load"]);
+const emit = defineEmits(["load", "download", "share", "report-submit"]);
 
 const isHovering = ref(false);
 const isTouchDevice = ref(false);
-const shouldShowMenu = computed(
-  () => isHovering.value || isTouchDevice.value,
-);
+const showDownloadModal = ref(false);
+const showReportModal = ref(false);
+const showShareModal = ref(false);
+const shouldShowMenu = computed(() => isHovering.value || isTouchDevice.value);
 
 const handleMouseEnter = () => {
   isHovering.value = true;
@@ -131,30 +144,47 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("resize", updateDeviceCapabilities);
 });
+
+const handleDownloadConfirm = (image) => {
+  emit("download", image);
+};
+
+const handleShareConfirm = (shareData) => {
+  emit("share", shareData);
+};
+
+const handleReportSubmit = (payload) => {
+  emit("report-submit", payload);
+};
 </script>
 
 <style scoped>
 .image-display {
   width: 100%;
-  height: 100%;
-  max-height: 80vh;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(100vh - 220px);
+  max-height: calc(100dvh - 220px);
   object-fit: contain;
+  display: block;
 }
+
 .image-container {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: calc(100vh - 220px);
+  max-height: calc(100dvh - 220px);
+  overflow: hidden;
 }
 
 .loading-overlay {
-/*   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.8);
-  z-index: 1; */
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .floating-menu {
@@ -192,7 +222,9 @@ onBeforeUnmount(() => {
   background: transparent;
   color: #fff;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease,
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
     box-shadow 0.2s ease;
   padding-top: 4px !important;
 }
@@ -222,4 +254,3 @@ onBeforeUnmount(() => {
   letter-spacing: 0.08em;
 }
 </style>
-
