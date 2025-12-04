@@ -18,7 +18,7 @@ const navItems = computed(() => {
     { label: 'Avaliações', value: 'Avaliações' }
   ];
 
-    const privateNavItems = [
+  const privateNavItems = [
     { label: 'Minhas imagens', value: 'Imagens' },
     { label: 'Meus álbuns', value: 'Álbuns' },
     { label: 'Meus percursos', value: 'Percursos' },
@@ -57,40 +57,57 @@ $breakpoint-md: 768px;
   list-style: none;
   padding: 0;
   margin: 0;
-  margin-bottom: 32px;
-  padding: 0px 0 0 0;
+  margin-bottom: 24px;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+
+  /* Esconde a scrollbar */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  &::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+
+  @include md {
+    overflow-x: visible;
+  }
 
   li {
-    margin-right: 32px;
     font-weight: 300;
-    font-size: 16px;
-    line-height: 100%;
+    font-size: 12px;
+    line-height: 150%;
     letter-spacing: 0%;
     text-align: center;
     vertical-align: middle;
+    margin-right: 32px;
     cursor: pointer;
+    flex-shrink: 0;
 
     @include md {
       font-size: 20px;
       margin-right: 48px;
-    }
-  }
-
-  &--selected {
-    color: #AA4F28;
-    font-weight: 800;
-    font-size: 12px;
-    line-height: 150%;
-    letter-spacing: 0%;
-    padding-bottom: 8px;
-    border-bottom: 4px solid;
-    text-align: center;
-    vertical-align: middle;
-
-    @include md {
-      font-size: 20px;
-      font-weight: 700;
       line-height: 100%;
+    }
+
+    &.profile-nav--selected {
+      color: #AA4F28;
+      font-weight: 800;
+      font-size: 12px;
+      line-height: 150%;
+      letter-spacing: 0%;
+      padding-bottom: 10px;
+      border-bottom: 4px solid;
+      text-align: center;
+      vertical-align: middle;
+
+      @include md {
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 100%;
+      }
     }
   }
 }

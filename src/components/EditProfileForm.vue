@@ -230,28 +230,28 @@ function handlePasswordChange() {
     alert('Digite a nova senha.');
     return;
   }
-  
+
   // Verifica se a senha tem pelo menos 8 caracteres
   if (newPassword.value.length < 8) {
     alert('A senha deve conter pelo menos 8 caracteres.');
     return;
   }
-  
+
   // Verifica se a senha contém letras e números
   const hasLetter = /[a-zA-Z]/.test(newPassword.value);
   const hasNumber = /[0-9]/.test(newPassword.value);
-  
+
   if (!hasLetter || !hasNumber) {
     alert('A senha deve conter letras e números.');
     return;
   }
-  
+
   // Verifica se a confirmação de senha confere
   if (newPassword.value !== passwordConfirmation.value) {
     alert('As senhas não conferem.');
     return;
   }
-  
+
   updateUserPassword(newPassword.value)
     .then(() => {
       alert('Senha alterada com sucesso!');
@@ -342,7 +342,7 @@ function handleCancel() {
       </div>
       <input type="file" accept="image/*" ref="profileImageInputRef" @change="handleProfileImageChange"
         class="d-none" />
-      <label class="mt-2">Selecione imagens de até 2MB.</label>
+      <label class="mt-2"><i class="bi bi-exclamation-circle me-1"></i>Envie imagens de até 2MB.</label>
     </div>
     <!-- Nome -->
     <div ref="personalRef" class="row mb-4">
@@ -495,7 +495,7 @@ function handleCancel() {
           </ul>
           <input v-model="selectedSocialValue" class="form-control border-azul-e border-end-0"
             :placeholder="socialOptions[selectedSocialOption]?.placeholder || 'Selecione uma rede social'" />
-          <button class="btn btn-light btn-sm border-azul-e border-start-0 bg-transparent" type="button"
+          <button class="btn btn-light btn-sm border-azul-e border-start-0" type="button"
             aria-label="Adicionar" @click="addSocial" :disabled="!selectedSocialOption || !selectedSocialValue">
             <i class="bi bi-plus-square-fill fs-8"></i>
           </button>
@@ -507,9 +507,9 @@ function handleCancel() {
             <button class="btn btn-primary bg-preto border-preto fw-normal" aria-expanded="false" disabled="true">
               {{ socialOptions[key]?.label }}
             </button>
-            <input :value="value" disabled="true" class="form-control border-azul-e border-end-0 bg-branco"
+            <input :value="value" disabled="true" class="form-control border-azul-e border-end-0"
               placeholder="" />
-            <button class="btn btn-light btn-sm border-azul-e border-start-0 bg-transparent" type="button"
+            <button class="btn btn-light btn-sm border-azul-e border-start-0" type="button"
               aria-label="Remover" @click="removeSocial(key)">
               <i class="bi bi-x-lg"></i>
             </button>
@@ -626,6 +626,10 @@ $breakpoint-md: 768px;
       font-size: 12px;
       line-height: 115%;
       letter-spacing: 0%;
+
+      i {
+        font-size: 12px;
+      }
     }
   }
 

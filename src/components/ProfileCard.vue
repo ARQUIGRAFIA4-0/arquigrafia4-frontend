@@ -167,7 +167,7 @@ $breakpoint-md: 768px;
   border-radius: 16px;
   padding: 24px 16px;
   box-shadow: 1px 1px 4px 1px #0000001A;
-  margin-bottom: 54px;
+  margin-bottom: 40px;
 
   @include md {
     padding: 24px 24px;
