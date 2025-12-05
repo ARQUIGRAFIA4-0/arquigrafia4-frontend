@@ -5,7 +5,7 @@ import { useAuthStore } from "@/store/auth";
 
 const route = useRoute();
 const router = useRouter();
-const store = useAuthStore(); // Initialize the store
+const store = useAuthStore();
 const isLoggedIn = computed(() => store.isLoggedIn);
 
 const options = [
@@ -15,7 +15,7 @@ const options = [
 
 const handleLogout = async () => {
   await store.logout();
-  router.push("/"); // Redirect to home page after logout
+  router.push("/");
 };
 </script>
 
@@ -30,7 +30,7 @@ const handleLogout = async () => {
     <div class="d-flex icons-column order-sm-3 gap-3">
       <!-- Profile Dropdown -->
       <div class="dropdown">
-        <span class="profile px-1" role="button" data-bs-toggle="dropdown">
+        <span class="profile px-1" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="bi bi-person-square" :style="{ color: isLoggedIn ? 'var(--Laranja_E)' : 'var(--Cinza_M)' }"></i>
         </span>
         <ul class="dropdown-menu dropdown-menu-end">
@@ -57,7 +57,7 @@ const handleLogout = async () => {
       </div>
       <!-- About Dropdown -->
       <div class="dropdown">
-        <span class="about px-1" role="button" data-bs-toggle="dropdown">
+        <span class="about px-1" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="bi bi-three-dots-vertical"></i>
         </span>
         <ul class="dropdown-menu dropdown-menu-end">
@@ -104,6 +104,11 @@ const handleLogout = async () => {
 
 <style lang="scss" scoped>
 @use "@/scss/mixins" as *;
+
+.icons-column {
+  position: relative;
+  z-index: 10;
+}
 
 .mobile-nav {
   position: relative;
