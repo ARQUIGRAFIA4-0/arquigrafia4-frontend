@@ -495,8 +495,8 @@ function handleCancel() {
           </ul>
           <input v-model="selectedSocialValue" class="form-control border-azul-e border-end-0"
             :placeholder="socialOptions[selectedSocialOption]?.placeholder || 'Selecione uma rede social'" />
-          <button class="btn btn-light btn-sm border-azul-e border-start-0" type="button"
-            aria-label="Adicionar" @click="addSocial" :disabled="!selectedSocialOption || !selectedSocialValue">
+          <button class="btn btn-light btn-sm border-azul-e border-start-0" type="button" aria-label="Adicionar"
+            @click="addSocial" :disabled="!selectedSocialOption || !selectedSocialValue">
             <i class="bi bi-plus-square-fill fs-8"></i>
           </button>
         </div>
@@ -507,10 +507,9 @@ function handleCancel() {
             <button class="btn btn-primary bg-preto border-preto fw-normal" aria-expanded="false" disabled="true">
               {{ socialOptions[key]?.label }}
             </button>
-            <input :value="value" disabled="true" class="form-control border-azul-e border-end-0"
-              placeholder="" />
-            <button class="btn btn-light btn-sm border-azul-e border-start-0" type="button"
-              aria-label="Remover" @click="removeSocial(key)">
+            <input :value="value" disabled="true" class="form-control border-azul-e border-end-0" placeholder="" />
+            <button class="btn btn-light btn-sm border-azul-e border-start-0" type="button" aria-label="Remover"
+              @click="removeSocial(key)">
               <i class="bi bi-x-lg"></i>
             </button>
           </div>
@@ -525,7 +524,10 @@ function handleCancel() {
     <!-- Modal de alteração de senha -->
     <div v-if="showPasswordModal" class="profile-form__password-modal">
       <div class="profile-form__password-content">
-        <h4>Alterar senha</h4>
+        <div class="d-flex justify-content-between">
+          <h4>Alterar senha</h4>
+            <i class="bi bi-x-lg close-modal" @click="closePasswordModal"></i>
+        </div>
         <div class="mb-4">
           <label for="newPassword">Nova senha</label>
           <div class="position-relative">
@@ -705,6 +707,16 @@ $breakpoint-md: 768px;
       font-size: 16px;
       line-height: 150%;
       letter-spacing: 0%;
+
+      @include md {
+        font-size: 20px;
+      }
+    }
+
+    .close-modal {
+      cursor: pointer;
+      font-size: 18px;
+      color: #2F2F2F;
 
       @include md {
         font-size: 20px;
