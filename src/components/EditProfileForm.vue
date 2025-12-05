@@ -208,6 +208,11 @@ function closePasswordModal() {
   showPasswordModal.value = false;
   newPassword.value = "";
   passwordConfirmation.value = "";
+
+  // Remove o foco do elemento ativo
+  if (document.activeElement) {
+    document.activeElement.blur();
+  }
 }
 
 async function updateUserPassword(newPassword) {
@@ -266,9 +271,20 @@ function handlePasswordChange() {
 
 // Desabilita scroll do body ao abrir modal de senha
 watch(showPasswordModal, (val) => {
-  if (val) document.body.style.overflow = 'hidden';
-  else document.body.style.overflow = '';
+  if (val) {
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscapeKey);
+  } else {
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', handleEscapeKey);
+  }
 });
+
+function handleEscapeKey(event) {
+  if (event.key === 'Escape') {
+    closePasswordModal();
+  }
+}
 
 async function updatePersonalData() {
   // Atualiza user somente se o nome foi alterado
@@ -364,7 +380,8 @@ function handleCancel() {
             placeholder="Sua data de nascimento" />
         </UiField>
         <div class="d-flex form-check form-switch mt-2 form-check-reverse justify-content-between">
-          <label class="d-flex form-check-label align-items-center" for="birthdate_public">Exibir informação em meu perfil público.</label>
+          <label class="d-flex form-check-label align-items-center" for="birthdate_public">Exibir informação em meu
+            perfil público.</label>
           <input class="form-check-input" type="checkbox" role="switch" id="birthdate_public" v-model="birthdatePublic"
             switch>
         </div>
@@ -375,7 +392,8 @@ function handleCancel() {
             placeholder="Sua cidade, estado ou país" autocomplete="address-line1" />
         </UiField>
         <div class="d-flex form-check form-switch mt-2 form-check-reverse justify-content-between">
-          <label class="d-flex form-check-label align-items-center" for="address_public">Exibir informação em meu perfil público.</label>
+          <label class="d-flex form-check-label align-items-center" for="address_public">Exibir informação em meu perfil
+            público.</label>
           <input class="form-check-input" type="checkbox" role="switch" id="address_public" v-model="addressPublic"
             switch>
         </div>
@@ -401,7 +419,8 @@ function handleCancel() {
           </div>
         </UiField>
         <div class="d-flex form-check form-switch mt-2 form-check-reverse justify-content-between">
-          <label class="d-flex form-check-label align-items-center" for="gender_public">Exibir informação em meu perfil público.</label>
+          <label class="d-flex form-check-label align-items-center" for="gender_public">Exibir informação em meu perfil
+            público.</label>
           <input class="form-check-input" type="checkbox" role="switch" id="gender_public" v-model="genderPublic"
             switch>
         </div>
@@ -424,7 +443,8 @@ function handleCancel() {
           </div>
         </UiField>
         <div class="d-flex form-check form-switch mt-2 form-check-reverse justify-content-between">
-          <label class="d-flex form-check-label align-items-center" for="race_public">Exibir informação em meu perfil público.</label>
+          <label class="d-flex form-check-label align-items-center" for="race_public">Exibir informação em meu perfil
+            público.</label>
           <input class="form-check-input" type="checkbox" role="switch" id="race_public" v-model="racePublic" switch>
         </div>
       </div>
@@ -461,7 +481,8 @@ function handleCancel() {
           </div>
         </UiField>
         <div class="d-flex form-check form-switch mt-2 form-check-reverse justify-content-between">
-          <label class="d-flex form-check-label align-items-center" for="scholarity_public">Exibir informação em meu perfil público.</label>
+          <label class="d-flex form-check-label align-items-center" for="scholarity_public">Exibir informação em meu
+            perfil público.</label>
           <input class="form-check-input" type="checkbox" role="switch" id="scholarity_public"
             v-model="scholarityPublic" switch>
         </div>
@@ -471,7 +492,8 @@ function handleCancel() {
           <input type="text" class="form-control" id="profession" v-model="profession" placeholder="Sua ocupação" />
         </UiField>
         <div class="d-flex form-check form-switch mt-2 form-check-reverse justify-content-between">
-          <label class="d-flex form-check-label align-items-center" for="profession_public">Exibir informação em meu perfil público.</label>
+          <label class="d-flex form-check-label align-items-center" for="profession_public">Exibir informação em meu
+            perfil público.</label>
           <input class="form-check-input" type="checkbox" role="switch" id="profession_public"
             v-model="professionPublic" switch>
         </div>
@@ -526,7 +548,7 @@ function handleCancel() {
       <div class="profile-form__password-content">
         <div class="d-flex justify-content-between">
           <h4>Alterar senha</h4>
-            <i class="bi bi-x-lg close-modal" @click="closePasswordModal"></i>
+          <i class="bi bi-x-lg close-modal" @click="closePasswordModal"></i>
         </div>
         <div class="mb-4">
           <label for="newPassword">Nova senha</label>
