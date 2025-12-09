@@ -545,10 +545,13 @@ function handleCancel() {
     </div>
     <!-- Modal de alteração de senha -->
     <div v-if="showPasswordModal" class="profile-form__password-modal">
-      <div class="profile-form__password-content">
+      <div class="profile-form__password-modal-content">
+        <div>
+          <i class="bi bi-x-circle-fill close-modal-mobile" @click="closePasswordModal"></i>
+        </div>
         <div class="d-flex justify-content-between">
           <h4>Alterar senha</h4>
-          <i class="bi bi-x-lg close-modal" @click="closePasswordModal"></i>
+          <i class="bi bi-x-lg close-modal-desktop" @click="closePasswordModal"></i>
         </div>
         <div class="mb-4">
           <label for="newPassword">Nova senha</label>
@@ -702,20 +705,29 @@ $breakpoint-md: 768px;
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(47, 47, 47, 0.2);
-    backdrop-filter: blur(4px);
+    width: 100vw;
+    height: 100vh;
+    background-color: #fff;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     z-index: 1000;
-  }
-
-  &__password-content {
-    background-color: #fff;
+    overflow-y: auto;
 
     @include md {
+      background-color: rgba(47, 47, 47, 0.2);
+      backdrop-filter: blur(4px);
+      align-items: center;
+    }
+  }
+
+  &__password-modal-content {
+    background-color: #fff;
+    width: 100%;
+    padding: 76px 32px 32px 32px;
+
+    @include md {
+      width: auto;
       max-width: 580px;
       border-radius: 16px;
       gap: 16px;
@@ -735,13 +747,27 @@ $breakpoint-md: 768px;
       }
     }
 
-    .close-modal {
+    .close-modal-mobile {
+      display: flex;
+      justify-content: end;
+      font-size: 24px;
+      margin-bottom: 32px;
+
+      @include md {
+        display: none;
+        margin-bottom: 0;
+      }
+    }
+
+    .close-modal-desktop {
       cursor: pointer;
       font-size: 18px;
       color: #2F2F2F;
+      display: none;
 
       @include md {
         font-size: 20px;
+        display: inline-block;
       }
     }
 
