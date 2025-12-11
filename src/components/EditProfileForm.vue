@@ -120,6 +120,13 @@ onMounted(async () => {
   }
 });
 
+function addInterest(interestObj) {
+  if (!selectedInterests.value.some(i => i.id === interestObj.id)) {
+    selectedInterests.value.push(interestObj);
+    interestInput.value = '';
+  }
+}
+
 // Refs para modal de alteração de senha
 const showPasswordModal = ref(false);
 const newPassword = ref("");
