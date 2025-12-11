@@ -101,6 +101,15 @@ const socialOptions = {
 
 // Refs para os temas de interesse
 const subjects = ref([]);
+const interestInput = ref("");
+const selectedInterests = ref([]);
+const filteredSubjects = computed(() =>
+  subjects.value.filter(
+    option =>
+      option.term.toLowerCase().includes(interestInput.value.toLowerCase()) &&
+      !selectedInterests.value.some(selected => selected.id === option.id)
+  )
+);
 
 onMounted(async () => {
   try {
