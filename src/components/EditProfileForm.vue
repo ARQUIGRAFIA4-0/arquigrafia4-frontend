@@ -544,8 +544,9 @@ function handleCancel() {
       <i class="bi bi-arrow-right"></i>
     </div>
     <!-- Modal de alteração de senha -->
-    <div v-if="showPasswordModal" class="profile-form__password-modal">
-      <div class="profile-form__password-modal-content">
+    <transition name="fade-modal">
+      <div v-if="showPasswordModal" class="profile-form__password-modal">
+        <div class="profile-form__password-modal-content">
         <div>
           <i class="bi bi-x-circle-fill close-modal-mobile" @click="closePasswordModal"></i>
         </div>
@@ -582,7 +583,8 @@ function handleCancel() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </transition>
     <!-- Botão de log out -->
     <div class="profile-form__account-button mb-5">
       <button type="button" @click="handleLogout">Sair do perfil</button>
@@ -852,5 +854,31 @@ $breakpoint-md: 768px;
   color: #fff !important;
   opacity: 1 !important;
   border-color: #000 !important;
+}
+
+// Animação modal de alteração de senha
+.fade-modal-enter-active {
+  transition: opacity 0.2s ease; // fundo
+
+  .profile-form__password-modal-content {
+    transition: opacity 0.3s ease 0.2s; // conteúdo
+  }
+}
+
+.fade-modal-leave-active {
+  transition: opacity 0.2s ease 0.2s; // fundo
+
+  .profile-form__password-modal-content {
+    transition: opacity 0.2s ease; // conteúdo
+  }
+}
+
+.fade-modal-enter-from,
+.fade-modal-leave-to {
+  opacity: 0;
+
+  .profile-form__password-modal-content {
+    opacity: 0;
+  }
 }
 </style>
