@@ -588,6 +588,12 @@ function handleCancel() {
           <input type="text" class="form-control" placeholder="Temas" v-model="interestInput" maxlength="250" />
         </UiField>
       </div>
+      <!-- Lista de temas -->
+      <ul v-if="interestInput">
+        <li v-for="option in filteredSubjects" :key="option.id" @click="addInterest(option)">
+          {{ option.term }}
+        </li>
+      </ul>
       <!-- Lista de interesses selecionados -->
       <div class="d-flex flex-wrap gap-2 mt-2">
         <div v-for="(interest, index) in selectedInterests" :key="interest.id"
