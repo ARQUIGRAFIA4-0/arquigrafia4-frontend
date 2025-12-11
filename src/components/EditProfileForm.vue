@@ -585,20 +585,22 @@ function handleCancel() {
       <div class="col-12">
         <UiField label="Temas de interesse"
           explain="Digite um tema de interesse e utilize o botão para adicionar a opção à lista.">
-          <input type="text" class="form-control" placeholder="Temas" v-model="interestInput" maxlength="250" />
+          <div>
+            <input type="text" class="form-control" placeholder="Temas" v-model="interestInput" maxlength="250" />
+            <!-- Lista de temas -->
+            <ul v-if="interestInput">
+              <li v-for="(option) in filteredSubjects" :key="option.id" @click="addInterest(option)">
+                {{ option.term }}
+              </li>
+              <li
+                v-if="interestInput.trim() && !filteredSubjects.some(opt => opt.term.toLowerCase() === interestInput.trim().toLowerCase())"
+                @click="createNewSubjectFromNewInterest(interestInput.trim())">
+                Adicionar novo termo {{ interestInput.trim() }}
+              </li>
+            </ul>
+          </div>
         </UiField>
       </div>
-      <!-- Lista de temas -->
-      <ul v-if="interestInput">
-        <li v-for="option in filteredSubjects" :key="option.id" @click="addInterest(option)">
-          {{ option.term }}
-        </li>
-        <li
-          v-if="interestInput.trim() && !filteredSubjects.some(opt => opt.term.toLowerCase() === interestInput.trim().toLowerCase())"
-          @click="handleAddNewSubject(interestInput.trim())">
-          Adicionar novo termo {{ interestInput.trim() }}
-        </li>
-      </ul>
       <!-- Lista de interesses selecionados -->
       <div class="d-flex flex-wrap gap-2 mt-2">
         <div v-for="(interest, index) in selectedInterests" :key="interest.id"
