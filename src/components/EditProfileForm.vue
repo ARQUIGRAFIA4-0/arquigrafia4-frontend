@@ -588,6 +588,14 @@ function handleCancel() {
           <input type="text" class="form-control" placeholder="Temas" v-model="interestInput" maxlength="250" />
         </UiField>
       </div>
+      <!-- Lista de interesses selecionados -->
+      <div class="d-flex flex-wrap gap-2 mt-2">
+        <div v-for="(interest, index) in selectedInterests" :key="interest.id"
+          class="btn btn-outline-secondary btn-sm btn-tag d-inline-flex align-items-center">
+          {{ interest.term }}
+          <button type="button" class="btn-close ms-2" aria-label="Remover" @click="removeInterest(interest)" />
+        </div>
+      </div>
     </div>
     <!-- Botão de alteração de senha -->
     <div class="profile-form__account-button mb-2">
