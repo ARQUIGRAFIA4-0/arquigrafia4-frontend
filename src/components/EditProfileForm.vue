@@ -131,6 +131,16 @@ function removeInterest(interestObj) {
   selectedInterests.value = selectedInterests.value.filter(i => i.id !== interestObj.id);
 }
 
+async function createNewSubjectFromNewInterest(term) {
+  try {
+    const result = await subjectsStore.addVRACSubject(term);
+    interestInput.value = '';
+    addInterest(result.data);
+  } catch (error) {
+    console.error("Erro ao adicionar novo termo:", error);
+  }
+}
+
 // Refs para modal de alteração de senha
 const showPasswordModal = ref(false);
 const newPassword = ref("");
