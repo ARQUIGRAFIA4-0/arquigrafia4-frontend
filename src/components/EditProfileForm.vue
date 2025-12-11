@@ -593,6 +593,11 @@ function handleCancel() {
         <li v-for="option in filteredSubjects" :key="option.id" @click="addInterest(option)">
           {{ option.term }}
         </li>
+        <li
+          v-if="interestInput.trim() && !filteredSubjects.some(opt => opt.term.toLowerCase() === interestInput.trim().toLowerCase())"
+          @click="handleAddNewSubject(interestInput.trim())">
+          Adicionar novo termo {{ interestInput.trim() }}
+        </li>
       </ul>
       <!-- Lista de interesses selecionados -->
       <div class="d-flex flex-wrap gap-2 mt-2">
