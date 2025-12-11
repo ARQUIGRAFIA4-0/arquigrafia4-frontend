@@ -99,6 +99,18 @@ const socialOptions = {
   x: { label: "X", placeholder: "http://x.com/seu_id_x" }
 };
 
+// Refs para os temas de interesse
+const subjects = ref([]);
+
+onMounted(async () => {
+  try {
+    const response = await subjectsStore.getVRACSubjects();
+    subjects.value = response.data;
+  } catch (error) {
+    console.error("Error fetching VRAC subjects:", error);
+  }
+});
+
 // Refs para modal de alteração de senha
 const showPasswordModal = ref(false);
 const newPassword = ref("");
