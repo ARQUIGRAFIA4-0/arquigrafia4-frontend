@@ -127,6 +127,10 @@ function addInterest(interestObj) {
   }
 }
 
+function removeInterest(interestObj) {
+  selectedInterests.value = selectedInterests.value.filter(i => i.id !== interestObj.id);
+}
+
 // Refs para modal de alteração de senha
 const showPasswordModal = ref(false);
 const newPassword = ref("");
