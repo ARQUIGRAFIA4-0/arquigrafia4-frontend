@@ -581,6 +581,14 @@ function handleCancel() {
       </ul>
     </div>
     <!-- Interesses -->
+    <div class="row mb-5" ref="interestsRef">
+      <div class="col-12">
+        <UiField label="Temas de interesse"
+          explain="Digite um tema de interesse e utilize o botão para adicionar a opção à lista.">
+          <input type="text" class="form-control" placeholder="Temas" v-model="interestInput" maxlength="250" />
+        </UiField>
+      </div>
+    </div>
     <!-- Botão de alteração de senha -->
     <div class="profile-form__account-button mb-2">
       <button type="button" @click="showPasswordModal = true">Alterar senha</button>
