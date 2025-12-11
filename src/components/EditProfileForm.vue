@@ -580,6 +580,7 @@ function handleCancel() {
         </UiField>
       </ul>
     </div>
+    <!-- Interesses -->
     <!-- Botão de alteração de senha -->
     <div class="profile-form__account-button mb-2">
       <button type="button" @click="showPasswordModal = true">Alterar senha</button>
@@ -589,42 +590,42 @@ function handleCancel() {
     <transition name="fade-modal">
       <div v-if="showPasswordModal" class="profile-form__password-modal">
         <div class="profile-form__password-modal-content">
-        <div>
-          <i class="bi bi-x-circle-fill close-modal-mobile" @click="closePasswordModal"></i>
-        </div>
-        <div class="d-flex justify-content-between">
-          <h4>Alterar senha</h4>
-          <i class="bi bi-x-lg close-modal-desktop" @click="closePasswordModal"></i>
-        </div>
-        <div class="mb-4">
-          <label for="newPassword">Nova senha</label>
-          <div class="position-relative">
-            <input :type="showNewPassword ? 'text' : 'password'" id="newPassword" v-model="newPassword"
-              class="form-control" />
-            <i :class="showNewPassword ? 'bi bi-eye-slash' : 'bi bi-eye'" class="password-toggle-icon"
-              @click="showNewPassword = !showNewPassword"></i>
+          <div>
+            <i class="bi bi-x-circle-fill close-modal-mobile" @click="closePasswordModal"></i>
           </div>
-          <small>Sua senha deve conter pelo menos 8 dígitos com letras e números.</small>
-        </div>
-        <div class="mb-5">
-          <label for="passwordConfirmation">Confirmação nova senha</label>
-          <div class="position-relative">
-            <input :type="showPasswordConfirmation ? 'text' : 'password'" id="passwordConfirmation"
-              v-model="passwordConfirmation" class="form-control" />
-            <i :class="showPasswordConfirmation ? 'bi bi-eye-slash' : 'bi bi-eye'" class="password-toggle-icon"
-              @click="showPasswordConfirmation = !showPasswordConfirmation"></i>
+          <div class="d-flex justify-content-between">
+            <h4>Alterar senha</h4>
+            <i class="bi bi-x-lg close-modal-desktop" @click="closePasswordModal"></i>
           </div>
-          <small>Este campo deve ser idêntico ao anterior.</small>
-        </div>
-        <div class="d-flex gap-2 justify-content-end">
-          <div class="w-100 d-flex flex-row gap-2">
-            <button type="button" @click="closePasswordModal"
-              class="btn btn-outline-secondary btn-sm w-100">Cancelar</button>
-            <button type="button" @click="handlePasswordChange" class="btn btn-secondary btn-sm w-100">Alterar
-              senha</button>
+          <div class="mb-4">
+            <label for="newPassword">Nova senha</label>
+            <div class="position-relative">
+              <input :type="showNewPassword ? 'text' : 'password'" id="newPassword" v-model="newPassword"
+                class="form-control" />
+              <i :class="showNewPassword ? 'bi bi-eye-slash' : 'bi bi-eye'" class="password-toggle-icon"
+                @click="showNewPassword = !showNewPassword"></i>
+            </div>
+            <small>Sua senha deve conter pelo menos 8 dígitos com letras e números.</small>
+          </div>
+          <div class="mb-5">
+            <label for="passwordConfirmation">Confirmação nova senha</label>
+            <div class="position-relative">
+              <input :type="showPasswordConfirmation ? 'text' : 'password'" id="passwordConfirmation"
+                v-model="passwordConfirmation" class="form-control" />
+              <i :class="showPasswordConfirmation ? 'bi bi-eye-slash' : 'bi bi-eye'" class="password-toggle-icon"
+                @click="showPasswordConfirmation = !showPasswordConfirmation"></i>
+            </div>
+            <small>Este campo deve ser idêntico ao anterior.</small>
+          </div>
+          <div class="d-flex gap-2 justify-content-end">
+            <div class="w-100 d-flex flex-row gap-2">
+              <button type="button" @click="closePasswordModal"
+                class="btn btn-outline-secondary btn-sm w-100">Cancelar</button>
+              <button type="button" @click="handlePasswordChange" class="btn btn-secondary btn-sm w-100">Alterar
+                senha</button>
+            </div>
           </div>
         </div>
-      </div>
       </div>
     </transition>
     <!-- Botão de log out -->
