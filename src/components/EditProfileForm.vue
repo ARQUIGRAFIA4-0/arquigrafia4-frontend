@@ -178,6 +178,7 @@ watch(() => props.profileData, (newValue) => {
     whatsapp: newValue?.data?.socials?.whatsapp || '',
     x: newValue?.data?.socials?.x || ''
   };
+  selectedInterests.value = newValue?.data?.subjects || [];
 
   const config = newValue?.data?.configurations || {};
   addressPublic.value = 'address' in config ? config.address : true;
@@ -359,6 +360,7 @@ async function updatePersonalData() {
       profession: profession.value,
       scholarity: scholarity.value,
       socials: socials.value,
+      subjects: [...selectedInterests.value.map(interest => interest.id)],
       configurations: {
         address: addressPublic.value,
         gender: genderPublic.value,
@@ -585,17 +587,27 @@ function handleCancel() {
       <div class="col-12">
         <UiField label="Temas de interesse"
           explain="Digite um tema de interesse e utilize o botão para adicionar a opção à lista.">
-          <div>
-            <input type="text" class="form-control" placeholder="Temas" v-model="interestInput" maxlength="250" />
+          <div class="position-relative">
+            <input type="text" class="form-control"
+              :class="interestInput ? 'profile-form__interest-input-with-text' : 'profile-form__interest-input'"
+              placeholder="Temas" v-model="interestInput" maxlength="250" />
+            <div v-if="interestInput"
+              style="width: calc(100%); height: 1px; border-left:1px solid #000;border-right:1px solid #000; padding:0 12px;">
+              <div style="width: calc(100%); height: 1px; background-color: #000;"></div>
+            </div>
             <!-- Lista de temas -->
-            <ul v-if="interestInput">
-              <li v-for="(option) in filteredSubjects" :key="option.id" @click="addInterest(option)">
-                {{ option.term }}
+            <ul v-if="interestInput" class="profile-form__interest-list">
+              <li v-for="(option, index) in filteredSubjects.slice(0, 20)" :key="option.id" @click="addInterest(option)"
+                class="profile-form__interest-list-item">
+                <span class="profile-form__interest-list-item-term">{{ option.term }}</span>
               </li>
               <li
                 v-if="interestInput.trim() && !filteredSubjects.some(opt => opt.term.toLowerCase() === interestInput.trim().toLowerCase())"
-                @click="createNewSubjectFromNewInterest(interestInput.trim())">
-                Adicionar novo termo {{ interestInput.trim() }}
+                @click="createNewSubjectFromNewInterest(interestInput.trim())"
+                class="profile-form__interest-list-item profile-form__interest-list-item--new">
+                <i class="bi bi-check me-2"></i><span class="profile-form__interest-list-item-term">Adicionar novo termo
+                  "<span style="font-weight: 900">{{ interestInput.trim()
+                  }}"</span></span>
               </li>
             </ul>
           </div>
@@ -894,6 +906,57 @@ $breakpoint-md: 768px;
       color: #2F2F2F;
       font-size: 18px;
     }
+  }
+
+  &__interest-input {
+    border-radius: 4px;
+  }
+
+  &__interest-input-with-text {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom: 0;
+  }
+
+  &__interest-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background: #fff;
+    border: 1px solid var(--Preto);
+    border-top: none;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  &__interest-list-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      color: var(--Laranja_E);
+      background-color: var(--Laranja_C);
+    }
+  }
+
+  &__interest-list-item--new {
+    color: var(--Laranja_E);
+  }
+
+  &__interest-list-item-term {
+    flex: 1;
+    font-size: 14px;
   }
 }
 
