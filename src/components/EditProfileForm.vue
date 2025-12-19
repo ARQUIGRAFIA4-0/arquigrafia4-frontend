@@ -446,7 +446,7 @@ function handleCancel() {
     <!-- Gênero e Raça -->
     <div class="row mb-4 gy-4 gy-md-0">
       <div class="col-12 col-md-6">
-        <UiField id="gender" label="Gênero" explain="Selecione seu gênero.">
+        <UiField id="gender" label="Gênero" labelTag="span" explain="Selecione seu gênero.">
           <div class="dropdown">
             <button class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between"
               type="button" data-bs-toggle="dropdown">
@@ -470,7 +470,7 @@ function handleCancel() {
         </div>
       </div>
       <div class="col-12 col-md-6">
-        <UiField id="race" label="Raça" explain="Selecione sua raça.">
+        <UiField id="race" label="Raça" labelTag="span" explain="Selecione sua raça.">
           <div class="dropdown">
             <button class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between"
               type="button" data-bs-toggle="dropdown">
@@ -508,7 +508,7 @@ function handleCancel() {
     <!-- Escolaridade e Profissão -->
     <div ref="professionalRef" class="row mb-4 mb-md-5 gy-4 gy-md-0">
       <div class="col-12 col-md-6">
-        <UiField id="scholarity" label="Escolaridade" explain="Selecione sua escolaridade.">
+        <UiField id="scholarity" label="Escolaridade" labelTag="span" explain="Selecione sua escolaridade.">
           <div class="dropdown">
             <button class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between"
               type="button" data-bs-toggle="dropdown">
@@ -545,7 +545,7 @@ function handleCancel() {
     </div>
     <!-- Redes -->
     <div class="row gy-3 mb-5">
-      <UiField label="Suas redes"
+      <UiField label="Suas redes" labelTag="span"
         explain="Escolha uma rede social, digite o link do seu perfil nessa rede e clique no botão (+) para adicionar à lista.">
         <div class="input-group input-group-sm">
           <button class="btn btn-primary dropdown-toggle bg-azul-e border-azul-e fw-normal" type="button"
@@ -615,7 +615,7 @@ function handleCancel() {
         </UiField>
       </div>
       <!-- Lista de interesses selecionados -->
-       <UiField v-if="selectedInterests.length > 0" label="Temas de interesse cadastrados em seu perfil"
+      <UiField v-if="selectedInterests.length > 0" label="Temas de interesse cadastrados em seu perfil" labelTag="span" 
         explain="Você pode remover temas clicando no ícone de 'x' ao lado do nome do tema.">
         <div class="d-flex flex-wrap gap-2 mt-2">
           <div v-for="(interest, index) in selectedInterests" :key="interest.id"
