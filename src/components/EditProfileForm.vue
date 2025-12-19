@@ -402,7 +402,7 @@ function handleCancel() {
       </div>
       <input type="file" accept="image/*" ref="profileImageInputRef" @change="handleProfileImageChange"
         class="d-none" />
-      <label class="mt-2"><i class="bi bi-exclamation-circle me-1"></i>Envie imagens de até 2MB.</label>
+      <small class="mt-2"><i class="bi bi-exclamation-circle me-1"></i>Envie imagens de até 2MB.</small>
     </div>
     <!-- Nome -->
     <div ref="personalRef" class="row mb-4">
@@ -412,7 +412,7 @@ function handleCancel() {
             autocomplete="name" />
         </UiField>
         <div class="d-flex flex-row-reverse mt-2">
-          <label class="form-check-label">Preenchimento obrigatório.</label>
+          <small class="form-check-label">Preenchimento obrigatório.</small>
         </div>
       </div>
     </div>
@@ -735,7 +735,7 @@ $breakpoint-md: 768px;
       height: fit-content;
     }
 
-    label {
+    small {
       font-weight: 400;
       font-style: 9pt;
       font-size: 12px;
