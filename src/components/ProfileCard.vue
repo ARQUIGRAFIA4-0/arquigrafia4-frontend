@@ -137,6 +137,15 @@ function checkSocials(socials) {
           </div>
         </div>
       </div>
+      <div v-if="currentProfileData?.data?.subjects.length > 0" class="profile-card__interests">
+        <h3>Interesses</h3>
+        <ul class="profile-card__interests-list">
+          <li v-for="(subject, index) in currentProfileData.data.subjects" :key="subject.id"
+            class="btn btn-outline-secondary btn-sm btn-tag d-inline-flex align-items-center">
+            {{ subject.term }}
+          </li>
+        </ul>
+      </div>
       <div v-if="props.privateProfileData" class="profile-card__toggle-profile-visibility">
         <a :href="`/profile/${userData?.id}`" target="_blank" class="btn btn-secondary btn-sm btn-icon">
           <i class="bi bi-eye" /> Ver perfil público
@@ -299,6 +308,26 @@ $breakpoint-md: 768px;
     img {
       width: 20px;
       height: 20px;
+    }
+  }
+
+  &__interests {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  &__interests-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+    margin-top: 8px;
+
+    .btn {
+      cursor: default;
     }
   }
 
