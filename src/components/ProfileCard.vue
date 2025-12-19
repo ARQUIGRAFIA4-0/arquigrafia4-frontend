@@ -325,9 +325,14 @@ $breakpoint-md: 768px;
     list-style: none;
     padding: 0;
     margin-top: 8px;
+    overflow: hidden;
 
     .btn {
       cursor: default;
+      white-space: normal;
+      word-break: break-all;
+      text-align: center;
+      max-width: 100%;
     }
   }
 
