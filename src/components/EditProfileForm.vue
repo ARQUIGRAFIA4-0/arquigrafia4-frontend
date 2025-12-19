@@ -559,7 +559,8 @@ function handleCancel() {
               </button>
             </li>
           </ul>
-          <input v-model="selectedSocialValue" class="form-control border-azul-e border-end-0"
+          <input v-model="selectedSocialValue" id="social-value-input" name="social-value-input"
+            class="form-control border-azul-e border-end-0"
             :placeholder="socialOptions[selectedSocialOption]?.placeholder || 'Selecione uma rede social'" />
           <button class="btn btn-light btn-sm border-azul-e border-start-0" type="button" aria-label="Adicionar"
             @click="addSocial" :disabled="!selectedSocialOption || !selectedSocialValue">
@@ -573,7 +574,8 @@ function handleCancel() {
             <button class="btn btn-primary bg-preto border-preto fw-normal" aria-expanded="false" disabled="true">
               {{ socialOptions[key]?.label }}
             </button>
-            <input :value="value" disabled="true" class="form-control border-azul-e border-end-0" placeholder="" />
+            <input :id="'social-' + key" :name="'social-' + key" :value="value" disabled="true"
+              class="form-control border-azul-e border-end-0" placeholder="" />
             <button class="btn btn-light btn-sm border-azul-e border-start-0" type="button" aria-label="Remover"
               @click="removeSocial(key)">
               <i class="bi bi-x-lg"></i>
@@ -585,10 +587,10 @@ function handleCancel() {
     <!-- Interesses -->
     <div class="row mb-5" ref="interestsRef">
       <div class="col-12 mb-4">
-        <UiField label="Temas de interesse"
+        <UiField id="interest-input" label="Temas de interesse"
           explain="Digite um tema de interesse e selecione a opção da lista. Caso o tema não exista, você pode adicioná-lo clicando em 'Adicionar novo termo'.">
           <div class="position-relative">
-            <input type="text" class="form-control"
+            <input type="text" id="interest-input" name="interest-input" class="form-control"
               :class="interestInput ? 'profile-form__interest-input-with-text' : 'profile-form__interest-input'"
               placeholder="Temas" v-model="interestInput" maxlength="250" />
             <div v-if="interestInput"
