@@ -613,8 +613,8 @@ function handleCancel() {
         </UiField>
       </div>
       <!-- Lista de interesses selecionados -->
-      <div v-if="selectedInterests.length > 0">
-        <h3 class="profile-form__selected-interests-title">Temas de interesse cadastrados em seu perfil</h3>
+       <UiField v-if="selectedInterests.length > 0" label="Temas de interesse cadastrados em seu perfil"
+        explain="Você pode remover temas clicando no ícone de 'x' ao lado do nome do tema.">
         <div class="d-flex flex-wrap gap-2 mt-2">
           <div v-for="(interest, index) in selectedInterests" :key="interest.id"
             class="btn btn-primary btn-sm btn-tag d-inline-flex align-items-center">
@@ -622,7 +622,7 @@ function handleCancel() {
             <button type="button" class="btn-close ms-2" aria-label="Remover" @click="removeInterest(interest)" />
           </div>
         </div>
-      </div>
+      </UiField>
     </div>
     <!-- Botão de alteração de senha -->
     <div class="profile-form__account-button mb-2">
@@ -959,19 +959,6 @@ $breakpoint-md: 768px;
   &__interest-list-item-term {
     flex: 1;
     font-size: 14px;
-  }
-
-  &__selected-interests-title {
-    width: 100%;
-    font-weight: 500;
-    font-style: Medium;
-    font-size: 14px;
-    line-height: 150%;
-    letter-spacing: 0%;
-
-    @include md {
-      font-size: 16px;
-    }
   }
 }
 
