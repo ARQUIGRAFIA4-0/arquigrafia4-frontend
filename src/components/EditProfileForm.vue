@@ -584,9 +584,9 @@ function handleCancel() {
     </div>
     <!-- Interesses -->
     <div class="row mb-5" ref="interestsRef">
-      <div class="col-12">
+      <div class="col-12 mb-4">
         <UiField label="Temas de interesse"
-          explain="Digite um tema de interesse e utilize o botão para adicionar a opção à lista.">
+          explain="Digite um tema de interesse e selecione a opção da lista. Caso o tema não exista, você pode adicioná-lo clicando em 'Adicionar novo termo'.">
           <div class="position-relative">
             <input type="text" class="form-control"
               :class="interestInput ? 'profile-form__interest-input-with-text' : 'profile-form__interest-input'"
@@ -606,19 +606,21 @@ function handleCancel() {
                 @click="createNewSubjectFromNewInterest(interestInput.trim())"
                 class="profile-form__interest-list-item profile-form__interest-list-item--new">
                 <i class="bi bi-check me-2"></i><span class="profile-form__interest-list-item-term">Adicionar novo termo
-                  "<span style="font-weight: 900">{{ interestInput.trim()
-                  }}"</span></span>
+                  "<span style="font-weight: 900">{{ interestInput.trim() }}"</span></span>
               </li>
             </ul>
           </div>
         </UiField>
       </div>
       <!-- Lista de interesses selecionados -->
-      <div class="d-flex flex-wrap gap-2 mt-2">
-        <div v-for="(interest, index) in selectedInterests" :key="interest.id"
-          class="btn btn-outline-secondary btn-sm btn-tag d-inline-flex align-items-center">
-          {{ interest.term }}
-          <button type="button" class="btn-close ms-2" aria-label="Remover" @click="removeInterest(interest)" />
+      <div v-if="selectedInterests.length > 0">
+        <h3 class="profile-form__selected-interests-title">Temas de interesse cadastrados em seu perfil</h3>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+          <div v-for="(interest, index) in selectedInterests" :key="interest.id"
+            class="btn btn-primary btn-sm btn-tag d-inline-flex align-items-center">
+            {{ interest.term }}
+            <button type="button" class="btn-close ms-2" aria-label="Remover" @click="removeInterest(interest)" />
+          </div>
         </div>
       </div>
     </div>
@@ -957,6 +959,19 @@ $breakpoint-md: 768px;
   &__interest-list-item-term {
     flex: 1;
     font-size: 14px;
+  }
+
+  &__selected-interests-title {
+    width: 100%;
+    font-weight: 500;
+    font-style: Medium;
+    font-size: 14px;
+    line-height: 150%;
+    letter-spacing: 0%;
+
+    @include md {
+      font-size: 16px;
+    }
   }
 }
 
