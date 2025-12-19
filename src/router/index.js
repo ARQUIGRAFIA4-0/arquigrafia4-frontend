@@ -14,6 +14,15 @@ const router = createRouter({
       children: routes,
     },
   ],
+  scrollBehavior(to, from, savedPosition) {
+    // Se o usuário estiver usando os botões "voltar/avançar" do navegador,
+    // mantém a posição de scroll salva.
+    if (savedPosition) {
+      return savedPosition;
+    }
+    // Para todas as outras navegações, vai para o topo da página.
+    return { top: 0, behavior: 'smooth' };
+  },
 });
 
 router.beforeEach((to, from, next) => {
