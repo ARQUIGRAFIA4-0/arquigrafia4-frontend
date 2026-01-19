@@ -26,7 +26,7 @@
         >
           <div class="dropzone-content text-center">
             <i class="bi bi-plus-circle-dotted"></i>
-            <p class="mt-3">Adicione novas imagens ao nosso acervo</p>
+            <p class="mt-3">AAAAAAAAA</p>
             <input
               type="file"
               ref="fileInput"
