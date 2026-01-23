@@ -1,6 +1,16 @@
 <template>
   <div class="container-fluid mosaic-container">
+    <!-- Skeleton Masonry -->
+    <mosaic-skeleton
+      v-if="showSkeleton"
+      :gap="5"
+      :column-widths="columnWidths"
+      :min-columns="2"
+      :max-columns="7"
+    />
+    <!-- Masonry Wall -->
     <masonry-wall
+      v-show="mosaicItems.length > 0"
       :items="mosaicItems"
       :column-width="columnWidths"
       :gap="5"
@@ -18,8 +28,8 @@
         />
       </template>
     </masonry-wall>
-
-    <div v-if="isLoading" class="text-center my-4">
+    <!-- Loading -->
+    <div v-if="isFetchingNextPage" class="text-center my-4">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
@@ -30,6 +40,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import MosaicCard from "@/components/MosaicCard.vue";
+import MosaicSkeleton from "@/components/MosaicSkeleton.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 
 const columnWidths = [320, 200, 280, 260, 210, 220, 300];
@@ -126,6 +137,14 @@ const {
   isPending,
   isFetchingNextPage,
 } = useImagesInfiniteQuery({ initialLimit: 100 });
+
+const showSkeleton = computed(() => {
+  // Mostra skeleton se estiver na busca de dados iniciais
+  if (isPending.value) return true;  
+  // Mostra skeleton se está processando os itens mas nenhum foi renderizado ainda
+  if (isProcessing.value && mosaicItems.value.length === 0) return true;
+  return false;
+});
 
 const isLoading = computed(
   () => isPending.value || isFetchingNextPage.value || isProcessing.value
