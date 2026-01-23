@@ -1,42 +1,3 @@
-<template>
-  <div class="container-fluid mosaic-container">
-    <!-- Skeleton Masonry -->
-    <mosaic-skeleton
-      v-if="showSkeleton"
-      :gap="5"
-      :column-widths="columnWidths"
-      :min-columns="2"
-      :max-columns="7"
-    />
-    <!-- Masonry Wall -->
-    <masonry-wall
-      v-show="mosaicItems.length > 0"
-      :items="mosaicItems"
-      :column-width="columnWidths"
-      :gap="5"
-      :min-columns="2"
-      :max-columns="7"
-      class="masonry-grid"
-    >
-      <template #default="slotProps">
-        <mosaic-card
-          v-if="slotProps && slotProps.item"
-          :id="slotProps.item.id"
-          :title="slotProps.item.title"
-          :image-url="slotProps.item.src"
-          :aspect-ratio="slotProps.item.aspectRatio"
-        />
-      </template>
-    </masonry-wall>
-    <!-- Loading -->
-    <div v-if="isFetchingNextPage" class="text-center my-4">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import MosaicCard from "@/components/MosaicCard.vue";
@@ -140,7 +101,7 @@ const {
 
 const showSkeleton = computed(() => {
   // Mostra skeleton se estiver na busca de dados iniciais
-  if (isPending.value) return true;  
+  if (isPending.value) return true;
   // Mostra skeleton se está processando os itens mas nenhum foi renderizado ainda
   if (isProcessing.value && mosaicItems.value.length === 0) return true;
   return false;
@@ -197,9 +158,29 @@ onBeforeUnmount(() => {
 });
 </script>
 
+<template>
+  <div class="container-fluid mosaic-container">
+    <!-- Skeleton Masonry -->
+    <mosaic-skeleton v-if="showSkeleton" :gap="5" :column-widths="columnWidths" :min-columns="2" :max-columns="7" />
+    <!-- Masonry Wall -->
+    <masonry-wall v-show="mosaicItems.length > 0" :items="mosaicItems" :column-width="columnWidths" :gap="5"
+      :min-columns="2" :max-columns="7" class="masonry-grid">
+      <template #default="slotProps">
+        <mosaic-card v-if="slotProps && slotProps.item" :id="slotProps.item.id" :title="slotProps.item.title"
+          :image-url="slotProps.item.src" :aspect-ratio="slotProps.item.aspectRatio" />
+      </template>
+    </masonry-wall>
+    <!-- Loading -->
+    <div v-if="isFetchingNextPage" class="text-center my-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
+</template>
+
 <style scoped>
 .mosaic-container {
   min-height: 100vh;
 }
 </style>
-
