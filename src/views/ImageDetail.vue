@@ -1,7 +1,7 @@
 <template>
   <div class="container py-4">
     <div class="row align-items-start gy-4 image-detail__layout">
-      <div class="col-12 col-md-8 order-1 order-md-2">
+      <div class="col-12 col-md-8 order-1 order-md-2 sticky-image-column">
         <ImageDisplay
           :image="image"
           :loading="loading"
@@ -166,6 +166,14 @@ onMounted(async () => {
 @media (min-width: 768px) {
   .image-detail__layout {
     --bs-gutter-x: 3rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .sticky-image-column {
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
   }
 }
 
