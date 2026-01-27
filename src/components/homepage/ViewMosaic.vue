@@ -198,6 +198,10 @@ onBeforeUnmount(() => {
   min-height: 100vh;
 }
 
+.container-fluid {
+  --bs-gutter-x: 0;
+}
+
 .masonry-grid {
   opacity: 0;
   transition: opacity 0.15s ease-in;
