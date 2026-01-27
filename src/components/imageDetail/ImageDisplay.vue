@@ -159,8 +159,8 @@ const handleReportSubmit = (payload) => {
   gap: 6px;
   padding: 8px 12px;
   border-radius: 6px;
-  background-color: rgba(0, 0, 0, 0.222);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  background-color: var(--Off_white);
+  box-shadow: 2px 2px 5px 2px #00000040;
   backdrop-filter: blur(2px);
   width: fit-content;
 }
@@ -174,7 +174,7 @@ const handleReportSubmit = (payload) => {
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: #fff;
+  color: var(--Cinza_E);
   cursor: pointer;
   transition:
     background-color 0.2s ease,
@@ -184,8 +184,8 @@ const handleReportSubmit = (payload) => {
 }
 
 .menu-button:hover {
-  background-color: rgba(255, 255, 255, 0.16);
-  color: #fff;
+  background-color: var(--Laranja_C);
+  color: var(--Cinza_E);
 }
 
 .menu-button:focus-visible {
