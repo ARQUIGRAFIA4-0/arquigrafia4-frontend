@@ -166,8 +166,8 @@ function goToMetadata() {
         <h1>Você ainda não tem<br />contribuições.</h1>
         <i class="bi bi-plus-circle-fill upload-box__icon"></i>
         <div class="upload-box__instructions">
-          <p>clique aqui ou arraste um ou<br />mais arquivos para esta área.</p>
-          <p>limite aceito: {{ uploadStore.MAX_FILES }} imagens</p>
+          <p>Clique aqui ou arraste arquivos para esta área<br></p>
+          <p>Limite aceito: {{ uploadStore.MAX_FILES }} imagens / 6Mb por arquivo</p>
         </div>
         <input
           class="upload-box__input"
@@ -363,17 +363,13 @@ $breakpoint-md: 768px;
   }
 
   &__instructions {
-    > * + * {
-      margin-top: 1.5rem;
-    }
-
     p {
       font-weight: 400;
       font-size: 16px;
       line-height: 20px;
       text-align: center;
       vertical-align: middle;
-      text-transform: lowercase;
+      margin-bottom: 0.5rem;
     }
   }
 
