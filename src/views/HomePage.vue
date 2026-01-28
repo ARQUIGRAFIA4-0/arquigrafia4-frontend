@@ -11,12 +11,12 @@
             Acervo
           </button>
         </li>
-        <li class="nav-item">
+        <!-- <li class="nav-item">
           <button class="nav-link" data-label="Percurso">Percurso</button>
         </li>
         <li class="nav-item">
           <button class="nav-link" data-label="Colecoes">Coleções</button>
-        </li>
+        </li> -->
       </ul>
     </div>
 
@@ -34,7 +34,7 @@
     </template>
 
     <template v-else-if="viewMode === 'mosaic'">
-      <div data-cy="view-mosaic">
+      <div class="px-md-4 pb-4" data-cy="view-mosaic">
         <view-mosaic />
       </div>
     </template>

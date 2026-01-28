@@ -116,7 +116,7 @@ const isLoggedIn = computed(() => store.isLoggedIn);
 
 const options = [
   { label: "Explore", path: "/explore", routeName: "explore" },
-  { label: "Colabore", path: "/contribua", routeName: "contribua" },
+  { label: "Colabore", path: "/colabore", routeName: "colabore" },
 ];
 
 const handleLogout = async () => {

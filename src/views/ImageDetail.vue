@@ -1,7 +1,7 @@
 <template>
   <div class="container py-4">
     <div class="row align-items-start gy-4 image-detail__layout">
-      <div class="col-12 col-md-8 order-1 order-md-2">
+      <div class="col-12 col-md-8 order-1 order-md-2 sticky-image-column">
         <ImageDisplay
           :image="image"
           :loading="loading"
@@ -66,7 +66,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { api } from "@/services/api";
 import ImageComments from "@/components/imageDetail/ImageComments.vue";
@@ -102,6 +102,14 @@ const tabs = [
 
 const currentSection = computed(() => route.meta?.section ?? "dados");
 
+// Faz scroll para o topo quando a rota muda
+watch(
+  () => route.params.id,
+  () => {
+    window.scrollTo(0, 0);
+  }
+);
+
 const loadComments = async (imageId) => {
   loadingComments.value = true;
   try {
@@ -133,6 +141,9 @@ const handleReportSubmit = (payload) => {
 };
 
 onMounted(async () => {
+  // Scroll para o topo quando o componente é montado
+  window.scrollTo(0, 0);
+
   try {
     const imageId = route.params.id;
     image.value = await api.getImageDetails(imageId);
@@ -166,6 +177,14 @@ onMounted(async () => {
 @media (min-width: 768px) {
   .image-detail__layout {
     --bs-gutter-x: 3rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .sticky-image-column {
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
   }
 }
 

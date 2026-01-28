@@ -20,7 +20,7 @@
     </transition>
 
     <div class="row align-items-start gy-4 metadata-upload__layout">
-      <div class="col-12 col-md-6 order-1 order-md-1">
+      <div class="col-12 col-md-6 order-1 order-md-1 sticky-preview-panel">
         <ImagePreviewPanel @upload-error="handleUploadError" />
       </div>
 
@@ -987,5 +987,13 @@ const handleSubmit = async () => {
   font-weight: 400;
   font-size: 14px;
   line-height: 150%;
+}
+
+@media (min-width: 768px) {
+  .sticky-preview-panel {
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
+  }
 }
 </style>

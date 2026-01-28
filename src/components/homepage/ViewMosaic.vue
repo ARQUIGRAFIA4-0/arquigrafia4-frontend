@@ -1,41 +1,14 @@
-<template>
-  <div class="container-fluid mosaic-container">
-    <masonry-wall
-      :items="mosaicItems"
-      :column-width="columnWidths"
-      :gap="5"
-      :min-columns="2"
-      :max-columns="7"
-      class="masonry-grid"
-    >
-      <template #default="slotProps">
-        <mosaic-card
-          v-if="slotProps && slotProps.item"
-          :id="slotProps.item.id"
-          :title="slotProps.item.title"
-          :image-url="slotProps.item.src"
-          :aspect-ratio="slotProps.item.aspectRatio"
-        />
-      </template>
-    </masonry-wall>
-
-    <div v-if="isLoading" class="text-center my-4">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import MosaicCard from "@/components/MosaicCard.vue";
+import MosaicSkeleton from "@/components/MosaicSkeleton.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 
 const columnWidths = [320, 200, 280, 260, 210, 220, 300];
 const isProcessing = ref(false);
 const mosaicItems = ref([]);
 const processedIds = new Set();
+const isMasonryReady = ref(false);
 
 const preloadImageDimensions = (url) => {
   return new Promise((resolve) => {
@@ -127,6 +100,16 @@ const {
   isFetchingNextPage,
 } = useImagesInfiniteQuery({ initialLimit: 100 });
 
+const showSkeleton = computed(() => {
+  // Mostra skeleton se estiver na busca de dados iniciais
+  if (isPending.value) return true;
+  // Mostra skeleton se está processando os itens mas nenhum foi renderizado ainda
+  if (isProcessing.value && mosaicItems.value.length === 0) return true;
+  // Mostra skeleton se há itens, mas o masonry ainda não está pronto
+  if (mosaicItems.value.length > 0 && !isMasonryReady.value) return true;
+  return false;
+});
+
 const isLoading = computed(
   () => isPending.value || isFetchingNextPage.value || isProcessing.value
 );
@@ -168,6 +151,16 @@ const loadImages = async () => {
   await tryFetchNextPage();
 };
 
+// Evento disparado quando o masonry termina de organizar
+const handleMasonryRedraw = () => {
+  if (!isMasonryReady.value && mosaicItems.value.length > 0) {
+    // Pequeno delay para garantir que o render CSS está completo
+    requestAnimationFrame(() => {
+      isMasonryReady.value = true;
+    });
+  }
+};
+
 onMounted(() => {
   loadImages();
   window.addEventListener("scroll", handleScroll, { passive: true });
@@ -178,9 +171,43 @@ onBeforeUnmount(() => {
 });
 </script>
 
+<template>
+  <div class="container-fluid mosaic-container">
+    <!-- Skeleton Masonry -->
+    <mosaic-skeleton v-if="showSkeleton" :gap="5" :column-widths="columnWidths" :min-columns="2" :max-columns="7" />
+    <!-- Masonry Wall -->
+    <masonry-wall v-show="mosaicItems.length > 0" :items="mosaicItems" :column-width="columnWidths" :gap="5"
+      :min-columns="2" :max-columns="7" :class="['masonry-grid', { 'masonry-ready': isMasonryReady }]"
+      @redraw="handleMasonryRedraw">
+      <template #default="slotProps">
+        <mosaic-card v-if="slotProps && slotProps.item" :id="slotProps.item.id" :title="slotProps.item.title"
+          :image-url="slotProps.item.src" :aspect-ratio="slotProps.item.aspectRatio" />
+      </template>
+    </masonry-wall>
+    <!-- Loading -->
+    <div v-if="isFetchingNextPage" class="text-center my-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
+</template>
+
 <style scoped>
 .mosaic-container {
   min-height: 100vh;
 }
-</style>
 
+.container-fluid {
+  --bs-gutter-x: 0;
+}
+
+.masonry-grid {
+  opacity: 0;
+  transition: opacity 0.15s ease-in;
+}
+
+.masonry-grid.masonry-ready {
+  opacity: 1;
+}
+</style>

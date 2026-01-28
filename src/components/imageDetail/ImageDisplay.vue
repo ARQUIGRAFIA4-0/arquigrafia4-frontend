@@ -1,29 +1,23 @@
 <template>
-  <div
-    class="image-container"
-    @mouseenter="handleMouseEnter"
-    @mouseleave="handleMouseLeave"
-  >
-    <div
-      v-if="props.loading"
-      class="loading-overlay d-flex align-items-center justify-content-center"
-    >
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
+  <div class="image-display-wrapper">
+    <div class="image-container">
+      <div
+        v-if="props.loading"
+        class="loading-overlay d-flex align-items-center justify-content-center"
+      >
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
       </div>
+      <img
+        v-if="props.image"
+        :src="props.image.imageUrl"
+        :alt="props.image.title"
+        class="image-display"
+        @load="emit('load')"
+      />
     </div>
-    <img
-      v-if="props.image"
-      :src="props.image.imageUrl"
-      :alt="props.image.title"
-      class="image-display"
-      @load="emit('load')"
-    />
-    <div
-      v-if="props.image"
-      class="floating-menu"
-      :class="{ 'is-visible': shouldShowMenu }"
-    >
+    <div v-if="props.image" class="image-actions-menu">
       <button
         type="button"
         class="menu-button"
@@ -87,7 +81,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref } from "vue";
 import DownloadModal from "./DownloadModal.vue";
 import ReportModal from "./ReportModal.vue";
 import ShareModal from "./ShareModal.vue";
@@ -105,45 +99,9 @@ const props = defineProps({
 
 const emit = defineEmits(["load", "download", "share", "report-submit"]);
 
-const isHovering = ref(false);
-const isTouchDevice = ref(false);
 const showDownloadModal = ref(false);
 const showReportModal = ref(false);
 const showShareModal = ref(false);
-const shouldShowMenu = computed(() => isHovering.value || isTouchDevice.value);
-
-const handleMouseEnter = () => {
-  isHovering.value = true;
-};
-
-const handleMouseLeave = () => {
-  isHovering.value = false;
-};
-
-const updateDeviceCapabilities = () => {
-  if (typeof window === "undefined" || !window.matchMedia) {
-    isTouchDevice.value = false;
-    return;
-  }
-
-  const mediaQueries = [
-    window.matchMedia("(hover: none)"),
-    window.matchMedia("(pointer: coarse)"),
-  ];
-
-  isTouchDevice.value = mediaQueries.some((query) => query.matches);
-};
-
-onMounted(() => {
-  updateDeviceCapabilities();
-  window.addEventListener("resize", updateDeviceCapabilities, {
-    passive: true,
-  });
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", updateDeviceCapabilities);
-});
 
 const handleDownloadConfirm = (image) => {
   emit("download", image);
@@ -159,12 +117,19 @@ const handleReportSubmit = (payload) => {
 </script>
 
 <style scoped>
+.image-display-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
 .image-display {
   width: 100%;
   height: auto;
   max-width: 100%;
-  max-height: calc(100vh - 220px);
-  max-height: calc(100dvh - 220px);
+  max-height: calc(100vh - 280px);
+  max-height: calc(100dvh - 280px);
   object-fit: contain;
   display: block;
 }
@@ -174,9 +139,10 @@ const handleReportSubmit = (payload) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  max-height: calc(100vh - 220px);
-  max-height: calc(100dvh - 220px);
+  max-height: calc(100vh - 280px);
+  max-height: calc(100dvh - 280px);
   overflow: hidden;
+  width: 100%;
 }
 
 .loading-overlay {
@@ -187,28 +153,16 @@ const handleReportSubmit = (payload) => {
   justify-content: center;
 }
 
-.floating-menu {
-  position: absolute;
-  left: 50%;
-  bottom: 24px;
-  transform: translateX(-50%);
+.image-actions-menu {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
   border-radius: 6px;
-  background-color: rgba(0, 0, 0, 0.222);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  background-color: var(--Off_white);
+  box-shadow: 2px 2px 5px 2px #00000040;
   backdrop-filter: blur(2px);
-  z-index: 2;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.floating-menu.is-visible {
-  opacity: 1;
-  pointer-events: auto;
+  width: fit-content;
 }
 
 .menu-button {
@@ -220,7 +174,7 @@ const handleReportSubmit = (payload) => {
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: #fff;
+  color: var(--Cinza_E);
   cursor: pointer;
   transition:
     background-color 0.2s ease,
@@ -230,8 +184,8 @@ const handleReportSubmit = (payload) => {
 }
 
 .menu-button:hover {
-  background-color: rgba(255, 255, 255, 0.16);
-  color: #fff;
+  background-color: var(--Laranja_C);
+  color: var(--Cinza_E);
 }
 
 .menu-button:focus-visible {

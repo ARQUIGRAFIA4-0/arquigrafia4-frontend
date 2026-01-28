@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, ref, computed, watch } from "vue";
+import { ref, computed, watch } from "vue";
 import profileImageDefault from '@/assets/profile_image.png';
 
 const props = defineProps({

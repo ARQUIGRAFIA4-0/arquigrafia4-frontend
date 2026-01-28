@@ -65,9 +65,9 @@ export default [
     component: () => import("../views/Auth/AuthLogin.vue"),
   },
   {
-    path: "/contribua",
-    name: "contribua",
-    component: () => import("../views/Contribua.vue"),
+    path: "/colabore",
+    name: "colabore",
+    component: () => import("../views/Collaborate.vue"),
   },
   // About routes
   {
