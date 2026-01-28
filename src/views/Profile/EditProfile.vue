@@ -21,7 +21,7 @@ const editProfileFormRef = ref(null);
 onMounted(async () => {
   publicProfileData.value = await profilesStore.getPublicProfileById(userData.value.id);
   privateProfileData.value = await profilesStore.getProfileById(userAuthHeader.value, userData.value.id);
-  
+
   window.addEventListener('resize', handleResize);
 });
 
@@ -50,11 +50,11 @@ function scrollToSection(refName) {
 <template>
   <div :class="['profile-container', isMobile ? '' : 'row']">
     <div class="col-12 col-md-3">
-      <ProfileCard v-if="!isMobile" :userData="userData" :publicProfileData="publicProfileData" :privateProfileData="privateProfileData"
-        :isMobile="isMobile" />
+      <ProfileCard v-if="!isMobile" :userData="userData" :publicProfileData="publicProfileData"
+        :privateProfileData="privateProfileData" :isMobile="isMobile" />
     </div>
     <div class="d-none d-md-block col-md-1"></div>
-    <div class="col-12 col-md-8 row">
+    <div :class="['col-12 col-md-8', isMobile ? '' : 'row']">
       <div class="col-12 col-md-12 mt-md-0 mt-2">
         <EditProfileNav :selected="selectedTab" @select="handleNavSelect" />
       </div>
@@ -77,7 +77,7 @@ $breakpoint-md: 768px;
 
 .profile-container {
   width: 100%;
-  padding: 0 32px;
+  padding: 0 1rem;
 
   @include md {
     display: flex;

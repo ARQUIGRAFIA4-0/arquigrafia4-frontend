@@ -4,7 +4,7 @@
       v-if="label"
       class="d-flex flex-row justify-content-between w-100 mb-1"
     >
-      <label class="form-label text-cinza-e h3" :for="inputId">{{ label }}</label>
+      <component :is="labelTag" class="form-label text-cinza-e h3" :for="labelTag === 'label' ? inputId : null">{{ label }}</component>
       <div v-if="explain" class="flex-grow-0" style="margin-right: 12px">
         <button
           type="button"
@@ -65,6 +65,10 @@ export default {
     label: {
       type: String,
       default: "",
+    },
+    labelTag: {
+      type: String,
+      default: "label",
     },
     id: {
       type: String,

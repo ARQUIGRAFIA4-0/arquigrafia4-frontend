@@ -6,6 +6,7 @@ import { VueQueryPlugin, QueryClient } from "@tanstack/vue-query";
 
 const pinia = createPinia();
 import "./scss/styles.scss";
+import "bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import router from "./router/index";
 
