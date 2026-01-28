@@ -102,14 +102,6 @@ const tabs = [
 
 const currentSection = computed(() => route.meta?.section ?? "dados");
 
-// Faz scroll para o topo quando a rota muda
-watch(
-  () => route.params.id,
-  () => {
-    window.scrollTo(0, 0);
-  }
-);
-
 const loadComments = async (imageId) => {
   loadingComments.value = true;
   try {
@@ -141,9 +133,6 @@ const handleReportSubmit = (payload) => {
 };
 
 onMounted(async () => {
-  // Scroll para o topo quando o componente é montado
-  window.scrollTo(0, 0);
-
   try {
     const imageId = route.params.id;
     image.value = await api.getImageDetails(imageId);
