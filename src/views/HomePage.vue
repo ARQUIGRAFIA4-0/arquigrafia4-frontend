@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="tabs-container px-3 px-md-4">
+    <div class="tabs-container">
       <ul class="nav nav-underline tabs-nav">
         <li class="nav-item">
           <button
@@ -28,13 +28,13 @@
     </template>
 
     <template v-else-if="viewMode === 'grid'">
-      <div class="px-3 px-md-4 pb-4 pt-2" data-cy="view-grid">
+      <div class="container-grid" data-cy="view-grid">
         <view-grid />
       </div>
     </template>
 
     <template v-else-if="viewMode === 'mosaic'">
-      <div class="px-md-4 pb-4" data-cy="view-mosaic">
+      <div class="container-mosaic pb-4" data-cy="view-mosaic">
         <view-mosaic />
       </div>
     </template>
@@ -401,7 +401,16 @@ function handleNewSearch() {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use "@/scss/variables" as *;
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
 .container {
   min-height: 100vh;
 }
@@ -409,10 +418,34 @@ function handleNewSearch() {
 .tabs-container {
   display: flex;
   justify-content: flex-start;
+  padding-left: 1rem;
+  padding-right: 1rem;
+
+  @include md {
+    padding-left: 50px;
+    padding-right: 50px;
+  }
 }
 
 .tabs-nav {
   max-width: 560px;
+}
+
+.container-grid {
+  padding-left: 1rem;
+  padding-right: 1rem;
+
+  @include md {
+    padding-left: 50px;
+    padding-right: 50px;
+  }
+}
+
+.container-mosaic {
+  @include md {
+    padding-left: 50px;
+    padding-right: 50px;
+  }
 }
 
 .toolbar {

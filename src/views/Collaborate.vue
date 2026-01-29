@@ -11,7 +11,7 @@ const isLoggedIn = computed(() => store.isLoggedIn);
 <template>
   <div v-if="isLoggedIn">
     <!-- Usuário logado -->
-    <div class="container py-4">
+    <div class="upload-image-box">
       <UploadImageBox />
     </div>
   </div>
@@ -21,4 +21,22 @@ const isLoggedIn = computed(() => store.isLoggedIn);
   </div>
 </template>
 
-<style scoped></style>
+<style lang="scss" scoped>
+@use "@/scss/variables" as *;
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
+.upload-image-box {
+  padding: 1.5rem 1rem;
+
+  @include md {
+    padding-left: 50px;
+    padding-right: 50px;
+  }
+}
+</style>
