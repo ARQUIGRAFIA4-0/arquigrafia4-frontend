@@ -47,7 +47,7 @@ const {
       <p class="mt-3 text-primary">{{ loadingMessage }}</p>
     </div>
 
-    <h2 class="text-start mb-4">{{ pageTitle }}</h2>
+    <h2 class="form-title text-start mb-4">{{ pageTitle }}</h2>
 
     <!-- Email Verification Form -->
     <form v-if="isVerifying" @submit.prevent="verifyCode">
@@ -254,39 +254,6 @@ const {
           {{ isRegistering ? "Registrar" : "Entrar" }}
         </button>
       </div>
-
-      <div v-if="!isRegistering" class="d-flex align-items-center my-4">
-        <hr class="flex-grow-1" />
-        <span class="mx-3 text-muted">Ou</span>
-        <hr class="flex-grow-1" />
-      </div>
-
-      <div v-if="!isRegistering" class="d-grid gap-2">
-        <button
-          type="button"
-          class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2"
-        >
-          <img
-            src="https://www.google.com/favicon.ico"
-            alt="Google"
-            width="20"
-            height="20"
-          />
-          Continue com Google
-        </button>
-        <button
-          type="button"
-          class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2"
-        >
-          <img
-            src="https://orcid.org/sites/default/files/images/orcid_16x16.png"
-            alt="ORCID"
-            width="20"
-            height="20"
-          />
-          Continue com ORCID
-        </button>
-      </div>
     </form>
   </div>
 
@@ -296,7 +263,16 @@ const {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
+@use "@/scss/variables" as *;
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
 .login-container {
   background-color: #faf9f9;
   border-radius: 16px;
@@ -318,6 +294,27 @@ const {
   justify-content: center;
   border-radius: 16px;
   z-index: 10;
+}
+
+.form-title {
+  @include md {
+    font-weight: 500;
+    font-style: Medium;
+    font-size: 30px;
+    leading-trim: NONE;
+    line-height: 150%;
+    letter-spacing: 0%;
+  }
+}
+
+.input-label {
+  @include md {
+    font-weight: 500;
+    font-style: Medium;
+    font-size: 20px;
+    line-height: 150%;
+    letter-spacing: 0%;
+  }
 }
 
 .verification-code {
