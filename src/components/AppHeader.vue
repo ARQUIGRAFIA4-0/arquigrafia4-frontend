@@ -20,8 +20,7 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <header
-    class="app-header d-flex flex-wrap justify-content-between align-items-center pt-3 pb-0 pb-sm-3 mb-3 px-3 px-md-4">
+  <header class="app-header">
     <div class="logo-column">
       <a href="/" class="logo">
         <img src="../assets/logo.svg" alt="Logo" class="logo" />
@@ -103,7 +102,32 @@ const handleLogout = async () => {
 </template>
 
 <style lang="scss" scoped>
-@use "@/scss/mixins" as *;
+@use "@/scss/variables" as *;
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+
+  @include md {
+    padding-left: 50px;
+    padding-right: 50px;
+  }
+}
 
 .icons-column {
   position: relative;
