@@ -211,17 +211,17 @@ onMounted(() => {
         />
         <small class="form-text text-muted d-block mt-1 form-input-subtitle">Para garantir a segurança de sua conta, enviaremos um link de recuperação de senha para seu e-mail.</small>
       </div>
-      <div class="d-grid d-md-flex gap-2">
+      <div class="d-grid d-md-flex gap-2 form-btn-row">
         <button
           type="button"
-          class="btn btn-outline-secondary"
+          class="btn btn-outline-secondary btn-sm form-btn-half"
           @click="isForgotPassword = false"
         >
           Cancelar
         </button>
         <button
           type="button"
-          class="btn btn-primary"
+          class="btn btn-primary btn-sm form-btn-half"
           @click="sendPasswordResetEmailWithAlert()"
         >
           Redefinir senha
@@ -318,15 +318,15 @@ onMounted(() => {
         </a>
       </div>
 
-      <div class="login-btn-row">
+      <div class="form-btn-row">
         <button
           type="button"
-          class="btn btn-outline-secondary btn-sm login-btn-half"
+          class="btn btn-outline-secondary btn-sm form-btn-half"
           @click="toggleRegister"
         >
           {{ isRegistering ? "Já tenho conta" : "Criar conta" }}
         </button>
-        <button type="submit" class="btn btn-primary btn-sm login-btn-half">
+        <button type="submit" class="btn btn-primary btn-sm form-btn-half">
           {{ isRegistering ? "Registrar" : "Entrar" }}
         </button>
       </div>
@@ -430,12 +430,12 @@ $breakpoint-md: 768px;
   text-decoration-skip-ink: auto;
 }
 
-.login-btn-row {
+.form-btn-row {
   display: flex;
   gap: 0.5rem;
 }
 
-.login-btn-half {
+.form-btn-half {
   flex: 1 1 50%;
   min-width: 0;
 }
