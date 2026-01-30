@@ -334,6 +334,12 @@ $breakpoint-md: 768px;
       text-align: center;
       max-width: 100%;
     }
+
+    li {
+      @include md {
+        font-size: 12px;
+      }
+    }
   }
 
   &__toggle-profile-visibility {

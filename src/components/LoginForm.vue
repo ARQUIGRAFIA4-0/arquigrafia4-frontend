@@ -2,6 +2,8 @@
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "../store/auth";
 
+import { ref, onMounted } from "vue";
+
 const auth = useAuthStore();
 const {
   isLoggedIn,
@@ -32,6 +34,76 @@ const {
   resendCode,
   sendPasswordResetEmail,
 } = auth;
+
+// Alert system
+const alertMessage = ref("");
+const alertType = ref("");
+const showAlert = ref(false);
+
+function displayAlert(message, type = "error") {
+  alertMessage.value = message;
+  alertType.value = type;
+  showAlert.value = true;
+}
+
+function closeAlert() {
+  showAlert.value = false;
+  alertMessage.value = "";
+  alertType.value = "";
+}
+
+async function handleLoginWithAlert() {
+  closeAlert();
+  const result = await handleLogin();
+  if (result && !result.success) {
+    displayAlert(result.message, "error");
+  }
+}
+
+async function handleRegisterWithAlert() {
+  closeAlert();
+  const result = await handleRegister();
+  if (result && !result.success) {
+    displayAlert(result.message, "error");
+  }
+}
+
+async function verifyCodeWithAlert() {
+  closeAlert();
+  const result = await verifyCode();
+  if (result) {
+    displayAlert(result.message, result.success ? "success" : "error");
+  }
+}
+
+async function resendCodeWithAlert() {
+  closeAlert();
+  const result = await resendCode();
+  if (result) {
+    displayAlert(result.message, result.success ? "success" : "error");
+  }
+}
+
+async function sendPasswordResetEmailWithAlert() {
+  closeAlert();
+  const result = await sendPasswordResetEmail();
+  if (result) {
+    displayAlert(result.message, result.success ? "success" : "error");
+  }
+}
+
+// Reseta para a view padrão de login ao montar o componente
+onMounted(() => {
+  isVerifying.value = false;
+  isRegistering.value = false;
+  isForgotPassword.value = false;
+  // if (!isVerifying.value) {
+  //   isRegistering.value = false;
+  //   isForgotPassword.value = false;
+  // }
+  closeAlert();
+});
+
 </script>
 
 <template>
@@ -47,13 +119,27 @@ const {
       <p class="mt-3 text-primary">{{ loadingMessage }}</p>
     </div>
 
-    <h2 class="text-start mb-4">{{ pageTitle }}</h2>
+    <h2 class="form-title text-start mb-4">{{ pageTitle }}</h2>
+
+    <!-- Custom Alert -->
+    <div v-if="showAlert" 
+         :class="['alert', 'fs-6', alertType === 'success' ? 'bg-positivo-e' : 'bg-negativo-e', 'text-white', 'mb-3', 'd-flex', 'align-items-center', 'justify-content-between', 'auth-alert']"
+         role="alert">
+      <div class="d-flex align-items-center gap-2">
+        <i :class="alertType === 'success' ? 'bi bi-check-all' : 'bi bi-exclamation-triangle-fill'"></i>
+        <span>{{ alertMessage }}</span>
+      </div>
+      <button
+        type="button"
+        class="btn-close text-white"
+        @click="closeAlert"
+        aria-label="Close"
+      ></button>
+    </div>
 
     <!-- Email Verification Form -->
-    <form v-if="isVerifying" @submit.prevent="verifyCode">
-      <p class="text-muted mb-4">
-        Digite o código de verificação enviado para seu email
-      </p>
+    <form v-if="isVerifying" @submit.prevent="verifyCodeWithAlert">
+      <label class="input-label mb-1">Código</label>
       <div class="verification-code mb-4">
         <template v-for="(digit, index) in 6" :key="index">
           <input
@@ -75,216 +161,173 @@ const {
             @paste="handlePaste"
           />
         </template>
+        <small class="form-text text-muted d-block mt-1 form-input-subtitle">
+          Insira aqui o código recebido no seu e-mail e valide seu acesso.
+        </small>
       </div>
-      <div class="d-grid">
+      <div class="d-flex gap-2 mb-3">
         <button
-          type="submit"
-          class="btn btn-primary"
-          :disabled="!isCodeComplete"
+          type="button"
+          class="btn btn-outline-secondary btn-sm flex-fill"
+          @click="isVerifying = false; isRegistering = false; isForgotPassword = false; closeAlert();"
         >
-          Verificar
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm flex-fill"
+          @click.prevent="resendCodeWithAlert"
+        >
+          Reenviar
         </button>
       </div>
-      <p class="text-center mt-3">
-        <small>
-          Não recebeu o código?
-          <a href="#" @click.prevent="resendCode" class="text-decoration-none"
-            >Reenviar</a
-          >
-        </small>
-      </p>
+      <div class="d-grid mb-4">
+        <button
+          type="submit"
+          class="btn btn-primary btn-sm"
+          :disabled="!isCodeComplete"
+        >
+          Validar código
+        </button>
+      </div>
+      <div
+        class="alert alert-dark bg-off-white alert-light border border-dark border-start-3 email-valitation-alert"
+        role="alert"
+      >
+        <i class="bi bi-info-square-fill text-preto"></i>
+        Caso não tenha recebido o código, verifique sua caixa de spam ou solicite o reenvio.
+      </div>
     </form>
     <!-- Password Reset Form -->
     <div v-else-if="isForgotPassword" class="form-floating mb-3">
-      <input
-        v-model="formData.email"
-        type="email"
-        class="form-control"
-        id="floatingResetEmail"
-        placeholder="nome@exemplo.com"
-      />
-      <label for="floatingResetEmail">Digite seu email</label>
-      <div class="mt-3 d-flex gap-2">
+      <div class="forgot-password-form-box">
+        <label class="input-label mb-1">Qual o e-mail cadastrado?</label>
+        <input
+          v-model="formData.email"
+          type="email"
+          class="form-control"
+          placeholder="seu-email@email.com.br"
+          autocomplete="email"
+        />
+        <small class="form-text text-muted d-block mt-1 form-input-subtitle">Para garantir a segurança de sua conta, enviaremos um link de recuperação de senha para seu e-mail.</small>
+      </div>
+      <div class="d-grid d-md-flex gap-2">
         <button
           type="button"
-          class="btn btn-secondary flex-grow-1"
+          class="btn btn-outline-secondary"
           @click="isForgotPassword = false"
         >
-          Voltar
+          Cancelar
         </button>
         <button
           type="button"
-          class="btn btn-primary flex-grow-1"
-          @click="sendPasswordResetEmail()"
+          class="btn btn-primary"
+          @click="sendPasswordResetEmailWithAlert()"
         >
-          Enviar
+          Redefinir senha
         </button>
       </div>
     </div>
     <!-- Registration/Login Form -->
     <form
       v-else
-      @submit.prevent="isRegistering ? handleRegister() : handleLogin()"
+      @submit.prevent="isRegistering ? handleRegisterWithAlert() : handleLoginWithAlert()"
     >
-      <div v-if="isRegistering" class="form-floating mb-3">
-        <div class="form-floating mb-3">
+      <div v-if="isRegistering" class="form-floating signup-form-box">
+        <div class="mb-3">
+          <label class="input-label mb-1">Como podemos te chamar?</label>
           <input
             v-model="formData.username"
             type="text"
             class="form-control"
-            id="floatingUsername"
-            placeholder="Nome de usuário"
+            placeholder="Seu nome"
+            autocomplete="username"
           />
-          <label for="floatingUsername">Nome de usuário</label>
+          <small class="form-text text-muted d-block mt-1 form-input-subtitle">Esse nome será visível por outras pessoas dentro do ARQUIGRAFIA.</small>
         </div>
-        <div class="form-floating mb-3">
+        <div class="mb-3">
+          <label class="input-label mb-1">E-mail</label>
           <input
             v-model="formData.email"
             type="email"
             class="form-control"
-            id="floatingEmail"
-            placeholder="nome@exemplo.com"
+            placeholder="exemplo@email.com.br"
+            autocomplete="email"
           />
-          <label for="floatingEmail">Email</label>
+          <small class="form-text text-muted d-block mt-1 form-input-subtitle">Enviaremos um código de confirmação, por isso prefira seu melhor e-mail.</small>
         </div>
-        <div class="form-floating mb-3">
-          <input
-            v-model="formData.confirmEmail"
-            type="email"
-            class="form-control"
-            id="floatingConfirmEmail"
-            placeholder="nome@exemplo.com"
-          />
-          <label for="floatingConfirmEmail">Confirme o email</label>
-        </div>
-        <div class="mb-3 form-floating">
-          <input
-            v-model="formData.password"
-            :type="showPassword ? 'text' : 'password'"
-            class="form-control"
-            id="floatingPassword"
-            placeholder="senha"
-          />
-          <label for="floatingPassword">Senha</label>
-          <button
-            type="button"
-            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3"
-            @click="showPassword = !showPassword"
-          >
-            <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
-          </button>
-        </div>
-        <div class="mb-3 form-floating">
-          <input
-            v-model="formData.confirmPassword"
-            :type="showConfirmPassword ? 'text' : 'password'"
-            class="form-control"
-            id="floatingConfirmPassword"
-            placeholder="Confirme a senha"
-          />
-          <label for="floatingConfirmPassword">Confirme a Senha</label>
-          <button
-            type="button"
-            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3"
-            @click="showConfirmPassword = !showConfirmPassword"
-          >
-            <i
-              class="bi"
-              :class="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"
-            ></i>
-          </button>
+        <div class="mb-3">
+          <label class="input-label mb-1">Senha</label>
+          <div class="position-relative">
+            <input
+              v-model="formData.password"
+              :type="showPassword ? 'text' : 'password'"
+              class="form-control"
+              placeholder="Senha"
+              autocomplete="new-password"
+            />
+            <button
+              type="button"
+              class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3"
+              @click="showPassword = !showPassword"
+              tabindex="-1"
+            >
+              <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+          </div>
+          <small class="form-text text-muted d-block mt-1 form-input-subtitle">Crie uma senha com pelo menos 8 dígitos.</small>
         </div>
       </div>
-      <div v-else class="mb-3 form-floating">
-        <div class="form-floating mb-3">
+      <div v-else class="login-form-box">
+        <div class="mb-3">
+          <label class="input-label mb-1">E-mail cadastrado</label>
           <input
             v-model="formData.email"
             type="email"
             class="form-control"
-            id="floatingInput"
-            placeholder="nome@exemplo.com"
+            placeholder="E-mail cadastrado"
+            autocomplete="email"
           />
-          <label for="floatingInput">Email</label>
         </div>
-        <div class="form-floating mb-3">
-          <input
-            v-model="formData.password"
-            :type="showPassword ? 'text' : 'password'"
-            class="form-control"
-            id="floatingPassword"
-            placeholder="senha"
-          />
-          <label for="floatingPassword">Senha</label>
-          <button
-            type="button"
-            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3"
-            @click="showPassword = !showPassword"
-          >
-            <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
-          </button>
-          <a
+        <div class="mb-3">
+          <label class="input-label mb-1">Senha</label>
+          <div class="position-relative">
+            <input
+              v-model="formData.password"
+              :type="showPassword ? 'text' : 'password'"
+              class="form-control"
+              placeholder="Senha"
+              autocomplete="current-password"
+            />
+            <button
+              type="button"
+              class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3"
+              @click="showPassword = !showPassword"
+              tabindex="-1"
+            >
+              <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+          </div>
+        </div>
+        <a
             href="#"
-            class="text-muted text-decoration-none"
+            class="forgot-password-btn"
             @click.prevent="auth.isForgotPassword = true"
           >
-            Esqueceu sua senha?
-          </a>
-        </div>
+            Esqueci minha senha
+        </a>
       </div>
 
-      <div v-if="!isRegistering" class="mb-3 form-check text-start">
-        <input
-          v-model="formData.remember"
-          type="checkbox"
-          class="form-check-input"
-          id="exampleCheck1"
-        />
-        <label class="form-check-label" for="exampleCheck1">Lembrar</label>
-      </div>
-
-      <div class="d-grid gap-2 d-md-flex">
+      <div class="login-btn-row">
         <button
           type="button"
-          class="btn btn-outline-primary flex-grow-1"
+          class="btn btn-outline-secondary btn-sm login-btn-half"
           @click="toggleRegister"
         >
           {{ isRegistering ? "Já tenho conta" : "Criar conta" }}
         </button>
-        <button type="submit" class="btn btn-primary flex-grow-1">
+        <button type="submit" class="btn btn-primary btn-sm login-btn-half">
           {{ isRegistering ? "Registrar" : "Entrar" }}
-        </button>
-      </div>
-
-      <div v-if="!isRegistering" class="d-flex align-items-center my-4">
-        <hr class="flex-grow-1" />
-        <span class="mx-3 text-muted">Ou</span>
-        <hr class="flex-grow-1" />
-      </div>
-
-      <div v-if="!isRegistering" class="d-grid gap-2">
-        <button
-          type="button"
-          class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2"
-        >
-          <img
-            src="https://www.google.com/favicon.ico"
-            alt="Google"
-            width="20"
-            height="20"
-          />
-          Continue com Google
-        </button>
-        <button
-          type="button"
-          class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2"
-        >
-          <img
-            src="https://orcid.org/sites/default/files/images/orcid_16x16.png"
-            alt="ORCID"
-            width="20"
-            height="20"
-          />
-          Continue com ORCID
         </button>
       </div>
     </form>
@@ -296,13 +339,34 @@ const {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
+@use "@/scss/variables" as *;
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
 .login-container {
   background-color: #faf9f9;
   border-radius: 16px;
   padding: 2rem;
   font-weight: 500;
   position: relative;
+}
+
+.login-form-box {
+  margin-bottom: 40px;
+}
+
+.signup-form-box {
+  margin-bottom: 50px;
+}
+
+.forgot-password-form-box {
+  margin-bottom: 40px;
 }
 
 .loading-overlay {
@@ -320,14 +384,77 @@ const {
   z-index: 10;
 }
 
-.verification-code {
+.form-title {
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 150%;
+  letter-spacing: 0%;
+
+  @include md {
+    font-size: 30px;
+  }
+}
+
+.input-label {
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 120%;
+  letter-spacing: 0%;
+  padding-bottom: 10px;
+
+  @include md {
+    font-size: 20px;
+  }
+}
+
+.form-input-subtitle {
+  padding-left: 4px;
+  padding-right: 4px;
+  color: var(--Cinza_M);
+  font-weight: 400;
+  font-style: Italic;
+  font-size: 12px;
+  line-height: 125%;
+  letter-spacing: 0%;
+}
+
+.forgot-password-btn {
+  color: var(--Azul_E);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 125%;
+  letter-spacing: 0%;
+  text-decoration: underline;
+  text-decoration-style: solid;
+  text-decoration-thickness: 0%;
+  text-decoration-skip-ink: auto;
+}
+
+.login-btn-row {
   display: flex;
   gap: 0.5rem;
+}
+
+.login-btn-half {
+  flex: 1 1 50%;
+  min-width: 0;
+}
+
+.verification-code {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   justify-content: center;
+
+  @include md {
+    gap: 0.1rem;
+    justify-content: space-between;
+  }
 }
 
 .verification-input {
-  width: 3rem;
+  width: calc(100% / 6 - 0.5rem);
+  max-width: 3rem;
   height: 3rem;
   text-align: center;
   font-size: 1.5rem;
@@ -337,6 +464,11 @@ const {
   appearance: textfield;
   -webkit-appearance: textfield;
   -moz-appearance: textfield;
+
+  @include md {
+    width: calc(100% / 6 - 0.1rem);
+    font-size: 1rem;
+  }
 }
 
 .verification-input:focus {
@@ -348,5 +480,27 @@ const {
 .verification-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+.auth-alert {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  width: auto;
+  max-width: 90%;
+  height: auto;
+}
+
+.email-valitation-alert {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  font-weight: 400;
+  font-style: 9pt;
+  font-size: 14px;
+  line-height: 150%;
+  letter-spacing: 0%;
 }
 </style>

@@ -34,6 +34,7 @@ const props = defineProps({
 
 const columns = ref(5);
 const heights = ref([]);
+const containerRef = ref(null);
 
 // Obtém a largura da coluna (imita o comportamento do masonry-wall)
 const getColumnWidthTarget = (columnIndex) => {
@@ -44,9 +45,9 @@ const getColumnWidthTarget = (columnIndex) => {
   return props.columnWidths[columnIndex % props.columnWidths.length];
 };
 
-// Calcula o número de colunas com base na largura da tela
+// Calcula o número de colunas com base na largura do container
 const calculateColumns = () => {
-  const screenWidth = window.innerWidth;
+  const screenWidth = containerRef.value?.clientWidth || window.innerWidth;
   const avgColumnWidth = Array.isArray(props.columnWidths) 
     ? props.columnWidths.reduce((a, b) => a + b, 0) / props.columnWidths.length
     : props.columnWidths;
@@ -103,7 +104,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="skeleton-masonry" :style="{ display: 'flex', gap: `${gap}px` }">
+  <div ref="containerRef" class="skeleton-masonry" :style="{ display: 'flex', gap: `${gap}px` }">
     <div
       v-for="columnIndex in columns"
       :key="`skeleton-col-${columnIndex}`"

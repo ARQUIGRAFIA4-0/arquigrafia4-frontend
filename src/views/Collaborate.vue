@@ -12,7 +12,8 @@ const isLoggedIn = computed(() => store.isLoggedIn);
   <div v-if="isLoggedIn">
     <!-- Usuário logado -->
     <div class="upload-image-box">
-      <UploadImageBox />
+      <UploadImageBox :show-upload-instructions="true"
+        instructions-title="Colabore com o Arquigrafia<br />enviando suas imagens." />
     </div>
   </div>
   <div v-else>
