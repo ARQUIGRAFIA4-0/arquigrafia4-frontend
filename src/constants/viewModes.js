@@ -1,12 +1,12 @@
 export const VIEW_OPTIONS = [
-  {
-    selection: "mar",
-    label: "Mar de imagens",
-    route: "mar",
-    mode: "grid",
-    icon: "bi-image",
-    showFooter: true,
-  },
+  // {
+  //   selection: "mar",
+  //   label: "Mar de imagens",
+  //   route: "mar",
+  //   mode: "grid",
+  //   icon: "bi-image",
+  //   showFooter: true,
+  // },
   {
     selection: "grid",
     label: "Grade",
