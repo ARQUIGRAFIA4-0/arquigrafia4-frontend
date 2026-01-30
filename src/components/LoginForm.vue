@@ -2,7 +2,7 @@
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "../store/auth";
 
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 
 const auth = useAuthStore();
 const {
@@ -91,6 +91,15 @@ async function sendPasswordResetEmailWithAlert() {
     displayAlert(result.message, result.success ? "success" : "error");
   }
 }
+
+// Reseta para a view padrão de login ao montar o componente
+onMounted(() => {
+  isVerifying.value = false;
+  isRegistering.value = false;
+  isForgotPassword.value = false;
+  closeAlert();
+});
+
 </script>
 
 <template>
