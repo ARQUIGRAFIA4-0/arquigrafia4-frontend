@@ -33,6 +33,7 @@ export const useAuthStore = defineStore("auth", () => {
   const authHeader = computed(() => "Bearer " + accessToken.value);
   const pageTitle = computed(() => {
     if (isVerifying.value) return "Verificação de Email";
+    if (isForgotPassword.value) return "Recuperar senha";
     return isRegistering.value ? "Crie sua conta" : "Acesse seu perfil";
   });
   const isCodeComplete = computed(() => {

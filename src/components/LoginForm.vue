@@ -171,28 +171,31 @@ async function sendPasswordResetEmailWithAlert() {
     </form>
     <!-- Password Reset Form -->
     <div v-else-if="isForgotPassword" class="form-floating mb-3">
-      <input
-        v-model="formData.email"
-        type="email"
-        class="form-control"
-        id="floatingResetEmail"
-        placeholder="nome@exemplo.com"
-      />
-      <label for="floatingResetEmail">Digite seu email</label>
-      <div class="mt-3 d-flex gap-2">
+      <div class="forgot-password-form-box">
+        <label class="input-label mb-1">Qual o e-mail cadastrado?</label>
+        <input
+          v-model="formData.email"
+          type="email"
+          class="form-control"
+          placeholder="seu-email@email.com.br"
+          autocomplete="email"
+        />
+        <small class="form-text text-muted d-block mt-1 form-input-subtitle">Para garantir a segurança de sua conta, enviaremos um link de recuperação de senha para seu e-mail.</small>
+      </div>
+      <div class="d-grid d-md-flex gap-2">
         <button
           type="button"
-          class="btn btn-secondary flex-grow-1"
+          class="btn btn-outline-secondary"
           @click="isForgotPassword = false"
         >
-          Voltar
+          Cancelar
         </button>
         <button
           type="button"
-          class="btn btn-primary flex-grow-1"
+          class="btn btn-primary"
           @click="sendPasswordResetEmailWithAlert()"
         >
-          Enviar
+          Redefinir senha
         </button>
       </div>
     </div>
@@ -211,7 +214,7 @@ async function sendPasswordResetEmailWithAlert() {
             placeholder="Seu nome"
             autocomplete="username"
           />
-          <small class="form-text text-muted d-block mt-1">Esse nome será visível por outras pessoas dentro do ARQUIGRAFIA.</small>
+          <small class="form-text text-muted d-block mt-1 form-input-subtitle">Esse nome será visível por outras pessoas dentro do ARQUIGRAFIA.</small>
         </div>
         <div class="mb-3">
           <label class="input-label mb-1">E-mail</label>
@@ -222,7 +225,7 @@ async function sendPasswordResetEmailWithAlert() {
             placeholder="exemplo@email.com.br"
             autocomplete="email"
           />
-          <small class="form-text text-muted d-block mt-1">Enviaremos um código de confirmação, por isso prefira seu melhor e-mail.</small>
+          <small class="form-text text-muted d-block mt-1 form-input-subtitle">Enviaremos um código de confirmação, por isso prefira seu melhor e-mail.</small>
         </div>
         <div class="mb-3">
           <label class="input-label mb-1">Senha</label>
@@ -243,7 +246,7 @@ async function sendPasswordResetEmailWithAlert() {
               <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
             </button>
           </div>
-          <small class="form-text text-muted d-block mt-1">Crie uma senha com pelo menos 8 dígitos.</small>
+          <small class="form-text text-muted d-block mt-1 form-input-subtitle">Crie uma senha com pelo menos 8 dígitos.</small>
         </div>
       </div>
       <div v-else class="login-form-box">
@@ -253,7 +256,7 @@ async function sendPasswordResetEmailWithAlert() {
             v-model="formData.email"
             type="email"
             class="form-control"
-            placeholder="seu email cadastrado"
+            placeholder="E-mail cadastrado"
             autocomplete="email"
           />
         </div>
@@ -331,17 +334,10 @@ $breakpoint-md: 768px;
 
 .signup-form-box {
   margin-bottom: 50px;
+}
 
-  small {
-    padding-left: 4px;
-    padding-right: 4px;
-    color: var(--Cinza_M);
-    font-weight: 400;
-    font-style: Italic;
-    font-size: 12px;
-    line-height: 125%;
-    letter-spacing: 0%;
-  }
+.forgot-password-form-box {
+  margin-bottom: 40px;
 }
 
 .loading-overlay {
@@ -380,6 +376,17 @@ $breakpoint-md: 768px;
   @include md {
     font-size: 20px;
   }
+}
+
+.form-input-subtitle {
+  padding-left: 4px;
+  padding-right: 4px;
+  color: var(--Cinza_M);
+  font-weight: 400;
+  font-style: Italic;
+  font-size: 12px;
+  line-height: 125%;
+  letter-spacing: 0%;
 }
 
 .forgot-password-btn {
