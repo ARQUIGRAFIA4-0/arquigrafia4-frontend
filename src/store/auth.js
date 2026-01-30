@@ -313,8 +313,17 @@ export const useAuthStore = defineStore("auth", () => {
     return re.test(email);
   }
   async function resendCode() {
-    await sendVerificationEmail(formData.value.email);
-    return { success: true, message: "Um novo código foi enviado para seu email." };
+    if (!validEmail(formData.value.email)) {
+      return { success: false, message: "Insira um email válido antes de reenviar o código." };
+    }
+
+    try {
+      await sendVerificationEmail(formData.value.email);
+      return { success: true, message: "Um novo código foi enviado para seu email." };
+    } catch (error) {
+      console.error("Error resending verification code:", error);
+      return { success: false, message: "Erro ao reenviar o código. Tente novamente." };
+    }
   }
   async function verifyCode() {
     const code = verificationDigits.value.join("");
