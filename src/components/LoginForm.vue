@@ -135,9 +135,7 @@ onMounted(() => {
 
     <!-- Email Verification Form -->
     <form v-if="isVerifying" @submit.prevent="verifyCodeWithAlert">
-      <p class="text-muted mb-4">
-        Digite o código de verificação enviado para seu email
-      </p>
+      <label class="input-label mb-1">Código</label>
       <div class="verification-code mb-4">
         <template v-for="(digit, index) in 6" :key="index">
           <input
@@ -159,24 +157,42 @@ onMounted(() => {
             @paste="handlePaste"
           />
         </template>
+        <small class="form-text text-muted d-block mt-1 form-input-subtitle">
+          Insira aqui o código recebido no seu e-mail e valide seu acesso.
+        </small>
       </div>
-      <div class="d-grid">
+      <div class="d-flex gap-2 mb-3">
         <button
-          type="submit"
-          class="btn btn-primary"
-          :disabled="!isCodeComplete"
+          type="button"
+          class="btn btn-outline-secondary btn-sm flex-fill"
+          @click="isVerifying = false; isRegistering = false; isForgotPassword = false; closeAlert();"
         >
-          Verificar
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm flex-fill"
+          @click.prevent="resendCodeWithAlert"
+        >
+          Reenviar
         </button>
       </div>
-      <p class="text-center mt-3">
-        <small>
-          Não recebeu o código?
-          <a href="#" @click.prevent="resendCodeWithAlert" class="text-decoration-none"
-            >Reenviar</a
-          >
-        </small>
-      </p>
+      <div class="d-grid mb-4">
+        <button
+          type="submit"
+          class="btn btn-primary btn-sm"
+          :disabled="!isCodeComplete"
+        >
+          Validar código
+        </button>
+      </div>
+      <div
+        class="alert alert-dark bg-off-white alert-light border border-dark border-start-3 email-valitation-alert"
+        role="alert"
+      >
+        <i class="bi bi-info-square-fill text-preto"></i>
+        Caso não tenha recebido o código, verifique sua caixa de spam ou solicite o reenvio.
+      </div>
     </form>
     <!-- Password Reset Form -->
     <div v-else-if="isForgotPassword" class="form-floating mb-3">
@@ -422,12 +438,19 @@ $breakpoint-md: 768px;
 
 .verification-code {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: center;
+
+  @include md {
+    gap: 0.1rem;
+    justify-content: space-between;
+  }
 }
 
 .verification-input {
-  width: 3rem;
+  width: calc(100% / 6 - 0.5rem);
+  max-width: 3rem;
   height: 3rem;
   text-align: center;
   font-size: 1.5rem;
@@ -437,6 +460,11 @@ $breakpoint-md: 768px;
   appearance: textfield;
   -webkit-appearance: textfield;
   -moz-appearance: textfield;
+
+  @include md {
+    width: calc(100% / 6 - 0.1rem);
+    font-size: 1rem;
+  }
 }
 
 .verification-input:focus {
@@ -459,5 +487,16 @@ $breakpoint-md: 768px;
   width: auto;
   max-width: 90%;
   height: auto;
+}
+
+.email-valitation-alert {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  font-weight: 400;
+  font-style: 9pt;
+  font-size: 14px;
+  line-height: 150%;
+  letter-spacing: 0%;
 }
 </style>
