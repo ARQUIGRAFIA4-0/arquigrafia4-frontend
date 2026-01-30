@@ -1,5 +1,5 @@
 <template>
-  <div class="container-fluid p-2">
+  <div class="container-fluid authentication-container">
     <!-- Main Content Row -->
     <div class="row my-2 justify-content-center">
       <!-- Login Form Column (3 cols) -->
@@ -8,7 +8,7 @@
       </div>
 
       <!-- Empty Column (1 col) -->
-      <!-- <div class="d-none d-md-block col-md-1"></div> -->
+      <div class="d-none d-md-block col-md-1"></div>
 
       <!-- Image Gallery Column (8 cols) -->
       <div class="col-12 col-md-8">
@@ -53,18 +53,19 @@ export default {
 };
 </script>
 
-<style scoped>
-/* Optional: Add some padding or borders if needed */
-.nav-tabs {
-  border-bottom: 1px solid #dee2e6; /* Standard Bootstrap border */
+<style lang="scss" scoped>
+@use "@/scss/variables" as *;
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
 }
 
-.nav-link {
-  color: #495057; /* Standard link color */
-}
-
-.nav-link.active {
-  color: #0d6efd; /* Bootstrap primary blue */
-  border-color: #dee2e6 #dee2e6 #fff;
+.authentication-container {
+  @include md {
+    padding: 8px 50px;
+  }
 }
 </style>
