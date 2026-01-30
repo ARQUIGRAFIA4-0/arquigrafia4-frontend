@@ -126,73 +126,49 @@ const {
       v-else
       @submit.prevent="isRegistering ? handleRegister() : handleLogin()"
     >
-      <div v-if="isRegistering" class="form-floating mb-3">
-        <div class="form-floating mb-3">
+      <div v-if="isRegistering" class="form-floating signup-form-box">
+        <div class="mb-3">
+          <label class="input-label mb-1">Como podemos te chamar?</label>
           <input
             v-model="formData.username"
             type="text"
             class="form-control"
-            id="floatingUsername"
-            placeholder="Nome de usuário"
+            placeholder="Seu nome"
+            autocomplete="username"
           />
-          <label for="floatingUsername">Nome de usuário</label>
+          <small class="form-text text-muted d-block mt-1">Esse nome será visível por outras pessoas dentro do ARQUIGRAFIA.</small>
         </div>
-        <div class="form-floating mb-3">
+        <div class="mb-3">
+          <label class="input-label mb-1">E-mail</label>
           <input
             v-model="formData.email"
             type="email"
             class="form-control"
-            id="floatingEmail"
-            placeholder="nome@exemplo.com"
+            placeholder="exemplo@email.com.br"
+            autocomplete="email"
           />
-          <label for="floatingEmail">Email</label>
+          <small class="form-text text-muted d-block mt-1">Enviaremos um código de confirmação, por isso prefira seu melhor e-mail.</small>
         </div>
-        <div class="form-floating mb-3">
-          <input
-            v-model="formData.confirmEmail"
-            type="email"
-            class="form-control"
-            id="floatingConfirmEmail"
-            placeholder="nome@exemplo.com"
-          />
-          <label for="floatingConfirmEmail">Confirme o email</label>
-        </div>
-        <div class="mb-3 form-floating">
-          <input
-            v-model="formData.password"
-            :type="showPassword ? 'text' : 'password'"
-            class="form-control"
-            id="floatingPassword"
-            placeholder="senha"
-          />
-          <label for="floatingPassword">Senha</label>
-          <button
-            type="button"
-            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3"
-            @click="showPassword = !showPassword"
-          >
-            <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
-          </button>
-        </div>
-        <div class="mb-3 form-floating">
-          <input
-            v-model="formData.confirmPassword"
-            :type="showConfirmPassword ? 'text' : 'password'"
-            class="form-control"
-            id="floatingConfirmPassword"
-            placeholder="Confirme a senha"
-          />
-          <label for="floatingConfirmPassword">Confirme a Senha</label>
-          <button
-            type="button"
-            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3"
-            @click="showConfirmPassword = !showConfirmPassword"
-          >
-            <i
-              class="bi"
-              :class="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"
-            ></i>
-          </button>
+        <div class="mb-3">
+          <label class="input-label mb-1">Senha</label>
+          <div class="position-relative">
+            <input
+              v-model="formData.password"
+              :type="showPassword ? 'text' : 'password'"
+              class="form-control"
+              placeholder="Senha"
+              autocomplete="new-password"
+            />
+            <button
+              type="button"
+              class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3"
+              @click="showPassword = !showPassword"
+              tabindex="-1"
+            >
+              <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+          </div>
+          <small class="form-text text-muted d-block mt-1">Crie uma senha com pelo menos 8 dígitos.</small>
         </div>
       </div>
       <div v-else class="login-form-box">
@@ -278,6 +254,21 @@ $breakpoint-md: 768px;
   margin-bottom: 40px;
 }
 
+.signup-form-box {
+  margin-bottom: 50px;
+
+  small {
+    padding-left: 4px;
+    padding-right: 4px;
+    color: var(--Cinza_M);
+    font-weight: 400;
+    font-style: Italic;
+    font-size: 12px;
+    line-height: 125%;
+    letter-spacing: 0%;
+  }
+}
+
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -307,7 +298,7 @@ $breakpoint-md: 768px;
 .input-label {
   font-weight: 500;
   font-size: 16px;
-  line-height: 150%;
+  line-height: 120%;
   letter-spacing: 0%;
   padding-bottom: 10px;
 

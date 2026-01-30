@@ -429,6 +429,7 @@ $breakpoint-md: 768px;
 
 .tabs-nav {
   max-width: 560px;
+  margin-bottom: 4px;
 }
 
 .container-grid {
