@@ -16,14 +16,11 @@ export const useAuthStore = defineStore("auth", () => {
   const isLoading = ref(false);
   const isForgotPassword = ref(false);
   const showPassword = ref(false);
-  const showConfirmPassword = ref(false);
   const verificationEmail = ref("");
   const initialFormState = {
     username: "",
     email: "",
-    confirmEmail: "",
     password: "",
-    confirmPassword: "",
     remember: false,
   };
   const formData = ref({ ...initialFormState });
@@ -99,19 +96,9 @@ export const useAuthStore = defineStore("auth", () => {
       alert("Insira um email válido.");
       return;
     }
-    // Validate email confirmation
-    if (formData.value.email !== formData.value.confirmEmail) {
-      alert("Os emails não coincidem.");
-      return;
-    }
     // Validate password length
     if (formData.value.password.length < 8) {
       alert("A senha deve ter no mínimo 8 caracteres.");
-      return;
-    }
-    // Validate password confirmation
-    if (formData.value.password !== formData.value.confirmPassword) {
-      alert("As senhas não coincidem.");
       return;
     }
     try {
@@ -369,7 +356,6 @@ export const useAuthStore = defineStore("auth", () => {
     authHeader,
     pageTitle,
     showPassword,
-    showConfirmPassword,
     isCodeComplete,
     isForgotPassword,
     toggleRegister,
