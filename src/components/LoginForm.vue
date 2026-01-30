@@ -195,62 +195,55 @@ const {
           </button>
         </div>
       </div>
-      <div v-else class="mb-3 form-floating">
-        <div class="form-floating mb-3">
+      <div v-else class="login-form-box">
+        <div class="mb-3">
+          <label class="input-label mb-1">E-mail cadastrado</label>
           <input
             v-model="formData.email"
             type="email"
             class="form-control"
-            id="floatingInput"
-            placeholder="nome@exemplo.com"
+            placeholder="seu email cadastrado"
+            autocomplete="email"
           />
-          <label for="floatingInput">Email</label>
         </div>
-        <div class="form-floating mb-3">
-          <input
-            v-model="formData.password"
-            :type="showPassword ? 'text' : 'password'"
-            class="form-control"
-            id="floatingPassword"
-            placeholder="senha"
-          />
-          <label for="floatingPassword">Senha</label>
-          <button
-            type="button"
-            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3"
-            @click="showPassword = !showPassword"
-          >
-            <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
-          </button>
-          <a
+        <div class="mb-3">
+          <label class="input-label mb-1">Senha</label>
+          <div class="position-relative">
+            <input
+              v-model="formData.password"
+              :type="showPassword ? 'text' : 'password'"
+              class="form-control"
+              placeholder="Senha"
+              autocomplete="current-password"
+            />
+            <button
+              type="button"
+              class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3"
+              @click="showPassword = !showPassword"
+              tabindex="-1"
+            >
+              <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+          </div>
+        </div>
+        <a
             href="#"
-            class="text-muted text-decoration-none"
+            class="forgot-password-btn"
             @click.prevent="auth.isForgotPassword = true"
           >
-            Esqueceu sua senha?
-          </a>
-        </div>
+            Esqueci minha senha
+        </a>
       </div>
 
-      <div v-if="!isRegistering" class="mb-3 form-check text-start">
-        <input
-          v-model="formData.remember"
-          type="checkbox"
-          class="form-check-input"
-          id="exampleCheck1"
-        />
-        <label class="form-check-label" for="exampleCheck1">Lembrar</label>
-      </div>
-
-      <div class="d-grid gap-2 d-md-flex">
+      <div class="login-btn-row">
         <button
           type="button"
-          class="btn btn-outline-primary flex-grow-1"
+          class="btn btn-outline-secondary btn-sm login-btn-half"
           @click="toggleRegister"
         >
           {{ isRegistering ? "Já tenho conta" : "Criar conta" }}
         </button>
-        <button type="submit" class="btn btn-primary flex-grow-1">
+        <button type="submit" class="btn btn-primary btn-sm login-btn-half">
           {{ isRegistering ? "Registrar" : "Entrar" }}
         </button>
       </div>
@@ -281,6 +274,10 @@ $breakpoint-md: 768px;
   position: relative;
 }
 
+.login-form-box {
+  margin-bottom: 40px;
+}
+
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -297,24 +294,48 @@ $breakpoint-md: 768px;
 }
 
 .form-title {
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 150%;
+  letter-spacing: 0%;
+
   @include md {
-    font-weight: 500;
-    font-style: Medium;
     font-size: 30px;
-    leading-trim: NONE;
-    line-height: 150%;
-    letter-spacing: 0%;
   }
 }
 
 .input-label {
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 150%;
+  letter-spacing: 0%;
+  padding-bottom: 10px;
+
   @include md {
-    font-weight: 500;
-    font-style: Medium;
     font-size: 20px;
-    line-height: 150%;
-    letter-spacing: 0%;
   }
+}
+
+.forgot-password-btn {
+  color: var(--Azul_E);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 125%;
+  letter-spacing: 0%;
+  text-decoration: underline;
+  text-decoration-style: solid;
+  text-decoration-thickness: 0%;
+  text-decoration-skip-ink: auto;
+}
+
+.login-btn-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.login-btn-half {
+  flex: 1 1 50%;
+  min-width: 0;
 }
 
 .verification-code {
