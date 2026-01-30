@@ -2,6 +2,8 @@
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "../store/auth";
 
+import { ref } from "vue";
+
 const auth = useAuthStore();
 const {
   isLoggedIn,
@@ -32,6 +34,63 @@ const {
   resendCode,
   sendPasswordResetEmail,
 } = auth;
+
+// Alert system
+const alertMessage = ref("");
+const alertType = ref("");
+const showAlert = ref(false);
+
+function displayAlert(message, type = "error") {
+  alertMessage.value = message;
+  alertType.value = type;
+  showAlert.value = true;
+}
+
+function closeAlert() {
+  showAlert.value = false;
+  alertMessage.value = "";
+  alertType.value = "";
+}
+
+async function handleLoginWithAlert() {
+  closeAlert();
+  const result = await handleLogin();
+  if (result && !result.success) {
+    displayAlert(result.message, "error");
+  }
+}
+
+async function handleRegisterWithAlert() {
+  closeAlert();
+  const result = await handleRegister();
+  if (result && !result.success) {
+    displayAlert(result.message, "error");
+  }
+}
+
+async function verifyCodeWithAlert() {
+  closeAlert();
+  const result = await verifyCode();
+  if (result) {
+    displayAlert(result.message, result.success ? "success" : "error");
+  }
+}
+
+async function resendCodeWithAlert() {
+  closeAlert();
+  const result = await resendCode();
+  if (result) {
+    displayAlert(result.message, result.success ? "success" : "error");
+  }
+}
+
+async function sendPasswordResetEmailWithAlert() {
+  closeAlert();
+  const result = await sendPasswordResetEmail();
+  if (result) {
+    displayAlert(result.message, result.success ? "success" : "error");
+  }
+}
 </script>
 
 <template>
@@ -49,8 +108,24 @@ const {
 
     <h2 class="form-title text-start mb-4">{{ pageTitle }}</h2>
 
+    <!-- Custom Alert -->
+    <div v-if="showAlert" 
+         :class="['alert', 'fs-6', alertType === 'success' ? 'bg-positivo-e' : 'bg-negativo-e', 'text-white', 'mb-3', 'd-flex', 'align-items-center', 'justify-content-between', 'auth-alert']"
+         role="alert">
+      <div class="d-flex align-items-center gap-2">
+        <i :class="alertType === 'success' ? 'bi bi-check-all' : 'bi bi-exclamation-triangle-fill'"></i>
+        <span>{{ alertMessage }}</span>
+      </div>
+      <button
+        type="button"
+        class="btn-close text-white"
+        @click="closeAlert"
+        aria-label="Close"
+      ></button>
+    </div>
+
     <!-- Email Verification Form -->
-    <form v-if="isVerifying" @submit.prevent="verifyCode">
+    <form v-if="isVerifying" @submit.prevent="verifyCodeWithAlert">
       <p class="text-muted mb-4">
         Digite o código de verificação enviado para seu email
       </p>
@@ -88,7 +163,7 @@ const {
       <p class="text-center mt-3">
         <small>
           Não recebeu o código?
-          <a href="#" @click.prevent="resendCode" class="text-decoration-none"
+          <a href="#" @click.prevent="resendCodeWithAlert" class="text-decoration-none"
             >Reenviar</a
           >
         </small>
@@ -115,7 +190,7 @@ const {
         <button
           type="button"
           class="btn btn-primary flex-grow-1"
-          @click="sendPasswordResetEmail()"
+          @click="sendPasswordResetEmailWithAlert()"
         >
           Enviar
         </button>
@@ -124,7 +199,7 @@ const {
     <!-- Registration/Login Form -->
     <form
       v-else
-      @submit.prevent="isRegistering ? handleRegister() : handleLogin()"
+      @submit.prevent="isRegistering ? handleRegisterWithAlert() : handleLoginWithAlert()"
     >
       <div v-if="isRegistering" class="form-floating signup-form-box">
         <div class="mb-3">
@@ -357,5 +432,16 @@ $breakpoint-md: 768px;
 .verification-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+.auth-alert {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  width: auto;
+  max-width: 90%;
+  height: auto;
 }
 </style>
