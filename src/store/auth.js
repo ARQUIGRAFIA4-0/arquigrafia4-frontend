@@ -235,6 +235,10 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
   async function sendPasswordResetEmail() {
+    if (!formData.value.email) {
+      return { success: false, message: "Por favor, preencha o campo de email." };
+    }
+
     isLoading.value = true;
     loadingMessage.value = "Enviando email de recuperação...";
 
