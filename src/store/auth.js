@@ -32,7 +32,7 @@ export const useAuthStore = defineStore("auth", () => {
   const isLoggedIn = computed(() => !!accessToken.value);
   const authHeader = computed(() => "Bearer " + accessToken.value);
   const pageTitle = computed(() => {
-    if (isVerifying.value) return "Verificação de Email";
+    if (isVerifying.value) return "Valide seu e-mail";
     if (isForgotPassword.value) return "Recuperar senha";
     return isRegistering.value ? "Crie sua conta" : "Acesse seu perfil";
   });
@@ -247,6 +247,7 @@ export const useAuthStore = defineStore("auth", () => {
         email: formData.value.email,
       });
       isForgotPassword.value = false;
+      isVerifying.value = true;
       return { success: true, message: "Um email com instruções foi enviado para você." };
     } catch (error) {
       console.error("Error sending reset email:", error);

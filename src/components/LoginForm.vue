@@ -97,6 +97,10 @@ onMounted(() => {
   isVerifying.value = false;
   isRegistering.value = false;
   isForgotPassword.value = false;
+  // if (!isVerifying.value) {
+  //   isRegistering.value = false;
+  //   isForgotPassword.value = false;
+  // }
   closeAlert();
 });
 
