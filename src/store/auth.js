@@ -45,8 +45,7 @@ export const useAuthStore = defineStore("auth", () => {
   }
   async function handleLogin() {
     if (!formData.value.email || !formData.value.password) {
-      alert("Preencha todos os campos!");
-      return;
+      return { success: false, message: "Preencha todos os campos!" };
     }
 
     try {
@@ -56,8 +55,7 @@ export const useAuthStore = defineStore("auth", () => {
       });
 
       if (!success) {
-        alert("Credenciais inválidas");
-        return;
+        return { success: false, message: "Email ou senha incorretos." };
       }
 
       await getLoggedUser();
@@ -66,14 +64,15 @@ export const useAuthStore = defineStore("auth", () => {
       if (loggedUser.value && !loggedUser.value.email_verified_at) {
         isVerifying.value = true;
         await sendVerificationEmail(formData.value.email);
-        return;
+        return { success: true };
       }
 
       // If we get here, user is logged in and verified
       router.push("/");
+      return { success: true };
     } catch (error) {
       console.error("Login error:", error);
-      alert("Erro ao fazer login. Tente novamente.");
+      return { success: false, message: "Erro ao fazer login. Tente novamente." };
     }
   }
   async function handleRegister() {
@@ -83,23 +82,19 @@ export const useAuthStore = defineStore("auth", () => {
       !formData.value.email ||
       !formData.value.password
     ) {
-      alert("Preencha todos os campos!");
-      return;
+      return { success: false, message: "Preencha todos os campos!" };
     }
     // Validate username length
     if (formData.value.username.length > 50) {
-      alert("O nome de usuário deve ter no máximo 50 caracteres.");
-      return;
+      return { success: false, message: "O nome de usuário deve ter no máximo 50 caracteres." };
     }
     // Validate email format
     if (!validEmail(formData.value.email)) {
-      alert("Insira um email válido.");
-      return;
+      return { success: false, message: "Insira um email válido." };
     }
     // Validate password length
     if (formData.value.password.length < 8) {
-      alert("A senha deve ter no mínimo 8 caracteres.");
-      return;
+      return { success: false, message: "A senha deve ter no mínimo 8 caracteres." };
     }
     try {
       await registerUser({
@@ -109,11 +104,12 @@ export const useAuthStore = defineStore("auth", () => {
       });
 
       await sendVerificationEmail(formData.value.email);
+      return { success: true };
     } catch (error) {
       if (error.response?.data?.message) {
-        alert(error.response.data.message);
+        return { success: false, message: error.response.data.message };
       } else {
-        alert("Erro ao registrar. Tente novamente.");
+        return { success: false, message: "Erro ao registrar. Tente novamente." };
       }
     }
   }
@@ -245,11 +241,11 @@ export const useAuthStore = defineStore("auth", () => {
       await axios.post("/api/forgot-password-email", {
         email: formData.value.email,
       });
-      alert("Um email com instruções foi enviado para você.");
       isForgotPassword.value = false;
+      return { success: true, message: "Um email com instruções foi enviado para você." };
     } catch (error) {
       console.error("Error sending reset email:", error);
-      alert("Erro ao enviar email. Tente novamente.");
+      return { success: false, message: "Erro ao enviar email. Tente novamente." };
     } finally {
       isLoading.value = false;
       loadingMessage.value = "";
@@ -313,7 +309,7 @@ export const useAuthStore = defineStore("auth", () => {
   }
   async function resendCode() {
     await sendVerificationEmail(formData.value.email);
-    alert("Um novo código foi enviado para seu email.");
+    return { success: true, message: "Um novo código foi enviado para seu email." };
   }
   async function verifyCode() {
     const code = verificationDigits.value.join("");
@@ -330,13 +326,14 @@ export const useAuthStore = defineStore("auth", () => {
         await getLoggedUser(); // Now we have the token, get user data
 
         if (loggedUser.value?.email_verified_at) {
-          alert("Conta verificada com sucesso!");
           router.push("/");
+          return { success: true, message: "Email verificado com sucesso!" };
         }
       }
+      return { success: false, message: "Erro na verificação. Tente novamente." };
     } catch (error) {
       console.error("Error verifying code:", error);
-      alert("Código inválido. Tente novamente.");
+      return { success: false, message: "Código inválido. Tente novamente." };
     }
   }
   return {
