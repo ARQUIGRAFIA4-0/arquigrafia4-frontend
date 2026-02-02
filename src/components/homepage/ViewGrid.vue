@@ -19,11 +19,11 @@
               </div>
             </template>
             <div class="ui-card__header">
-              <h3 class="ui-card__title">Grupo Escolar Cachoeira do Vale</h3>
-              <p class="ui-card__subtitle">1980-1990</p>
-              <div class="ui-card__tags">
-                <span v-for="(tag, index) in tags" :key="index" class="ui-card__tag">
-                  {{ tag }}
+              <h3 class="ui-card__title">{{ item.title }}</h3>
+              <p v-if="formatDate(item.dates)" class="ui-card__subtitle">{{ formatDate(item.dates) }}</p>
+              <div v-if="item.subjects && item.subjects.length > 0" class="ui-card__tags">
+                <span v-for="(subject, index) in item.subjects" :key="index" class="ui-card__tag">
+                  {{ subject.term }}
                 </span>
               </div>
             </div>
@@ -50,6 +50,29 @@ const { items, hasNextPage, fetchNextPage, isPending, isFetchingNextPage } =
   useImagesInfiniteQuery();
 
 const loading = computed(() => isPending.value || isFetchingNextPage.value);
+
+// Função para formatar data com lógica de circa e intervalo
+const formatDate = (dates) => {
+  if (!dates || dates.length === 0) return null;
+  
+  // Procura o primeiro objeto do tipo 'creation', ou usa o primeiro disponível
+  const dateInfo = dates.find(d => d.type === 'creation') || dates[0];
+  if (!dateInfo) return null;
+  
+  const earliest = dateInfo.earliest_date ? new Date(dateInfo.earliest_date).getFullYear() : null;
+  const latest = dateInfo.latest_date ? new Date(dateInfo.latest_date).getFullYear() : null;
+  const circa = dateInfo.circa_earliest_date || dateInfo.circa_latest_date;
+  
+  if (!earliest) return null;
+  
+  const prefix = circa ? 'c.' : '';
+  
+  if (!latest || earliest === latest) {
+    return `${prefix}${earliest}`;
+  }
+  
+  return `${prefix}${earliest}-${latest}`;
+};
 
 const fallbackImageUrl = "https://picsum.photos/300/200?grayscale&blur=2";
 
