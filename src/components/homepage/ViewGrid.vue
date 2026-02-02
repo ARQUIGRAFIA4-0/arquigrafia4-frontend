@@ -148,7 +148,6 @@ $breakpoint-md: 768px;
 }
 
 .view-grid__card {
-  background: var(--Off_white, #FAF9F9);
   border: 0.25px solid var(--Cinza_C, #A6A6A6);
   box-shadow: 1px 1px 3px 2px #0000001A;
   border-radius: 5px;
@@ -236,6 +235,9 @@ $breakpoint-md: 768px;
     background: var(--Off_white, #FAF9F9);
     border: 1px solid var(--Cinza_M, #636262);
     color: var(--Cinza_M, #636262);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
     span {
       font-weight: 400;
