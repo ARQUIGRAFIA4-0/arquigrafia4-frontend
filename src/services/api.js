@@ -250,7 +250,7 @@ const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT) => {
 
     const items = data.data.map((image) => ({
       id: image.id,
-      title: `Imagem ${image.legacy_id || image.id.substring(0, 8)}`,
+      title: image.titles?.[0]?.label || `Imagem ${image.legacy_id || image.id.substring(0, 8)}`,
       imageUrl: `${apiBaseUrl}/${image.mid_url}`,
       thumbUrl: `${apiBaseUrl}/${image.thumb_url}`,
       fullUrl: `${apiBaseUrl}/${image.full_url}`,
@@ -259,6 +259,8 @@ const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT) => {
       updatedAt: image.updated_at,
       type: Math.random() < 0.5 ? "obra" : "imagem",
       latlang: randomSaoPauloLatLang(),
+      subjects: image.subjects || [],
+      dates: image.dates || [],
     }));
 
     return {
