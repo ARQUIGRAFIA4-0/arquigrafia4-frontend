@@ -99,7 +99,7 @@
                     v-for="identity in availableIdentities"
                     :key="identity.id"
                     class="d-flex align-items-center gap-2 p-2 hover-bg-light cursor-pointer identity-item"
-                    @click="selectIdentity(identity)"
+                    @click="selectIdentity()"
                     role="button"
                   >
                     <div
@@ -402,7 +402,7 @@
                     <input
                       type="number"
                       class="form-control"
-                      v-model="form.date"
+                      v-model="dateYearInput"
                       placeholder="Ano"
                     />
                   </div>
@@ -412,7 +412,7 @@
                       <input
                         type="number"
                         class="form-control"
-                        v-model="form.date"
+                        v-model="dateYearInput"
                         placeholder="Ano"
                       />
                     </div>
@@ -421,7 +421,7 @@
                       <input
                         type="number"
                         class="form-control"
-                        v-model="form.dateEnd"
+                        v-model="dateEndYearInput"
                         placeholder="Ano"
                       />
                     </div>
@@ -567,20 +567,24 @@
 </template>
 
 <script setup>
-import { ref, markRaw, computed, onMounted, watch } from "vue";
+import { ref, markRaw, computed, watch } from "vue";
 import { api } from "@/services/api";
 import ImagePreviewPanel from "@/components/imageMetadaUpload/ImagePreviewPanel.vue";
 import UiField from "@/components/ui/UiField.vue";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
 import { useImageUploadStore } from "@/store/imageUploads";
+import { useAuthStore } from "@/store/auth";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
+import { formatDate, parseYearFromDateString } from "@/helpers/dateUtils";
 defineOptions({ name: "ImageMetadataUpload" });
 
 const router = useRouter();
 const imageUploadStore = useImageUploadStore();
 const { pendingImages, selectedIndex } = storeToRefs(imageUploadStore);
+const authStore = useAuthStore();
+const { loggedUser } = storeToRefs(authStore);
 
 const tabs = [
   { label: "Essenciais", section: "essenciais" },
@@ -588,9 +592,32 @@ const tabs = [
   { label: "Localização", section: "localizacao" },
 ];
 
-const publishingIdentities = ref([]);
-const selectedIdentity = ref(null);
 const isIdentityDropdownOpen = ref(false);
+
+// selectedIdentity returns the logged-in user
+const selectedIdentity = computed(() => {
+  if (!loggedUser.value) return null;
+  return {
+    id: loggedUser.value.id,
+    name: loggedUser.value.name || loggedUser.value.username,
+    avatar: loggedUser.value.avatar || null,
+    initials: loggedUser.value.initials || loggedUser.value.name?.charAt(0).toUpperCase() || "?",
+  };
+});
+
+// publishingIdentities will contain just the current user for now
+// This structure is kept for future multi-profile support
+const publishingIdentities = computed(() => {
+  if (!loggedUser.value) return [];
+  return [
+    {
+      id: loggedUser.value.id,
+      name: loggedUser.value.name || loggedUser.value.username,
+      avatar: loggedUser.value.avatar || null,
+      initials: loggedUser.value.initials || loggedUser.value.name?.charAt(0).toUpperCase() || "?",
+    },
+  ];
+});
 
 const availableIdentities = computed(() => {
   return publishingIdentities.value.filter(
@@ -602,22 +629,11 @@ const toggleIdentityDropdown = () => {
   isIdentityDropdownOpen.value = !isIdentityDropdownOpen.value;
 };
 
-const selectIdentity = (identity) => {
-  selectedIdentity.value = identity;
+const selectIdentity = () => {
+  // For now, this doesn't change anything since selectedIdentity is computed from loggedUser
+  // But this structure is ready for future multi-profile support
   isIdentityDropdownOpen.value = false;
 };
-
-onMounted(async () => {
-  try {
-    const identities = await api.getPublishingIdentities();
-    publishingIdentities.value = identities;
-    if (identities.length > 0) {
-      selectedIdentity.value = identities[0];
-    }
-  } catch (error) {
-    console.error("Erro ao carregar identidades:", error);
-  }
-});
 
 const currentSection = ref("essenciais");
 const showAlert = ref(false);
@@ -665,16 +681,26 @@ const form = ref({ ...defaultForm });
 
 const useSameDataForAll = ref(false);
 
-const extractYearFromExifDate = (exifDate) => {
+const formatExifDateToIso = (exifDate) => {
   if (!exifDate) return "";
-
   try {
     const date = exifDate instanceof Date ? exifDate : new Date(exifDate);
     if (isNaN(date.getTime())) return "";
-    return date.getFullYear().toString();
+    return formatDate(
+      date.getFullYear(),
+      date.getMonth() + 1,
+      date.getDate()
+    );
   } catch {
     return "";
   }
+};
+
+const yearToDateString = (year, isEnd = false) => {
+  if (!year) return "";
+  const parsedYear = parseInt(year, 10);
+  if (isNaN(parsedYear)) return "";
+  return formatDate(parsedYear, isEnd ? 12 : 1, isEnd ? 31 : 1);
 };
 
 watch(
@@ -696,11 +722,34 @@ watch(
           : null);
 
       // Usa data do EXIF se disponível e não houver data salva no metadata
-      const exifYear = extractYearFromExifDate(currentImage.exif?.date);
-      const date = storedMetadata.date || exifYear || defaultForm.date;
+      const exifDate = formatExifDateToIso(currentImage.exif?.date);
+      let date = storedMetadata.date || exifDate || defaultForm.date;
+      let dateEnd = storedMetadata.dateEnd || exifDate || defaultForm.dateEnd;
+
+      // If EXIF date exists, use it for both date and dateEnd
+      if (exifDate && !storedMetadata.date) {
+        date = exifDate;
+        dateEnd = exifDate;
+      }
+      // If user-provided date exists and dateType is 'year', expand to full year
+      else if (date && !storedMetadata.dateEnd && form.value.dateType === 'year') {
+        const year = parseYearFromDateString(date);
+        if (year) {
+          date = formatDate(year, 1, 1);
+          dateEnd = formatDate(year, 12, 31);
+        }
+      }
+      // If user-provided date exists and dateType is 'interval', expand both dates
+      else if (date && dateEnd && form.value.dateType === 'interval') {
+        const startYear = parseYearFromDateString(date);
+        const endYear = parseYearFromDateString(dateEnd);
+        if (startYear) date = formatDate(startYear, 1, 1);
+        if (endYear) dateEnd = formatDate(endYear, 12, 31);
+      }
+
       const dateAccuracy =
         storedMetadata.dateAccuracy ||
-        (exifYear ? "exact" : defaultForm.dateAccuracy);
+        (exifDate ? "exact" : defaultForm.dateAccuracy);
 
       form.value = {
         ...defaultForm,
@@ -708,6 +757,7 @@ watch(
         tags,
         coordinates,
         date,
+        dateEnd,
         dateAccuracy,
       };
 
@@ -781,6 +831,31 @@ const isEssenciaisInvalid = computed(
   () =>
     isRightsInvalid.value || isTitleInvalid.value || isAuthorNameInvalid.value
 );
+
+const dateYearInput = computed({
+  get() {
+    const dateStr = form.value.date;
+    if (!dateStr) return "";
+    const year = parseYearFromDateString(dateStr);
+    return year ? year.toString() : "";
+  },
+  set(yearStr) {
+    form.value.date = yearToDateString(yearStr, false);
+    form.value.dateEnd = yearToDateString(yearStr, true);
+  },
+});
+
+const dateEndYearInput = computed({
+  get() {
+    const dateStr = form.value.dateEnd;
+    if (!dateStr) return "";
+    const year = parseYearFromDateString(dateStr);
+    return year ? year.toString() : "";
+  },
+  set(yearStr) {
+    form.value.dateEnd = yearToDateString(yearStr, true);
+  },
+});
 
 const tagInput = ref("");
 
@@ -906,8 +981,71 @@ const handleSubmit = async () => {
     return;
   }
 
-  // TODO: implementar o envio das imagens para a API
-  console.log("Enviando imagens:", pendingImages.value);
+  try {
+    const formData = new FormData();
+
+    // Add each image with its metadata
+    pendingImages.value.forEach((image, index) => {
+      formData.append(`image[${index}]`, image.file);
+      
+      // Add metadata for this image
+      const metadata = image.metadata || {};
+      formData.append(`metadata[${index}]`, JSON.stringify({
+        title: metadata.title,
+        // isAuthor: metadata.isAuthor ?? true,
+        // isPublicDomain: metadata.isPublicDomain ?? false,
+        photographer: metadata.authorName,
+        // unknownAuthor: metadata.unknownAuthor ?? false,
+        // hasAuthorization: metadata.hasAuthorization ?? true,
+        right_text: metadata.license,
+        // work: metadata.work || "",
+        // tags: metadata.tags || [],
+        description: metadata.description || null,
+        earliest_date: metadata.date || null,
+        latest_date: metadata.dateEnd || null,
+        // dateType: metadata.dateType || "year",
+        circa: metadata.dateAccuracy !== "exact",
+        // location_label: metadata.location || "",
+        // coordinates: metadata.coordinates || null,
+        latitude: metadata.coordinates ? metadata.coordinates.lat : null,
+        longitude: metadata.coordinates ? metadata.coordinates.lng : null,
+      }));
+    });
+  
+    // Add publishing identity
+    if (selectedIdentity.value) {
+      formData.append("user_id", selectedIdentity.value.id);
+    }
+    
+    // Log formData content
+    console.log("FormData content:");
+    for (let [key, value] of formData.entries()) {
+      console.log(`  ${key}:`, value);
+    }
+    
+    // const response = await api.post("/images", formData, {
+    //   headers: {
+    //     "Content-Type": "multipart/form-data",
+    //   },
+    // });
+
+    // if (response.status === 201 || response.status === 200) {
+    //   alertMessage.value = "Imagens enviadas com sucesso!";
+    //   showAlert.value = true;
+      
+    //   // Clear images and redirect after a short delay
+    //   setTimeout(() => {
+    //     imageUploadStore.clearImages();
+    //     router.push("/profile");
+    //   }, 1500);
+    // }
+  } catch (error) {
+    console.error("Erro ao enviar imagens:", error);
+    alertMessage.value =
+      error.response?.data?.message ||
+      "Erro ao enviar imagens. Por favor, tente novamente.";
+    showAlert.value = true;
+  }
 };
 </script>
 
