@@ -49,7 +49,7 @@
       >
         <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
       </button>
-      <button type="button" class="menu-button" aria-label="Ampliar imagem">
+      <button type="button" class="menu-button" aria-label="Modo tela cheia">
         <i class="bi bi-arrows-fullscreen"></i>
       </button>
     </div>

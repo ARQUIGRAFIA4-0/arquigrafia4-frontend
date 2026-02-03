@@ -27,7 +27,7 @@
             ></i>
             <span class="back-link__label">Voltar</span>
           </button>
-          <ul class="nav nav-underline">
+          <ul class="nav nav-underline nav-image-detail">
             <li v-for="tab in tabs" :key="tab.section" class="nav-item">
               <RouterLink
                 class="nav-link"
@@ -157,6 +157,10 @@ onMounted(async () => {
 .back-link__label {
   color: var(--Preto);
   text-decoration: underline;
+}
+
+.nav-image-detail {
+  z-index: -1;
 }
 
 .image-detail__layout {

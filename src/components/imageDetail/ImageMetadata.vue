@@ -221,9 +221,9 @@ const markerPosition = computed(() => {
 .metadata-map {
   position: relative;
   height: 240px;
-
   overflow: hidden;
   background-color: #f1f3f5;
+  z-index: -1;
 }
 
 .metadata-license {
