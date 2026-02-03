@@ -19,8 +19,13 @@
               </div>
             </template>
             <div class="ui-card__header">
-              <h3 class="ui-card__title text-cinza-e">{{ item.title }}</h3>
-              <p class="ui-card__subtitle text-cinza-m">Subtítulo</p>
+              <h3 class="ui-card__title">{{ item.title }}</h3>
+              <p v-if="formatDate(item.dates)" class="ui-card__subtitle">{{ formatDate(item.dates) }}</p>
+              <div v-if="item.subjects && item.subjects.length > 0" class="ui-card__tags">
+                <span v-for="(subject, index) in item.subjects" :key="index" class="ui-card__tag">
+                  {{ subject.term }}
+                </span>
+              </div>
             </div>
           </UiCard>
         </RouterLink>
@@ -46,7 +51,30 @@ const { items, hasNextPage, fetchNextPage, isPending, isFetchingNextPage } =
 
 const loading = computed(() => isPending.value || isFetchingNextPage.value);
 
-const fallbackImageUrl = "https://via.placeholder.com/300x200";
+// Função para formatar data com lógica de circa e intervalo
+const formatDate = (dates) => {
+  if (!dates || dates.length === 0) return null;
+  
+  // Procura o primeiro objeto do tipo 'creation', ou usa o primeiro disponível
+  const dateInfo = dates.find(d => d.type === 'creation') || dates[0];
+  if (!dateInfo) return null;
+  
+  const earliest = dateInfo.earliest_date ? new Date(dateInfo.earliest_date).getFullYear() : null;
+  const latest = dateInfo.latest_date ? new Date(dateInfo.latest_date).getFullYear() : null;
+  const circa = dateInfo.circa_earliest_date || dateInfo.circa_latest_date;
+  
+  if (!earliest) return null;
+  
+  const prefix = circa ? 'c.' : '';
+  
+  if (!latest || earliest === latest) {
+    return `${prefix}${earliest}`;
+  }
+  
+  return `${prefix}${earliest}-${latest}`;
+};
+
+const fallbackImageUrl = "https://picsum.photos/300/200?grayscale&blur=2";
 
 const handleImageError = (event) => {
   const target = event?.target;
@@ -87,7 +115,31 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style scoped>
+<script>
+  const tags = [
+    "Arquitetura",
+    "História",
+    "Cultura",
+    "Educação",
+    "Urbanismo",
+    "Patrimônio",
+    "Sociedade",
+    "Arte",
+    "Fotografia",
+    "Memória",
+  ]
+</script>
+
+<style lang="scss" scoped>
+@use "@/scss/variables" as *;
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
 .view-grid__link {
   display: block;
   height: 100%;
@@ -96,6 +148,10 @@ onBeforeUnmount(() => {
 }
 
 .view-grid__card {
+  border: 0.25px solid var(--Cinza_C, #A6A6A6);
+  box-shadow: 1px 1px 3px 2px #0000001A;
+  border-radius: 5px;
+
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
@@ -108,7 +164,7 @@ onBeforeUnmount(() => {
 
 .view-grid__image-wrapper {
   position: relative;
-  padding-top: 75%;
+  padding-top: 100%; // imagem quadrada
   overflow: hidden;
   background-color: #f8f9fa;
 }
@@ -131,5 +187,66 @@ onBeforeUnmount(() => {
   justify-content: center;
   background-color: rgba(255, 255, 255, 0.85);
   z-index: 1;
+}
+
+.ui-card__header {
+  padding-bottom: 8px;
+}
+
+.ui-card__title {
+  @include md {
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 125%;
+    letter-spacing: 0%;
+    padding-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.ui-card__subtitle {
+  @include md {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 125%;
+    letter-spacing: 0%;
+    color: var(--Cinza_E);
+  }
+}
+
+.ui-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;  
+  max-height: calc(25px * 2 + 8px); /* 2 linhas de tags (altura da tag * 2 + gap) */
+  overflow: hidden;
+}
+
+.ui-card__tag {
+  @include md {
+    height: 25px;
+    gap: 9px;
+    border-radius: 2px;
+    border-width: 1px;
+    padding: 4px 8px;
+    background: var(--Off_white, #FAF9F9);
+    border: 1px solid var(--Cinza_M, #636262);
+    color: var(--Cinza_M, #636262);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    span {
+      font-weight: 400;
+      font-style: 9pt;
+      font-size: 12px;
+      line-height: 115%;
+      letter-spacing: 0%;
+      text-align: center;
+    }
+  }
 }
 </style>

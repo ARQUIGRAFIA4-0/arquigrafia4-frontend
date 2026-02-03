@@ -166,18 +166,29 @@ function resetForm() {
   submitting.value = false;
 }
 
+function close() {
+  emit("update:modelValue", false);
+}
+
+function handleEsc(event) {
+  if (event.key === "Escape") {
+    close();
+  }
+}
+
 watch(
   () => props.modelValue,
   (value) => {
     if (value) {
       resetForm();
+      document.body.style.overflow = 'hidden';
+      window.addEventListener("keydown", handleEsc);
+    } else {
+      document.body.style.overflow = '';
+      window.removeEventListener("keydown", handleEsc);
     }
   }
 );
-
-function close() {
-  emit("update:modelValue", false);
-}
 
 function submit() {
   submitted.value = true;

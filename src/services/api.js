@@ -219,9 +219,68 @@ const searchImages = async () => {
 };
 
 /**
- * Objeto de API com métodos para interação com o backend (mock)
+ * Busca imagens da API
+ * @param {number} page - Número da página atual
+ * @param {number|Object} limitOrOptions - Limite de itens ou objeto de opções
+ * @param {number} [limitOrOptions.limit] - Limite de itens por página
+ * @param {number} [limitOrOptions.initialLimit] - Limite especial para a primeira página
+ * @returns {Promise<{items: Array<Object>, hasMore: boolean}>} Objeto com itens e indicador de mais páginas
+ */
+const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT) => {
+  // const options =
+  //   typeof limitOrOptions === "number"
+  //     ? { limit: limitOrOptions }
+  //     : limitOrOptions ?? {};
+
+  // const limit = normalizeLimit(options.limit, DEFAULT_PAGE_LIMIT);
+  // const perPage = limit;
+
+  const apiBaseUrl = "https://api-dev.arquigrafia.org.br";
+  // const apiUrl = `${apiBaseUrl}/api/images?page=${page}&per_page=${perPage}`;
+  const apiUrl = `${apiBaseUrl}/api/images?page=${page}`;
+
+  try {
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch images: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    const items = data.data.map((image) => ({
+      id: image.id,
+      title: image.titles?.[0]?.label || `Imagem ${image.legacy_id || image.id.substring(0, 8)}`,
+      imageUrl: `${apiBaseUrl}/${image.mid_url}`,
+      thumbUrl: `${apiBaseUrl}/${image.thumb_url}`,
+      fullUrl: `${apiBaseUrl}/${image.full_url}`,
+      userId: image.user_id,
+      createdAt: image.created_at,
+      updatedAt: image.updated_at,
+      type: Math.random() < 0.5 ? "obra" : "imagem",
+      latlang: randomSaoPauloLatLang(),
+      subjects: image.subjects || [],
+      dates: image.dates || [],
+    }));
+
+    return {
+      items,
+      hasMore: Boolean(data.links.next),
+    };
+  } catch (error) {
+    console.error("Error fetching real images:", error);
+    return {
+      items: [],
+      hasMore: false,
+    };
+  }
+};
+
+/**
+ * Objeto de API com métodos para interação com o backend
  * @namespace api
- * @property {Function} getImages - Obtém imagens paginadas
+ * @property {Function} getImages - Obtém imagens paginadas da API
+ * @property {Function} getImagesMock - Obtém imagens paginadas mockadas
  * @property {Function} getGeoJSON - Obtém dados GeoJSON das imagens
  * @property {Function} getImageDetails - Obtém detalhes de uma imagem
  * @property {Function} getImageComments - Obtém comentários de uma imagem
@@ -229,7 +288,8 @@ const searchImages = async () => {
  * @property {Function} searchImages - Busca imagens por parâmetros
  */
 export const api = {
-  getImages: generateMockItems,
+  getImages: fetchImages, // Agora usa a API real
+  getImagesMock: generateMockItems, // Mantém a versão mock para referência
   getGeoJSON,
   getImageDetails,
   getImageComments,

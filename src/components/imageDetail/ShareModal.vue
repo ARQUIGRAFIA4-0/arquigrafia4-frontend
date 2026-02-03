@@ -141,18 +141,29 @@ function resetState() {
   showInProfile.value = true;
 }
 
+function close() {
+  emit("update:modelValue", false);
+}
+
+function handleEsc(event) {
+  if (event.key === "Escape") {
+    close();
+  }
+}
+
 watch(
   () => props.modelValue,
   (value) => {
     if (value) {
       resetState();
+      document.body.style.overflow = 'hidden';
+      window.addEventListener("keydown", handleEsc);
+    } else {
+      document.body.style.overflow = '';
+      window.removeEventListener("keydown", handleEsc);
     }
   }
 );
-
-function close() {
-  emit("update:modelValue", false);
-}
 
 function getShareUrl() {
   return window.location.href;
