@@ -181,8 +181,10 @@ watch(
   (value) => {
     if (value) {
       resetForm();
+      document.body.style.overflow = 'hidden';
       window.addEventListener("keydown", handleEsc);
     } else {
+      document.body.style.overflow = '';
       window.removeEventListener("keydown", handleEsc);
     }
   }
