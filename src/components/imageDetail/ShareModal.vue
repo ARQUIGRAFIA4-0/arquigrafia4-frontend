@@ -141,18 +141,27 @@ function resetState() {
   showInProfile.value = true;
 }
 
+function close() {
+  emit("update:modelValue", false);
+}
+
+function handleEsc(event) {
+  if (event.key === "Escape") {
+    close();
+  }
+}
+
 watch(
   () => props.modelValue,
   (value) => {
     if (value) {
       resetState();
+      window.addEventListener("keydown", handleEsc);
+    } else {
+      window.removeEventListener("keydown", handleEsc);
     }
   }
 );
-
-function close() {
-  emit("update:modelValue", false);
-}
 
 function getShareUrl() {
   return window.location.href;
