@@ -26,12 +26,6 @@
       >
         <i class="bi bi-cloud-download-fill" aria-hidden="true"></i>
       </button>
-      <button type="button" class="menu-button" aria-label="Favoritar imagem">
-        <i class="bi bi-heart" aria-hidden="true"></i>
-      </button>
-      <button type="button" class="menu-button" aria-label="Ver álbum">
-        <i class="bi bi-images" aria-hidden="true"></i>
-      </button>
       <button
         type="button"
         class="menu-button"
@@ -45,7 +39,7 @@
         class="menu-button"
         aria-label="Abrir manifesto IIIF"
       >
-        <span class="iiif-icon" aria-hidden="true">IIIF</span>
+        <img src="@/assets/logo_iiif.svg" alt="IIIF logo" class="iiif-svg-icon" width="18" height="16" draggable="false" />
       </button>
       <button
         type="button"
@@ -56,7 +50,7 @@
         <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
       </button>
       <button type="button" class="menu-button" aria-label="Ampliar imagem">
-        <i class="bi bi-zoom-in" aria-hidden="true"></i>
+        <i class="bi bi-arrows-fullscreen"></i>
       </button>
     </div>
 
@@ -116,7 +110,16 @@ const handleReportSubmit = (payload) => {
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use "@/scss/variables" as *;
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
 .image-display-wrapper {
   display: flex;
   flex-direction: column;
@@ -162,7 +165,15 @@ const handleReportSubmit = (payload) => {
   background-color: var(--Off_white);
   box-shadow: 2px 2px 5px 2px #00000040;
   backdrop-filter: blur(2px);
-  width: fit-content;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: space-between;
+
+  @include md {
+    width: fit-content;
+    box-sizing: content-box;
+    justify-content: center;
+  }
 }
 
 .menu-button {
@@ -197,14 +208,12 @@ const handleReportSubmit = (payload) => {
   font-size: 1.2rem;
 }
 
-.iiif-icon {
+.iiif-svg-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: 1.3rem;
   height: 100%;
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
+  filter: brightness(0) saturate(100%) invert(16%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(100%);
+}   
 </style>
