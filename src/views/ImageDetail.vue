@@ -114,7 +114,7 @@ const loadComments = async (imageId) => {
 };
 
 const goBack = () => {
-  router.push({ name: "explore", params: { viewMode: "mosaic" } });
+  router.back();
 };
 
 const handleDownload = () => {
