@@ -354,7 +354,9 @@ $breakpoint-md: 768px;
   border-radius: 16px;
   padding: 2rem;
   font-weight: 500;
-  position: relative;
+  position: sticky;
+  top: 32px;
+  z-index: 100;
 }
 
 .login-form-box {
