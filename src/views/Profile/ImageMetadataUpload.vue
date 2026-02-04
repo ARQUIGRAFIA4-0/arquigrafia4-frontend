@@ -349,13 +349,34 @@
                 label="Tags da imagem"
                 explain="Adicione tags para classificar a imagem"
               >
-                <input
-                  type="text"
-                  class="form-control"
-                  placeholder="Digite uma tag e pressione Enter"
-                  v-model="tagInput"
-                  @keydown.enter.prevent="addTag"
-                />
+                <div class="position-relative">
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Digite uma tag e pressione Enter"
+                    v-model="tagInput"
+                    @keydown.enter.prevent="addTag"
+                    @input="onTagInputChange"
+                    @focus="showTagSuggestions = true"
+                    @blur="hideTagSuggestions"
+                    autocomplete="off"
+                  />
+                  <div
+                    v-if="showTagSuggestions && filteredTagSuggestions.length > 0"
+                    class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
+                    style="z-index: 1000; max-height: 300px; overflow-y: auto"
+                  >
+                    <button
+                      v-for="(suggestion, index) in filteredTagSuggestions"
+                      :key="index"
+                      type="button"
+                      class="dropdown-item"
+                      @click="selectTagSuggestion(suggestion.term)"
+                    >
+                      {{ suggestion.term }}
+                    </button>
+                  </div>
+                </div>
               </UiField>
               <div class="d-flex flex-wrap gap-2 mt-2">
                 <div
@@ -567,7 +588,7 @@
 </template>
 
 <script setup>
-import { ref, markRaw, computed, watch } from "vue";
+import { ref, markRaw, computed, watch, onMounted } from "vue";
 import { api } from "@/services/api";
 import ImagePreviewPanel from "@/components/imageMetadaUpload/ImagePreviewPanel.vue";
 import UiField from "@/components/ui/UiField.vue";
@@ -578,6 +599,7 @@ import { useAuthStore } from "@/store/auth";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { formatDate, parseYearFromDateString } from "@/helpers/dateUtils";
+import Fuse from "fuse.js";
 defineOptions({ name: "ImageMetadataUpload" });
 
 const router = useRouter();
@@ -858,6 +880,71 @@ const dateEndYearInput = computed({
 });
 
 const tagInput = ref("");
+
+// Tag autocomplete state
+const allSubjects = ref([]);
+const filteredTagSuggestions = ref([]);
+const showTagSuggestions = ref(false);
+let fuseInstance = null;
+let debounceTimer = null;
+
+// Fetch subjects from API on component mount
+onMounted(async () => {
+  try {
+    const response = await fetch(
+      "https://api-dev.arquigrafia.org.br/api/vrac-subjects"
+    );
+    const data = await response.json();
+    if (data.data && Array.isArray(data.data)) {
+      allSubjects.value = data.data;
+      // Initialize Fuse.js with fetched subjects
+      fuseInstance = new Fuse(allSubjects.value, {
+        keys: ["term"],
+        threshold: 0.3, // Allow fuzzy matching
+        includeScore: true,
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching subjects:", error);
+  }
+});
+
+// Debounced search function
+const onTagInputChange = () => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+
+  debounceTimer = setTimeout(() => {
+    if (!tagInput.value.trim()) {
+      filteredTagSuggestions.value = [];
+      return;
+    }
+
+    if (fuseInstance) {
+      const results = fuseInstance.search(tagInput.value);
+      // Filter out tags that are already added
+      filteredTagSuggestions.value = results
+        .map(result => result.item) // extract the actual subject
+        .filter(item => !form.value.tags.includes(item.term))
+        .slice(0, 10);
+    }
+  }, 300); // 300ms debounce
+};
+
+const hideTagSuggestions = () => {
+  // Small delay to allow click on suggestion before hiding
+  setTimeout(() => {
+    showTagSuggestions.value = false;
+  }, 200);
+};
+
+const selectTagSuggestion = (term) => {
+  if (!form.value.tags.includes(term)) {
+    form.value.tags.push(term);
+  }
+  tagInput.value = "";
+  filteredTagSuggestions.value = [];
+  showTagSuggestions.value = false;
+};
 
 const addTag = () => {
   const tag = tagInput.value.trim();
