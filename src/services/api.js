@@ -106,29 +106,35 @@ const getImageDetails = async (id) => {
     // Extrai os autores de todos os agentes
     const authors = Array.isArray(image.agents)
       ? image.agents
-          .map((agent) => agent?.contributor_name?.name)
-          .filter((name) => name != null && name !== "")
+        .map((agent) => agent?.contributor_name?.name)
+        .filter((name) => name != null && name !== "")
       : [];
 
     // Extrai a data de criação
     const dateInfo = image.dates?.find((d) => d.type === "creation") || image.dates?.[0];
     let date = null;
-    
+
     if (dateInfo) {
       const earliestDate = dateInfo.earliest_date;
       const latestDate = dateInfo.latest_date;
-      
+
       // Verifica se ambas as datas existem
       if (earliestDate && latestDate) {
         // Verifica se as datas são exatamente iguais
         if (earliestDate === latestDate) {
-          // Usa a data completa
-          date = earliestDate;
+          // Usa a data completa formatada
+          const d = new Date(earliestDate);
+          date = d.toLocaleDateString('pt-BR', {
+            timeZone: 'UTC',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          });
         } else {
           // Se forem diferentes, extrai os anos
-          const earliestYear = new Date(earliestDate).getFullYear();
-          const latestYear = new Date(latestDate).getFullYear();
-          
+          const earliestYear = new Date(earliestDate).getUTCFullYear();
+          const latestYear = new Date(latestDate).getUTCFullYear();
+
           if (earliestYear === latestYear) {
             // Mesmo ano, retorna apenas o ano
             date = earliestYear.toString();
@@ -138,22 +144,40 @@ const getImageDetails = async (id) => {
           }
         }
       } else {
-        // Se uma das datas não existir, usa a que existir ou fallback para created_at
-        date = earliestDate || latestDate || image.created_at;
+        // Se uma das datas não existir, usa a que existir
+        const singleDate = earliestDate || latestDate;
+        if (singleDate) {
+          const d = new Date(singleDate);
+          date = d.toLocaleDateString('pt-BR', {
+            timeZone: 'UTC',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          });
+        }
       }
-    } else {
-      date = image.created_at;
+    }
+
+    // Se não houver data de criação, usa created_at como fallback
+    if (!date && image.created_at) {
+      const d = new Date(image.created_at);
+      date = d.toLocaleDateString('pt-BR', {
+        timeZone: 'UTC',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
     }
 
     // Extrai a localização
     const location = image.locations?.[0];
     const lat = parseFloat(location?.latitude);
     const lng = parseFloat(location?.longitude);
-    
+
     // Verifica se as coordenadas são válidas
     // Não considera os casos de latitude ou longitude iguais a "0.00000000"
     const hasValidCoordinates = location && lat !== 0 && lng !== 0;
-    
+
     const locationCoordinates = hasValidCoordinates ? [lat, lng] : null;
     const locationLabel = hasValidCoordinates ? (location.label || null) : null;
 
