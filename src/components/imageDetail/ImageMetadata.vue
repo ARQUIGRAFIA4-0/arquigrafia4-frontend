@@ -34,7 +34,7 @@
 
     <div class="metadata-section">
       <h2 class="h5 metadata-title">Data da imagem</h2>
-      <p class="metadata-text">{{ formattedDate }}</p>
+      <p class="metadata-text">{{ props.image?.date || "Data não disponível" }}</p>
     </div>
 
     <div v-if="props.image?.subjects?.length" class="metadata-section">
@@ -115,25 +115,6 @@ const authorsText = computed(() => {
   
   return authors.join(", ");
 });
-
-const formatDateValue = (value) => {
-  if (!value) {
-    return "Data não disponível";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(date);
-};
-
 
 const licenseInfo = computed(() => {
   const rightsUrl = props.image?.rights?.[0]?.href;
