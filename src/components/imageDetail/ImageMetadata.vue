@@ -28,7 +28,7 @@
     <div class="metadata-section">
       <h2 class="h5 metadata-title">Autoria da imagem</h2>
       <p class="metadata-text">
-        {{ props.image?.author || "Desconhecida" }}
+        {{ authorsText }}
       </p>
     </div>
 
@@ -37,16 +37,16 @@
       <p class="metadata-text">{{ formattedDate }}</p>
     </div>
 
-    <div v-if="props.image?.tags?.length" class="metadata-section">
+    <div v-if="props.image?.subjects?.length" class="metadata-section">
       <h2 class="h5 metadata-title">Tags da imagem</h2>
       <div class="metadata-tags">
         <button
-          v-for="tag in props.image.tags"
-          :key="tag"
+          v-for="subject in props.image.subjects"
+          :key="subject.id"
           type="button"
           class="btn btn-outline-primary btn-sm btn-tag"
         >
-          {{ tag }}
+          {{ subject.term }}
         </button>
       </div>
     </div>
@@ -104,6 +104,16 @@ const uploaderInitial = computed(() => {
   }
 
   return uploaderName.value.trim().charAt(0).toUpperCase();
+});
+
+const authorsText = computed(() => {
+  const authors = props.image?.authors;
+  
+  if (!Array.isArray(authors) || authors.length === 0) {
+    return "Desconhecida";
+  }
+  
+  return authors.join(", ");
 });
 
 const formatDateValue = (value) => {
@@ -233,14 +243,11 @@ const markerPosition = computed(() => {
 
 .metadata-map {
   position: relative;
-  height: 240px;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   background-color: #f1f3f5;
   z-index: -1;
-}
-
-.metadata-license {
-  border-top: 1px solid #e9ecef;
+  margin-bottom: 36px;
 }
 
 .metadata-license-content {
