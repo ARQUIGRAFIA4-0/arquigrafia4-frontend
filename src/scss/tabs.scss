@@ -1,31 +1,33 @@
 .nav-underline .nav-link {
-  font-weight: 500;
+  font-weight: 300;
   font-size: 20px;
   color: #1f1f1f;
   position: relative;
   display: inline-block;
+  line-height: 100%;
+  letter-spacing: 0%;
   --bs-nav-underline-border-width: 4px;
 }
 
 .nav-underline .nav-link:hover {
   color: var(--Laranja_E);
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .nav-underline .nav-link:active {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .nav-underline .nav-link.active,
 .nav-underline .nav-link.show {
   color: var(--Laranja_E);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 // cria um pseudo-elemento para garantir espaco e evitar que a tab expanda e empurre outros itens.
 .nav-underline .nav-link[data-label]::after {
   content: attr(data-label);
-  font-weight: 600;
+  font-weight: 700;
   visibility: hidden;
   display: block;
   height: 0;
