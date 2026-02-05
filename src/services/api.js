@@ -80,29 +80,132 @@ const generateMockItems = (page, limitOrOptions = DEFAULT_PAGE_LIMIT) => {
  * @returns {Promise<Object>} Objeto com detalhes da imagem incluindo título, URL, autor, localização, descrição e tags
  */
 const getImageDetails = async (id) => {
-  await delay(500);
-  return {
-    id,
-    title: "Praça Pinheiro da Cunha",
-    imageUrl: `https://www.arquigrafia.org.br/arquigrafia-images/${id}_view.jpg`,
-    uploader: {
-      name: "Roberto Sakamoto",
-      avatar: "https://i.pravatar.cc/40?u=maria",
-    },
-    author: "SAKAMOTO, Roberto",
-    date: "2003-06-24",
-    location: "São Paulo, Brasil",
-    locationCoordinates: [-23.569395, -46.651422],
-    description:
-      "A Praça Pinheiro da Cunha é um espaço verde linear inserido em área residencial, com vegetação arbórea diversificada e caminhos curvos que favorecem a circulação e o convívio.",
-    tags: [
-      "Frução urbana",
-      "Modernismo",
-      "Visualização de dados urbanos",
-      "Imaginário urbano",
-      "Percursos urbanos",
-    ],
-  };
+  const apiBaseUrl = "https://api-dev.arquigrafia.org.br";
+  const apiUrl = `${apiBaseUrl}/api/images/${id}`;
+
+  try {
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image details: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    const image = result.data;
+
+    // Extrai o título preferencial ou o primeiro disponível
+    const preferredTitle = image.titles?.find((t) => t.pref === true);
+    const title = preferredTitle?.label || image.titles?.[0]?.label || `Imagem ${image.legacy_id || image.id.substring(0, 8)}`;
+
+    // Extrai o usuário que fez o envio
+    const uploader = image.user;
+
+    // Extrai a descrição
+    const description = image.descriptions?.[0]?.text || null;
+
+    // Extrai os autores de todos os agentes
+    const authors = Array.isArray(image.agents)
+      ? image.agents
+        .map((agent) => agent?.contributor_name?.name)
+        .filter((name) => name != null && name !== "")
+      : [];
+
+    // Extrai a data de criação
+    const dateInfo = image.dates?.find((d) => d.type === "creation") || image.dates?.[0];
+    let date = null;
+
+    if (dateInfo) {
+      const earliestDate = dateInfo.earliest_date;
+      const latestDate = dateInfo.latest_date;
+
+      // Verifica se ambas as datas existem
+      if (earliestDate && latestDate) {
+        // Verifica se as datas são exatamente iguais
+        if (earliestDate === latestDate) {
+          // Usa a data completa formatada
+          const d = new Date(earliestDate);
+          date = d.toLocaleDateString('pt-BR', {
+            timeZone: 'UTC',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          });
+        } else {
+          // Se forem diferentes, extrai os anos
+          const earliestYear = new Date(earliestDate).getUTCFullYear();
+          const latestYear = new Date(latestDate).getUTCFullYear();
+
+          if (earliestYear === latestYear) {
+            // Mesmo ano, retorna apenas o ano
+            date = earliestYear.toString();
+          } else {
+            // Anos diferentes, retorna o range
+            date = `${earliestYear}-${latestYear}`;
+          }
+        }
+      } else {
+        // Se uma das datas não existir, usa a que existir
+        const singleDate = earliestDate || latestDate;
+        if (singleDate) {
+          const d = new Date(singleDate);
+          date = d.toLocaleDateString('pt-BR', {
+            timeZone: 'UTC',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          });
+        }
+      }
+    }
+
+    // Se não houver data de criação, usa created_at como fallback
+    if (!date && image.created_at) {
+      const d = new Date(image.created_at);
+      date = d.toLocaleDateString('pt-BR', {
+        timeZone: 'UTC',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+
+    // Extrai a localização
+    const location = image.locations?.[0];
+    const lat = parseFloat(location?.latitude);
+    const lng = parseFloat(location?.longitude);
+
+    // Verifica se as coordenadas são válidas
+    // Não considera os casos de latitude ou longitude iguais a "0.00000000"
+    const hasValidCoordinates = location && lat !== 0 && lng !== 0;
+
+    const locationCoordinates = hasValidCoordinates ? [lat, lng] : null;
+    const locationLabel = hasValidCoordinates ? (location.label || null) : null;
+
+    // Subjects/Tags
+    const subjects = image.subjects || [];
+
+    // Extrai os direitos/licença
+    const rights = image.rights || [];
+
+    return {
+      id: image.id,
+      title,
+      imageUrl: `${apiBaseUrl}/${image.mid_url}`,
+      thumbUrl: `${apiBaseUrl}/${image.thumb_url}`,
+      fullUrl: `${apiBaseUrl}/${image.full_url}`,
+      uploader,
+      authors,
+      date,
+      location: locationLabel,
+      locationCoordinates,
+      description,
+      subjects,
+      rights,
+    };
+  } catch (error) {
+    console.error("Error fetching image details:", error);
+    throw error;
+  }
 };
 
 /**
@@ -112,6 +215,7 @@ const getImageDetails = async (id) => {
  */
 const getImageComments = async (imageId) => {
   await delay(300);
+  return [];
   return [
     {
       id: 1,

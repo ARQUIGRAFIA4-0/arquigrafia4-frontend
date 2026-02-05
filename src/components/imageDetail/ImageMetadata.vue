@@ -28,25 +28,25 @@
     <div class="metadata-section">
       <h2 class="h5 metadata-title">Autoria da imagem</h2>
       <p class="metadata-text">
-        {{ props.image?.author || "Desconhecida" }}
+        {{ authorsText }}
       </p>
     </div>
 
     <div class="metadata-section">
       <h2 class="h5 metadata-title">Data da imagem</h2>
-      <p class="metadata-text">{{ formattedDate }}</p>
+      <p class="metadata-text">{{ props.image?.date || "Data não disponível" }}</p>
     </div>
 
-    <div v-if="props.image?.tags?.length" class="metadata-section">
+    <div v-if="props.image?.subjects?.length" class="metadata-section">
       <h2 class="h5 metadata-title">Tags da imagem</h2>
       <div class="metadata-tags">
         <button
-          v-for="tag in props.image.tags"
-          :key="tag"
+          v-for="subject in props.image.subjects"
+          :key="subject.id"
           type="button"
           class="btn btn-outline-primary btn-sm btn-tag"
         >
-          {{ tag }}
+          {{ subject.term }}
         </button>
       </div>
     </div>
@@ -64,25 +64,20 @@
       </div>
     </div>
 
-    <div class="metadata-section metadata-license">
+    <div v-if="licenseInfo" class="metadata-section metadata-license">
       <h2 class="h5 metadata-title">Permissões de uso da imagem</h2>
 
       <div class="metadata-license-content">
-        <div class="metadata-license-icons" aria-hidden="true">
-          <span class="metadata-license-icon">CC</span>
-          <span class="metadata-license-icon">BY</span>
+        <div class="metadata-license-image">
+          <img
+            :src="licenseImageUrl"
+            :alt="`Licença Creative Commons ${licenseInfo.label}`"
+            class="license-img"
+          />
         </div>
 
         <div class="metadata-license-text">
-          <p class="metadata-text">
-            Esta imagem pode ser copiada, redistribuída e adaptada (o que inclui
-            remixar, transformar e criar a partir do material), no entanto, você
-            deve dar o crédito apropriado, prover um link para a licença e
-            indicar se mudanças foram feitas.
-          </p>
-          <p class="metadata-text metadata-license-highlight">
-            Esta imagem não pode ser utilizada para fins comerciais.
-          </p>
+          <p class="metadata-text" v-html="licenseText"></p>
         </div>
       </div>
     </div>
@@ -92,6 +87,7 @@
 <script setup>
 import { computed } from "vue";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
+import { findLicenseByUrl } from "@/constants/creativeCommonsLicenses";
 
 const props = defineProps({
   image: {
@@ -110,25 +106,33 @@ const uploaderInitial = computed(() => {
   return uploaderName.value.trim().charAt(0).toUpperCase();
 });
 
-const formatDateValue = (value) => {
-  if (!value) {
-    return "Data não disponível";
+const authorsText = computed(() => {
+  const authors = props.image?.authors;
+  
+  if (!Array.isArray(authors) || authors.length === 0) {
+    return "Desconhecida";
   }
+  
+  return authors.join(", ");
+});
 
-  const date = new Date(value);
+const licenseInfo = computed(() => {
+  const rightsUrl = props.image?.rights?.[0]?.href;
+  
+  if (!rightsUrl) return null;
+  
+  return findLicenseByUrl(rightsUrl);
+});
 
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
+const licenseImageUrl = computed(() => {
+  if (!licenseInfo.value?.image) return null;
+  
+  return new URL(`../../assets/${licenseInfo.value.image}`, import.meta.url).href;
+});
 
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(date);
-};
-
-const formattedDate = computed(() => formatDateValue(props.image?.date));
+const licenseText = computed(() => {
+  return licenseInfo.value?.text || "Informações sobre a licença não disponíveis.";
+});
 
 const DEFAULT_CENTER = [-46.633309, -23.55052];
 const mapStyleUrl = "https://tiles.openfreemap.org/styles/positron";
@@ -220,53 +224,34 @@ const markerPosition = computed(() => {
 
 .metadata-map {
   position: relative;
-  height: 240px;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   background-color: #f1f3f5;
   z-index: -1;
-}
-
-.metadata-license {
-  border-top: 1px solid #e9ecef;
+  margin-bottom: 36px;
 }
 
 .metadata-license-content {
   display: flex;
-  gap: 1.25rem;
+  gap: 24px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
-.metadata-license-icons {
+.metadata-license-image {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  align-items: flex-start;
+}
+
+.license-img {
+  max-height: 120px;
+  width: auto;
+  display: block;
 }
 
 .metadata-license-text {
   flex: 1 1 220px;
   min-width: 220px;
-}
-
-.metadata-license-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #f8f9fa;
-  border: 1px solid #ced4da;
-  font-weight: 600;
-  color: #343a40;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-}
-
-.metadata-license-highlight {
-  color: #c92a2a;
-  font-weight: 600;
-  margin-top: 0.75rem;
 }
 
 @media (max-width: 575.98px) {
@@ -275,7 +260,7 @@ const markerPosition = computed(() => {
     gap: 1rem;
   }
 
-  .metadata-license-icons {
+  .metadata-license-image {
     margin-bottom: 0;
   }
 }

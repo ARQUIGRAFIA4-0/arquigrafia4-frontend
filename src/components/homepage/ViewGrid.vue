@@ -115,21 +115,6 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<script>
-  const tags = [
-    "Arquitetura",
-    "História",
-    "Cultura",
-    "Educação",
-    "Urbanismo",
-    "Patrimônio",
-    "Sociedade",
-    "Arte",
-    "Fotografia",
-    "Memória",
-  ]
-</script>
-
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
 $breakpoint-md: 768px;

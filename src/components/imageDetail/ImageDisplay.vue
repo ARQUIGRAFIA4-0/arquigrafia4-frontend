@@ -146,6 +146,7 @@ $breakpoint-md: 768px;
   max-height: calc(100dvh - 280px);
   overflow: hidden;
   width: 100%;
+  background-color: var(--Off_white);
 }
 
 .loading-overlay {
