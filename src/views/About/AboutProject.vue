@@ -23,6 +23,9 @@
             tema - e usuários institucionais: bibliotecas, museus, grupos de pesquisa, laboratórios, coletivos,
             institutos públicos e privados.
           </p>
+          <div class="about-project__horizontal-image-wrapper">
+            <img src="@/assets/about_img_01.jpg" alt="Arquigrafia" class="about-project__horizontal-image" />
+          </div>
           <p class="about-project__paragraph">
             Idealizado em 2008 na Universidade de São Paulo, na Faculdade de Arquitetura e Urbanismo e de Design
             (FAU-USP) como um projeto multidisciplinar em parceria com pesquisadores do Instituto de Matemática e
@@ -39,8 +42,8 @@
           </p>
         </div>
         <div class="col-12 col-md-4">
-          <div class="about-project__image-wrapper">
-            <img src="@/assets/about_img_03.jpg" alt="Arquigrafia" class="about-project__image" />
+          <div class="about-project__vertical-image-wrapper">
+            <img src="@/assets/about_img_03.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
           </div>
         </div>
         <div class="col-12 col-md-8">
@@ -56,6 +59,9 @@
             de arquitetura e urbanismo. Historicamente, esse acervo fotográfico também se constituiu, desde os anos
             1960, de maneira colaborativa, com doações de estudantes, professores e pesquisadores.
           </p>
+          <div class="about-project__horizontal-image-wrapper">
+            <img src="@/assets/about_img_02.jpg" alt="Arquigrafia" class="about-project__horizontal-image" />
+          </div>
           <p class="about-project__paragraph">
             Como reconhecimento dos esforços realizados, o Arquigrafia recebeu o primeiro prêmio na categoria
             “Tecnologias Sociais Aplicadas e Humanas” da Agência de Inovação USP em novembro de 2011; recebeu em 2013
@@ -65,8 +71,8 @@
           </p>
         </div>
         <div class="col-12 col-md-4">
-          <div class="about-project__image-wrapper">
-            <img src="@/assets/about_img_04.jpg" alt="Arquigrafia" class="about-project__image" />
+          <div class="about-project__vertical-image-wrapper">
+            <img src="@/assets/about_img_04.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
           </div>
         </div>
         <div class="col-12 col-md-8">
@@ -98,8 +104,8 @@
           </p>
         </div>
         <div class="col-12 col-md-4">
-          <div class="about-project__image-wrapper">
-            <img src="@/assets/about_img_05.jpg" alt="Arquigrafia" class="about-project__image" />
+          <div class="about-project__vertical-image-wrapper">
+            <img src="@/assets/about_img_05.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
           </div>
         </div>
       </div>
@@ -195,7 +201,7 @@ $breakpoint-md: 768px;
     }
   }
 
-  &__image-wrapper {
+  &__vertical-image-wrapper {
     @include md {
       width: 100%;
       height: 100%;
@@ -204,10 +210,24 @@ $breakpoint-md: 768px;
     }
   }
 
-  &__image {
+  &__vertical-image-wrapper {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
+  }
+
+  &__horizontal-image-wrapper {
+    @include md {
+      width: 100%;
+      margin: 32px 0;
+      padding-right: 200px;
+    }
+  }
+
+  &__horizontal-image {
+    width: 100%;
+    height: auto;
     display: block;
   }
 }
