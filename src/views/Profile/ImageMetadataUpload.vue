@@ -3,10 +3,17 @@
     <transition name="fade">
       <div class="upload-box__alert" v-if="showAlert">
         <div
-          class="alert alert-danger h-auto bg-negativo-c fs-6 text-negativo-e border border-danger border-start-3"
+          class="alert h-auto fs-6 border border-start-3"
+          :class="alertType === 'success'
+            ? 'alert-success bg-positivo-c text-positivo-e border-success'
+            : 'alert-danger bg-negativo-c text-negativo-e border-danger'"
           role="alert"
         >
-          <i class="bi bi-exclamation-triangle-fill text-negativo-e" />
+          <i
+            :class="alertType === 'success'
+              ? 'bi bi-check-circle-fill text-positivo-e'
+              : 'bi bi-exclamation-triangle-fill text-negativo-e'"
+          />
           <span>{{ alertMessage }}</span>
           <button
             type="button"
@@ -589,13 +596,14 @@
 
 <script setup>
 import { ref, markRaw, computed, watch, onMounted } from "vue";
-import { api } from "@/services/api";
+import axios from "@/axios";
 import ImagePreviewPanel from "@/components/imageMetadaUpload/ImagePreviewPanel.vue";
 import UiField from "@/components/ui/UiField.vue";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
 import { useImageUploadStore } from "@/store/imageUploads";
 import { useAuthStore } from "@/store/auth";
+import { useVracStore } from "@/store/vrac";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { formatDate, parseYearFromDateString } from "@/helpers/dateUtils";
@@ -607,6 +615,7 @@ const imageUploadStore = useImageUploadStore();
 const { pendingImages, selectedIndex } = storeToRefs(imageUploadStore);
 const authStore = useAuthStore();
 const { loggedUser } = storeToRefs(authStore);
+const vracStore = useVracStore();
 
 const tabs = [
   { label: "Essenciais", section: "essenciais" },
@@ -660,6 +669,7 @@ const selectIdentity = () => {
 const currentSection = ref("essenciais");
 const showAlert = ref(false);
 const alertMessage = ref("");
+const alertType = ref("error"); // 'error' | 'success'
 
 const isTitleTouched = ref(false);
 const isTitleInvalid = computed(
@@ -888,15 +898,16 @@ const showTagSuggestions = ref(false);
 let fuseInstance = null;
 let debounceTimer = null;
 
-// Fetch subjects from API on component mount
+// Contributor names state
+const allContributorNames = ref([]);
+
+// Fetch subjects and contributor names from API on component mount
 onMounted(async () => {
   try {
-    const response = await fetch(
-      "https://api-dev.arquigrafia.org.br/api/vrac-subjects"
-    );
-    const data = await response.json();
-    if (data.data && Array.isArray(data.data)) {
-      allSubjects.value = data.data;
+    // Fetch subjects
+    const subjectsResponse = await vracStore.getVRACSubjects();
+    if (subjectsResponse?.data && Array.isArray(subjectsResponse.data)) {
+      allSubjects.value = subjectsResponse.data;
       // Initialize Fuse.js with fetched subjects
       fuseInstance = new Fuse(allSubjects.value, {
         keys: ["term"],
@@ -904,8 +915,14 @@ onMounted(async () => {
         includeScore: true,
       });
     }
+
+    // Fetch contributor names
+    const contributorsResponse = await vracStore.getVRACContributorNames();
+    if (contributorsResponse?.names && Array.isArray(contributorsResponse.names)) {
+      allContributorNames.value = contributorsResponse.names;
+    }
   } catch (error) {
-    console.error("Error fetching subjects:", error);
+    console.error("Error fetching data:", error);
   }
 });
 
@@ -1001,6 +1018,7 @@ const selectTab = (section) => {
 };
 
 const handleUploadError = (message) => {
+  alertType.value = "error";
   alertMessage.value = message;
   showAlert.value = true;
 };
@@ -1062,6 +1080,7 @@ const handleCancel = () => {
 
 const handleSubmit = async () => {
   if (!canSubmit.value) {
+    alertType.value = "error";
     alertMessage.value =
       "Por favor, preencha todos os dados obrigatórios de todas as imagens.";
     showAlert.value = true;
@@ -1069,65 +1088,176 @@ const handleSubmit = async () => {
   }
 
   try {
-    const formData = new FormData();
+    const successfulUploads = [];
+    const failedUploads = [];
 
-    // Add each image with its metadata
-    pendingImages.value.forEach((image, index) => {
-      formData.append(`image[${index}]`, image.file);
-      
-      // Add metadata for this image
+    // Process each image individually
+    for (let index = 0; index < pendingImages.value.length; index++) {
+      const image = pendingImages.value[index];
       const metadata = image.metadata || {};
-      formData.append(`metadata[${index}]`, JSON.stringify({
-        title: metadata.title,
-        // isAuthor: metadata.isAuthor ?? true,
-        // isPublicDomain: metadata.isPublicDomain ?? false,
-        photographer: metadata.authorName,
-        // unknownAuthor: metadata.unknownAuthor ?? false,
-        // hasAuthorization: metadata.hasAuthorization ?? true,
-        right_text: metadata.license,
-        // work: metadata.work || "",
-        // tags: metadata.tags || [],
-        description: metadata.description || null,
-        earliest_date: metadata.date || null,
-        latest_date: metadata.dateEnd || null,
-        // dateType: metadata.dateType || "year",
-        circa: metadata.dateAccuracy !== "exact",
-        // location_label: metadata.location || "",
-        // coordinates: metadata.coordinates || null,
-        latitude: metadata.coordinates ? metadata.coordinates.lat : null,
-        longitude: metadata.coordinates ? metadata.coordinates.lng : null,
-      }));
-    });
-  
-    // Add publishing identity
-    if (selectedIdentity.value) {
-      formData.append("user_id", selectedIdentity.value.id);
-    }
-    
-    // Log formData content
-    console.log("FormData content:");
-    for (let [key, value] of formData.entries()) {
-      console.log(`  ${key}:`, value);
-    }
-    
-    // const response = await api.post("/images", formData, {
-    //   headers: {
-    //     "Content-Type": "multipart/form-data",
-    //   },
-    // });
 
-    // if (response.status === 201 || response.status === 200) {
-    //   alertMessage.value = "Imagens enviadas com sucesso!";
-    //   showAlert.value = true;
-      
-    //   // Clear images and redirect after a short delay
-    //   setTimeout(() => {
-    //     imageUploadStore.clearImages();
-    //     router.push("/profile");
-    //   }, 1500);
-    // }
+      try {
+        // Map selected tags to their UUIDs from allSubjects
+        const subjectUuids = (metadata.tags || [])
+          .map((tagTerm) => {
+            const subject = allSubjects.value.find((s) => s.term === tagTerm);
+            return subject ? subject.id : null;
+          })
+          .filter((id) => id !== null);
+
+        // Find or create photographer UUID
+        // If isAuthor is true, use logged user's name, otherwise use authorName
+        let photographerUuid = null;
+        let photographerName = null;
+
+        if (metadata.isAuthor && loggedUser.value?.name) {
+          photographerName = loggedUser.value.name.trim();
+        } else if (metadata.authorName && metadata.authorName.trim()) {
+          photographerName = metadata.authorName.trim();
+        }
+
+        if (photographerName) {
+          let contributor = allContributorNames.value.find(
+            (c) => c.name.toLowerCase() === photographerName.toLowerCase()
+          );
+
+          // If photographer doesn't exist, create it
+          if (!contributor) {
+            const newContributor = await vracStore.addVRACContributorName(
+              photographerName
+            );
+            if (newContributor?.name) {
+              contributor = newContributor.name;
+              allContributorNames.value.push(contributor);
+            }
+          }
+
+          photographerUuid = contributor?.id || null;
+        }
+
+        // Create FormData for this specific image
+        const formData = new FormData();
+        formData.append("image", image.file);
+        formData.append("user_id", selectedIdentity.value.id);
+        formData.append("title", metadata.title || "");
+        formData.append("license", metadata.license || "CC BY-NC-SA");
+
+        // Add optional fields
+        if (photographerUuid) {
+          formData.append("photographer", photographerUuid);
+        }
+        if (metadata.description) {
+          formData.append("description", metadata.description);
+        }
+        if (metadata.date) {
+          formData.append("earliest_date", metadata.date);
+        }
+        if (metadata.dateEnd) {
+          formData.append("latest_date", metadata.dateEnd);
+        }
+        if (metadata.dateAccuracy === "approximate") {
+          formData.append("circa", "1");
+        }
+        else {
+          formData.append("circa", "0");
+        }
+        if (metadata.coordinates) {
+          // Ensure coordinates have decimal places (Laravel expects decimal:1,8)
+          const lat = parseFloat(metadata.coordinates.lat).toFixed(8);
+          const lng = parseFloat(metadata.coordinates.lng).toFixed(8);
+          formData.append("latitude", lat);
+          formData.append("longitude", lng);
+        }
+        if (metadata.location) {
+          formData.append("location_label", metadata.location);
+        }
+
+        // Add subjects array
+        subjectUuids.forEach((uuid) => {
+          formData.append("subjects[]", uuid);
+        });
+
+        // Log FormData entries for debugging
+        console.log(`\n=== FormData for Image ${index + 1} ===`);
+        for (const [key, value] of formData.entries()) {
+          if (value instanceof File) {
+            console.log(`${key}: [File] ${value.name} (${value.size} bytes)`);
+          } else {
+            console.log(`${key}: ${value}`);
+          }
+        }
+        console.log("===========================\n");
+
+        // Submit this image
+        const response = await axios.post("/api/images", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: authStore.authHeader,
+          },
+        });
+
+        if (response.status === 201 || response.status === 200) {
+          successfulUploads.push(metadata.title || `Imagem ${index + 1}`);
+        }
+      } catch (error) {
+        console.error(`Erro ao enviar imagem ${index + 1}:`, error);
+        failedUploads.push({
+          title: metadata.title || `Imagem ${index + 1}`,
+          error: error.response?.data?.message || error.message,
+        });
+      }
+    }
+
+    // Show results
+    if (successfulUploads.length > 0 && failedUploads.length === 0) {
+      alertType.value = "success";
+      alertMessage.value = `${successfulUploads.length} ${
+        successfulUploads.length === 1 ? "imagem enviada" : "imagens enviadas"
+      } com sucesso!`;
+      showAlert.value = true;
+
+      // Clear images and redirect after a short delay
+      setTimeout(() => {
+        imageUploadStore.clearImages();
+        router.push("/profile");
+      }, 2500);
+    } else if (failedUploads.length > 0) {
+      alertType.value = "error";
+      const message =
+        successfulUploads.length > 0
+          ? `${successfulUploads.length} ${
+              successfulUploads.length === 1
+                ? "imagem enviada"
+                : "imagens enviadas"
+            } com sucesso. ${failedUploads.length} ${
+              failedUploads.length === 1 ? "falhou" : "falharam"
+            }.`
+          : `Erro ao enviar ${failedUploads.length} ${
+              failedUploads.length === 1 ? "imagem" : "imagens"
+            }.`;
+
+      alertMessage.value = message;
+      showAlert.value = true;
+
+      // If some succeeded, remove them from the list
+      if (successfulUploads.length > 0) {
+        setTimeout(() => {
+          // Remove successful uploads from pending
+          const remainingImages = pendingImages.value.filter((img) => {
+            const title = img.metadata?.title || "";
+            return !successfulUploads.includes(title);
+          });
+
+          if (remainingImages.length === 0) {
+            imageUploadStore.clearImages();
+            router.push("/profile");
+          }
+        }, 2000);
+      }
+    }
   } catch (error) {
     console.error("Erro ao enviar imagens:", error);
+    alertType.value = "error";
     alertMessage.value =
       error.response?.data?.message ||
       "Erro ao enviar imagens. Por favor, tente novamente.";
