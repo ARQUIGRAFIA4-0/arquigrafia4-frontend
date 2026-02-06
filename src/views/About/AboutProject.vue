@@ -18,7 +18,7 @@
         institutos públicos e privados.
       </p>
       <div class="about-project__horizontal-image-wrapper">
-        <img src="@/assets/about_img_01.jpg" alt="Arquigrafia" class="about-project__horizontal-image" />
+        <img src="@/assets/about_project_img_01.jpg" alt="Arquigrafia" class="about-project__horizontal-image" />
       </div>
       <p class="about-project__paragraph">
         Idealizado em 2008 na Universidade de São Paulo, na Faculdade de Arquitetura e Urbanismo e de Design
@@ -37,7 +37,7 @@
     </div>
     <div class="col-12 col-md-4">
       <div class="about-project__vertical-image-wrapper">
-        <img src="@/assets/about_img_03.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
+        <img src="@/assets/about_project_img_03.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
       </div>
     </div>
     <div class="col-12 col-md-8">
@@ -54,7 +54,7 @@
         1960, de maneira colaborativa, com doações de estudantes, professores e pesquisadores.
       </p>
       <div class="about-project__horizontal-image-wrapper">
-        <img src="@/assets/about_img_02.jpg" alt="Arquigrafia" class="about-project__horizontal-image" />
+        <img src="@/assets/about_project_img_02.jpg" alt="Arquigrafia" class="about-project__horizontal-image" />
       </div>
       <p class="about-project__paragraph">
         Como reconhecimento dos esforços realizados, o Arquigrafia recebeu o primeiro prêmio na categoria
@@ -66,7 +66,7 @@
     </div>
     <div class="col-12 col-md-4">
       <div class="about-project__vertical-image-wrapper">
-        <img src="@/assets/about_img_04.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
+        <img src="@/assets/about_project_img_04.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
       </div>
     </div>
     <div class="col-12 col-md-8">
@@ -99,7 +99,7 @@
     </div>
     <div class="col-12 col-md-4">
       <div class="about-project__vertical-image-wrapper">
-        <img src="@/assets/about_img_05.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
+        <img src="@/assets/about_project_img_05.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
       </div>
     </div>
   </AboutLayout>
