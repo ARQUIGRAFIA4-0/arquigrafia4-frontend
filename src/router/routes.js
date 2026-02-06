@@ -71,19 +71,38 @@ export default [
   },
   // About routes
   {
+    path: "/about",
+    redirect: "/about/project",
+  },
+  {
     path: "/about/project",
     name: "about-project",
     component: () => import("../views/About/AboutProject.vue"),
   },
   {
-    path: "/about/events",
-    name: "events",
-    component: () => import("../views/About/Events.vue"),
+    path: "/about/members",
+    name: "about-members",
+    component: () => import("../views/About/AboutMembers.vue"),
   },
   {
-    path: "/about/wiki",
-    name: "wiki",
-    component: () => import("../views/About/Wiki.vue"),
+    path: "/about/policies",
+    name: "about-policies",
+    component: () => import("../views/About/AboutPolicies.vue"),
+  },
+  {
+    path: "/about/faq",
+    name: "about-faq",
+    component: () => import("../views/About/AboutFaq.vue"),
+  },
+  {
+    path: "/about/open-source",
+    name: "about-open-source",
+    component: () => import("../views/About/AboutOpenSource.vue"),
+  },
+  {
+    path: "/about/vocabulary",
+    name: "about-vocabulary",
+    component: () => import("../views/About/AboutVocabulary.vue"),
   },
   // Profile routes
   {
