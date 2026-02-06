@@ -1,41 +1,41 @@
 <template>
   <nav class="about-menu">
     <ul class="about-menu__list">
-      <li class="about-menu__item">
-        <a href="#" class="about-menu__link">
+      <li class="about-menu__item" :class="{ 'about-menu__item--active': $route.name === 'about-project' }">
+        <router-link :to="{ name: 'about-project' }" class="about-menu__link">
           <span class="about-menu__text">Sobre</span>
           <i class="bi bi-arrow-right about-menu__icon"></i>
-        </a>
+        </router-link>
       </li>
-      <li class="about-menu__item">
-        <a href="#" class="about-menu__link">
+      <li class="about-menu__item" :class="{ 'about-menu__item--active': $route.name === 'about-members' }">
+        <router-link :to="{ name: 'about-members' }" class="about-menu__link">
           <span class="about-menu__text">Membros</span>
           <i class="bi bi-arrow-right about-menu__icon"></i>
-        </a>
+        </router-link>
       </li>
-      <li class="about-menu__item">
-        <a href="#" class="about-menu__link">
+      <li class="about-menu__item" :class="{ 'about-menu__item--active': $route.name === 'about-policies' }">
+        <router-link :to="{ name: 'about-policies' }" class="about-menu__link">
           <span class="about-menu__text">Políticas da plataforma</span>
           <i class="bi bi-arrow-right about-menu__icon"></i>
-        </a>
+        </router-link>
       </li>
-      <li class="about-menu__item">
-        <a href="#" class="about-menu__link">
+      <li class="about-menu__item" :class="{ 'about-menu__item--active': $route.name === 'about-faq' }">
+        <router-link :to="{ name: 'about-faq' }" class="about-menu__link">
           <span class="about-menu__text">FAQ</span>
           <i class="bi bi-arrow-right about-menu__icon"></i>
-        </a>
+        </router-link>
       </li>
-      <li class="about-menu__item">
-        <a href="#" class="about-menu__link">
+      <li class="about-menu__item" :class="{ 'about-menu__item--active': $route.name === 'about-open-source' }">
+        <router-link :to="{ name: 'about-open-source' }" class="about-menu__link">
           <span class="about-menu__text">Código Aberto</span>
           <i class="bi bi-arrow-right about-menu__icon"></i>
-        </a>
+        </router-link>
       </li>
-      <li class="about-menu__item">
-        <a href="#" class="about-menu__link">
+      <li class="about-menu__item" :class="{ 'about-menu__item--active': $route.name === 'about-vocabulary' }">
+        <router-link :to="{ name: 'about-vocabulary' }" class="about-menu__link">
           <span class="about-menu__text">Vocabulário</span>
           <i class="bi bi-arrow-right about-menu__icon"></i>
-        </a>
+        </router-link>
       </li>
     </ul>
   </nav>
@@ -70,6 +70,15 @@ $breakpoint-md: 768px;
     padding: 12px 4px 12px 4px;
 
     &:hover {
+
+      .about-menu__text,
+      .about-menu__icon {
+        color: var(--Laranja_E, #FF7F00);
+      }
+    }
+
+    &--active {
+
       .about-menu__text,
       .about-menu__icon {
         color: var(--Laranja_E, #FF7F00);
