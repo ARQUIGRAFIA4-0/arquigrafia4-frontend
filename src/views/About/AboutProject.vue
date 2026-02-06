@@ -39,7 +39,9 @@
           </p>
         </div>
         <div class="col-12 col-md-4">
-          <div style="background: #e0e0e0; min-height: 400px; min-width: 100%;"></div>
+          <div class="about-project__image-wrapper">
+            <img src="@/assets/about_img_03.jpg" alt="Arquigrafia" class="about-project__image" />
+          </div>
         </div>
         <div class="col-12 col-md-8">
           <h2 class="about-project__subtitle--quote">
@@ -63,7 +65,9 @@
           </p>
         </div>
         <div class="col-12 col-md-4">
-          <div style="background: #e0e0e0; min-height: 400px; min-width: 100%;"></div>
+          <div class="about-project__image-wrapper">
+            <img src="@/assets/about_img_04.jpg" alt="Arquigrafia" class="about-project__image" />
+          </div>
         </div>
         <div class="col-12 col-md-8">
           <p class="about-project__paragraph">
@@ -94,7 +98,9 @@
           </p>
         </div>
         <div class="col-12 col-md-4">
-          <div style="background: #e0e0e0; min-height: 400px; min-width: 100%;"></div>
+          <div class="about-project__image-wrapper">
+            <img src="@/assets/about_img_05.jpg" alt="Arquigrafia" class="about-project__image" />
+          </div>
         </div>
       </div>
     </div>
@@ -187,6 +193,22 @@ $breakpoint-md: 768px;
       border-width: 1px;
       border-radius: 5px;
     }
+  }
+
+  &__image-wrapper {
+    @include md {
+      width: 100%;
+      height: 100%;
+      max-height: 450px;
+      overflow: hidden;
+    }
+  }
+
+  &__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
 }
 
