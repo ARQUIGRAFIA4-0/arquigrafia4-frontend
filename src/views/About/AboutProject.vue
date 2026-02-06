@@ -35,7 +35,7 @@
         nível de graduação e pós-graduação, e formando dezenas de jovens pesquisadores de diversas áreas.
       </p>
     </div>
-    <div class="col-12 col-md-4">
+    <div class="d-none d-md-block col-md-4">
       <div class="about-project__vertical-image-wrapper">
         <img src="@/assets/about_project_img_03.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
       </div>
@@ -64,7 +64,7 @@
         Arquitetura.
       </p>
     </div>
-    <div class="col-12 col-md-4">
+    <div class="d-none d-md-block col-md-4">
       <div class="about-project__vertical-image-wrapper">
         <img src="@/assets/about_project_img_04.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
       </div>
@@ -97,7 +97,7 @@
         usuários, tanto online, quanto diretamente nos ambientes urbanos.
       </p>
     </div>
-    <div class="col-12 col-md-4">
+    <div class="d-none d-md-block col-md-4">
       <div class="about-project__vertical-image-wrapper">
         <img src="@/assets/about_project_img_05.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
       </div>
@@ -128,6 +128,16 @@ $breakpoint-md: 768px;
 
 .about-project {
   &__title {
+    width: fit-content;
+    font-weight: 500;
+    font-size: 20px;
+    line-height: 150%;
+    letter-spacing: 0%;
+    vertical-align: middle;
+    border-bottom: 4px solid #000000;
+    padding-bottom: 28px;
+    margin-bottom: 48px;
+
     @include md {
       width: fit-content;
       font-weight: 600;
@@ -159,6 +169,11 @@ $breakpoint-md: 768px;
   }
 
   &__paragraph {
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 150%;
+    letter-spacing: 0%;
+
     @include md {
       font-weight: 500;
       font-size: 16px;
@@ -202,6 +217,8 @@ $breakpoint-md: 768px;
   }
 
   &__horizontal-image-wrapper {
+    padding-right: 100px;
+
     @include md {
       width: 100%;
       margin: 32px 0;
