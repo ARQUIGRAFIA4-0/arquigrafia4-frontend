@@ -81,7 +81,7 @@
         Para participar e colaborar com o Arquigrafia basta acessar o site, criar um login e começar a interagir com
         outros usuários e com um universo de imagens digitais originais e em boa parte inéditas.
       </h2>
-      <button class="about-project__button">Faça parte da comunidade</button>
+      <button class="about-project__button" @click="goToLogin">Faça parte da comunidade</button>
       <p class="about-project__paragraph">
         Cada imagem disponível no site está catalogada e georreferenciada, e é possível inserir comentários e
         registros de impressões sobre as características das arquiteturas e espaços urbanos representados, além de
@@ -105,14 +105,11 @@
   </AboutLayout>
 </template>
 
-<script>
+<script setup>
 import AboutLayout from "./AboutLayout.vue";
 
-export default {
-  name: "AboutProject",
-  components: {
-    AboutLayout,
-  },
+const goToLogin = () => {
+  window.location.href = '/login';
 };
 </script>
 
