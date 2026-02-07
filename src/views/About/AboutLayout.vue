@@ -1,6 +1,6 @@
 <template>
   <div class="container-fluid about-layout">
-    <div class="row my-2 justify-content-center">
+    <div class="row my-2 justify-content-center me-0">
       <div class="d-none d-md-block col-md-2">
         <AboutMenu />
       </div>

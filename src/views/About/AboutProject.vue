@@ -149,15 +149,31 @@ $breakpoint-md: 768px;
   }
 
   &__subtitle {
+    font-weight: 500;
+    font-size: 20px;
+    line-height: 150%;
+    letter-spacing: 0%;
+    padding-right: 54px;
+    margin-bottom: 12px;
+
     @include md {
       font-weight: 500;
       font-size: 20px;
       line-height: 150%;
       letter-spacing: 0%;
       margin-bottom: 32px;
+      padding-right: 0;
     }
 
     &--quote {
+      font-weight: 500;
+      font-size: 20px;
+      line-height: 150%;
+      letter-spacing: 0%;
+      padding-right: 54px;
+      margin-top: 18px;
+      margin-bottom: 28px;
+
       @include md {
         margin: 32px 0;
         padding-right: 120px;
@@ -170,6 +186,7 @@ $breakpoint-md: 768px;
     font-size: 16px;
     line-height: 150%;
     letter-spacing: 0%;
+    padding-right: 16px;
 
     @include md {
       font-weight: 500;
@@ -181,20 +198,19 @@ $breakpoint-md: 768px;
   }
 
   &__button {
-    @include md {
-      background: var(--Laranja_E, #AA4F28);
-      border: 1px solid var(--Laranja_E, #AA4F28);
-      color: #FFFFFF;
-      font-weight: 400;
-      font-size: 14px;
-      line-height: 150%;
-      letter-spacing: 0%;
-      margin-bottom: 32px;
-      gap: 10px;
-      padding: 2px 14px;
-      border-width: 1px;
-      border-radius: 5px;
-    }
+    background: var(--Laranja_E, #AA4F28);
+    border: 1px solid var(--Laranja_E, #AA4F28);
+    color: #FFFFFF;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 150%;
+    letter-spacing: 0%;
+    margin-top: 0;
+    margin-bottom: 28px;
+    gap: 10px;
+    padding: 2px 14px;
+    border-width: 1px;
+    border-radius: 5px;
   }
 
   &__vertical-image-wrapper {
@@ -214,7 +230,9 @@ $breakpoint-md: 768px;
   }
 
   &__horizontal-image-wrapper {
-    padding-right: 100px;
+    padding-right: 76px;
+    margin-top: 24px;
+    margin-bottom: 28px;
 
     @include md {
       width: 100%;
