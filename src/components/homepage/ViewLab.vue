@@ -1,7 +1,7 @@
 <template>
   <div class="lab-view">
     <!-- Grid View -->
-    <template v-if="!selectedProject">
+    <template v-if="mode === 'grid'">
       <div class="lab-view__header">
         <h1 class="lab-view__title">ARQUIGRAFIA Lab</h1>
         <p class="lab-view__subtitle">
@@ -11,7 +11,7 @@
 
       <div class="lab-view__grid row">
         <div v-for="item in labItems" :key="item.id" class="col-12 col-md-6 col-lg-4 mb-4">
-          <lab-card
+          <LabCard
             :image="item.image"
             :title="item.cardTitle"
             :subtitle="item.cardDescription"
@@ -23,9 +23,9 @@
     </template>
 
     <!-- Detail View -->
-    <template v-else>
-      <lab-project-detail
-        :project="selectedProject"
+    <template v-else-if="mode === 'detail' && project">
+      <LabProjectDetail
+        :project="project"
         @back="backToGrid"
       />
     </template>
@@ -34,19 +34,38 @@
 
 <script setup>
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import LabCard from "@/components/LabCard.vue";
 import LabProjectDetail from "@/components/LabProjectDetail.vue";
 import { labProjects } from "@/data/labProjects.js";
 
+const props = defineProps({
+  mode: {
+    type: String,
+    required: true,
+    validator: (value) => ["grid", "detail"].includes(value),
+  },
+  project: {
+    type: Object,
+    default: null,
+  },
+});
+
+const router = useRouter();
 const labItems = ref(labProjects);
-const selectedProject = ref(null);
 
 function selectProject(project) {
-  selectedProject.value = project;
+  router.push(`/explore/lab/${project.slug}`);
 }
 
 function backToGrid() {
-  selectedProject.value = null;
+  // Tenta voltar no histórico
+  if (window.history.length > 1) {
+    router.back();
+  } else {
+    // Fallback para a lista do lab se não houver histórico
+    router.push("/explore/lab");
+  }
 }
 </script>
 

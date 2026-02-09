@@ -59,7 +59,7 @@ function navigateToLab() {
     </div>
 
     <div class="container-lab">
-      <view-lab
+      <ViewLab
         :mode="mode"
         :project="currentProject"
       />
