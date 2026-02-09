@@ -7,7 +7,7 @@
             :class="['nav-link', { active: activeTab === 'acervo' }]"
             :aria-current="activeTab === 'acervo' ? 'page' : undefined"
             data-label="Acervo"
-            @click="activeTab = 'acervo'"
+            @click="navigateToCollection"
           >
             Acervo
           </button>
@@ -17,7 +17,7 @@
             :class="['nav-link', { active: activeTab === 'lab' }]"
             :aria-current="activeTab === 'lab' ? 'page' : undefined"
             data-label="Lab"
-            @click="activeTab = 'lab'"
+            @click="navigateToLab"
           >
             Lab
           </button>
@@ -130,12 +130,6 @@
         @confirm="confirmAdvancedSearch"
       />
     </template>
-
-    <template v-else-if="activeTab === 'lab'">
-      <div class="container-lab">
-        <view-lab />
-      </div>
-    </template>
   </div>
 </template>
 
@@ -145,7 +139,6 @@ import { useRoute, useRouter } from "vue-router";
 import { useRouteQuery } from "@vueuse/router";
 import PageToolbar from "@/components/Toolbar.vue";
 import PageToolbarMobile from "@/components/ToolbarMobile.vue";
-import ViewLab from "@/components/homepage/ViewLab.vue";
 import MobileDrawerSearchDate from "@/components/homepage/MobileDrawerSearchDate.vue";
 import MobileDrawerSearchColor from "@/components/homepage/MobileDrawerSearchColor.vue";
 import MobileDrawerViewMenu from "@/components/homepage/MobileDrawerViewMenu.vue";
@@ -170,7 +163,9 @@ const router = useRouter();
 const breakpoints = useBreakpoints({ md: 768 });
 const isMobile = breakpoints.smaller("md");
 
-const activeTab = ref("acervo");
+const activeTab = computed(() => {
+  return route.path.startsWith("/explore/lab") ? "lab" : "acervo";
+});
 const viewSelection = ref(viewRouteToSelection(route.params.viewMode));
 const viewMode = computed(() => selectionToViewMode(viewSelection.value));
 
@@ -270,6 +265,14 @@ function updateRoute(selection) {
     query: route.query,
     hash: route.hash,
   });
+}
+
+function navigateToCollection() {
+  router.push("/explore/acervo/mosaic");
+}
+
+function navigateToLab() {
+  router.push("/explore/lab");
 }
 
 function handleViewChange({ selection }) {
