@@ -39,3 +39,21 @@ export const labProjects = [
         ],
     }
 ];
+
+/**
+ * Busca um projeto pelo slug
+ * @param {string} slug - O slug a ser buscado
+ * @returns {object|null} O objeto do projeto, ou null se não encontrado
+ */
+export function findProjectBySlug(slug) {
+    return labProjects.find(project => project.slug === slug) || null;
+}
+
+/**
+ * Verifica se um projeto existe com o slug fornecido
+ * @param {string} slug - O slug a ser verificado
+ * @returns {boolean} Verdadeiro se o projeto existir, falso caso contrário
+ */
+export function projectExists(slug) {
+    return labProjects.some(project => project.slug === slug);
+}
