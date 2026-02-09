@@ -22,12 +22,6 @@
             Lab
           </button>
         </li>
-        <!-- <li class="nav-item">
-          <button class="nav-link" data-label="Percurso">Percurso</button>
-        </li>
-        <li class="nav-item">
-          <button class="nav-link" data-label="Colecoes">Coleções</button>
-        </li> -->
       </ul>
     </div>
 
