@@ -55,6 +55,31 @@
               </div>
             </div>
           </div>
+
+          <!-- Action Buttons -->
+          <div class="col-12 col-md-4 lab-project-detail__actions">
+            <a
+              v-for="link in project.links"
+              :key="link.type"
+              :href="link.url"
+              :class="[
+                'btn',
+                'btn-sm',
+                'd-flex',
+                'align-items-center',
+                'gap-2',
+                link.type === 'project' ? 'btn-primary' : 'btn-outline-secondary'
+              ]"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <i
+                class="bi"
+                :class="getIconClass(link.type)"
+              ></i>
+              {{ link.label }}
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -70,6 +95,16 @@ defineProps({
 });
 
 defineEmits(["back"]);
+
+function getIconClass(type) {
+  const icons = {
+    project: "bi-box-arrow-up-right",
+    share: "bi-share",
+    publications: "bi-book",
+    manual: "bi-info-circle",
+  };
+  return icons[type] || "bi-link";
+}
 </script>
 
 <style lang="scss" scoped>
@@ -245,6 +280,23 @@ $breakpoint-md: 768px;
     letter-spacing: 0%;
     color: var(--Cinza_E, #8c8c8c);
     margin: 0;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    i {
+      font-size: 14px;
+    }
+
+    a {
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 150%;
+      letter-spacing: 0%;
+    }
   }
 }
 </style>
