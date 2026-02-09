@@ -1,5 +1,12 @@
 <template>
-  <div class="lab-card">
+  <div
+    class="lab-card"
+    role="button"
+    tabindex="0"
+    @click="$emit('click')"
+    @keydown.enter="$emit('click')"
+    @keydown.space.prevent="$emit('click')"
+  >
     <div class="lab-card__image-wrapper">
       <img
         :src="image"
@@ -47,6 +54,8 @@ defineProps({
     },
   },
 });
+
+defineEmits(["click"]);
 </script>
 
 <style lang="scss" scoped>
@@ -69,10 +78,16 @@ $breakpoint-md: 768px;
   border-radius: 4px;
   border: 0.25px solid var(--Cinza_C, #A6A6A6);
   box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
 
   &:hover {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
     transform: translateY(-4px);
+  }
+
+  &:focus {
+    outline: 2px solid var(--Laranja_E, #aa4f28);
+    outline-offset: 2px;
   }
 
   &__image-wrapper {
