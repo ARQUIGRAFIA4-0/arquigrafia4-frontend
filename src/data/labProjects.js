@@ -22,11 +22,6 @@ export const labProjects = [
                 url: "https://3d.arquigrafia.org.br/",
             },
             {
-                type: "share",
-                label: "Compartilhar",
-                url: "#share",
-            },
-            {
                 type: "publications",
                 label: "Publicações",
                 url: "https://exemplo.com/publicacoes",
