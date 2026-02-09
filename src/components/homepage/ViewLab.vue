@@ -13,8 +13,8 @@
         <div v-for="item in labItems" :key="item.id" class="col-12 col-md-6 col-lg-4 mb-4">
           <lab-card
             :image="item.image"
-            :title="item.title"
-            :subtitle="item.miniDescription"
+            :title="item.cardTitle"
+            :subtitle="item.cardDescription"
             :author="item.researcher"
             @click="selectProject(item)"
           />
