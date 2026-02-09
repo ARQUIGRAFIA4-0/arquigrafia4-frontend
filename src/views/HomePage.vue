@@ -4,11 +4,22 @@
       <ul class="nav nav-underline tabs-nav">
         <li class="nav-item">
           <button
-            class="nav-link active"
-            aria-current="page"
+            :class="['nav-link', { active: activeTab === 'acervo' }]"
+            :aria-current="activeTab === 'acervo' ? 'page' : undefined"
             data-label="Acervo"
+            @click="activeTab = 'acervo'"
           >
             Acervo
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            :class="['nav-link', { active: activeTab === 'lab' }]"
+            :aria-current="activeTab === 'lab' ? 'page' : undefined"
+            data-label="Lab"
+            @click="activeTab = 'lab'"
+          >
+            Lab
           </button>
         </li>
         <!-- <li class="nav-item">
@@ -20,102 +31,111 @@
       </ul>
     </div>
 
-    <template v-if="hasNoResults">
-      <no-search-results
-        @clear="handleClearSearch"
-        @new-search="handleNewSearch"
+    <template v-if="activeTab === 'acervo'">
+      <template v-if="hasNoResults">
+        <no-search-results
+          @clear="handleClearSearch"
+          @new-search="handleNewSearch"
+        />
+      </template>
+
+      <template v-else-if="viewMode === 'grid'">
+        <div class="container-grid" data-cy="view-grid">
+          <view-grid />
+        </div>
+      </template>
+
+      <template v-else-if="viewMode === 'mosaic'">
+        <div class="container-mosaic pb-4" data-cy="view-mosaic">
+          <view-mosaic />
+        </div>
+      </template>
+
+      <template v-else>
+        <div data-cy="view-map">
+          <view-map />
+        </div>
+      </template>
+
+      <div class="toolbar" data-cy="toolbar">
+        <template v-if="isMobile">
+          <page-toolbar-mobile
+            :view-selection="viewSelection"
+            :search-mode="searchMode"
+            data-cy="toolbar-mobile"
+            @search-mode-change="handleMobileSearchModeChange"
+            @open-view-menu="openViewMenu"
+            @open-search-text="openSearchText"
+            @open-search-color="openSearchColor"
+            @open-search-date="openSearchDate"
+          />
+        </template>
+        <template v-else>
+          <page-toolbar
+            :search-mode="searchMode"
+            :text-query="textQuery"
+            :date-range="dateRange"
+            :color="selectedColor"
+            :advanced-filters="advancedFilters"
+            :view-selection="viewSelection"
+            :map-settings="mapSettings"
+            data-cy="toolbar-desktop"
+            @search-mode-change="handleToolbarSearchModeChange"
+            @update:text-query="handleTextQueryUpdate"
+            @update:date-range="handleDateRangeUpdate"
+            @update:color="handleColorUpdate"
+            @update:map-settings="handleMapSettingsUpdate"
+            @view-change="handleViewChange"
+            @view-subcontrol="handleToolbarViewSubcontrol"
+            @open-advanced-search="openAdvancedSearch"
+            @confirm="handleToolbarConfirm"
+          />
+        </template>
+      </div>
+
+      <!-- Mobile Drawers -->
+      <mobile-drawer-view-menu
+        v-model="drawerViewMenu"
+        @select="handleMobileViewChange"
+      />
+
+      <mobile-drawer-search-text
+        v-model="drawerSearchText"
+        :filters="advancedFilters"
+        @update:filters="handleAdvancedFiltersUpdate"
+        @open="handleDrawerTextOpen"
+        @confirm="confirmAdvancedDrawer"
+      />
+
+      <mobile-drawer-search-color
+        v-model="drawerSearchColor"
+        :available-colors="availableColors"
+        :value="selectedColor"
+        @update:value="handleColorUpdate"
+        @open="handleDrawerColorOpen"
+        @confirm="confirmColor"
+      />
+
+      <mobile-drawer-search-date
+        v-model="drawerSearchDate"
+        :value="dateRange"
+        @update:value="handleDateRangeUpdate"
+        @open="handleDrawerDateOpen"
+        @confirm="confirmDate"
+      />
+
+      <advanced-search-modal
+        v-model="modalAdvancedSearch"
+        :filters="advancedFilters"
+        @confirm="confirmAdvancedSearch"
       />
     </template>
 
-    <template v-else-if="viewMode === 'grid'">
-      <div class="container-grid" data-cy="view-grid">
-        <view-grid />
+    <template v-else-if="activeTab === 'lab'">
+      <div class="container-lab">
+        <view-lab />
       </div>
     </template>
-
-    <template v-else-if="viewMode === 'mosaic'">
-      <div class="container-mosaic pb-4" data-cy="view-mosaic">
-        <view-mosaic />
-      </div>
-    </template>
-
-    <template v-else>
-      <div data-cy="view-map">
-        <view-map />
-      </div>
-    </template>
-    <div class="toolbar" data-cy="toolbar">
-      <template v-if="isMobile">
-        <page-toolbar-mobile
-          :view-selection="viewSelection"
-          :search-mode="searchMode"
-          data-cy="toolbar-mobile"
-          @search-mode-change="handleMobileSearchModeChange"
-          @open-view-menu="openViewMenu"
-          @open-search-text="openSearchText"
-          @open-search-color="openSearchColor"
-          @open-search-date="openSearchDate"
-        />
-      </template>
-      <template v-else>
-        <page-toolbar
-          :search-mode="searchMode"
-          :text-query="textQuery"
-          :date-range="dateRange"
-          :color="selectedColor"
-          :advanced-filters="advancedFilters"
-          :view-selection="viewSelection"
-          :map-settings="mapSettings"
-          data-cy="toolbar-desktop"
-          @search-mode-change="handleToolbarSearchModeChange"
-          @update:text-query="handleTextQueryUpdate"
-          @update:date-range="handleDateRangeUpdate"
-          @update:color="handleColorUpdate"
-          @update:map-settings="handleMapSettingsUpdate"
-          @view-change="handleViewChange"
-          @view-subcontrol="handleToolbarViewSubcontrol"
-          @open-advanced-search="openAdvancedSearch"
-          @confirm="handleToolbarConfirm"
-        />
-      </template>
-    </div>
-
-    <!-- Mobile Drawers -->
-    <mobile-drawer-view-menu
-      v-model="drawerViewMenu"
-      @select="handleMobileViewChange"
-    />
-
-    <mobile-drawer-search-text
-      v-model="drawerSearchText"
-      :filters="advancedFilters"
-      @update:filters="handleAdvancedFiltersUpdate"
-      @open="handleDrawerTextOpen"
-      @confirm="confirmAdvancedDrawer"
-    />
-
-    <mobile-drawer-search-color
-      v-model="drawerSearchColor"
-      :available-colors="availableColors"
-      :value="selectedColor"
-      @update:value="handleColorUpdate"
-      @open="handleDrawerColorOpen"
-      @confirm="confirmColor"
-    />
-
-    <mobile-drawer-search-date
-      v-model="drawerSearchDate"
-      :value="dateRange"
-      @update:value="handleDateRangeUpdate"
-      @open="handleDrawerDateOpen"
-      @confirm="confirmDate"
-    />
-
-    <advanced-search-modal
-      v-model="modalAdvancedSearch"
-      :filters="advancedFilters"
-      @confirm="confirmAdvancedSearch"
-    />
   </div>
 </template>
 
@@ -125,6 +145,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useRouteQuery } from "@vueuse/router";
 import PageToolbar from "@/components/Toolbar.vue";
 import PageToolbarMobile from "@/components/ToolbarMobile.vue";
+import ViewLab from "@/components/homepage/ViewLab.vue";
 import MobileDrawerSearchDate from "@/components/homepage/MobileDrawerSearchDate.vue";
 import MobileDrawerSearchColor from "@/components/homepage/MobileDrawerSearchColor.vue";
 import MobileDrawerViewMenu from "@/components/homepage/MobileDrawerViewMenu.vue";
@@ -149,6 +170,7 @@ const router = useRouter();
 const breakpoints = useBreakpoints({ md: 768 });
 const isMobile = breakpoints.smaller("md");
 
+const activeTab = ref("acervo");
 const viewSelection = ref(viewRouteToSelection(route.params.viewMode));
 const viewMode = computed(() => selectionToViewMode(viewSelection.value));
 
@@ -432,11 +454,29 @@ $breakpoint-md: 768px;
   margin-bottom: 4px;
 }
 
+.nav-underline {
+  @include md {
+    gap: 40px; //sobrescreve tabs.scss
+  }
+}
+
 .container-grid {
   padding-left: 1rem;
   padding-right: 1rem;
 
   @include md {
+    padding-left: 50px;
+    padding-right: 50px;
+  }
+}
+
+.container-lab {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-bottom: 2rem;
+
+  @include md {
+    margin-top: 40px;
     padding-left: 50px;
     padding-right: 50px;
   }
