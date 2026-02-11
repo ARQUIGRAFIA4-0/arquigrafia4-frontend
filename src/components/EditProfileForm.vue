@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import UiField from './ui/UiField.vue';
 import { useAuthStore } from "@/store/auth";
 import { useUsersStore } from '../store/users';
-import { useSubjectsStore } from "@/store/subjects";
+import { useVracStore } from "@/store/vrac";
 import { useProfilesStore } from '../store/profiles';
 import defaultProfileImage from '@/assets/profile_image.png';
 
@@ -23,7 +23,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 const usersStore = useUsersStore();
 const profilesStore = useProfilesStore();
-const subjectsStore = useSubjectsStore();
+const vracStore = useVracStore();
 const userAuthHeader = computed(() => authStore.authHeader);
 const today = new Date().toISOString().slice(0, 10);
 
@@ -113,7 +113,7 @@ const filteredSubjects = computed(() =>
 
 onMounted(async () => {
   try {
-    const response = await subjectsStore.getVRACSubjects();
+    const response = await vracStore.getVRACSubjects();
     subjects.value = response.data;
   } catch (error) {
     console.error("Error fetching VRAC subjects:", error);
@@ -133,7 +133,7 @@ function removeInterest(interestObj) {
 
 async function createNewSubjectFromNewInterest(term) {
   try {
-    const result = await subjectsStore.addVRACSubject(term);
+    const result = await vracStore.addVRACSubject(term);
     interestInput.value = '';
     addInterest(result.data);
   } catch (error) {

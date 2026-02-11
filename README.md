@@ -8,14 +8,10 @@ Site oficial do Node.js para referência https://nodejs.org/en/learn/getting-sta
 
 ## Requisitos
 
-- Node.js (versão recomendada: ^20) (https://www.php.net/downloads)
+- Node.js (versão recomendada: ^22) (https://www.php.net/downloads)
 - npm (versão recomendada: ^10) (https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 
 ## Na pasta raiz do projeto
-
-Após clonar, mudar para o branch de desenvolvimento
-
-    git checkout develop
 
 Instala as dependências:
 
@@ -36,19 +32,15 @@ Compila minimizado e mais demorado, necessário para deploy no servidor:
 
 **Lista de comandos**
 
-    git clone https://github.com/ARQUIGRAFIA4-0/arquigrafia4-frontend.git -b develop
+    git clone https://github.com/ARQUIGRAFIA4-0/arquigrafia4-frontend.git
     cd arquigrafia4-frontend
     npm install
     npm start
 
-<!-- ## Contribuição reescrever no futuro
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions). -->
-
 ## Licença
 
-O projeto ARQUIGRAFIA é um software livre licenciado segundo diretrizes da [MIT license](https://opensource.org/licenses/MIT).
+O projeto ARQUIGRAFIA é um software livre licenciado segundo diretrizes da [GNU GPL](https://www.gnu.org/licenses/).
 
 ## Financiamentos
 
-O presente trabalho foi realizado com apoio da Fundação de Amparo à Pesquisa do Estado de São Paulo (FAPESP), Brasil. Processo nº 20/05134-9
+O presente trabalho foi realizado com apoio da **Fundação de Amparo à Pesquisa do Estado de São Paulo (FAPESP)**, Brasil. Processo nº 20/05134-9.
