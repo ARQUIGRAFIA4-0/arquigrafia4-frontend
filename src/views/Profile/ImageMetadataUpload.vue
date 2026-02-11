@@ -3,10 +3,17 @@
     <transition name="fade">
       <div class="upload-box__alert" v-if="showAlert">
         <div
-          class="alert alert-danger h-auto bg-negativo-c fs-6 text-negativo-e border border-danger border-start-3"
+          class="alert h-auto fs-6 border border-start-3"
+          :class="alertType === 'success'
+            ? 'alert-success bg-positivo-c text-positivo-e border-success'
+            : 'alert-danger bg-negativo-c text-negativo-e border-danger'"
           role="alert"
         >
-          <i class="bi bi-exclamation-triangle-fill text-negativo-e" />
+          <i
+            :class="alertType === 'success'
+              ? 'bi bi-check-circle-fill text-positivo-e'
+              : 'bi bi-exclamation-triangle-fill text-negativo-e'"
+          />
           <span>{{ alertMessage }}</span>
           <button
             type="button"
@@ -99,7 +106,7 @@
                     v-for="identity in availableIdentities"
                     :key="identity.id"
                     class="d-flex align-items-center gap-2 p-2 hover-bg-light cursor-pointer identity-item"
-                    @click="selectIdentity(identity)"
+                    @click="selectIdentity()"
                     role="button"
                   >
                     <div
@@ -349,13 +356,34 @@
                 label="Tags da imagem"
                 explain="Adicione tags para classificar a imagem"
               >
-                <input
-                  type="text"
-                  class="form-control"
-                  placeholder="Digite uma tag e pressione Enter"
-                  v-model="tagInput"
-                  @keydown.enter.prevent="addTag"
-                />
+                <div class="position-relative">
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Digite uma tag e pressione Enter"
+                    v-model="tagInput"
+                    @keydown.enter.prevent="addTag"
+                    @input="onTagInputChange"
+                    @focus="showTagSuggestions = true"
+                    @blur="hideTagSuggestions"
+                    autocomplete="off"
+                  />
+                  <div
+                    v-if="showTagSuggestions && filteredTagSuggestions.length > 0"
+                    class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
+                    style="z-index: 1000; max-height: 300px; overflow-y: auto"
+                  >
+                    <button
+                      v-for="(suggestion, index) in filteredTagSuggestions"
+                      :key="index"
+                      type="button"
+                      class="dropdown-item"
+                      @click="selectTagSuggestion(suggestion.term)"
+                    >
+                      {{ suggestion.term }}
+                    </button>
+                  </div>
+                </div>
               </UiField>
               <div class="d-flex flex-wrap gap-2 mt-2">
                 <div
@@ -402,7 +430,7 @@
                     <input
                       type="number"
                       class="form-control"
-                      v-model="form.date"
+                      v-model="dateYearInput"
                       placeholder="Ano"
                     />
                   </div>
@@ -412,7 +440,7 @@
                       <input
                         type="number"
                         class="form-control"
-                        v-model="form.date"
+                        v-model="dateYearInput"
                         placeholder="Ano"
                       />
                     </div>
@@ -421,7 +449,7 @@
                       <input
                         type="number"
                         class="form-control"
-                        v-model="form.dateEnd"
+                        v-model="dateEndYearInput"
                         placeholder="Ano"
                       />
                     </div>
@@ -567,20 +595,27 @@
 </template>
 
 <script setup>
-import { ref, markRaw, computed, onMounted, watch } from "vue";
-import { api } from "@/services/api";
+import { ref, markRaw, computed, watch, onMounted } from "vue";
+import axios from "@/axios";
 import ImagePreviewPanel from "@/components/imageMetadaUpload/ImagePreviewPanel.vue";
 import UiField from "@/components/ui/UiField.vue";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
 import { useImageUploadStore } from "@/store/imageUploads";
+import { useAuthStore } from "@/store/auth";
+import { useVracStore } from "@/store/vrac";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
+import { formatDate, parseYearFromDateString } from "@/helpers/dateUtils";
+import Fuse from "fuse.js";
 defineOptions({ name: "ImageMetadataUpload" });
 
 const router = useRouter();
 const imageUploadStore = useImageUploadStore();
 const { pendingImages, selectedIndex } = storeToRefs(imageUploadStore);
+const authStore = useAuthStore();
+const { loggedUser } = storeToRefs(authStore);
+const vracStore = useVracStore();
 
 const tabs = [
   { label: "Essenciais", section: "essenciais" },
@@ -588,9 +623,32 @@ const tabs = [
   { label: "Localização", section: "localizacao" },
 ];
 
-const publishingIdentities = ref([]);
-const selectedIdentity = ref(null);
 const isIdentityDropdownOpen = ref(false);
+
+// selectedIdentity returns the logged-in user
+const selectedIdentity = computed(() => {
+  if (!loggedUser.value) return null;
+  return {
+    id: loggedUser.value.id,
+    name: loggedUser.value.name || loggedUser.value.username,
+    avatar: loggedUser.value.avatar || null,
+    initials: loggedUser.value.initials || loggedUser.value.name?.charAt(0).toUpperCase() || "?",
+  };
+});
+
+// publishingIdentities will contain just the current user for now
+// This structure is kept for future multi-profile support
+const publishingIdentities = computed(() => {
+  if (!loggedUser.value) return [];
+  return [
+    {
+      id: loggedUser.value.id,
+      name: loggedUser.value.name || loggedUser.value.username,
+      avatar: loggedUser.value.avatar || null,
+      initials: loggedUser.value.initials || loggedUser.value.name?.charAt(0).toUpperCase() || "?",
+    },
+  ];
+});
 
 const availableIdentities = computed(() => {
   return publishingIdentities.value.filter(
@@ -602,26 +660,16 @@ const toggleIdentityDropdown = () => {
   isIdentityDropdownOpen.value = !isIdentityDropdownOpen.value;
 };
 
-const selectIdentity = (identity) => {
-  selectedIdentity.value = identity;
+const selectIdentity = () => {
+  // For now, this doesn't change anything since selectedIdentity is computed from loggedUser
+  // But this structure is ready for future multi-profile support
   isIdentityDropdownOpen.value = false;
 };
-
-onMounted(async () => {
-  try {
-    const identities = await api.getPublishingIdentities();
-    publishingIdentities.value = identities;
-    if (identities.length > 0) {
-      selectedIdentity.value = identities[0];
-    }
-  } catch (error) {
-    console.error("Erro ao carregar identidades:", error);
-  }
-});
 
 const currentSection = ref("essenciais");
 const showAlert = ref(false);
 const alertMessage = ref("");
+const alertType = ref("error"); // 'error' | 'success'
 
 const isTitleTouched = ref(false);
 const isTitleInvalid = computed(
@@ -665,16 +713,26 @@ const form = ref({ ...defaultForm });
 
 const useSameDataForAll = ref(false);
 
-const extractYearFromExifDate = (exifDate) => {
+const formatExifDateToIso = (exifDate) => {
   if (!exifDate) return "";
-
   try {
     const date = exifDate instanceof Date ? exifDate : new Date(exifDate);
     if (isNaN(date.getTime())) return "";
-    return date.getFullYear().toString();
+    return formatDate(
+      date.getFullYear(),
+      date.getMonth() + 1,
+      date.getDate()
+    );
   } catch {
     return "";
   }
+};
+
+const yearToDateString = (year, isEnd = false) => {
+  if (!year) return "";
+  const parsedYear = parseInt(year, 10);
+  if (isNaN(parsedYear)) return "";
+  return formatDate(parsedYear, isEnd ? 12 : 1, isEnd ? 31 : 1);
 };
 
 watch(
@@ -696,11 +754,34 @@ watch(
           : null);
 
       // Usa data do EXIF se disponível e não houver data salva no metadata
-      const exifYear = extractYearFromExifDate(currentImage.exif?.date);
-      const date = storedMetadata.date || exifYear || defaultForm.date;
+      const exifDate = formatExifDateToIso(currentImage.exif?.date);
+      let date = storedMetadata.date || exifDate || defaultForm.date;
+      let dateEnd = storedMetadata.dateEnd || exifDate || defaultForm.dateEnd;
+
+      // If EXIF date exists, use it for both date and dateEnd
+      if (exifDate && !storedMetadata.date) {
+        date = exifDate;
+        dateEnd = exifDate;
+      }
+      // If user-provided date exists and dateType is 'year', expand to full year
+      else if (date && !storedMetadata.dateEnd && form.value.dateType === 'year') {
+        const year = parseYearFromDateString(date);
+        if (year) {
+          date = formatDate(year, 1, 1);
+          dateEnd = formatDate(year, 12, 31);
+        }
+      }
+      // If user-provided date exists and dateType is 'interval', expand both dates
+      else if (date && dateEnd && form.value.dateType === 'interval') {
+        const startYear = parseYearFromDateString(date);
+        const endYear = parseYearFromDateString(dateEnd);
+        if (startYear) date = formatDate(startYear, 1, 1);
+        if (endYear) dateEnd = formatDate(endYear, 12, 31);
+      }
+
       const dateAccuracy =
         storedMetadata.dateAccuracy ||
-        (exifYear ? "exact" : defaultForm.dateAccuracy);
+        (exifDate ? "exact" : defaultForm.dateAccuracy);
 
       form.value = {
         ...defaultForm,
@@ -708,6 +789,7 @@ watch(
         tags,
         coordinates,
         date,
+        dateEnd,
         dateAccuracy,
       };
 
@@ -782,7 +864,104 @@ const isEssenciaisInvalid = computed(
     isRightsInvalid.value || isTitleInvalid.value || isAuthorNameInvalid.value
 );
 
+const dateYearInput = computed({
+  get() {
+    const dateStr = form.value.date;
+    if (!dateStr) return "";
+    const year = parseYearFromDateString(dateStr);
+    return year ? year.toString() : "";
+  },
+  set(yearStr) {
+    form.value.date = yearToDateString(yearStr, false);
+    form.value.dateEnd = yearToDateString(yearStr, true);
+  },
+});
+
+const dateEndYearInput = computed({
+  get() {
+    const dateStr = form.value.dateEnd;
+    if (!dateStr) return "";
+    const year = parseYearFromDateString(dateStr);
+    return year ? year.toString() : "";
+  },
+  set(yearStr) {
+    form.value.dateEnd = yearToDateString(yearStr, true);
+  },
+});
+
 const tagInput = ref("");
+
+// Tag autocomplete state
+const allSubjects = ref([]);
+const filteredTagSuggestions = ref([]);
+const showTagSuggestions = ref(false);
+let fuseInstance = null;
+let debounceTimer = null;
+
+// Contributor names state
+const allContributorNames = ref([]);
+
+// Fetch subjects and contributor names from API on component mount
+onMounted(async () => {
+  try {
+    // Fetch subjects
+    const subjectsResponse = await vracStore.getVRACSubjects();
+    if (subjectsResponse?.data && Array.isArray(subjectsResponse.data)) {
+      allSubjects.value = subjectsResponse.data;
+      // Initialize Fuse.js with fetched subjects
+      fuseInstance = new Fuse(allSubjects.value, {
+        keys: ["term"],
+        threshold: 0.3, // Allow fuzzy matching
+        includeScore: true,
+      });
+    }
+
+    // Fetch contributor names
+    const contributorsResponse = await vracStore.getVRACContributorNames();
+    if (contributorsResponse?.names && Array.isArray(contributorsResponse.names)) {
+      allContributorNames.value = contributorsResponse.names;
+    }
+  } catch (error) {
+    console.error("Error fetching data:", error);
+  }
+});
+
+// Debounced search function
+const onTagInputChange = () => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+
+  debounceTimer = setTimeout(() => {
+    if (!tagInput.value.trim()) {
+      filteredTagSuggestions.value = [];
+      return;
+    }
+
+    if (fuseInstance) {
+      const results = fuseInstance.search(tagInput.value);
+      // Filter out tags that are already added
+      filteredTagSuggestions.value = results
+        .map(result => result.item) // extract the actual subject
+        .filter(item => !form.value.tags.includes(item.term))
+        .slice(0, 10);
+    }
+  }, 300); // 300ms debounce
+};
+
+const hideTagSuggestions = () => {
+  // Small delay to allow click on suggestion before hiding
+  setTimeout(() => {
+    showTagSuggestions.value = false;
+  }, 200);
+};
+
+const selectTagSuggestion = (term) => {
+  if (!form.value.tags.includes(term)) {
+    form.value.tags.push(term);
+  }
+  tagInput.value = "";
+  filteredTagSuggestions.value = [];
+  showTagSuggestions.value = false;
+};
 
 const addTag = () => {
   const tag = tagInput.value.trim();
@@ -839,6 +1018,7 @@ const selectTab = (section) => {
 };
 
 const handleUploadError = (message) => {
+  alertType.value = "error";
   alertMessage.value = message;
   showAlert.value = true;
 };
@@ -900,14 +1080,189 @@ const handleCancel = () => {
 
 const handleSubmit = async () => {
   if (!canSubmit.value) {
+    alertType.value = "error";
     alertMessage.value =
       "Por favor, preencha todos os dados obrigatórios de todas as imagens.";
     showAlert.value = true;
     return;
   }
 
-  // TODO: implementar o envio das imagens para a API
-  console.log("Enviando imagens:", pendingImages.value);
+  try {
+    const successfulUploads = [];
+    const failedUploads = [];
+
+    // Process each image individually
+    for (let index = 0; index < pendingImages.value.length; index++) {
+      const image = pendingImages.value[index];
+      const metadata = image.metadata || {};
+
+      try {
+        // Map selected tags to their UUIDs from allSubjects
+        const subjectUuids = (metadata.tags || [])
+          .map((tagTerm) => {
+            const subject = allSubjects.value.find((s) => s.term === tagTerm);
+            return subject ? subject.id : null;
+          })
+          .filter((id) => id !== null);
+
+        // Find or create photographer UUID
+        // If isAuthor is true, use logged user's name, otherwise use authorName
+        let photographerUuid = null;
+        let photographerName = null;
+
+        if (metadata.isAuthor && loggedUser.value?.name) {
+          photographerName = loggedUser.value.name.trim();
+        } else if (metadata.authorName && metadata.authorName.trim()) {
+          photographerName = metadata.authorName.trim();
+        }
+
+        if (photographerName) {
+          let contributor = allContributorNames.value.find(
+            (c) => c.name.toLowerCase() === photographerName.toLowerCase()
+          );
+
+          // If photographer doesn't exist, create it
+          if (!contributor) {
+            const newContributor = await vracStore.addVRACContributorName(
+              photographerName
+            );
+            if (newContributor?.name) {
+              contributor = newContributor.name;
+              allContributorNames.value.push(contributor);
+            }
+          }
+
+          photographerUuid = contributor?.id || null;
+        }
+
+        // Create FormData for this specific image
+        const formData = new FormData();
+        formData.append("image", image.file);
+        formData.append("user_id", selectedIdentity.value.id);
+        formData.append("title", metadata.title || "");
+        formData.append("license", metadata.license || "CC BY-NC-SA");
+
+        // Add optional fields
+        if (photographerUuid) {
+          formData.append("photographer", photographerUuid);
+        }
+        if (metadata.description) {
+          formData.append("description", metadata.description);
+        }
+        if (metadata.date) {
+          formData.append("earliest_date", metadata.date);
+        }
+        if (metadata.dateEnd) {
+          formData.append("latest_date", metadata.dateEnd);
+        }
+        if (metadata.dateAccuracy === "approximate") {
+          formData.append("circa", "1");
+        }
+        else {
+          formData.append("circa", "0");
+        }
+        if (metadata.coordinates) {
+          // Ensure coordinates have decimal places (Laravel expects decimal:1,8)
+          const lat = parseFloat(metadata.coordinates.lat).toFixed(8);
+          const lng = parseFloat(metadata.coordinates.lng).toFixed(8);
+          formData.append("latitude", lat);
+          formData.append("longitude", lng);
+        }
+        if (metadata.location) {
+          formData.append("location_label", metadata.location);
+        }
+
+        // Add subjects array
+        subjectUuids.forEach((uuid) => {
+          formData.append("subjects[]", uuid);
+        });
+
+        // Log FormData entries for debugging
+        console.log(`\n=== FormData for Image ${index + 1} ===`);
+        for (const [key, value] of formData.entries()) {
+          if (value instanceof File) {
+            console.log(`${key}: [File] ${value.name} (${value.size} bytes)`);
+          } else {
+            console.log(`${key}: ${value}`);
+          }
+        }
+        console.log("===========================\n");
+
+        // Submit this image
+        const response = await axios.post("/api/images", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: authStore.authHeader,
+          },
+        });
+
+        if (response.status === 201 || response.status === 200) {
+          successfulUploads.push(metadata.title || `Imagem ${index + 1}`);
+        }
+      } catch (error) {
+        console.error(`Erro ao enviar imagem ${index + 1}:`, error);
+        failedUploads.push({
+          title: metadata.title || `Imagem ${index + 1}`,
+          error: error.response?.data?.message || error.message,
+        });
+      }
+    }
+
+    // Show results
+    if (successfulUploads.length > 0 && failedUploads.length === 0) {
+      alertType.value = "success";
+      alertMessage.value = `${successfulUploads.length} ${
+        successfulUploads.length === 1 ? "imagem enviada" : "imagens enviadas"
+      } com sucesso!`;
+      showAlert.value = true;
+
+      // Clear images and redirect after a short delay
+      setTimeout(() => {
+        imageUploadStore.clearImages();
+        router.push("/profile");
+      }, 2500);
+    } else if (failedUploads.length > 0) {
+      alertType.value = "error";
+      const message =
+        successfulUploads.length > 0
+          ? `${successfulUploads.length} ${
+              successfulUploads.length === 1
+                ? "imagem enviada"
+                : "imagens enviadas"
+            } com sucesso. ${failedUploads.length} ${
+              failedUploads.length === 1 ? "falhou" : "falharam"
+            }.`
+          : `Erro ao enviar ${failedUploads.length} ${
+              failedUploads.length === 1 ? "imagem" : "imagens"
+            }.`;
+
+      alertMessage.value = message;
+      showAlert.value = true;
+
+      // If some succeeded, remove them from the list
+      if (successfulUploads.length > 0) {
+        setTimeout(() => {
+          // Remove successful uploads from pending
+          const remainingImages = pendingImages.value.filter((img) => {
+            const title = img.metadata?.title || "";
+            return !successfulUploads.includes(title);
+          });
+
+          if (remainingImages.length === 0) {
+            imageUploadStore.clearImages();
+            router.push("/profile");
+          }
+        }, 2000);
+      }
+    }
+  } catch (error) {
+    console.error("Erro ao enviar imagens:", error);
+    alertType.value = "error";
+    alertMessage.value =
+      error.response?.data?.message ||
+      "Erro ao enviar imagens. Por favor, tente novamente.";
+    showAlert.value = true;
+  }
 };
 </script>
 
