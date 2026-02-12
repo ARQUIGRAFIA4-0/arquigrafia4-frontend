@@ -5,6 +5,9 @@
     </div>
     <div class="col-12 col-md-8">
       <h2 class="about-project__subtitle">Uma experiência de pesquisa baseada na colaboração</h2>
+      <div class="d-md-none about-project__mobile-cropped-wrapper">
+        <img src="@/assets/about_project_img_03.jpg" alt="Arquigrafia" class="about-project__mobile-cropped-image" />
+      </div>
       <p class="about-project__paragraph">A internet pode ser um espaço de intenso compartilhamento de experiências,
         de pesquisa, de aprendizagem e de intercâmbio de conhecimentos. Esse potencial estimulou o desenvolvimento
         do projeto Arquigrafia: uma
@@ -34,6 +37,9 @@
         áreas de conhecimento, produzindo conhecimento, desenvolvendo Ciência e Tecnologia, fomentando pesquisas em
         nível de graduação e pós-graduação, e formando dezenas de jovens pesquisadores de diversas áreas.
       </p>
+      <div class="d-md-none about-project__mobile-cropped-wrapper">
+        <img src="@/assets/about_project_img_04.jpg" alt="Arquigrafia" class="about-project__mobile-cropped-image" />
+      </div>
     </div>
     <div class="d-none d-md-block col-md-4">
       <div class="about-project__vertical-image-wrapper">
@@ -88,6 +94,9 @@
         organizar coleções próprias em álbuns. O site tem ainda várias outras funcionalidades e, para usuários
         cadastrados, permite download de imagens em alta resolução.
       </p>
+      <div class="d-md-none about-project__mobile-cropped-wrapper">
+        <img src="@/assets/about_project_img_05.jpg" alt="Arquigrafia" class="about-project__mobile-cropped-image" />
+      </div>
       <p class="about-project__paragraph">
         A plataforma é responsiva, o que possibilita colocar o sistema “na palma da mão” de quem circula pelas
         cidades. Com isso os usuários podem comparar as transformações que um edifício ou um trecho urbano sofreram
@@ -123,6 +132,10 @@ $breakpoint-md: 768px;
   }
 }
 
+.row {
+  --bs-gutter-x: 0rem;
+}
+
 .about-project {
   &__title {
     width: fit-content;
@@ -131,9 +144,9 @@ $breakpoint-md: 768px;
     line-height: 150%;
     letter-spacing: 0%;
     vertical-align: middle;
-    border-bottom: 4px solid #000000;
-    padding-bottom: 28px;
-    margin-bottom: 48px;
+    border-bottom: 2px solid #000000;
+    padding-bottom: 16px;
+    margin-bottom: 25px;
 
     @include md {
       width: fit-content;
@@ -150,11 +163,11 @@ $breakpoint-md: 768px;
 
   &__subtitle {
     font-weight: 500;
-    font-size: 20px;
+    font-size: 16px;
     line-height: 150%;
     letter-spacing: 0%;
-    padding-right: 54px;
-    margin-bottom: 12px;
+    padding-right: 48px;
+    margin-bottom: 28px;
 
     @include md {
       font-weight: 500;
@@ -170,8 +183,7 @@ $breakpoint-md: 768px;
       font-size: 20px;
       line-height: 150%;
       letter-spacing: 0%;
-      padding-right: 54px;
-      margin-top: 18px;
+      margin-top: 12px;
       margin-bottom: 28px;
 
       @include md {
@@ -230,8 +242,7 @@ $breakpoint-md: 768px;
   }
 
   &__horizontal-image-wrapper {
-    padding-right: 76px;
-    margin-top: 24px;
+    margin-top: 28px;
     margin-bottom: 28px;
 
     @include md {
@@ -244,6 +255,26 @@ $breakpoint-md: 768px;
   &__horizontal-image {
     width: 100%;
     height: auto;
+    display: block;
+  }
+
+  &__mobile-cropped-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 66.67%; // 3:2 aspect ratio
+    overflow: hidden;
+    margin-top: 28px;
+    margin-bottom: 28px;
+  }
+
+  &__mobile-cropped-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
     display: block;
   }
 }
