@@ -18,6 +18,21 @@
       <img :src="project.image" :alt="project.title" class="lab-project-detail__hero-image" />
     </div>
 
+    <!-- Mobile Action Menu -->
+    <div class="d-md-none lab-project-detail__mobile-actions">
+      <a
+        v-for="link in project.links"
+        :key="link.type"
+        :href="link.url"
+        class="mobile-action-button"
+        :aria-label="link.label"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <i class="bi" :class="getIconClass(link.type)" aria-hidden="true"></i>
+      </a>
+    </div>
+
     <!-- Content Columns -->
     <div class="lab-project-detail__content row">
       <!-- Left Column: Description -->
@@ -140,7 +155,7 @@ $breakpoint-md: 768px;
     padding-top: 66.67%; // 3:2 aspect ratio
     overflow: hidden;
     background-color: var(--Cinza_C, #f5f5f5);
-    margin-bottom: 2rem;
+    margin-bottom: 24px;
     border-radius: 4px;
 
     @include md {
@@ -247,6 +262,21 @@ $breakpoint-md: 768px;
     }
   }
 
+  &__mobile-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background-color: var(--Off_white);
+    box-shadow: 2px 2px 5px 2px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(2px);
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+
   &__actions {
     flex-direction: column;
     gap: 0.5rem;
@@ -261,6 +291,38 @@ $breakpoint-md: 768px;
       line-height: 150%;
       letter-spacing: 0%;
     }
+  }
+}
+
+.mobile-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--Cinza_E);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+  text-decoration: none;
+
+  &:hover {
+    background-color: var(--Laranja_C);
+    color: var(--Cinza_E);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+  }
+
+  .bi {
+    font-size: 1.2rem;
   }
 }
 </style>
