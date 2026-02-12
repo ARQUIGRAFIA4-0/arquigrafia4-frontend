@@ -1,25 +1,21 @@
 <template>
   <div class="lab-project-detail">
     <!-- Back Button -->
-    <button
+    <!-- <button
       type="button"
       class="btn btn-link p-0 d-inline-flex align-items-center text-decoration-none back-link"
       @click="$emit('back')"
     >
       <i class="bi bi-arrow-left-square back-link__icon"></i>
       <span class="back-link__label">Voltar</span>
-    </button>
+    </button> -->
 
     <!-- Title -->
     <h1 class="lab-project-detail__title">{{ project.fullTitle }}</h1>
 
     <!-- Hero Image -->
     <div class="lab-project-detail__hero-image-wrapper">
-      <img
-        :src="project.image"
-        :alt="project.title"
-        class="lab-project-detail__hero-image"
-      />
+      <img :src="project.image" :alt="project.title" class="lab-project-detail__hero-image" />
     </div>
 
     <!-- Content Columns -->
@@ -27,10 +23,7 @@
       <!-- Left Column: Description -->
       <div class="col-12 col-md-6 lab-project-detail__main">
         <h2 class="lab-project-detail__section-title">Sobre o projeto</h2>
-        <div
-          class="lab-project-detail__description"
-          v-html="project.fullDescription"
-        ></div>
+        <div class="lab-project-detail__description" v-html="project.fullDescription"></div>
       </div>
 
       <!-- Right Column: Researcher + Actions -->
@@ -40,43 +33,25 @@
           <div class="col-12 col-md-8 lab-project-detail__researcher">
             <h3 class="lab-project-detail__researcher-title">Pesquisador</h3>
             <div class="lab-project-detail__researcher-info">
-              <img
-                :src="project.researcher.avatar"
-                :alt="project.researcher.name"
-                class="lab-project-detail__researcher-avatar"
-              />
+              <img :src="project.researcher.avatar" :alt="project.researcher.name"
+                class="lab-project-detail__researcher-avatar" />
               <div class="lab-project-detail__researcher-text">
-                <p class="lab-project-detail__researcher-name">
-                  {{ project.researcher.name }}
-                </p>
-                <p class="lab-project-detail__researcher-bio">
-                  {{ project.researcher.bio }}
-                </p>
+                <p class="lab-project-detail__researcher-bio" v-html="project.researcher.bio"></p>
               </div>
             </div>
           </div>
 
           <!-- Action Buttons -->
-          <div class="col-12 col-md-4 lab-project-detail__actions">
-            <a
-              v-for="link in project.links"
-              :key="link.type"
-              :href="link.url"
-              :class="[
-                'btn',
-                'btn-sm',
-                'd-flex',
-                'align-items-center',
-                'gap-2',
-                link.type === 'project' ? 'btn-primary' : 'btn-outline-secondary'
-              ]"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <i
-                class="bi"
-                :class="getIconClass(link.type)"
-              ></i>
+          <div class="d-none d-md-flex col-md-4 lab-project-detail__actions">
+            <a v-for="link in project.links" :key="link.type" :href="link.url" :class="[
+              'btn',
+              'btn-sm',
+              'd-flex',
+              'align-items-center',
+              'gap-2',
+              link.type === 'project' ? 'btn-primary' : 'btn-outline-secondary'
+            ]" target="_blank" rel="noopener noreferrer">
+              <i class="bi" :class="getIconClass(link.type)"></i>
               {{ link.label }}
             </a>
           </div>
@@ -145,10 +120,10 @@ $breakpoint-md: 768px;
 .lab-project-detail {
   &__title {
     font-weight: 500;
-    font-size: 24px;
+    font-size: 20px;
     line-height: 150%;
     letter-spacing: 0%;
-    margin-bottom: 1.5rem;
+    margin-bottom: 12px;
 
     @include md {
       font-weight: 500;
@@ -162,7 +137,7 @@ $breakpoint-md: 768px;
   &__hero-image-wrapper {
     position: relative;
     width: 100%;
-    padding-top: 42.86%; // 21:9 aspect ratio
+    padding-top: 66.67%; // 3:2 aspect ratio
     overflow: hidden;
     background-color: var(--Cinza_C, #f5f5f5);
     margin-bottom: 2rem;
@@ -184,7 +159,7 @@ $breakpoint-md: 768px;
   }
 
   &__main {
-    margin-bottom: 2rem;
+    margin-bottom: 24px;
 
     @include md {
       margin-bottom: 0;
@@ -193,11 +168,10 @@ $breakpoint-md: 768px;
 
   &__section-title {
     font-weight: 500;
-    font-size: 20px;
+    font-size: 16px;
     line-height: 150%;
     letter-spacing: 0%;
-    margin-bottom: 1rem;
-    color: var(--Preto, #1f1f1f);
+    margin-bottom: 8px;
 
     @include md {
       font-size: 20px;
@@ -207,10 +181,9 @@ $breakpoint-md: 768px;
 
   &__description {
     font-weight: 400;
-    font-size: 14px;
-    line-height: 150%;
+    font-size: 12px;
+    line-height: 125%;
     letter-spacing: 0%;
-    color: var(--Preto, #1f1f1f);
 
     :deep(p) {
       margin-bottom: 1rem;
@@ -227,16 +200,12 @@ $breakpoint-md: 768px;
   }
 
   &__researcher {
-    margin-bottom: 2rem;
-
-    @include md {
-      margin-bottom: 0;
-    }
+    margin-bottom: 0;
   }
 
   &__researcher-title {
     font-weight: 500;
-    font-size: 18px;
+    font-size: 16px;
     line-height: 150%;
     letter-spacing: 0%;
     margin-bottom: 1rem;
@@ -264,26 +233,21 @@ $breakpoint-md: 768px;
     flex: 1;
   }
 
-  &__researcher-name {
-    font-weight: 500;
-    font-size: 16px;
-    line-height: 125%;
-    letter-spacing: 0%;
-    margin-bottom: 0.5rem;
-    color: var(--Preto, #1f1f1f);
-  }
-
   &__researcher-bio {
     font-weight: 400;
-    font-size: 14px;
-    line-height: 150%;
+    font-size: 12px;
+    line-height: 125%;
     letter-spacing: 0%;
-    color: var(--Cinza_E, #8c8c8c);
-    margin: 0;
+
+    @include md {
+      font-size: 14px;
+      line-height: 150%;
+      color: var(--Cinza_E, #8c8c8c);
+      margin: 0;
+    }
   }
 
   &__actions {
-    display: flex;
     flex-direction: column;
     gap: 0.5rem;
 

@@ -147,6 +147,13 @@ $breakpoint-md: 768px;
     gap: 16px;
     margin-top: auto;
     padding: 0 8px;
+    align-items: center;
+  }
+
+  @include md {
+    &__author {
+      align-items: flex-start;
+    }
   }
 
   &__author-avatar {
