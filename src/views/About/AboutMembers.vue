@@ -1,13 +1,13 @@
 <template>
   <AboutLayout>
     <div class="col-12 col-md-11">
-      <h1 class="about-members__title">Membros do projeto</h1>
+      <h1 class="about-members__title">Membros</h1>
     </div>
-    <div class="col-12 col-md-11 pb-5">
+    <div class="col-12 col-md-11 pb-4 pb-md-5">
       <p class="about-members__paragraph"><strong>Coordenador</strong></p>
       <p class="about-members__paragraph">Prof. Dr. Artur Simões Rozestraten - FAUUSP</p>
     </div>
-    <div class="col-12 col-md-11 pb-5">
+    <div class="col-12 col-md-11 pb-4 pb-md-5">
       <p class="about-members__paragraph"><strong>Pesquisadores associados</strong></p>
       <div class="row">
         <div class="col-12 col-md-6">
@@ -47,7 +47,7 @@
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-11 pb-5">
+    <div class="col-12 col-md-11 pb-4 pb-md-5">
       <p class="about-members__paragraph"><strong>Pesquisadores/Estudantes - bolsistas</strong></p>
       <div class="row">
         <div class="col-12 col-md-6">
@@ -164,19 +164,13 @@
     </div>
     <div class="col-12 col-md-11">
       <div class="row">
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-6 pb-4">
           <p class="about-members__paragraph"><strong>Gestores acadêmicos de projetos de pesquisa</strong></p>
-        </div>
-        <div class="col-12 col-md-6">
-          <p class="about-members__paragraph"><strong>Parceiros</strong></p>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-12 col-md-6">
           <p class="about-members__paragraph">Dra. Camila A. da Silva - bolsista FGA PRPI USP</p>
           <p class="about-members__paragraph">Dra. Isabel Aleman - bolsista FGA PRPI USP</p>
         </div>
         <div class="col-12 col-md-6">
+          <p class="about-members__paragraph"><strong>Parceiros</strong></p>
           <p class="about-members__paragraph">Davi Teodoro - Soluções Sintáticas Tecnologia</p>
           <p class="about-members__paragraph">Leandro Lopes - L3 Conserv. de Acervos</p>
           <p class="about-members__paragraph">Jean Pierre Chamouton - Benchmark Design Total</p>
@@ -218,9 +212,9 @@ $breakpoint-md: 768px;
     line-height: 150%;
     letter-spacing: 0%;
     vertical-align: middle;
-    border-bottom: 4px solid #000000;
-    padding-bottom: 28px;
-    margin-bottom: 48px;
+    border-bottom: 2px solid #000000;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
 
     @include md {
       width: fit-content;
@@ -250,13 +244,6 @@ $breakpoint-md: 768px;
       letter-spacing: 0%;
       margin-bottom: 32px;
       padding-right: 120px;
-    }
-
-    &--rules {
-      @include md {
-        margin-top: 64px;
-        margin-bottom: 24px;
-      }
     }
   }
 
