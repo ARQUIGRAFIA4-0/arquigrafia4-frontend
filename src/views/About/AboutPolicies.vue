@@ -4,7 +4,7 @@
       <h1 class="about-policies__title">Políticas do ARQUIGRAFIA</h1>
     </div>
     <div class="col-12 col-md-8">
-       <h2 class="about-policies__subtitle">
+      <h2 class="about-policies__subtitle">
         Nossas políticas de conteúdo são importantes para manter agradável a experiência dos usuários com o Arquigrafia.
         Respeite as diretrizes. Periodicamente, pode haver alterações em nossas políticas de conteúdo, por isso,
         consulte estas políticas novamente.
@@ -90,7 +90,7 @@
         8. É de sua responsabilidade o conteúdo postado pelo seu usuário, seus dados de perfil, suas fotos e seus
         comentários.
       </p>
-       <h2 class="about-policies__subtitle--rules">Você não deve:</h2>
+      <h2 class="about-policies__subtitle--rules">Você não deve:</h2>
       <p class="about-policies__paragraph">
         1. Usar o Arquigrafia para qualquer aplicativo que faça réplica ou tente substituir a experiência essencial do
         usuário do Arquigrafia.
@@ -118,7 +118,7 @@
         7. Coletar conteúdo ou informações de usuários, ou acessar o Arquigrafia de outra forma, usando meios
         automáticos (como bots de coleta, robôs, spiders ou scrapers) sem nossa permissão prévia.
       </p>
-       <h2 class="about-policies__subtitle--rules">Termos gerais</h2>
+      <h2 class="about-policies__subtitle--rules">Termos gerais</h2>
       <p class="about-policies__paragraph">
         1. Invalidade de termos específicos. Se alguma cláusula dos Termos de uso for considerada inválida por um
         tribunal de jurisdição competente, as partes, contudo, concordarão que o tribunal deverá se empenhar para dar
@@ -130,7 +130,8 @@
         ser controlados pelas leis do Brasil. Você e o Arquigrafia concordam em se submeter à jurisdição pessoal dos
         tribunais localizados dentro do município de São Paulo, SP, Brasil.
       </p>
-       <h2 class="about-policies__subtitle--rules">Notificação sobre infração de seus direitos autorais e outras questões</h2>
+      <h2 class="about-policies__subtitle--rules">Notificação sobre infração de seus direitos autorais e outras questões
+      </h2>
       <p class="about-policies__paragraph">
         ESSE PROCEDIMENTO É APENAS PARA POLÍTICA DE DIREITOS AUTORAIS E OUTRAS QUESTÕES DE PROPRIEDADE INTELECTUAL.
         Correspondências referentes a outras questões não serão respondidas. Para reportar abuso ou outras preocupações,
@@ -168,14 +169,14 @@ $breakpoint-md: 768px;
 .about-policies {
   &__title {
     width: fit-content;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 20px;
     line-height: 150%;
     letter-spacing: 0%;
     vertical-align: middle;
-    border-bottom: 4px solid #000000;
-    padding-bottom: 28px;
-    margin-bottom: 48px;
+    border-bottom: 2px solid #000000;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
 
     @include md {
       width: fit-content;
@@ -192,11 +193,10 @@ $breakpoint-md: 768px;
 
   &__subtitle {
     font-weight: 500;
-    font-size: 20px;
+    font-size: 16px;
     line-height: 150%;
     letter-spacing: 0%;
-    padding-right: 54px;
-    margin-bottom: 12px;
+    margin-bottom: 24px;
 
     @include md {
       font-weight: 500;
@@ -208,6 +208,9 @@ $breakpoint-md: 768px;
     }
 
     &--rules {
+      margin-top: 24px;
+      margin-bottom: 12px;
+      
       @include md {
         margin-top: 64px;
         margin-bottom: 24px;
@@ -216,11 +219,10 @@ $breakpoint-md: 768px;
   }
 
   &__paragraph {
-    font-weight: 500;
-    font-size: 16px;
-    line-height: 150%;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 125%;
     letter-spacing: 0%;
-    padding-right: 16px;
 
     @include md {
       font-weight: 500;

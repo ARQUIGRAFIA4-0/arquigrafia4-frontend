@@ -139,7 +139,7 @@ $breakpoint-md: 768px;
 .about-project {
   &__title {
     width: fit-content;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 20px;
     line-height: 150%;
     letter-spacing: 0%;
