@@ -5,6 +5,9 @@
     </div>
     <div class="col-12 col-md-8">
       <h2 class="about-project__subtitle">Uma experiência de pesquisa baseada na colaboração</h2>
+      <div class="d-md-none about-project__mobile-cropped-wrapper">
+        <img src="@/assets/about_project_img_03.jpg" alt="Arquigrafia" class="about-project__mobile-cropped-image" />
+      </div>
       <p class="about-project__paragraph">A internet pode ser um espaço de intenso compartilhamento de experiências,
         de pesquisa, de aprendizagem e de intercâmbio de conhecimentos. Esse potencial estimulou o desenvolvimento
         do projeto Arquigrafia: uma
@@ -34,6 +37,9 @@
         áreas de conhecimento, produzindo conhecimento, desenvolvendo Ciência e Tecnologia, fomentando pesquisas em
         nível de graduação e pós-graduação, e formando dezenas de jovens pesquisadores de diversas áreas.
       </p>
+      <div class="d-md-none about-project__mobile-cropped-wrapper">
+        <img src="@/assets/about_project_img_04.jpg" alt="Arquigrafia" class="about-project__mobile-cropped-image" />
+      </div>
     </div>
     <div class="d-none d-md-block col-md-4">
       <div class="about-project__vertical-image-wrapper">
@@ -81,13 +87,16 @@
         Para participar e colaborar com o Arquigrafia basta acessar o site, criar um login e começar a interagir com
         outros usuários e com um universo de imagens digitais originais e em boa parte inéditas.
       </h2>
-      <button class="about-project__button">Faça parte da comunidade</button>
+      <button class="about-project__button" @click="goToLogin">Faça parte da comunidade</button>
       <p class="about-project__paragraph">
         Cada imagem disponível no site está catalogada e georreferenciada, e é possível inserir comentários e
         registros de impressões sobre as características das arquiteturas e espaços urbanos representados, além de
         organizar coleções próprias em álbuns. O site tem ainda várias outras funcionalidades e, para usuários
         cadastrados, permite download de imagens em alta resolução.
       </p>
+      <div class="d-md-none about-project__mobile-cropped-wrapper">
+        <img src="@/assets/about_project_img_05.jpg" alt="Arquigrafia" class="about-project__mobile-cropped-image" />
+      </div>
       <p class="about-project__paragraph">
         A plataforma é responsiva, o que possibilita colocar o sistema “na palma da mão” de quem circula pelas
         cidades. Com isso os usuários podem comparar as transformações que um edifício ou um trecho urbano sofreram
@@ -105,14 +114,11 @@
   </AboutLayout>
 </template>
 
-<script>
+<script setup>
 import AboutLayout from "./AboutLayout.vue";
 
-export default {
-  name: "AboutProject",
-  components: {
-    AboutLayout,
-  },
+const goToLogin = () => {
+  window.location.href = '/login';
 };
 </script>
 
@@ -126,17 +132,21 @@ $breakpoint-md: 768px;
   }
 }
 
+.row {
+  --bs-gutter-x: 0rem;
+}
+
 .about-project {
   &__title {
     width: fit-content;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 20px;
     line-height: 150%;
     letter-spacing: 0%;
     vertical-align: middle;
-    border-bottom: 4px solid #000000;
-    padding-bottom: 28px;
-    margin-bottom: 48px;
+    border-bottom: 2px solid #000000;
+    padding-bottom: 16px;
+    margin-bottom: 25px;
 
     @include md {
       width: fit-content;
@@ -152,15 +162,30 @@ $breakpoint-md: 768px;
   }
 
   &__subtitle {
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 150%;
+    letter-spacing: 0%;
+    padding-right: 48px;
+    margin-bottom: 28px;
+
     @include md {
       font-weight: 500;
       font-size: 20px;
       line-height: 150%;
       letter-spacing: 0%;
       margin-bottom: 32px;
+      padding-right: 0;
     }
 
     &--quote {
+      font-weight: 500;
+      font-size: 20px;
+      line-height: 150%;
+      letter-spacing: 0%;
+      margin-top: 12px;
+      margin-bottom: 28px;
+
       @include md {
         margin: 32px 0;
         padding-right: 120px;
@@ -173,6 +198,7 @@ $breakpoint-md: 768px;
     font-size: 16px;
     line-height: 150%;
     letter-spacing: 0%;
+    padding-right: 16px;
 
     @include md {
       font-weight: 500;
@@ -184,20 +210,19 @@ $breakpoint-md: 768px;
   }
 
   &__button {
-    @include md {
-      background: var(--Laranja_E, #AA4F28);
-      border: 1px solid var(--Laranja_E, #AA4F28);
-      color: #FFFFFF;
-      font-weight: 400;
-      font-size: 14px;
-      line-height: 150%;
-      letter-spacing: 0%;
-      margin-bottom: 32px;
-      gap: 10px;
-      padding: 2px 14px;
-      border-width: 1px;
-      border-radius: 5px;
-    }
+    background: var(--Laranja_E, #AA4F28);
+    border: 1px solid var(--Laranja_E, #AA4F28);
+    color: #FFFFFF;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 150%;
+    letter-spacing: 0%;
+    margin-top: 0;
+    margin-bottom: 28px;
+    gap: 10px;
+    padding: 2px 14px;
+    border-width: 1px;
+    border-radius: 5px;
   }
 
   &__vertical-image-wrapper {
@@ -217,7 +242,8 @@ $breakpoint-md: 768px;
   }
 
   &__horizontal-image-wrapper {
-    padding-right: 100px;
+    margin-top: 28px;
+    margin-bottom: 28px;
 
     @include md {
       width: 100%;
@@ -229,6 +255,26 @@ $breakpoint-md: 768px;
   &__horizontal-image {
     width: 100%;
     height: auto;
+    display: block;
+  }
+
+  &__mobile-cropped-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 66.67%; // 3:2 aspect ratio
+    overflow: hidden;
+    margin-top: 28px;
+    margin-bottom: 28px;
+  }
+
+  &__mobile-cropped-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
     display: block;
   }
 }

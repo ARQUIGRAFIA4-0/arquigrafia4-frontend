@@ -1,6 +1,6 @@
 <template>
   <div class="container-fluid about-layout">
-    <div class="row my-2 justify-content-center">
+    <div class="row justify-content-center me-0">
       <div class="d-none d-md-block col-md-2">
         <AboutMenu />
       </div>
@@ -33,8 +33,13 @@ $breakpoint-md: 768px;
   }
 }
 
+.row {
+  --bs-gutter-x: 0rem;
+}
+
 .about-layout {
   margin-top: 34px;
+  padding: 0px 32px;
 
   @include md {
     margin-top: 0px;

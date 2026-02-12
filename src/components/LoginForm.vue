@@ -1,8 +1,11 @@
 <script setup>
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "../store/auth";
+import { useRouter } from "vue-router";
 
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watchEffect } from "vue";
+
+const router = useRouter();
 
 const auth = useAuthStore();
 const {
@@ -91,6 +94,13 @@ async function sendPasswordResetEmailWithAlert() {
     displayAlert(result.message, result.success ? "success" : "error");
   }
 }
+
+// Redireciona para a home se o usuário já estiver logado e verificado
+watchEffect(() => {
+  if (isLoggedIn.value && loggedUser.value?.email_verified_at) {
+    router.push("/");
+  }
+});
 
 // Reseta para a view padrão de login ao montar o componente
 onMounted(() => {
