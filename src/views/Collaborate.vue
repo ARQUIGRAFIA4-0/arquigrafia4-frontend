@@ -1,11 +1,19 @@
 <script setup>
-import { computed } from "vue";
+import { computed, watchEffect } from "vue";
+import { useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
-import AuthLogin from "./Auth/AuthLogin.vue";
 import UploadImageBox from "@/components/UploadImageBox.vue";
 
+const router = useRouter();
 const store = useAuthStore();
 const isLoggedIn = computed(() => store.isLoggedIn);
+
+// Redireciona para /login se o usuário não estiver logado
+watchEffect(() => {
+  if (!isLoggedIn.value) {
+    router.push("/login");
+  }
+});
 </script>
 
 <template>
@@ -15,10 +23,6 @@ const isLoggedIn = computed(() => store.isLoggedIn);
       <UploadImageBox :show-upload-instructions="true"
         instructions-title="Colabore com o Arquigrafia<br />enviando suas imagens." />
     </div>
-  </div>
-  <div v-else>
-    <!-- Visitante -->
-    <AuthLogin />
   </div>
 </template>
 

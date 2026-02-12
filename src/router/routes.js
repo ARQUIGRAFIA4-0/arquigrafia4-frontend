@@ -69,6 +69,24 @@ export default [
     name: "colabore",
     component: () => import("../views/Collaborate.vue"),
   },
+  // Lab routes
+  {
+    path: "/explore/lab",
+    name: "lab-list",
+    component: () => import("../views/LabView.vue"),
+  },
+  {
+    path: "/explore/lab/:slug",
+    name: "lab-detail",
+    component: () => import("../views/LabView.vue"),
+    beforeEnter: async (to) => {
+      const { projectExists } = await import("@/data/labProjects.js");
+      if (!projectExists(to.params.slug)) {
+        return { name: "lab-list" };
+      }
+      return true;
+    },
+  },
   // About routes
   {
     path: "/about",
