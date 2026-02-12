@@ -45,7 +45,7 @@ const createPopupCardContent = ({ imageUrl, title }) => {
     return PLACEHOLDER_IMAGE_URL;
   })();
 
-  const safeTitle = title ? escapeHtml(title) : "Imagem Arquigrafia";
+  const safeTitle = title ? escapeHtml(title) : "Imagem ARQUIGRAFIA";
 
   return `<article class="popup-card"><div class="popup-card__media"><img src="${escapeHtml(
     resolvedImageUrl

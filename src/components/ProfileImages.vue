@@ -36,7 +36,7 @@ const firstName = computed(() => {
       role="alert"
     >
       <i class="bi bi-exclamation-circle-fill text-dark"></i>
-      <span>{{ firstName }} ainda não tem imagens no Arquigrafia.</span>
+      <span>{{ firstName }} ainda não tem imagens no ARQUIGRAFIA.</span>
     </div>
   </div>
 </template>
