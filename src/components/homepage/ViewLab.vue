@@ -2,7 +2,7 @@
   <div class="lab-view">
     <!-- Grid View -->
     <template v-if="mode === 'grid'">
-      <div class="lab-view__header">
+      <div class="lab-view__header d-none d-md-block">
         <h1 class="lab-view__title">ARQUIGRAFIA Lab</h1>
         <p class="lab-view__subtitle">
           Conheça os projetos desenvolvidos por pesquisadores da comunidade ARQUIGRAFIA.

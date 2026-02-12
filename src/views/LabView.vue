@@ -95,7 +95,7 @@ $breakpoint-md: 768px;
 
 .tabs-nav {
   max-width: 560px;
-  margin-bottom: 4px;
+  margin-bottom: 12px;
 }
 
 .nav-underline {
@@ -107,10 +107,9 @@ $breakpoint-md: 768px;
 .container-lab {
   padding-left: 1rem;
   padding-right: 1rem;
-  padding-bottom: 2rem;
 
   @include md {
-    margin-top: 40px;
+    margin-top: 36px;
     padding-left: 50px;
     padding-right: 50px;
   }
