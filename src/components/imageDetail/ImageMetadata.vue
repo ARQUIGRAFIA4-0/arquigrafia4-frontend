@@ -14,7 +14,14 @@
         >
           <span>{{ uploaderInitial }}</span>
         </div>
-        <p class="metadata-text">{{ uploaderName }}</p>
+        <RouterLink 
+          v-if="uploaderUserId"
+          :to="`/profile/${uploaderUserId}`"
+          class="metadata-uploader-link"
+        >
+          {{ uploaderName }}
+        </RouterLink>
+        <p v-else class="metadata-text">{{ uploaderName }}</p>
       </div>
     </div>
 
@@ -86,6 +93,7 @@
 
 <script setup>
 import { computed } from "vue";
+import { RouterLink } from "vue-router";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import { findLicenseByUrl } from "@/constants/creativeCommonsLicenses";
 
@@ -98,6 +106,7 @@ const props = defineProps({
 
 const uploaderName = computed(() => props.image?.uploader?.name ?? null);
 const uploaderAvatar = computed(() => props.image?.uploader?.avatar ?? null);
+const uploaderUserId = computed(() => props.image?.uploader?.id ?? null);
 const uploaderInitial = computed(() => {
   if (!uploaderName.value) {
     return "";
@@ -210,6 +219,20 @@ const markerPosition = computed(() => {
 
 .metadata-person-avatar--placeholder {
   border: 1px solid #ced4da;
+}
+
+.metadata-uploader-link {
+  color: #495057;
+  text-decoration: none;
+  line-height: 1.6;
+  margin: 0;
+  cursor: pointer;
+  transition: text-decoration 0.2s ease;
+}
+
+.metadata-uploader-link:hover {
+  text-decoration: underline;
+  color: #343a40;
 }
 
 .metadata-tags {
