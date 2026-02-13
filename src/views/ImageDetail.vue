@@ -70,16 +70,16 @@ const tabs = [
     section: "dados",
     routeName: "image-detail-dados",
   },
-  {
-    label: "Comentários",
-    section: "comentarios",
-    routeName: "image-detail-comentarios",
-  },
-  {
-    label: "Imagens relacionadas",
-    section: "relacionadas",
-    routeName: "image-detail-relacionadas",
-  },
+  // {
+  //   label: "Comentários",
+  //   section: "comentarios",
+  //   routeName: "image-detail-comentarios",
+  // },
+  // {
+  //   label: "Imagens relacionadas",
+  //   section: "relacionadas",
+  //   routeName: "image-detail-relacionadas",
+  // },
 ];
 
 const currentSection = computed(() => route.meta?.section ?? "dados");
