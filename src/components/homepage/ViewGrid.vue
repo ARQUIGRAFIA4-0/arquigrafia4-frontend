@@ -22,9 +22,15 @@
               <h3 class="ui-card__title">{{ item.title }}</h3>
               <p v-if="formatDate(item.dates)" class="ui-card__subtitle">{{ formatDate(item.dates) }}</p>
               <div v-if="item.subjects && item.subjects.length > 0" class="ui-card__tags">
-                <span v-for="(subject, index) in item.subjects" :key="index" class="ui-card__tag">
-                  {{ subject.term }}
-                </span>
+                <button 
+                  v-for="(subject, index) in item.subjects" 
+                  :key="index" 
+                  class="btn btn-outline-primary btn-sm btn-tag grid-tag"
+                  type="button"
+                  @click.prevent="handleTagClick(subject)"
+                >
+                  <span>{{ subject.term }}</span>
+                </button>
               </div>
             </div>
           </UiCard>
@@ -83,6 +89,14 @@ const handleImageError = (event) => {
     target.onerror = null;
     target.src = fallbackImageUrl;
   }
+};
+
+const handleTagClick = (subject) => {
+  // Navega para visualização de grid com filtro de tag (substitui qualquer filtro de tag existente)
+  router.push({
+    path: '/explore/acervo/grid',
+    query: { tag: subject.id }
+  });
 };
 
 const tryFetchNextPage = () => {
@@ -206,32 +220,13 @@ $breakpoint-md: 768px;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;  
-  max-height: calc(25px * 2 + 8px); /* 2 linhas de tags (altura da tag * 2 + gap) */
+  max-height: calc(32px * 2 + 8px); /* 2 linhas de tags (altura da tag * 2 + gap) */
   overflow: hidden;
 }
 
-.ui-card__tag {
-  @include md {
-    height: 25px;
-    gap: 9px;
-    border-radius: 2px;
-    border-width: 1px;
-    padding: 4px 8px;
-    background: var(--Off_white, #FAF9F9);
-    border: 1px solid var(--Cinza_M, #636262);
-    color: var(--Cinza_M, #636262);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-
-    span {
-      font-weight: 400;
-      font-style: 9pt;
-      font-size: 12px;
-      line-height: 115%;
-      letter-spacing: 0%;
-      text-align: center;
-    }
-  }
+.grid-tag {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
