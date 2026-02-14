@@ -1,12 +1,11 @@
 <script setup>
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted } from "vue";
+import { RouterLink } from "vue-router";
+import UiCard from "@/components/ui/UiCard.vue";
 import UploadImageBox from "@/components/UploadImageBox.vue";
+import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 
 const props = defineProps({
-  userImages: {
-    type: Array,
-    default: () => [],
-  },
   isCurrentUser: {
     type: Boolean,
     default: false,
@@ -22,6 +21,78 @@ const firstName = computed(() => {
     return props.userData.name.split(" ")[0];
   }
   return "Este usuário";
+});
+
+// Extrai o ID do usuário a partir da prop userData
+const userId = computed(() => props.userData?.id ?? null);
+
+// Extrai os filtros a partir do userId
+const filters = computed(() => {
+  return userId.value ? { userId: userId.value } : undefined;
+});
+
+const { items, hasNextPage, fetchNextPage, isPending, isFetchingNextPage } =
+  useImagesInfiniteQuery({ filters });
+
+const loading = computed(() => isPending.value || isFetchingNextPage.value);
+
+// Função para formatar data com lógica de circa e intervalo
+const formatDate = (dates) => {
+  if (!dates || dates.length === 0) return null;
+  
+  const dateInfo = dates.find(d => d.type === 'creation') || dates[0];
+  if (!dateInfo) return null;
+  
+  const earliest = dateInfo.earliest_date ? new Date(dateInfo.earliest_date).getUTCFullYear() : null;
+  const latest = dateInfo.latest_date ? new Date(dateInfo.latest_date).getUTCFullYear() : null;
+  const circa = dateInfo.circa_earliest_date || dateInfo.circa_latest_date;
+  
+  if (!earliest) return null;
+  
+  const prefix = circa ? 'c.' : '';
+  
+  if (!latest || earliest === latest) {
+    return `${prefix}${earliest}`;
+  }
+  
+  return `${prefix}${earliest}-${latest}`;
+};
+
+const fallbackImageUrl = "https://picsum.photos/300/300?grayscale&blur=2";
+
+const handleImageError = (event) => {
+  const target = event?.target;
+  if (target && target.tagName === "IMG") {
+    target.onerror = null;
+    target.src = fallbackImageUrl;
+  }
+};
+
+const tryFetchNextPage = () => {
+  if (!hasNextPage.value || isFetchingNextPage.value) {
+    return;
+  }
+  fetchNextPage();
+};
+
+const handleScroll = () => {
+  const scrollPosition = window.innerHeight + window.scrollY;
+  const pageBottom = document.documentElement.offsetHeight - 1000;
+
+  if (scrollPosition >= pageBottom) {
+    tryFetchNextPage();
+  }
+};
+
+onMounted(async () => {
+  if (items.value.length === 0 && hasNextPage.value) {
+    await fetchNextPage();
+  }
+  window.addEventListener("scroll", handleScroll, { passive: true });
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("scroll", handleScroll);
 });
 </script>
 
