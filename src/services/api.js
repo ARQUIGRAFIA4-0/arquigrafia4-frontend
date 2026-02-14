@@ -328,8 +328,9 @@ const searchImages = async () => {
  * @param {number|Object} limitOrOptions - Limite de itens ou objeto de opções
  * @param {number} [limitOrOptions.limit] - Limite de itens por página
  * @param {number} [limitOrOptions.initialLimit] - Limite especial para a primeira página
- * @param {Object} [filters] - Filtros de busca (tags, etc.)
+ * @param {Object} [filters] - Filtros de busca (tags, userId, etc.)
  * @param {Array<string>} [filters.tags] - IDs dos subjects/tags para filtrar
+ * @param {string} [filters.userId] - ID do usuário para filtrar imagens
  * @returns {Promise<{items: Array<Object>, hasMore: boolean}>} Objeto com itens e indicador de mais páginas
  */
 const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT, filters = {}) => {
@@ -343,17 +344,22 @@ const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT, filter
 
   const apiBaseUrl = "https://api-dev.arquigrafia.org.br";
   
-  // Build query string with filters
+  // Constrói a query string com os filtros
   const queryParams = new URLSearchParams();
   queryParams.append('page', page);
   
-  // Add subject filters if present
+  // Adiciona filtro de subjects se presente
   if (filters.tags && Array.isArray(filters.tags)) {
     filters.tags.forEach(tagId => {
       if (tagId) {
         queryParams.append('subject[]', tagId);
       }
     });
+  }
+  
+  // Adiciona filtro de usuário se presente
+  if (filters.userId) {
+    queryParams.append('user_id', filters.userId);
   }
   
   const apiUrl = `${apiBaseUrl}/api/images?${queryParams.toString()}`;
