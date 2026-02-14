@@ -52,6 +52,7 @@
           :key="subject.id"
           type="button"
           class="btn btn-outline-primary btn-sm btn-tag"
+          @click="handleTagClick(subject)"
         >
           {{ subject.term }}
         </button>
@@ -93,9 +94,11 @@
 
 <script setup>
 import { computed } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import { findLicenseByUrl } from "@/constants/creativeCommonsLicenses";
+
+const router = useRouter();
 
 const props = defineProps({
   image: {
@@ -173,6 +176,14 @@ const markerPosition = computed(() => {
   const [lng, lat] = center;
   return { lng, lat };
 });
+
+const handleTagClick = (subject) => {
+  // Navega para visualização de grid com filtro de tag (substitui qualquer filtro de tag existente)
+  router.push({
+    path: '/explore/acervo/grid',
+    query: { tag: subject.id }
+  });
+};
 </script>
 
 <style scoped>
@@ -243,6 +254,7 @@ const markerPosition = computed(() => {
 
 .metadata-tags .btn-tag {
   min-height: 36px;
+  cursor: pointer;
 }
 
 .metadata-map {
