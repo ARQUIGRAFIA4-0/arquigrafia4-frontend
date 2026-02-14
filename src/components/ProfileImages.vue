@@ -31,8 +31,14 @@ const filters = computed(() => {
   return userId.value ? { userId: userId.value } : undefined;
 });
 
+// Só permite fetch quando userId estiver disponível (previne fetch sem filtro)
+const shouldFetch = computed(() => !!userId.value);
+
 const { items, hasNextPage, fetchNextPage, isPending, isFetchingNextPage } =
-  useImagesInfiniteQuery({ filters });
+  useImagesInfiniteQuery({ 
+    filters,
+    enabled: shouldFetch 
+  });
 
 const loading = computed(() => isPending.value || isFetchingNextPage.value);
 
@@ -98,18 +104,20 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <!-- Carregando imagens -->
-    <div v-if="isPending && items.length === 0" class="text-center py-4">
+    <!-- Loading: aguardando userId ou carregamento inicial -->
+    <div v-if="!shouldFetch || (isPending && items.length === 0)" class="text-center py-4">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Carregando...</span>
       </div>
     </div>
 
-    <!-- Perfil privado sem imagens -->
-    <UploadImageBox v-else-if="items.length === 0 && props.isCurrentUser && !loading" />
+    <!-- Empty state: perfil privado sem imagens -->
+    <UploadImageBox 
+      v-else-if="shouldFetch && !loading && items.length === 0 && props.isCurrentUser" 
+    />
 
-    <!-- Perfil público sem imagens -->
-    <div v-else-if="items.length === 0 && !props.isCurrentUser && !loading">
+    <!-- Empty state: perfil público sem imagens -->
+    <div v-else-if="shouldFetch && !loading && items.length === 0 && !props.isCurrentUser">
       <div
         class="alert alert-dark bg-off-white alert-light border border-dark border-start-3 no-images-banner"
         role="alert"
@@ -119,8 +127,8 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Image grid -->
-    <div v-else>
+    <!-- Image grid: só renderiza quando shouldFetch é true e há items -->
+    <div v-else-if="shouldFetch && items.length > 0">
       <div class="row g-4">
         <div v-for="item in items" :key="item.id" class="col-6 col-md-3">
           <RouterLink
@@ -150,7 +158,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Loading more indicator -->
-      <div v-if="loading" class="text-center my-4">
+      <div v-if="isFetchingNextPage" class="text-center my-4">
         <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Carregando mais...</span>
         </div>
