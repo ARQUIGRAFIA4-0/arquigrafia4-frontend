@@ -12,8 +12,20 @@ export const useImagesInfiniteQuery = (options = {}) => {
   // Torna a chave de consulta reativa usando um computed que desembrulha os filtros se for um ref
   const dynamicQueryKey = computed(() => {
     const filtersValue = unref(filters);
-    if (filtersValue && filtersValue.tags && filtersValue.tags.length > 0) {
-      return [...normalizedBaseKey, { tags: filtersValue.tags }];
+    const hasFilters = filtersValue && (
+      (filtersValue.tags && filtersValue.tags.length > 0) ||
+      filtersValue.userId
+    );
+    
+    if (hasFilters) {
+      const filterKey = {};
+      if (filtersValue.tags && filtersValue.tags.length > 0) {
+        filterKey.tags = filtersValue.tags;
+      }
+      if (filtersValue.userId) {
+        filterKey.userId = filtersValue.userId;
+      }
+      return [...normalizedBaseKey, filterKey];
     }
     return normalizedBaseKey;
   });
