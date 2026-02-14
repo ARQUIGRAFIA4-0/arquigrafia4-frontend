@@ -250,7 +250,6 @@ const markerPosition = computed(() => {
   aspect-ratio: 1 / 1;
   overflow: hidden;
   background-color: #f1f3f5;
-  z-index: -1;
   margin-bottom: 36px;
 }
 

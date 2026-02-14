@@ -54,23 +54,25 @@
       </button>
     </div>
 
-    <DownloadModal
-      v-model="showDownloadModal"
-      :image="props.image"
-      @confirm="handleDownloadConfirm"
-    />
+    <Teleport to="body">
+      <DownloadModal
+        v-model="showDownloadModal"
+        :image="props.image"
+        @confirm="handleDownloadConfirm"
+      />
 
-    <ShareModal
-      v-model="showShareModal"
-      :image="props.image"
-      @confirm="handleShareConfirm"
-    />
+      <ShareModal
+        v-model="showShareModal"
+        :image="props.image"
+        @confirm="handleShareConfirm"
+      />
 
-    <ReportModal
-      v-model="showReportModal"
-      :image="props.image"
-      @submit="handleReportSubmit"
-    />
+      <ReportModal
+        v-model="showReportModal"
+        :image="props.image"
+        @submit="handleReportSubmit"
+      />
+    </Teleport>
   </div>
 </template>
 
