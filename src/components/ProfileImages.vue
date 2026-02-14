@@ -90,6 +90,13 @@ const firstName = computed(() => {
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
 
 .no-images-banner {
   display: inline-flex;
@@ -100,6 +107,71 @@ const firstName = computed(() => {
 
   i {
     margin-right: 0.5rem;
+  }
+}
+
+.profile-images {
+  &__link {
+    display: block;
+    height: 100%;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  &__card {
+    border: 0.25px solid var(--Cinza_C, #A6A6A6);
+    box-shadow: 1px 1px 3px 2px #0000001A;
+    border-radius: 5px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  &__image-wrapper {
+    position: relative;
+    padding-top: 100%; // 1:1 aspect ratio
+    overflow: hidden;
+    background-color: #f8f9fa;
+  }
+
+  &__image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.ui-card__header {
+  padding-bottom: 8px;
+}
+
+.ui-card__title {
+  @include md {
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 125%;
+    letter-spacing: 0%;
+    padding-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.ui-card__subtitle {
+  @include md {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 125%;
+    letter-spacing: 0%;
+    color: var(--Cinza_E);
   }
 }
 </style>
