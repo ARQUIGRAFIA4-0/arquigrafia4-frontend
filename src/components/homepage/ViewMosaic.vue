@@ -136,6 +136,17 @@ const tryFetchNextPage = () => {
   tryFetchNextPage();
 }; */
 
+// Reseta itens do mosaico quando os filtros mudam
+watch(
+  () => filters.value,
+  () => {
+    processedIds.clear();
+    mosaicItems.value = [];
+    isMasonryReady.value = false;
+  },
+  { deep: true }
+);
+
 watch(
   () => rawItems.value,
   async (newItems) => {
