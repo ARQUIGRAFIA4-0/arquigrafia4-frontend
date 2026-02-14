@@ -18,8 +18,6 @@ const isMobile = ref(window.innerWidth < 768);
 
 const userData = ref(null);
 const publicProfileData = ref(null);
-
-const userImages = ref([]);
 const selectedTab = ref("Imagens");
 
 onMounted(async () => {
@@ -48,7 +46,7 @@ function handleResize() {
         <div class="col-12 col-md-8">
             <div class="profile-container__content">
                 <ProfileNav :selected="selectedTab" @select="selectedTab = $event" :isCurrentUser="false" />
-                <ProfileImages v-if="selectedTab === 'Imagens'" :userImages="userImages" :isCurrentUser="false"
+                <ProfileImages v-if="selectedTab === 'Imagens'" :isCurrentUser="false"
                     :userData="userData" />
                 <ProfileAlbums v-if="selectedTab === 'Álbuns'" />
                 <ProfileRoutes v-if="selectedTab === 'Percursos'" />

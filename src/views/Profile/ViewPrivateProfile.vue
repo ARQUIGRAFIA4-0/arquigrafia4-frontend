@@ -19,8 +19,6 @@ const currentUserAuthHeader = computed(() => authStore.authHeader);
 
 const publicProfileData = ref(null);
 const privateProfileData = ref(null);
-
-const userImages = ref([]);
 const selectedTab = ref("Imagens");
 
 onMounted(async () => {
@@ -49,7 +47,7 @@ function handleResize() {
     <div class="col-12 col-md-8">
       <div class="profile-container__content">
         <ProfileNav :selected="selectedTab" @select="selectedTab = $event" :isCurrentUser="true" />
-        <ProfileImages v-if="selectedTab === 'Imagens'" :userImages="userImages" :isCurrentUser="true" />
+        <ProfileImages v-if="selectedTab === 'Imagens'" :isCurrentUser="true" :userData="currentUserData" />
         <ProfileAlbums v-if="selectedTab === 'Álbuns'" />
         <ProfileRoutes v-if="selectedTab === 'Percursos'" />
         <ProfileWorks v-if="selectedTab === 'Obras'" />
