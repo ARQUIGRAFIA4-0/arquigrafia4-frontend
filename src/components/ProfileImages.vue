@@ -104,10 +104,21 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <!-- Loading: aguardando userId ou carregamento inicial -->
-    <div v-if="!shouldFetch || (isPending && items.length === 0)" class="text-center py-4">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Carregando...</span>
+    <!-- Loading: skeleton cards durante carregamento inicial -->
+    <div v-if="!shouldFetch || (isPending && items.length === 0)">
+      <!-- <div v-if="true"> -->
+      <div class="row g-4">
+        <div v-for="n in 7" :key="`skeleton-${n}`" class="col-6 col-md-3">
+          <div class="profile-images__card profile-images__card--skeleton">
+            <div class="profile-images__image-wrapper">
+              <div class="profile-images__skeleton-image"></div>
+            </div>
+            <div class="ui-card__header--skeleton">
+              <div class="profile-images__skeleton-title"></div>
+              <div class="profile-images__skeleton-subtitle"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -199,13 +210,22 @@ $breakpoint-md: 768px;
 
   &__card {
     border: 0.25px solid var(--Cinza_C, #A6A6A6);
-    box-shadow: 1px 1px 3px 2px #0000001A;
+    box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
     border-radius: 5px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 
     &:hover {
       transform: translateY(-4px);
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+    }
+
+    &--skeleton {
+      pointer-events: none;
+      
+      &:hover {
+        transform: none;
+        box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
+      }
     }
   }
 
@@ -225,10 +245,68 @@ $breakpoint-md: 768px;
     object-fit: cover;
     display: block;
   }
+
+  &__skeleton-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      #f0f0f0 25%,
+      #e0e0e0 50%,
+      #f0f0f0 75%
+    );
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+  }
+
+  &__skeleton-title {
+    height: 14px;
+    background: linear-gradient(
+      90deg,
+      #f0f0f0 25%,
+      #e0e0e0 50%,
+      #f0f0f0 75%
+    );
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    width: 80%;
+  }
+
+  &__skeleton-subtitle {
+    height: 12px;
+    background: linear-gradient(
+      90deg,
+      #f0f0f0 25%,
+      #e0e0e0 50%,
+      #f0f0f0 75%
+    );
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+    width: 50%;
+  }
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .ui-card__header {
   padding-bottom: 8px;
+
+  &--skeleton {
+    padding: 16px 16px 24px 16px;
+  }
 }
 
 .ui-card__title {
