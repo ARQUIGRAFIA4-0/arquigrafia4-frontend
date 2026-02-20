@@ -108,7 +108,7 @@ onBeforeUnmount(() => {
     <div v-if="!shouldFetch || (isPending && items.length === 0)">
       <!-- <div v-if="true"> -->
       <div class="row g-4">
-        <div v-for="n in 7" :key="`skeleton-${n}`" class="col-6 col-md-3">
+        <div v-for="n in 12" :key="`skeleton-${n}`" class="col-6 col-md-3">
           <div class="profile-images__card profile-images__card--skeleton">
             <div class="profile-images__image-wrapper">
               <div class="profile-images__skeleton-image"></div>
