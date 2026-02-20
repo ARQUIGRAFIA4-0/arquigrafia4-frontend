@@ -21,10 +21,10 @@ const publicProfileData = ref(null);
 const selectedTab = ref("Imagens");
 
 onMounted(async () => {
-  userData.value = await usersStore.getUser(route.params.id);
-  publicProfileData.value = await profilesStore.getPublicProfileById(route.params.id);
-  
-  window.addEventListener('resize', handleResize);
+    userData.value = await usersStore.getUser(route.params.id);
+    publicProfileData.value = await profilesStore.getPublicProfileById(route.params.id);
+
+    window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
@@ -32,7 +32,7 @@ onUnmounted(() => {
 });
 
 function handleResize() {
-  isMobile.value = window.innerWidth < 768;
+    isMobile.value = window.innerWidth < 768;
 }
 
 </script>
@@ -40,18 +40,14 @@ function handleResize() {
 <template>
     <div :class="['profile-container', isMobile ? '' : 'row']">
         <div class="col-12 col-md-3">
-            <ProfileCard :userData="userData" :profileData="publicProfileData" :isMobile="isMobile" :isOwnProfile="false" />
+            <ProfileCard :userData="userData" :profileData="publicProfileData" :isMobile="isMobile"
+                :isOwnProfile="false" />
         </div>
         <div class="d-none d-md-block col-md-1"></div>
         <div class="col-12 col-md-8">
             <div class="profile-container__content">
                 <ProfileNav :selected="selectedTab" @select="selectedTab = $event" :isCurrentUser="false" />
-                <ProfileImages v-if="selectedTab === 'Imagens'" :isCurrentUser="false"
-                    :userData="userData" />
-                <ProfileAlbums v-if="selectedTab === 'Álbuns'" />
-                <ProfileRoutes v-if="selectedTab === 'Percursos'" />
-                <ProfileWorks v-if="selectedTab === 'Obras'" />
-                <ProfileReviews v-if="selectedTab === 'Avaliações'" />
+                <ProfileImages v-if="selectedTab === 'Imagens'" :isCurrentUser="false" :userData="userData" />
             </div>
         </div>
     </div>
