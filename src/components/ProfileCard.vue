@@ -4,25 +4,19 @@ import profileImageDefault from '@/assets/profile_image.png';
 
 const props = defineProps({
   userData: { type: Object, default: null },
-  publicProfileData: { type: Object, default: null },
-  privateProfileData: { type: Object, default: null },
-  isMobile: { type: Boolean, default: false }
+  profileData: { type: Object, default: null },
+  isMobile: { type: Boolean, default: false },
+  isOwnProfile: { type: Boolean, default: false }
 });
 
-const viewingPrivateProfile = ref(true);
 const showFullProfile = ref(false);
 
 const isLoading = computed(() => {
-  // Mostra skeleton se userData não está disponível
-  // ou se nenhum profileData está disponível
-  return !props.userData || (!props.publicProfileData && !props.privateProfileData);
+  return !props.userData || !props.profileData;
 });
 
 const currentProfileData = computed(() => {
-  if (viewingPrivateProfile.value && props.privateProfileData) {
-    return props.privateProfileData;
-  }
-  return props.publicProfileData || {};
+  return props.profileData || {};
 });
 
 watch(() => props.isMobile, (newValue) => {
@@ -30,10 +24,6 @@ watch(() => props.isMobile, (newValue) => {
     showFullProfile.value = true;
   }
 }, { immediate: true });
-
-function toggleProfileView() {
-  viewingPrivateProfile.value = !viewingPrivateProfile.value;
-}
 
 function getColumns(keys) {
   const data = currentProfileData.value?.data || {};
@@ -169,7 +159,7 @@ function checkSocials(socials) {
           </li>
         </ul>
       </div>
-      <div v-if="props.privateProfileData" class="profile-card__toggle-profile-visibility">
+      <div v-if="props.isOwnProfile" class="profile-card__toggle-profile-visibility">
         <a :href="`/profile/${userData?.id}`" target="_blank" class="btn btn-secondary btn-sm btn-icon">
           <i class="bi bi-eye" /> Ver perfil público
         </a>

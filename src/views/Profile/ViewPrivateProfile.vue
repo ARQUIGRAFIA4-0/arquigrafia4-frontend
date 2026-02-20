@@ -17,12 +17,10 @@ const isMobile = ref(window.innerWidth < 768);
 const currentUserData = computed(() => authStore.loggedUser);
 const currentUserAuthHeader = computed(() => authStore.authHeader);
 
-const publicProfileData = ref(null);
 const privateProfileData = ref(null);
 const selectedTab = ref("Imagens");
 
 onMounted(async () => {
-  publicProfileData.value = await profilesStore.getPublicProfileById(currentUserData.value.id);
   privateProfileData.value = await profilesStore.getProfileById(currentUserAuthHeader.value, currentUserData.value.id);
   
   window.addEventListener('resize', handleResize);
@@ -40,8 +38,7 @@ function handleResize() {
 <template>
   <div :class="['profile-container', isMobile ? '' : 'row']">
     <div class="col-12 col-md-3">
-      <ProfileCard :userData="currentUserData" :publicProfileData="publicProfileData"
-        :privateProfileData="privateProfileData" :isMobile="isMobile" />
+      <ProfileCard :userData="currentUserData" :profileData="privateProfileData" :isMobile="isMobile" :isOwnProfile="true" />
     </div>
     <div class="d-none d-md-block col-md-1"></div>
     <div class="col-12 col-md-8">
