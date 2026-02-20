@@ -12,6 +12,12 @@ const props = defineProps({
 const viewingPrivateProfile = ref(true);
 const showFullProfile = ref(false);
 
+const isLoading = computed(() => {
+  // Mostra skeleton se userData não está disponível
+  // ou se nenhum profileData está disponível
+  return !props.userData || (!props.publicProfileData && !props.privateProfileData);
+});
+
 const currentProfileData = computed(() => {
   if (viewingPrivateProfile.value && props.privateProfileData) {
     return props.privateProfileData;
@@ -54,18 +60,35 @@ function checkSocials(socials) {
 
 <template>
   <div class="profile-card">
-    <div class="profile-card__header">
-      <div class="profile-card__image">
-        <img :src="currentProfileData?.data?.profile_image || profileImageDefault" alt="Foto de perfil" />
-      </div>
-      <div class="profile-card__title">
-        <h2>{{ userData?.name }}</h2>
-        <div class="profile-card__address">
-          <i class="bi bi-geo-alt"></i>
-          <p>{{ currentProfileData?.data?.address || "Não informado" }}</p>
+    <!-- Exibe skeleton durante carregamento de dados -->
+    <div v-if="isLoading" class="profile-card__skeleton">
+      <div class="profile-card__header">
+        <div class="profile-card__image profile-card__image--skeleton">
+          <div class="profile-card__skeleton-avatar"></div>
+        </div>
+        <div class="profile-card__title">
+          <div class="profile-card__skeleton-name"></div>
+          <div class="profile-card__address">
+            <div class="profile-card__skeleton-location"></div>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Exibe conteúdo real quando dados carregados -->
+    <template v-else>
+      <div class="profile-card__header">
+        <div class="profile-card__image">
+          <img :src="currentProfileData?.data?.profile_image || profileImageDefault" alt="Foto de perfil" />
+        </div>
+        <div class="profile-card__title">
+          <h2>{{ userData?.name }}</h2>
+          <div class="profile-card__address">
+            <i class="bi bi-geo-alt"></i>
+            <p>{{ currentProfileData?.data?.address || "Não informado" }}</p>
+          </div>
+        </div>
+      </div>
     <div v-if="showFullProfile" class="profile-card__content">
       <div v-if="currentProfileData?.data?.bio" class="profile-card__bio">
         <h3>Bio</h3>
@@ -158,6 +181,7 @@ function checkSocials(socials) {
         'chevron-icon'
       ]" @click="showFullProfile = !showFullProfile" aria-label="Mostrar mais"></i>
     </div>
+    </template>
   </div>
 </template>
 
@@ -357,6 +381,72 @@ $breakpoint-md: 768px;
       cursor: pointer;
       font-size: 28px;
     }
+  }
+
+  &__skeleton {
+    display: block;
+  }
+
+  &__image--skeleton {
+    background-color: transparent;
+    padding: 0;
+  }
+
+  &__skeleton-avatar {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      #f0f0f0 25%,
+      #e0e0e0 50%,
+      #f0f0f0 75%
+    );
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 10px;
+  }
+
+  &__skeleton-name {
+    height: 20px;
+    width: 150px;
+    background: linear-gradient(
+      90deg,
+      #f0f0f0 25%,
+      #e0e0e0 50%,
+      #f0f0f0 75%
+    );
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 16px;
+
+    @include md {
+      height: 24px;
+    }
+  }
+
+  &__skeleton-location {
+    height: 14px;
+    width: 120px;
+    background: linear-gradient(
+      90deg,
+      #f0f0f0 25%,
+      #e0e0e0 50%,
+      #f0f0f0 75%
+    );
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
   }
 }
 </style>
