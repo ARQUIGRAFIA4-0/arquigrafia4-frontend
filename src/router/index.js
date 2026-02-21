@@ -13,6 +13,12 @@ const router = createRouter({
     },
   ],
   scrollBehavior(to, from, savedPosition) {
+    // Desabilita restauração de scroll no mosaico
+    const isMosaicRoute = to.name === 'explore' && to.params.viewMode === 'mosaic';
+    if (isMosaicRoute) {
+      return { top: 0, behavior: 'instant' };
+    }
+
     // Se o usuário estiver usando os botões "voltar/avançar" do navegador,
     // mantém a posição de scroll salva.
     if (savedPosition) {
