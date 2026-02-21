@@ -186,7 +186,16 @@ const handleTagClick = (subject) => {
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use "@/scss/variables" as *;
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
 .metadata-section {
   padding: 1rem 0;
 }
@@ -275,6 +284,10 @@ const handleTagClick = (subject) => {
 .metadata-license-image {
   display: flex;
   align-items: flex-start;
+
+  @include md {
+    margin-bottom: 0;
+  }
 }
 
 .license-img {
@@ -286,16 +299,5 @@ const handleTagClick = (subject) => {
 .metadata-license-text {
   flex: 1 1 220px;
   min-width: 220px;
-}
-
-@media (max-width: 575.98px) {
-  .metadata-license-content {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .metadata-license-image {
-    margin-bottom: 0;
-  }
 }
 </style>
