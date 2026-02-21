@@ -55,11 +55,11 @@ import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 const route = useRoute();
 const router = useRouter();
 
-// Extrai filtros de tags dos parâmetros de consulta da URL
+// Extrai filtros de subjects dos parâmetros de consulta da URL
 const filters = computed(() => {
-  const tags = route.query.tag;
-  const tagArray = tags ? (Array.isArray(tags) ? tags : [tags]) : [];
-  return tagArray.length > 0 ? { tags: tagArray } : undefined;
+  const subjects = route.query.subject;
+  const subjectArray = subjects ? (Array.isArray(subjects) ? subjects : [subjects]) : [];
+  return subjectArray.length > 0 ? { subjects: subjectArray } : undefined;
 });
 
 const { items, hasNextPage, fetchNextPage, isPending, isFetchingNextPage } =
@@ -102,10 +102,10 @@ const handleImageError = (event) => {
 };
 
 const handleTagClick = (subject) => {
-  // Navega para visualização de grid com filtro de tag (substitui qualquer filtro de tag existente)
+  // Navega para visualização de grid com filtro de subject (substitui qualquer filtro de subject existente)
   router.push({
     path: '/explore/acervo/grid',
-    query: { tag: subject.id }
+    query: { subject: subject.id }
   });
 };
 

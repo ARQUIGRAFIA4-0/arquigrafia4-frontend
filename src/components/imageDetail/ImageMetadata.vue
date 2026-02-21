@@ -178,10 +178,10 @@ const markerPosition = computed(() => {
 });
 
 const handleTagClick = (subject) => {
-  // Navega para visualização de grid com filtro de tag (substitui qualquer filtro de tag existente)
+  // Navega para visualização de grid com filtro de subject (substitui qualquer filtro de subject existente)
   router.push({
     path: '/explore/acervo/grid',
-    query: { tag: subject.id }
+    query: { subject: subject.id }
   });
 };
 </script>

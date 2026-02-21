@@ -13,14 +13,14 @@ export const useImagesInfiniteQuery = (options = {}) => {
   const dynamicQueryKey = computed(() => {
     const filtersValue = unref(filters);
     const hasFilters = filtersValue && (
-      (filtersValue.tags && filtersValue.tags.length > 0) ||
+      (filtersValue.subjects && filtersValue.subjects.length > 0) ||
       filtersValue.userId
     );
     
     if (hasFilters) {
       const filterKey = {};
-      if (filtersValue.tags && filtersValue.tags.length > 0) {
-        filterKey.tags = filtersValue.tags;
+      if (filtersValue.subjects && filtersValue.subjects.length > 0) {
+        filterKey.subjects = filtersValue.subjects;
       }
       if (filtersValue.userId) {
         filterKey.userId = filtersValue.userId;

@@ -328,8 +328,8 @@ const searchImages = async () => {
  * @param {number|Object} limitOrOptions - Limite de itens ou objeto de opções
  * @param {number} [limitOrOptions.limit] - Limite de itens por página
  * @param {number} [limitOrOptions.initialLimit] - Limite especial para a primeira página
- * @param {Object} [filters] - Filtros de busca (tags, userId, etc.)
- * @param {Array<string>} [filters.tags] - IDs dos subjects/tags para filtrar
+ * @param {Object} [filters] - Filtros de busca (subjects, userId, etc.)
+ * @param {Array<string>} [filters.subjects] - IDs dos subjects para filtrar
  * @param {string} [filters.userId] - ID do usuário para filtrar imagens
  * @returns {Promise<{items: Array<Object>, hasMore: boolean}>} Objeto com itens e indicador de mais páginas
  */
@@ -349,10 +349,10 @@ const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT, filter
   queryParams.append('page', page);
   
   // Adiciona filtro de subjects se presente
-  if (filters.tags && Array.isArray(filters.tags)) {
-    filters.tags.forEach(tagId => {
-      if (tagId) {
-        queryParams.append('subject[]', tagId);
+  if (filters.subjects && Array.isArray(filters.subjects)) {
+    filters.subjects.forEach(subjectId => {
+      if (subjectId) {
+        queryParams.append('subject[]', subjectId);
       }
     });
   }
