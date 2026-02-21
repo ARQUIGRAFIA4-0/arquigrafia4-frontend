@@ -14,6 +14,7 @@ export const useImagesInfiniteQuery = (options = {}) => {
     const filtersValue = unref(filters);
     const hasFilters = filtersValue && (
       (filtersValue.subjects && filtersValue.subjects.length > 0) ||
+      filtersValue.subjectTerm ||
       filtersValue.userId
     );
     
@@ -21,6 +22,9 @@ export const useImagesInfiniteQuery = (options = {}) => {
       const filterKey = {};
       if (filtersValue.subjects && filtersValue.subjects.length > 0) {
         filterKey.subjects = filtersValue.subjects;
+      }
+      if (filtersValue.subjectTerm) {
+        filterKey.subjectTerm = filtersValue.subjectTerm;
       }
       if (filtersValue.userId) {
         filterKey.userId = filtersValue.userId;

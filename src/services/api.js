@@ -348,13 +348,18 @@ const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT, filter
   const queryParams = new URLSearchParams();
   queryParams.append('page', page);
   
-  // Adiciona filtro de subjects se presente
+  // Adiciona filtro de subjects (IDs específicos) se presente
   if (filters.subjects && Array.isArray(filters.subjects)) {
     filters.subjects.forEach(subjectId => {
       if (subjectId) {
         queryParams.append('subject[]', subjectId);
       }
     });
+  }
+  
+  // Adiciona filtro de subject_term (busca parcial por termo) se presente
+  if (filters.subjectTerm && typeof filters.subjectTerm === 'string') {
+    queryParams.append('subject_term', filters.subjectTerm);
   }
   
   // Adiciona filtro de usuário se presente

@@ -7,11 +7,22 @@ import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 
 const route = useRoute();
 
-// Extrai filtros de subjects dos parâmetros de consulta da URL
+// Extrai filtros dos parâmetros de consulta da URL
 const filters = computed(() => {
   const subjects = route.query.subject;
   const subjectArray = subjects ? (Array.isArray(subjects) ? subjects : [subjects]) : [];
-  return subjectArray.length > 0 ? { subjects: subjectArray } : undefined;
+  const subjectTerm = route.query.subject_term && typeof route.query.subject_term === 'string' 
+    ? route.query.subject_term 
+    : null;
+  
+  const hasFilters = subjectArray.length > 0 || subjectTerm !== null;
+  if (!hasFilters) return undefined;
+  
+  const result = {};
+  if (subjectArray.length > 0) result.subjects = subjectArray;
+  if (subjectTerm) result.subjectTerm = subjectTerm;
+  
+  return result;
 });
 
 const columnWidths = [320, 200, 280, 260, 210, 220, 300];
