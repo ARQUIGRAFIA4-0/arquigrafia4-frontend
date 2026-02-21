@@ -2,8 +2,6 @@ import routes from "./routes";
 import { useAuthStore } from "@/store/auth";
 import { createRouter, createWebHistory } from "vue-router";
 
-const protectedRoutes = ["/eu", "/eu/editar"];
-
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -26,14 +24,23 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const store = useAuthStore();
-  const isLoggedIn = store.isLoggedIn;
-
-  if (protectedRoutes.includes(to.path) && !isLoggedIn) {
-    next("/login");
-  } else {
-    next();
+  // Normaliza trailing slashes (exceto raiz "/")
+  if (to.path !== '/' && to.path.endsWith('/')) {
+    return next({
+      path: to.path.slice(0, -1),
+      query: to.query,
+      hash: to.hash,
+      replace: true
+    });
   }
+
+  // Verifica autenticação para rotas protegidas
+  const store = useAuthStore();
+  if (to.meta.requiresAuth && !store.isLoggedIn) {
+    return next("/login");
+  }
+
+  next();
 });
 
 export default router;

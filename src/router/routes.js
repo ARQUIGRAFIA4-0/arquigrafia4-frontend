@@ -127,16 +127,19 @@ export default [
     path: "/eu",
     name: "my-profile",
     component: () => import("../views/Profile/ViewPrivateProfile.vue"),
+    meta: { requiresAuth: true }
   },
   {
     path: "/eu/imagens/metadados",
     name: "image-metadata",
     component: () => import("../views/Profile/ImageMetadataUpload.vue"),
+    meta: { requiresAuth: true }
   },
   {
     path: "/eu/editar",
     name: "edit-my-profile",
     component: () => import("../views/Profile/EditProfile.vue"),
+    meta: { requiresAuth: true }
   },
   {
     path: "/profile",
@@ -146,5 +149,11 @@ export default [
     path: "/profile/:id",
     name: "view-profile",
     component: () => import("../views/Profile/ViewPublicProfile.vue")
+  },
+  // Rota "catch-all" para casos 404 (deve ser a última rota definida)
+  {
+    path: "/:pathMatch(.*)*",
+    name: "not-found",
+    component: () => import("../views/NotFound.vue")
   },
 ];
