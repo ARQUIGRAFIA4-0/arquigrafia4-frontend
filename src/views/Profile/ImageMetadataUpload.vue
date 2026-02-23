@@ -369,7 +369,7 @@
                     autocomplete="off"
                   />
                   <div
-                    v-if="showTagSuggestions && filteredTagSuggestions.length > 0"
+                    v-if="showTagSuggestions && (filteredTagSuggestions.length > 0 || canCreateSubject)"
                     class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
                     style="z-index: 1000; max-height: 300px; overflow-y: auto"
                   >
@@ -381,6 +381,16 @@
                       @click="selectTagSuggestion(suggestion.term)"
                     >
                       {{ suggestion.term }}
+                    </button>
+                    <button
+                      v-if="canCreateSubject"
+                      type="button"
+                      class="dropdown-item text-primary d-flex align-items-center gap-1"
+                      :disabled="isCreatingSubject"
+                      @click="createAndAddSubject(tagInput.trim())"
+                    >
+                      <i class="bi bi-plus-circle" />
+                      <span>{{ isCreatingSubject ? "Criando..." : `Criar tag "${tagInput.trim()}"` }}</span>
                     </button>
                   </div>
                 </div>
@@ -525,12 +535,42 @@
                 label="Buscar por localidade"
                 explain="Busque e selecione a localidade no mapa"
               >
-                <input
-                  type="text"
-                  class="form-control mb-3"
-                  placeholder="Texto exemplo"
-                  v-model="form.location"
-                />
+                <div class="position-relative mb-3">
+                  <div class="input-group">
+                    <input
+                      type="text"
+                      class="form-control"
+                      placeholder="Ex: Av. Paulista, 1578, São Paulo"
+                      v-model="form.location"
+                      @keydown.enter.prevent="searchLocation"
+                      @focus="showLocationSuggestions = true"
+                      @blur="hideLocationSuggestions"
+                      autocomplete="off"
+                    />
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      @click="searchLocation"
+                    >
+                      <i class="bi bi-search" />
+                    </button>
+                  </div>
+                  <div
+                    v-if="showLocationSuggestions && locationSuggestions.length > 0"
+                    class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
+                    style="z-index: 1000; max-height: 300px; overflow-y: auto"
+                  >
+                    <button
+                      v-for="(suggestion, index) in locationSuggestions"
+                      :key="index"
+                      type="button"
+                      class="dropdown-item text-wrap small"
+                      @click="selectLocationSuggestion(suggestion)"
+                    >
+                      {{ suggestion.display_name }}
+                    </button>
+                  </div>
+                </div>
               </UiField>
 
               <h3 class="form-label text-cinza-e h3 mb-2">
@@ -557,6 +597,15 @@
                     @zoom-in="zoomIn"
                     @zoom-out="zoomOut"
                   />
+                  <button
+                    v-if="form.coordinates"
+                    type="button"
+                    class="position-absolute top-0 end-0 m-2 btn btn-sm btn-light border"
+                    style="z-index: 1"
+                    @click="form.coordinates = null"
+                  >
+                    <i class="bi bi-x-circle me-1" />Remover marcador
+                  </button>
                 </MapLibreMap>
               </div>
             </div>
@@ -851,6 +900,43 @@ const zoomOut = () => {
   mapInstance.value?.zoomOut();
 };
 
+// Location geocoding
+const locationSuggestions = ref([]);
+const showLocationSuggestions = ref(false);
+
+const searchLocation = async () => {
+  const query = form.value.location.trim();
+  if (!query || query.length < 3) {
+    locationSuggestions.value = [];
+    return;
+  }
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`,
+      { headers: { "Accept-Language": "pt-BR,pt" } }
+    );
+    locationSuggestions.value = await response.json();
+  } catch (error) {
+    console.warn("Erro ao buscar localidade:", error);
+  }
+};
+
+const selectLocationSuggestion = (suggestion) => {
+  const lng = parseFloat(suggestion.lon);
+  const lat = parseFloat(suggestion.lat);
+  form.value.location = suggestion.display_name;
+  form.value.coordinates = { lng, lat };
+  mapInstance.value?.flyTo({ center: [lng, lat], zoom: 14 });
+  locationSuggestions.value = [];
+  showLocationSuggestions.value = false;
+};
+
+const hideLocationSuggestions = () => {
+  setTimeout(() => {
+    showLocationSuggestions.value = false;
+  }, 200);
+};
+
 const isRightsInvalid = computed(() => {
   return (
     !form.value.isAuthor &&
@@ -895,8 +981,18 @@ const tagInput = ref("");
 const allSubjects = ref([]);
 const filteredTagSuggestions = ref([]);
 const showTagSuggestions = ref(false);
+const isCreatingSubject = ref(false);
 let fuseInstance = null;
 let debounceTimer = null;
+
+const canCreateSubject = computed(() => {
+  const term = tagInput.value.trim();
+  if (!term) return false;
+  if (form.value.tags.includes(term)) return false;
+  return !allSubjects.value.some(
+    (s) => s.term.toLowerCase() === term.toLowerCase()
+  );
+});
 
 // Contributor names state
 const allContributorNames = ref([]);
@@ -963,11 +1059,49 @@ const selectTagSuggestion = (term) => {
   showTagSuggestions.value = false;
 };
 
-const addTag = () => {
-  const tag = tagInput.value.trim();
-  if (tag && !form.value.tags.includes(tag)) {
-    form.value.tags.push(tag);
+const createAndAddSubject = async (term) => {
+  if (!term || form.value.tags.includes(term) || isCreatingSubject.value) return;
+  isCreatingSubject.value = true;
+  try {
+    const response = await vracStore.addVRACSubject(term);
+    const subjectData = response?.data || response;
+    if (subjectData?.id && subjectData?.term) {
+      allSubjects.value.push(subjectData);
+      fuseInstance = new Fuse(allSubjects.value, {
+        keys: ["term"],
+        threshold: 0.3,
+        includeScore: true,
+      });
+      form.value.tags.push(subjectData.term);
+    } else {
+      form.value.tags.push(term);
+    }
     tagInput.value = "";
+    filteredTagSuggestions.value = [];
+    showTagSuggestions.value = false;
+  } catch {
+    alertType.value = "error";
+    alertMessage.value = "Não foi possível criar o assunto. Tente novamente.";
+    showAlert.value = true;
+  } finally {
+    isCreatingSubject.value = false;
+  }
+};
+
+const addTag = async () => {
+  const term = tagInput.value.trim();
+  if (!term) return;
+  if (form.value.tags.includes(term)) {
+    tagInput.value = "";
+    return;
+  }
+  const exactMatch = allSubjects.value.find(
+    (s) => s.term.toLowerCase() === term.toLowerCase()
+  );
+  if (exactMatch) {
+    selectTagSuggestion(exactMatch.term);
+  } else {
+    await createAndAddSubject(term);
   }
 };
 
