@@ -45,6 +45,7 @@
           :key="subject.id"
           type="button"
           class="btn btn-outline-primary btn-sm btn-tag"
+          @click="searchByTag(subject.term)"
         >
           {{ subject.term }}
         </button>
@@ -86,8 +87,10 @@
 
 <script setup>
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import { findLicenseByUrl } from "@/constants/creativeCommonsLicenses";
+import { DEFAULT_VIEW_ROUTE } from "@/constants/viewModes";
 
 const props = defineProps({
   image: {
@@ -95,6 +98,16 @@ const props = defineProps({
     default: null,
   },
 });
+
+const router = useRouter();
+
+function searchByTag(term) {
+  router.push({
+    name: "explore",
+    params: { viewMode: DEFAULT_VIEW_ROUTE },
+    query: { searchMode: "avancada", tag: term },
+  });
+}
 
 const uploaderName = computed(() => props.image?.uploader?.name ?? null);
 const uploaderAvatar = computed(() => props.image?.uploader?.avatar ?? null);

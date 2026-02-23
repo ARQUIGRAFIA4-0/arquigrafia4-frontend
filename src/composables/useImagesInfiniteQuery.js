@@ -1,22 +1,32 @@
-import { computed } from "vue";
+import { computed, toValue } from "vue";
 import { useInfiniteQuery } from "@tanstack/vue-query";
 import { api } from "@/services/api";
 
 export const useImagesInfiniteQuery = (options = {}) => {
-  const { limit, initialLimit, queryKey = ["images"], ...queryOptions } =
+  const { limit, initialLimit, search, queryKey = ["images"], ...queryOptions } =
     options;
 
-  const normalizedQueryKey = Array.isArray(queryKey)
+  const normalizedBaseKey = Array.isArray(queryKey)
     ? queryKey
     : [queryKey];
 
+  const resolvedQueryKey = computed(() => {
+    const searchVal = toValue(search);
+    if (searchVal) {
+      return [...normalizedBaseKey, "search", searchVal];
+    }
+    return normalizedBaseKey;
+  });
+
   const query = useInfiniteQuery({
-    queryKey: normalizedQueryKey,
-    queryFn: ({ pageParam = 1 }) =>
-      api.getImages(pageParam, {
-        limit,
-        initialLimit,
-      }),
+    queryKey: resolvedQueryKey,
+    queryFn: ({ pageParam = 1 }) => {
+      const searchVal = toValue(search);
+      if (searchVal) {
+        return api.searchImages({ ...searchVal, page: pageParam });
+      }
+      return api.getImages(pageParam, { limit, initialLimit });
+    },
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage?.hasMore) {
         return allPages.length + 1;

@@ -6,6 +6,7 @@ const SEARCH_MODE_KEY = "searchMode";
 
 const SEARCH_KEYS = [
   "q",
+  "title",
   "dateStart",
   "dateEnd",
   "color",
@@ -51,6 +52,7 @@ function assignQueryValue(target, key, value) {
 
 function buildAdvancedFiltersFromQuery(query) {
   const qValues = toArray(query.q);
+  const titleValues = toArray(query.title);
   const authorValues = toArray(query.author);
   const tags = toArray(query.tag);
   const locations = toArray(query.location);
@@ -60,6 +62,10 @@ function buildAdvancedFiltersFromQuery(query) {
 
   qValues.forEach((value) => {
     terms.push({ field: "all", value, label: `Todos os campos: ${value}` });
+  });
+
+  titleValues.forEach((value) => {
+    terms.push({ field: "title", value, label: `Título: ${value}` });
   });
 
   authorValues.forEach((value) => {
@@ -82,6 +88,7 @@ function normalizeAdvancedFilters(filters) {
   const use = typeof safe.use === "string" && safe.use.length > 0 ? safe.use : null;
 
   const qValues = [];
+  const titleValues = [];
   const authorValues = [];
   const tagValues = [...tags];
   const locationValues = [...locations];
@@ -103,6 +110,8 @@ function normalizeAdvancedFilters(filters) {
         locationValues.push(value);
         break;
       case "title":
+        titleValues.push(value);
+        break;
       case "all":
       default:
         qValues.push(value);
@@ -112,6 +121,7 @@ function normalizeAdvancedFilters(filters) {
 
   return {
     qValues: dedupe(qValues),
+    titleValues: dedupe(titleValues),
     authorValues: dedupe(authorValues),
     tagValues: dedupe(tagValues),
     locationValues: dedupe(locationValues),
@@ -225,6 +235,9 @@ export function useSearchQuery() {
         const normalized = normalizeAdvancedFilters(value);
         if (normalized.qValues.length > 0) {
           assignQueryValue(base, "q", normalized.qValues);
+        }
+        if (normalized.titleValues.length > 0) {
+          assignQueryValue(base, "title", normalized.titleValues);
         }
         if (normalized.authorValues.length > 0) {
           assignQueryValue(base, "author", normalized.authorValues);

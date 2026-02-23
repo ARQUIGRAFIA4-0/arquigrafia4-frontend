@@ -70,7 +70,8 @@
             <button
               class="dropdown-item"
               :class="{ active: currentSearchMode === option.mode }"
-              @click="setSearchMode(option.mode)"
+              :disabled="option.mode === 'cor'"
+              @click="option.mode !== 'cor' && setSearchMode(option.mode)"
             >
               <i :class="['bi', getSearchIcon(option.mode), 'me-2']" />
               {{ option.label }}
@@ -92,6 +93,7 @@
             class="form-control"
             placeholder="Digite o termo de busca"
             v-model="textModel"
+            @keydown.enter="onConfirm"
           />
         </div>
 
@@ -112,6 +114,12 @@
                 type="button"
               >
                 {{ chip.label }}
+                <button
+                  type="button"
+                  class="btn-close ms-1"
+                  aria-label="Remover filtro"
+                  @click.stop="emit('remove-chip', chip)"
+                />
               </button>
               <button
                 v-if="advancedChipsOverflow > 0"
@@ -132,9 +140,10 @@
           v-show="currentSearchMode === 'data'"
         >
           <div class="d-flex align-items-center gap-2">
-            <input type="date" class="form-control" v-model="startDateModel" />
-            <span class="text-branco">a</span>
-            <input type="date" class="form-control" v-model="endDateModel" />
+            <span class="text-preto">De</span>
+            <input type="number" class="form-control" style="width: 6rem;" v-model="startDateModel" placeholder="início" @blur="emitDateRange" @keydown.enter="emitDateRange(); onConfirm()" />
+            <span class="text-preto">a</span>
+            <input type="number" class="form-control" style="width: 6rem;" v-model="endDateModel" placeholder="fim" @blur="emitDateRange" @keydown.enter="emitDateRange(); onConfirm()" />
           </div>
         </div>
 
@@ -175,6 +184,7 @@ import { computed, ref, watch } from "vue";
 import hslToHex from "@/helpers/hslToHex";
 import hexToHue from "@/helpers/hexToHue";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
+import { parseYearFromDateString, setDateYear } from "@/helpers/dateUtils";
 import {
   selectionToViewIcon,
   selectionToViewRoute,
@@ -225,6 +235,7 @@ const emit = defineEmits([
   "update:date-range",
   "update:color",
   "update:map-settings",
+  "remove-chip",
 ]);
 
 const DEFAULT_HUE = 36;
@@ -341,19 +352,29 @@ const dateRangeValue = computed(() => ({
   end: props.dateRange?.end ?? "",
 }));
 
-const startDateModel = computed({
-  get: () => dateRangeValue.value.start,
-  set: (value) => {
-    emit("update:date-range", { ...dateRangeValue.value, start: value });
-  },
-});
+const startDateModel = ref("");
+const endDateModel = ref("");
 
-const endDateModel = computed({
-  get: () => dateRangeValue.value.end,
-  set: (value) => {
-    emit("update:date-range", { ...dateRangeValue.value, end: value });
+watch(
+  dateRangeValue,
+  (val) => {
+    const startYear = parseYearFromDateString(val.start);
+    const endYear = parseYearFromDateString(val.end);
+    if (startYear !== null) startDateModel.value = String(startYear);
+    else if (!val.start) startDateModel.value = "";
+    if (endYear !== null) endDateModel.value = String(endYear);
+    else if (!val.end) endDateModel.value = "";
   },
-});
+  { immediate: true }
+);
+
+function emitDateRange() {
+  const startYear = parseInt(startDateModel.value, 10);
+  const endYear = parseInt(endDateModel.value, 10);
+  const start = Number.isFinite(startYear) ? setDateYear("", startYear, true) : "";
+  const end = Number.isFinite(endYear) ? setDateYear("", endYear, false) : "";
+  emit("update:date-range", { start, end });
+}
 
 const isAdvancedMode = computed(() => currentSearchMode.value === "avancada");
 
@@ -389,11 +410,13 @@ function setSearchMode(mode) {
 
 function resolveConfirmValue() {
   switch (currentSearchMode.value) {
-    case "data":
-      return {
-        start: dateRangeValue.value.start || null,
-        end: dateRangeValue.value.end || null,
-      };
+    case "data": {
+      const startYear = parseInt(startDateModel.value, 10);
+      const endYear = parseInt(endDateModel.value, 10);
+      const start = Number.isFinite(startYear) ? setDateYear("", startYear, true) : "";
+      const end = Number.isFinite(endYear) ? setDateYear("", endYear, false) : "";
+      return { start, end };
+    }
     case "cor":
       return props.color || colorHex.value || null;
     case "avancada":

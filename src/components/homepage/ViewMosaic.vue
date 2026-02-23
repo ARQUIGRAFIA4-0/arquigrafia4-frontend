@@ -1,8 +1,17 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from "vue";
 import MosaicCard from "@/components/MosaicCard.vue";
 import MosaicSkeleton from "@/components/MosaicSkeleton.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
+
+const props = defineProps({
+  search: {
+    type: Object,
+    default: null,
+  },
+});
+
+const emit = defineEmits(["no-results"]);
 
 const columnWidths = [320, 200, 280, 260, 210, 220, 300];
 const isProcessing = ref(false);
@@ -98,14 +107,17 @@ const {
   fetchNextPage,
   isPending,
   isFetchingNextPage,
-} = useImagesInfiniteQuery({ initialLimit: 100 });
+} = useImagesInfiniteQuery({ initialLimit: 100, search: toRef(props, "search") });
+
+watch(rawItems, (val) => {
+  if (props.search && !isPending.value && val.length === 0) {
+    emit("no-results");
+  }
+});
 
 const showSkeleton = computed(() => {
-  // Mostra skeleton se estiver na busca de dados iniciais
   if (isPending.value) return true;
-  // Mostra skeleton se está processando os itens mas nenhum foi renderizado ainda
   if (isProcessing.value && mosaicItems.value.length === 0) return true;
-  // Mostra skeleton se há itens, mas o masonry ainda não está pronto
   if (mosaicItems.value.length > 0 && !isMasonryReady.value) return true;
   return false;
 });
@@ -122,13 +134,19 @@ const tryFetchNextPage = () => {
   fetchNextPage();
 };
 
-/* const handleReachEnd = () => {
-  tryFetchNextPage();
-}; */
+let lastSearchKey = null;
 
 watch(
-  () => rawItems.value,
+  rawItems,
   async (newItems) => {
+    const searchKey = props.search ? JSON.stringify(props.search) : null;
+    if (searchKey !== lastSearchKey) {
+      // Reset when search params change (including going from search to browse)
+      mosaicItems.value = [];
+      processedIds.clear();
+      isMasonryReady.value = false;
+      lastSearchKey = searchKey;
+    }
     await processItems(newItems ?? []);
   },
   { immediate: true }

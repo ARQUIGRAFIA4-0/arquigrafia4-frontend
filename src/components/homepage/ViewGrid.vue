@@ -41,13 +41,33 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted } from "vue";
+import { computed, onBeforeUnmount, onMounted, toRef, watch } from "vue";
 import { RouterLink } from "vue-router";
 import UiCard from "@/components/ui/UiCard.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 
-const { items, hasNextPage, fetchNextPage, isPending, isFetchingNextPage } =
-  useImagesInfiniteQuery();
+const props = defineProps({
+  search: {
+    type: Object,
+    default: null,
+  },
+});
+
+const emit = defineEmits(["no-results"]);
+
+const {
+  items,
+  hasNextPage,
+  fetchNextPage,
+  isPending,
+  isFetchingNextPage,
+} = useImagesInfiniteQuery({ search: toRef(props, "search") });
+
+watch(items, (val) => {
+  if (props.search && !isPending.value && val.length === 0) {
+    emit("no-results");
+  }
+});
 
 const loading = computed(() => isPending.value || isFetchingNextPage.value);
 
