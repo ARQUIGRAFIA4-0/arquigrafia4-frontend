@@ -107,6 +107,8 @@ onMounted(() => {
   isVerifying.value = false;
   isRegistering.value = false;
   isForgotPassword.value = false;
+  showPassword.value = false;
+  showConfirmPassword.value = false;
   // if (!isVerifying.value) {
   //   isRegistering.value = false;
   //   isForgotPassword.value = false;
@@ -286,6 +288,27 @@ onMounted(() => {
             </button>
           </div>
           <small class="form-text text-muted d-block mt-1 form-input-subtitle">Crie uma senha com pelo menos 8 dígitos.</small>
+        </div>
+        <div class="mb-3">
+          <label class="input-label mb-1">Repita a senha</label>
+          <div class="position-relative">
+            <input
+              v-model="formData.confirmPassword"
+              :type="showConfirmPassword ? 'text' : 'password'"
+              class="form-control"
+              placeholder="Confirme sua senha"
+              autocomplete="new-password"
+            />
+            <button
+              type="button"
+              class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3"
+              @click="showConfirmPassword = !showConfirmPassword"
+              tabindex="-1"
+            >
+              <i class="bi" :class="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+          </div>
+          <small class="form-text text-muted d-block mt-1 form-input-subtitle">Repita a senha para confirmar.</small>
         </div>
       </div>
       <div v-else class="login-form-box">
