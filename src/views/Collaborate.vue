@@ -21,7 +21,7 @@ watchEffect(() => {
     <!-- Usuário logado -->
     <div class="upload-image-box">
       <UploadImageBox :show-upload-instructions="true"
-        instructions-title="Colabore com o Arquigrafia<br />enviando suas imagens." />
+        instructions-title="Colabore com o ARQUIGRAFIA<br />enviando suas imagens." />
     </div>
   </div>
 </template>

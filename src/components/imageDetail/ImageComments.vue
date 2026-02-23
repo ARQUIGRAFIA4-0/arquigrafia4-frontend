@@ -44,7 +44,7 @@
 
     <p class="comment-form__disclaimer mt-3">
       <strong>**</strong>
-      Cada usuário é responsável por seus próprios comentários. O Arquigrafia
+      Cada usuário é responsável por seus próprios comentários. O ARQUIGRAFIA
       não se responsabiliza pelos comentários postados, mas apenas por tornar
       indisponível no site o conteúdo considerado infringente ou danoso por
       determinação judicial (art.19 da Lei 12.965/14).

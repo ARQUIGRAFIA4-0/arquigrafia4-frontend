@@ -58,6 +58,12 @@ $breakpoint-md: 768px;
 }
 
 .about-menu {
+  position: sticky;
+  top: 32px;
+  z-index: 100;
+  background-color: #ffffff;
+  padding-right: 1rem;
+
   &__list {
     list-style: none;
     padding: 0;
@@ -67,7 +73,7 @@ $breakpoint-md: 768px;
   &__item {
     margin: 0;
     border-bottom: 0.5px solid var(--Cinza_C, #A6A6A6);
-    padding: 12px 4px 12px 4px;
+    padding: 0;
 
     &:hover {
 
@@ -92,6 +98,8 @@ $breakpoint-md: 768px;
     align-items: center;
     text-decoration: none;
     color: inherit;
+    width: 100%;
+    padding: 12px 4px 12px 4px;
   }
 
   &__text {

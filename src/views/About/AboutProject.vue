@@ -6,28 +6,27 @@
     <div class="col-12 col-md-8">
       <h2 class="about-project__subtitle">Uma experiência de pesquisa baseada na colaboração</h2>
       <div class="d-md-none about-project__mobile-cropped-wrapper">
-        <img src="@/assets/about_project_img_03.jpg" alt="Arquigrafia" class="about-project__mobile-cropped-image" />
+        <img src="@/assets/about_project_img_03.jpg" alt="ARQUIGRAFIA" class="about-project__mobile-cropped-image" />
       </div>
       <p class="about-project__paragraph">A internet pode ser um espaço de intenso compartilhamento de experiências,
         de pesquisa, de aprendizagem e de intercâmbio de conhecimentos. Esse potencial estimulou o desenvolvimento
-        do projeto Arquigrafia: uma
-        plataforma colaborativa de compartilhamento e interpretação de imagens de Arquitetura e Urbanismo na web.
+        do projeto ARQUIGRAFIA: uma plataforma colaborativa de compartilhamento e interpretação de imagens de Arquitetura e Urbanismo na web.
       </p>
       <p class="about-project__paragraph">
-        Como um espaço público, aberto e gratuito o Arquigrafia empreende a construção de uma coleção de imagens
+        Como um espaço público, aberto e gratuito o ARQUIGRAFIA empreende a construção de uma coleção de imagens
         digitais de edifícios e espaços urbanos do Brasil e da comunidade lusófona, a partir da colaboração de
         usuários particulares - estudantes, arquitetos, pesquisadores, docentes, fotógrafos, leigos interessados no
         tema - e usuários institucionais: bibliotecas, museus, grupos de pesquisa, laboratórios, coletivos,
         institutos públicos e privados.
       </p>
       <div class="about-project__horizontal-image-wrapper">
-        <img src="@/assets/about_project_img_01.jpg" alt="Arquigrafia" class="about-project__horizontal-image" />
+        <img src="@/assets/about_project_img_01.jpg" alt="ARQUIGRAFIA" class="about-project__horizontal-image" />
       </div>
       <p class="about-project__paragraph">
         Idealizado em 2008 na Universidade de São Paulo, na Faculdade de Arquitetura e Urbanismo e de Design
         (FAU-USP) como um projeto multidisciplinar em parceria com pesquisadores do Instituto de Matemática e
         Estatística (IMEUSP), da Escola de Comunicação e Artes (ECAUSP) e da Faculdade de Direito do Largo
-        S.Francisco (FDUSP), o Arquigrafia tem como objetivo principal contribuir de maneira complementar para o
+        S.Francisco (FDUSP), o ARQUIGRAFIA tem como objetivo principal contribuir de maneira complementar para o
         ensino e a difusão da cultura arquitetônica e urbanística por meio de interações e juízos críticos sobre
         imagens digitais.
       </p>
@@ -38,32 +37,32 @@
         nível de graduação e pós-graduação, e formando dezenas de jovens pesquisadores de diversas áreas.
       </p>
       <div class="d-md-none about-project__mobile-cropped-wrapper">
-        <img src="@/assets/about_project_img_04.jpg" alt="Arquigrafia" class="about-project__mobile-cropped-image" />
+        <img src="@/assets/about_project_img_04.jpg" alt="ARQUIGRAFIA" class="about-project__mobile-cropped-image" />
       </div>
     </div>
     <div class="d-none d-md-block col-md-4">
       <div class="about-project__vertical-image-wrapper">
-        <img src="@/assets/about_project_img_03.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
+        <img src="@/assets/about_project_img_03.jpg" alt="ARQUIGRAFIA" class="about-project__vertical-image-wrapper" />
       </div>
     </div>
     <div class="col-12 col-md-8">
       <h2 class="about-project__subtitle--quote">
-        Online desde 2011, o Arquigrafia é hoje uma plataforma colaborativa temática com mais de 14 mil imagens de
+        Online desde 2011, o ARQUIGRAFIA é hoje uma plataforma colaborativa temática com mais de 14 mil imagens de
         arquiteturas e espaços urbanos, disponibilizadas para livre acesso, com direitos autorais protegidos por
         licenças Creative Commons.
       </h2>
       <p class="about-project__paragraph">
         Entre 2012 e 2017, em parceria com a Seção de Material Iconográfico da Biblioteca da FAU-USP, a equipe do
-        Arquigrafia desenvolveu um intenso trabalho de conservação de material fotográfico original, digitalização e
+        ARQUIGRAFIA desenvolveu um intenso trabalho de conservação de material fotográfico original, digitalização e
         difusão web que faculta o acesso público e gratuito a um dos mais relevantes acervos de imagens fotográficas
         de arquitetura e urbanismo. Historicamente, esse acervo fotográfico também se constituiu, desde os anos
         1960, de maneira colaborativa, com doações de estudantes, professores e pesquisadores.
       </p>
       <div class="about-project__horizontal-image-wrapper">
-        <img src="@/assets/about_project_img_02.jpg" alt="Arquigrafia" class="about-project__horizontal-image" />
+        <img src="@/assets/about_project_img_02.jpg" alt="ARQUIGRAFIA" class="about-project__horizontal-image" />
       </div>
       <p class="about-project__paragraph">
-        Como reconhecimento dos esforços realizados, o Arquigrafia recebeu o primeiro prêmio na categoria
+        Como reconhecimento dos esforços realizados, o ARQUIGRAFIA recebeu o primeiro prêmio na categoria
         “Tecnologias Sociais Aplicadas e Humanas” da Agência de Inovação USP em novembro de 2011; recebeu em 2013
         uma chancela do Ministério da Cultura (MinC) pela relevância da iniciativa para a cultura brasileira e seu
         mapeamento, e foi o projeto selecionado no edital público “Cultura na Copa 2014” (MinC) na área de
@@ -72,19 +71,19 @@
     </div>
     <div class="d-none d-md-block col-md-4">
       <div class="about-project__vertical-image-wrapper">
-        <img src="@/assets/about_project_img_04.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
+        <img src="@/assets/about_project_img_04.jpg" alt="ARQUIGRAFIA" class="about-project__vertical-image-wrapper" />
       </div>
     </div>
     <div class="col-12 col-md-8">
       <p class="about-project__paragraph">
-        Desde 2022, como projeto temático FAPESP Experiência Arquigrafia 4.0, a equipe aprofunda estudos sobre as
+        Desde 2022, como projeto temático FAPESP Experiência ARQUIGRAFIA 4.0, a equipe aprofunda estudos sobre as
         relações entre a experiência direta e sensível dos ambientes urbanos e suas representações digitais,
         investigando as possibilidades de convergências de dados para uma determinada posição geográfica específica
         em um lugar concreto na cidade. Essa investigação produziu, dentre outros resultados, uma versão 4.0 do
         sistema disponível desde o início de 2026.
       </p>
       <h2 class="about-project__subtitle--quote">
-        Para participar e colaborar com o Arquigrafia basta acessar o site, criar um login e começar a interagir com
+        Para participar e colaborar com o ARQUIGRAFIA basta acessar o site, criar um login e começar a interagir com
         outros usuários e com um universo de imagens digitais originais e em boa parte inéditas.
       </h2>
       <button class="about-project__button" @click="goToLogin">Faça parte da comunidade</button>
@@ -95,20 +94,20 @@
         cadastrados, permite download de imagens em alta resolução.
       </p>
       <div class="d-md-none about-project__mobile-cropped-wrapper">
-        <img src="@/assets/about_project_img_05.jpg" alt="Arquigrafia" class="about-project__mobile-cropped-image" />
+        <img src="@/assets/about_project_img_05.jpg" alt="ARQUIGRAFIA" class="about-project__mobile-cropped-image" />
       </div>
       <p class="about-project__paragraph">
         A plataforma é responsiva, o que possibilita colocar o sistema “na palma da mão” de quem circula pelas
         cidades. Com isso os usuários podem comparar as transformações que um edifício ou um trecho urbano sofreram
         no tempo, além de poder realizar novas fotografias in loco e compartilhar suas contribuições com novas
-        imagens também georreferenciadas no sistema. Desse modo, o Arquigrafia pretende estimular a vivência
+        imagens também georreferenciadas no sistema. Desse modo, o ARQUIGRAFIA pretende estimular a vivência
         sensível, crítica e propositiva dos espaços urbanos, promovendo, assim, também uma maior interação entre
         usuários, tanto online, quanto diretamente nos ambientes urbanos.
       </p>
     </div>
     <div class="d-none d-md-block col-md-4">
       <div class="about-project__vertical-image-wrapper">
-        <img src="@/assets/about_project_img_05.jpg" alt="Arquigrafia" class="about-project__vertical-image-wrapper" />
+        <img src="@/assets/about_project_img_05.jpg" alt="ARQUIGRAFIA" class="about-project__vertical-image-wrapper" />
       </div>
     </div>
   </AboutLayout>

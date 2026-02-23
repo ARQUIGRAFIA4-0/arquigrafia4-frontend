@@ -2,6 +2,7 @@
 import { ref, computed, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useImageUploadStore } from "@/store/imageUploads";
+import { convertFilesIfHeic, isHeicFile } from "@/helpers/convertHeic";
 
 const props = defineProps({
   showUploadInstructions: {
@@ -46,7 +47,7 @@ function openFileDialog() {
 }
 
 async function uploadImages(event) {
-  const files = Array.from(event.target.files);
+  const files = await convertFilesIfHeic(Array.from(event.target.files));
 
   const result = await uploadStore.setImages(files);
   if (!result.success) {
@@ -58,7 +59,7 @@ async function uploadImages(event) {
 }
 
 async function appendImagesToUpload(event) {
-  const newFiles = Array.from(event.target.files);
+  const newFiles = await convertFilesIfHeic(Array.from(event.target.files));
 
   const result = await uploadStore.appendImages(newFiles);
   if (!result.success) {
@@ -83,7 +84,9 @@ async function handleDrop(event) {
   event.preventDefault();
   isDragging.value = false;
   const files = Array.from(event.dataTransfer.files);
-  const filteredFiles = files.filter((file) => file.type.startsWith("image/"));
+  const filteredFiles = files.filter(
+    (file) => file.type.startsWith("image/") || isHeicFile(file)
+  );
 
   if (filteredFiles.length === 0) {
     alertMessage.value = `Você pode enviar apenas arquivos de imagem.`;
@@ -91,7 +94,8 @@ async function handleDrop(event) {
     return;
   }
 
-  const result = await uploadStore.setImages(filteredFiles);
+  const convertedFiles = await convertFilesIfHeic(filteredFiles);
+  const result = await uploadStore.setImages(convertedFiles);
   if (!result.success) {
     alertMessage.value = result.message;
     showAlert.value = true;
@@ -115,7 +119,7 @@ function goToMetadata() {
               class="upload-box__input"
               type="file"
               multiple
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               @change="appendImagesToUpload"
             />
           </label>
@@ -168,7 +172,7 @@ function goToMetadata() {
           type="file"
           ref="fileInputRef"
           multiple
-          accept="image/*"
+          accept="image/*,.heic,.heif"
           @change="uploadImages"
         />
       </div>

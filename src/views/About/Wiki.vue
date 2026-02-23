@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <h1 class="my-4">Wiki Arquigrafia</h1>
+    <h1 class="my-4">Wiki ARQUIGRAFIA</h1>
     <!-- Add content here -->
   </div>
 </template>
