@@ -1,8 +1,29 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import MosaicCard from "@/components/MosaicCard.vue";
 import MosaicSkeleton from "@/components/MosaicSkeleton.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
+
+const route = useRoute();
+
+// Extrai filtros dos parâmetros de consulta da URL
+const filters = computed(() => {
+  const subjects = route.query.subject;
+  const subjectArray = subjects ? (Array.isArray(subjects) ? subjects : [subjects]) : [];
+  const subjectTerm = route.query.subject_term && typeof route.query.subject_term === 'string' 
+    ? route.query.subject_term 
+    : null;
+  
+  const hasFilters = subjectArray.length > 0 || subjectTerm !== null;
+  if (!hasFilters) return undefined;
+  
+  const result = {};
+  if (subjectArray.length > 0) result.subjects = subjectArray;
+  if (subjectTerm) result.subjectTerm = subjectTerm;
+  
+  return result;
+});
 
 const columnWidths = [320, 200, 280, 260, 210, 220, 300];
 const isProcessing = ref(false);
@@ -98,7 +119,7 @@ const {
   fetchNextPage,
   isPending,
   isFetchingNextPage,
-} = useImagesInfiniteQuery({ initialLimit: 100 });
+} = useImagesInfiniteQuery({ initialLimit: 100, filters });
 
 const showSkeleton = computed(() => {
   // Mostra skeleton se estiver na busca de dados iniciais
@@ -125,6 +146,17 @@ const tryFetchNextPage = () => {
 /* const handleReachEnd = () => {
   tryFetchNextPage();
 }; */
+
+// Reseta itens do mosaico quando os filtros mudam
+watch(
+  () => filters.value,
+  () => {
+    processedIds.clear();
+    mosaicItems.value = [];
+    isMasonryReady.value = false;
+  },
+  { deep: true }
+);
 
 watch(
   () => rawItems.value,

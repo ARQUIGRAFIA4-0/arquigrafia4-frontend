@@ -1,22 +1,48 @@
-import { computed } from "vue";
+import { computed, unref } from "vue";
 import { useInfiniteQuery } from "@tanstack/vue-query";
 import { api } from "@/services/api";
 
 export const useImagesInfiniteQuery = (options = {}) => {
-  const { limit, initialLimit, queryKey = ["images"], ...queryOptions } =
-    options;
+  const { limit, initialLimit, filters, queryKey, ...queryOptions } = options;
 
-  const normalizedQueryKey = Array.isArray(queryKey)
-    ? queryKey
-    : [queryKey];
+  // Contrói a chave de consulta dinâmica que inclui filtros para a invalidação adequada do cache
+  const baseKey = queryKey || ["images"];
+  const normalizedBaseKey = Array.isArray(baseKey) ? baseKey : [baseKey];
+  
+  // Torna a chave de consulta reativa usando um computed que desembrulha os filtros se for um ref
+  const dynamicQueryKey = computed(() => {
+    const filtersValue = unref(filters);
+    const hasFilters = filtersValue && (
+      (filtersValue.subjects && filtersValue.subjects.length > 0) ||
+      filtersValue.subjectTerm ||
+      filtersValue.userId
+    );
+    
+    if (hasFilters) {
+      const filterKey = {};
+      if (filtersValue.subjects && filtersValue.subjects.length > 0) {
+        filterKey.subjects = filtersValue.subjects;
+      }
+      if (filtersValue.subjectTerm) {
+        filterKey.subjectTerm = filtersValue.subjectTerm;
+      }
+      if (filtersValue.userId) {
+        filterKey.userId = filtersValue.userId;
+      }
+      return [...normalizedBaseKey, filterKey];
+    }
+    return normalizedBaseKey;
+  });
 
   const query = useInfiniteQuery({
-    queryKey: normalizedQueryKey,
-    queryFn: ({ pageParam = 1 }) =>
-      api.getImages(pageParam, {
+    queryKey: dynamicQueryKey,
+    queryFn: ({ pageParam = 1 }) => {
+      const filtersValue = unref(filters);
+      return api.getImages(pageParam, {
         limit,
         initialLimit,
-      }),
+      }, filtersValue);
+    },
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage?.hasMore) {
         return allPages.length + 1;

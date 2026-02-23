@@ -328,9 +328,12 @@ const searchImages = async () => {
  * @param {number|Object} limitOrOptions - Limite de itens ou objeto de opções
  * @param {number} [limitOrOptions.limit] - Limite de itens por página
  * @param {number} [limitOrOptions.initialLimit] - Limite especial para a primeira página
+ * @param {Object} [filters] - Filtros de busca (subjects, userId, etc.)
+ * @param {Array<string>} [filters.subjects] - IDs dos subjects para filtrar
+ * @param {string} [filters.userId] - ID do usuário para filtrar imagens
  * @returns {Promise<{items: Array<Object>, hasMore: boolean}>} Objeto com itens e indicador de mais páginas
  */
-const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT) => {
+const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT, filters = {}) => {
   // const options =
   //   typeof limitOrOptions === "number"
   //     ? { limit: limitOrOptions }
@@ -340,8 +343,31 @@ const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT) => {
   // const perPage = limit;
 
   const apiBaseUrl = "https://api-dev.arquigrafia.org.br";
-  // const apiUrl = `${apiBaseUrl}/api/images?page=${page}&per_page=${perPage}`;
-  const apiUrl = `${apiBaseUrl}/api/images?page=${page}`;
+  
+  // Constrói a query string com os filtros
+  const queryParams = new URLSearchParams();
+  queryParams.append('page', page);
+  
+  // Adiciona filtro de subjects (IDs específicos) se presente
+  if (filters.subjects && Array.isArray(filters.subjects)) {
+    filters.subjects.forEach(subjectId => {
+      if (subjectId) {
+        queryParams.append('subject[]', subjectId);
+      }
+    });
+  }
+  
+  // Adiciona filtro de subject_term (busca parcial por termo) se presente
+  if (filters.subjectTerm && typeof filters.subjectTerm === 'string') {
+    queryParams.append('subject_term', filters.subjectTerm);
+  }
+  
+  // Adiciona filtro de usuário se presente
+  if (filters.userId) {
+    queryParams.append('user_id', filters.userId);
+  }
+  
+  const apiUrl = `${apiBaseUrl}/api/images?${queryParams.toString()}`;
 
   try {
     const response = await fetch(apiUrl);
@@ -381,6 +407,66 @@ const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT) => {
 };
 
 /**
+ * Busca o total de imagens cadastradas no sistema
+ * Faz uma chamada mínima à API (per_page=1) para obter apenas o total
+ * @returns {Promise<number>} Total de imagens cadastradas
+ */
+const getTotalImages = async () => {
+  const apiBaseUrl = "https://api-dev.arquigrafia.org.br";
+  const apiUrl = `${apiBaseUrl}/api/images?per_page=1`;
+
+  try {
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch images total: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.meta?.total || 0;
+  } catch (error) {
+    console.error("Error fetching images total:", error);
+    return 0;
+  }
+};
+
+/**
+ * Busca um subject específico por ID
+ * @param {string} id - UUID do subject
+ * @returns {Promise<{id: string, term: string}|null>} Objeto com id e term, ou null em caso de erro
+ */
+const getSubjectById = async (id) => {
+  if (!id || typeof id !== 'string') {
+    console.error('getSubjectById: ID inválido', id);
+    return null;
+  }
+
+  const apiBaseUrl = "https://api-dev.arquigrafia.org.br";
+  const apiUrl = `${apiBaseUrl}/api/vrac-subjects/${id}`;
+
+  try {
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch subject: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    const term = responseData.data?.term;
+
+    if (!term) {
+      console.warn(`Subject ${id} sem termo válido`);
+      return null;
+    }
+
+    return { id, term };
+  } catch (error) {
+    console.error(`Error fetching subject ${id}:`, error);
+    return null;
+  }
+};
+
+/**
  * Objeto de API com métodos para interação com o backend
  * @namespace api
  * @property {Function} getImages - Obtém imagens paginadas da API
@@ -390,6 +476,8 @@ const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT) => {
  * @property {Function} getImageComments - Obtém comentários de uma imagem
  * @property {Function} getPublishingIdentities - Obtém identidades de publicação
  * @property {Function} searchImages - Busca imagens por parâmetros
+ * @property {Function} getTotalImages - Obtém o total de imagens cadastradas
+ * @property {Function} getSubjectById - Obtém subject por ID
  */
 export const api = {
   getImages: fetchImages, // Agora usa a API real
@@ -399,4 +487,6 @@ export const api = {
   getImageComments,
   getPublishingIdentities,
   searchImages,
+  getTotalImages,
+  getSubjectById,
 };

@@ -43,7 +43,7 @@ $breakpoint-md: 768px;
 
   @include md {
     margin-top: 0px;
-    padding: 8px 40px;
+    padding: 8px 50px;
   }
 
   &__content {

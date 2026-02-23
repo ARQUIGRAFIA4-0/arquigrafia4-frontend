@@ -16,11 +16,13 @@ export const useAuthStore = defineStore("auth", () => {
   const isLoading = ref(false);
   const isForgotPassword = ref(false);
   const showPassword = ref(false);
+  const showConfirmPassword = ref(false);
   const verificationEmail = ref("");
   const initialFormState = {
     username: "",
     email: "",
     password: "",
+    confirmPassword: "",
     remember: false,
   };
   const formData = ref({ ...initialFormState });
@@ -81,7 +83,8 @@ export const useAuthStore = defineStore("auth", () => {
     if (
       !formData.value.username ||
       !formData.value.email ||
-      !formData.value.password
+      !formData.value.password ||
+      !formData.value.confirmPassword
     ) {
       return { success: false, message: "Preencha todos os campos!" };
     }
@@ -96,6 +99,10 @@ export const useAuthStore = defineStore("auth", () => {
     // Validate password length
     if (formData.value.password.length < 8) {
       return { success: false, message: "A senha deve ter no mínimo 8 caracteres." };
+    }
+    // Validate passwords match
+    if (formData.value.password !== formData.value.confirmPassword) {
+      return { success: false, message: "As senhas não coincidem." };
     }
     try {
       await registerUser({
@@ -117,6 +124,8 @@ export const useAuthStore = defineStore("auth", () => {
   async function toggleRegister() {
     isRegistering.value = !isRegistering.value;
     isVerifying.value = false;
+    showPassword.value = false;
+    showConfirmPassword.value = false;
     resetForm();
     verificationDigits.value = Array(6).fill("");
   }
@@ -368,6 +377,7 @@ export const useAuthStore = defineStore("auth", () => {
     authHeader,
     pageTitle,
     showPassword,
+    showConfirmPassword,
     isCodeComplete,
     isForgotPassword,
     toggleRegister,

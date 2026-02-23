@@ -71,6 +71,7 @@
             :date-range="dateRange"
             :color="selectedColor"
             :advanced-filters="advancedFilters"
+            :active-filters="activeUrlFilters"
             :view-selection="viewSelection"
             :map-settings="mapSettings"
             data-cy="toolbar-desktop"
@@ -83,6 +84,7 @@
             @view-subcontrol="handleToolbarViewSubcontrol"
             @open-advanced-search="openAdvancedSearch"
             @confirm="handleToolbarConfirm"
+            @remove-filter="handleRemoveFilter"
           />
         </template>
       </div>
@@ -148,7 +150,7 @@ import {
   selectionToViewRoute,
   viewRouteToSelection,
 } from "@/constants/viewModes";
-import { useSearchQuery } from "@/composables/useSearchQuery";
+import { useSearchQuery, extractActiveFilters } from "@/composables/useSearchQuery";
 import { api } from "@/services/api";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 
@@ -177,6 +179,9 @@ function normalizeMapSettings(value) {
 }
 
 const mapSettings = ref(normalizeMapSettings(mapSettingsQuery.value));
+
+// Extrai filtros ativos da URL (independente do searchMode)
+const activeUrlFilters = computed(() => extractActiveFilters(route.query));
 
 watch(
   mapSettingsQuery,
@@ -221,7 +226,7 @@ function syncFromSnapshot(mode) {
         ...createDefaultAdvancedFilters(),
         terms: snapshot.value?.terms || [],
         locations: snapshot.value?.locations || [],
-        tags: snapshot.value?.tags || [],
+        subjects: snapshot.value?.subjects || [],
         use: snapshot.value?.use || null,
       };
       break;
@@ -321,6 +326,48 @@ function handleToolbarViewSubcontrol(payload) {
   updateMapSettings(payload.value);
 }
 
+function handleRemoveFilter(filter) {
+  if (filter.type === "subject") {
+    const currentQuery = { ...route.query };
+    
+    // Obter array de subjects atuais
+    let subjects = [];
+    if (Array.isArray(currentQuery.subject)) {
+      subjects = currentQuery.subject.filter((id) => id !== filter.value);
+    } else if (typeof currentQuery.subject === "string") {
+      if (currentQuery.subject !== filter.value) {
+        subjects = [currentQuery.subject];
+      }
+    }
+    
+    // Remover subject da query ou atualizar com novo array
+    if (subjects.length === 0) {
+      delete currentQuery.subject;
+    } else {
+      currentQuery.subject = subjects;
+    }
+    
+    // Navegar com a nova query
+    router.push({
+      name: route.name,
+      params: route.params,
+      query: currentQuery,
+    });
+  } else if (filter.type === "subjectTerm") {
+    const currentQuery = { ...route.query };
+    
+    // Remover subject_term da query
+    delete currentQuery.subject_term;
+    
+    // Navegar com a nova query
+    router.push({
+      name: route.name,
+      params: route.params,
+      query: currentQuery,
+    });
+  }
+}
+
 function handleDrawerTextOpen() {
   syncFromSnapshot("avancada");
 }
@@ -384,7 +431,7 @@ function handleAdvancedFiltersUpdate(filters) {
     ...createDefaultAdvancedFilters(),
     terms: filters?.terms || [],
     locations: filters?.locations || [],
-    tags: filters?.tags || [],
+    subjects: filters?.subjects || [],
     use: filters?.use || null,
   };
 }
