@@ -40,11 +40,11 @@
       <div class="row g-2 align-items-end mb-3">
         <div class="col">
           <label class="form-label">De</label>
-          <input v-model="dateFrom" type="date" class="form-control" />
+          <input v-model.number="yearMin" type="number" class="form-control" placeholder="Ano início" :min="minYearBound" :max="maxYearBound" />
         </div>
         <div class="col">
           <label class="form-label">Até</label>
-          <input v-model="dateTo" type="date" class="form-control" />
+          <input v-model.number="yearMax" type="number" class="form-control" placeholder="Ano fim" :min="minYearBound" :max="maxYearBound" />
         </div>
       </div>
 

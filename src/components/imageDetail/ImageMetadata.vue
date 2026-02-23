@@ -52,7 +52,7 @@
           :key="subject.id"
           type="button"
           class="btn btn-outline-primary btn-sm btn-tag"
-          @click="handleTagClick(subject)"
+          @click="searchBySubject(subject)"
         >
           {{ subject.term }}
         </button>
@@ -97,6 +97,7 @@ import { computed } from "vue";
 import { RouterLink, useRouter } from "vue-router";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import { findLicenseByUrl } from "@/constants/creativeCommonsLicenses";
+import { DEFAULT_VIEW_ROUTE } from "@/constants/viewModes";
 
 const router = useRouter();
 
@@ -106,6 +107,14 @@ const props = defineProps({
     default: null,
   },
 });
+
+function searchBySubject(subject) {
+  router.push({
+    name: "explore",
+    params: { viewMode: DEFAULT_VIEW_ROUTE },
+    query: { searchMode: "avancada", subject: subject.id },
+  });
+}
 
 const uploaderName = computed(() => props.image?.uploader?.name ?? null);
 const uploaderAvatar = computed(() => props.image?.uploader?.avatar ?? null);
@@ -177,13 +186,6 @@ const markerPosition = computed(() => {
   return { lng, lat };
 });
 
-const handleTagClick = (subject) => {
-  // Navega para visualização de grid com filtro de subject (substitui qualquer filtro de subject existente)
-  router.push({
-    path: '/explore/acervo/grid',
-    query: { subject: subject.id }
-  });
-};
 </script>
 
 <style lang="scss" scoped>

@@ -35,13 +35,13 @@
 
       <template v-else-if="viewMode === 'grid'">
         <div class="container-grid" data-cy="view-grid">
-          <view-grid />
+          <view-grid :search="activeSearch" @no-results="handleNoResults" />
         </div>
       </template>
 
       <template v-else-if="viewMode === 'mosaic'">
         <div class="container-mosaic pb-4" data-cy="view-mosaic">
-          <view-mosaic />
+          <view-mosaic :search="activeSearch" @no-results="handleNoResults" />
         </div>
       </template>
 
@@ -71,7 +71,6 @@
             :date-range="dateRange"
             :color="selectedColor"
             :advanced-filters="advancedFilters"
-            :active-filters="activeUrlFilters"
             :view-selection="viewSelection"
             :map-settings="mapSettings"
             data-cy="toolbar-desktop"
@@ -84,7 +83,7 @@
             @view-subcontrol="handleToolbarViewSubcontrol"
             @open-advanced-search="openAdvancedSearch"
             @confirm="handleToolbarConfirm"
-            @remove-filter="handleRemoveFilter"
+            @remove-chip="handleRemoveChip"
           />
         </template>
       </div>
@@ -150,8 +149,7 @@ import {
   selectionToViewRoute,
   viewRouteToSelection,
 } from "@/constants/viewModes";
-import { useSearchQuery, extractActiveFilters } from "@/composables/useSearchQuery";
-import { api } from "@/services/api";
+import { useSearchQuery } from "@/composables/useSearchQuery";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 
 const route = useRoute();
@@ -180,8 +178,6 @@ function normalizeMapSettings(value) {
 
 const mapSettings = ref(normalizeMapSettings(mapSettingsQuery.value));
 
-// Extrai filtros ativos da URL (independente do searchMode)
-const activeUrlFilters = computed(() => extractActiveFilters(route.query));
 
 watch(
   mapSettingsQuery,
@@ -235,13 +231,63 @@ function syncFromSnapshot(mode) {
   }
 }
 
+const hasNoResults = ref(false);
+const activeSearch = ref(null);
+
 syncFromSnapshot(searchMode.value);
 
-watch(
-  () => searchMode.value,
-  (mode) => {
-    syncFromSnapshot(mode);
+// If the URL already contains search parameters, trigger the search on load
+{
+  const snapshot = loadSnapshot(searchMode.value);
+  const hasValue =
+    snapshot.mode === "textual"
+      ? Boolean(snapshot.value)
+      : snapshot.mode === "data"
+        ? Boolean(snapshot.value?.start || snapshot.value?.end)
+        : snapshot.mode === "cor"
+          ? Boolean(snapshot.value)
+          : snapshot.mode === "avancada"
+            ? Boolean(
+                snapshot.value?.terms?.length ||
+                  snapshot.value?.locations?.length ||
+                  snapshot.value?.tags?.length ||
+                  snapshot.value?.subjects?.length ||
+                  snapshot.value?.use
+              )
+            : false;
+
+  if (hasValue) {
+    performSearch({ mode: snapshot.mode, value: snapshot.value });
   }
+}
+
+watch(
+  () => route.query,
+  () => {
+    const mode = searchMode.value;
+    syncFromSnapshot(mode);
+    const snapshot = loadSnapshot(mode);
+    const hasValue =
+      snapshot.mode === "textual"
+        ? Boolean(snapshot.value)
+        : snapshot.mode === "data"
+          ? Boolean(snapshot.value?.start || snapshot.value?.end)
+          : snapshot.mode === "cor"
+            ? Boolean(snapshot.value)
+            : snapshot.mode === "avancada"
+              ? Boolean(
+                  snapshot.value?.terms?.length ||
+                  snapshot.value?.locations?.length ||
+                  snapshot.value?.tags?.length ||
+                  snapshot.value?.subjects?.length ||
+                  snapshot.value?.use
+                )
+              : false;
+    if (hasValue) {
+      performSearch({ mode: snapshot.mode, value: snapshot.value });
+    }
+  },
+  { deep: true }
 );
 
 watch(
@@ -279,9 +325,9 @@ function handleViewChange({ selection }) {
   updateRoute(selection);
 }
 
-async function handleToolbarConfirm({ mode, value }) {
+function handleToolbarConfirm({ mode, value }) {
   submitSearch({ mode, value });
-  await performSearch({ mode, value });
+  performSearch({ mode, value });
 }
 
 async function handleToolbarSearchModeChange(mode) {
@@ -315,57 +361,15 @@ function openAdvancedSearch() {
   modalAdvancedSearch.value = true;
 }
 
-async function confirmAdvancedSearch(payload) {
+function confirmAdvancedSearch(payload) {
   handleAdvancedFiltersUpdate(payload);
   submitSearch({ mode: "avancada", value: advancedFilters.value });
   modalAdvancedSearch.value = false;
-  await performSearch({ mode: "avancada", value: advancedFilters.value });
+  performSearch({ mode: "avancada", value: advancedFilters.value });
 }
 
 function handleToolbarViewSubcontrol(payload) {
   updateMapSettings(payload.value);
-}
-
-function handleRemoveFilter(filter) {
-  if (filter.type === "subject") {
-    const currentQuery = { ...route.query };
-    
-    // Obter array de subjects atuais
-    let subjects = [];
-    if (Array.isArray(currentQuery.subject)) {
-      subjects = currentQuery.subject.filter((id) => id !== filter.value);
-    } else if (typeof currentQuery.subject === "string") {
-      if (currentQuery.subject !== filter.value) {
-        subjects = [currentQuery.subject];
-      }
-    }
-    
-    // Remover subject da query ou atualizar com novo array
-    if (subjects.length === 0) {
-      delete currentQuery.subject;
-    } else {
-      currentQuery.subject = subjects;
-    }
-    
-    // Navegar com a nova query
-    router.push({
-      name: route.name,
-      params: route.params,
-      query: currentQuery,
-    });
-  } else if (filter.type === "subjectTerm") {
-    const currentQuery = { ...route.query };
-    
-    // Remover subject_term da query
-    delete currentQuery.subject_term;
-    
-    // Navegar com a nova query
-    router.push({
-      name: route.name,
-      params: route.params,
-      query: currentQuery,
-    });
-  }
 }
 
 function handleDrawerTextOpen() {
@@ -380,25 +384,25 @@ function handleDrawerDateOpen() {
   syncFromSnapshot("data");
 }
 
-async function confirmColor(color) {
+function confirmColor(color) {
   selectedColor.value = color;
   submitSearch({ mode: "cor", value: color });
   drawerSearchColor.value = false;
-  await performSearch({ mode: "cor", value: color });
+  performSearch({ mode: "cor", value: color });
 }
 
-async function confirmDate(range) {
+function confirmDate(range) {
   dateRange.value = { ...range };
   submitSearch({ mode: "data", value: range });
   drawerSearchDate.value = false;
-  await performSearch({ mode: "data", value: range });
+  performSearch({ mode: "data", value: range });
 }
 
-async function confirmAdvancedDrawer({ value }) {
+function confirmAdvancedDrawer({ value }) {
   handleAdvancedFiltersUpdate(value);
   submitSearch({ mode: "avancada", value: advancedFilters.value });
   drawerSearchText.value = false;
-  await performSearch({ mode: "avancada", value: advancedFilters.value });
+  performSearch({ mode: "avancada", value: advancedFilters.value });
 }
 
 function handleMobileSearchModeChange(mode) {
@@ -431,22 +435,50 @@ function handleAdvancedFiltersUpdate(filters) {
     ...createDefaultAdvancedFilters(),
     terms: filters?.terms || [],
     locations: filters?.locations || [],
+    tags: filters?.tags || [],
     subjects: filters?.subjects || [],
     use: filters?.use || null,
   };
 }
 
-const hasNoResults = ref(false);
-const isSearching = ref(false);
-
-async function performSearch({ mode, value }) {
-  isSearching.value = true;
-  try {
-    const result = await api.searchImages({ mode, value });
-    hasNoResults.value = result.items.length === 0;
-  } finally {
-    isSearching.value = false;
+function handleRemoveChip(chip) {
+  const filters = { ...advancedFilters.value };
+  if (chip.type === "term") {
+    filters.terms = filters.terms.filter((_, i) => i !== chip.index);
+  } else if (chip.type === "location") {
+    filters.locations = filters.locations.filter((_, i) => i !== chip.index);
+  } else if (chip.type === "tag") {
+    filters.tags = filters.tags.filter((_, i) => i !== chip.index);
+  } else if (chip.type === "subject") {
+    filters.subjects = filters.subjects.filter((_, i) => i !== chip.index);
+  } else if (chip.type === "use") {
+    filters.use = null;
   }
+  handleAdvancedFiltersUpdate(filters);
+  submitSearch({ mode: "avancada", value: advancedFilters.value });
+
+  const isEmpty =
+    !advancedFilters.value.terms?.length &&
+    !advancedFilters.value.locations?.length &&
+    !advancedFilters.value.tags?.length &&
+    !advancedFilters.value.subjects?.length &&
+    !advancedFilters.value.use;
+
+  if (isEmpty) {
+    hasNoResults.value = false;
+    activeSearch.value = null;
+  } else {
+    performSearch({ mode: "avancada", value: advancedFilters.value });
+  }
+}
+
+function performSearch({ mode, value }) {
+  hasNoResults.value = false;
+  activeSearch.value = { mode, value };
+}
+
+function handleNoResults() {
+  hasNoResults.value = true;
 }
 
 function handleClearSearch() {
@@ -455,6 +487,7 @@ function handleClearSearch() {
   selectedColor.value = null;
   advancedFilters.value = createDefaultAdvancedFilters();
   hasNoResults.value = false;
+  activeSearch.value = null;
 }
 
 function handleNewSearch() {

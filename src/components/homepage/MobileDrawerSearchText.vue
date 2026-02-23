@@ -30,6 +30,7 @@
             type="text"
             class="form-control border-preto border-end-0"
             placeholder="Digite o termo de busca"
+            @keydown.enter="addSearchTerm"
           />
           <button
             class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"

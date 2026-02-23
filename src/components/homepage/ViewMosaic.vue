@@ -1,29 +1,18 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from "vue";
 import MosaicCard from "@/components/MosaicCard.vue";
 import MosaicSkeleton from "@/components/MosaicSkeleton.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 
-const route = useRoute();
-
-// Extrai filtros dos parâmetros de consulta da URL
-const filters = computed(() => {
-  const subjects = route.query.subject;
-  const subjectArray = subjects ? (Array.isArray(subjects) ? subjects : [subjects]) : [];
-  const subjectTerm = route.query.subject_term && typeof route.query.subject_term === 'string' 
-    ? route.query.subject_term 
-    : null;
-  
-  const hasFilters = subjectArray.length > 0 || subjectTerm !== null;
-  if (!hasFilters) return undefined;
-  
-  const result = {};
-  if (subjectArray.length > 0) result.subjects = subjectArray;
-  if (subjectTerm) result.subjectTerm = subjectTerm;
-  
-  return result;
+const props = defineProps({
+  search: {
+    type: Object,
+    default: null,
+  },
 });
+
+const emit = defineEmits(["no-results"]);
+
 
 const columnWidths = [320, 200, 280, 260, 210, 220, 300];
 const isProcessing = ref(false);
@@ -119,14 +108,17 @@ const {
   fetchNextPage,
   isPending,
   isFetchingNextPage,
-} = useImagesInfiniteQuery({ initialLimit: 100, filters });
+} = useImagesInfiniteQuery({ initialLimit: 100, search: toRef(props, "search") });
+
+watch(rawItems, (val) => {
+  if (props.search && !isPending.value && val.length === 0) {
+    emit("no-results");
+  }
+});
 
 const showSkeleton = computed(() => {
-  // Mostra skeleton se estiver na busca de dados iniciais
   if (isPending.value) return true;
-  // Mostra skeleton se está processando os itens mas nenhum foi renderizado ainda
   if (isProcessing.value && mosaicItems.value.length === 0) return true;
-  // Mostra skeleton se há itens, mas o masonry ainda não está pronto
   if (mosaicItems.value.length > 0 && !isMasonryReady.value) return true;
   return false;
 });
@@ -143,24 +135,19 @@ const tryFetchNextPage = () => {
   fetchNextPage();
 };
 
-/* const handleReachEnd = () => {
-  tryFetchNextPage();
-}; */
-
-// Reseta itens do mosaico quando os filtros mudam
-watch(
-  () => filters.value,
-  () => {
-    processedIds.clear();
-    mosaicItems.value = [];
-    isMasonryReady.value = false;
-  },
-  { deep: true }
-);
+let lastSearchKey = null;
 
 watch(
-  () => rawItems.value,
+  rawItems,
   async (newItems) => {
+    const searchKey = props.search ? JSON.stringify(props.search) : null;
+    if (searchKey !== lastSearchKey) {
+      // Reset when search params change (including going from search to browse)
+      mosaicItems.value = [];
+      processedIds.clear();
+      isMasonryReady.value = false;
+      lastSearchKey = searchKey;
+    }
     await processItems(newItems ?? []);
   },
   { immediate: true }

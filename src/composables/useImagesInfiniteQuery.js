@@ -1,47 +1,31 @@
-import { computed, unref } from "vue";
+import { computed, toValue } from "vue";
 import { useInfiniteQuery } from "@tanstack/vue-query";
 import { api } from "@/services/api";
 
 export const useImagesInfiniteQuery = (options = {}) => {
-  const { limit, initialLimit, filters, queryKey, ...queryOptions } = options;
+  const { limit, initialLimit, search, queryKey = ["images"], ...queryOptions } =
+    options;
 
-  // Contrói a chave de consulta dinâmica que inclui filtros para a invalidação adequada do cache
-  const baseKey = queryKey || ["images"];
-  const normalizedBaseKey = Array.isArray(baseKey) ? baseKey : [baseKey];
-  
-  // Torna a chave de consulta reativa usando um computed que desembrulha os filtros se for um ref
-  const dynamicQueryKey = computed(() => {
-    const filtersValue = unref(filters);
-    const hasFilters = filtersValue && (
-      (filtersValue.subjects && filtersValue.subjects.length > 0) ||
-      filtersValue.subjectTerm ||
-      filtersValue.userId
-    );
-    
-    if (hasFilters) {
-      const filterKey = {};
-      if (filtersValue.subjects && filtersValue.subjects.length > 0) {
-        filterKey.subjects = filtersValue.subjects;
-      }
-      if (filtersValue.subjectTerm) {
-        filterKey.subjectTerm = filtersValue.subjectTerm;
-      }
-      if (filtersValue.userId) {
-        filterKey.userId = filtersValue.userId;
-      }
-      return [...normalizedBaseKey, filterKey];
+  const normalizedBaseKey = Array.isArray(queryKey)
+    ? queryKey
+    : [queryKey];
+
+  const resolvedQueryKey = computed(() => {
+    const searchVal = toValue(search);
+    if (searchVal) {
+      return [...normalizedBaseKey, "search", searchVal];
     }
     return normalizedBaseKey;
   });
 
   const query = useInfiniteQuery({
-    queryKey: dynamicQueryKey,
+    queryKey: resolvedQueryKey,
     queryFn: ({ pageParam = 1 }) => {
-      const filtersValue = unref(filters);
-      return api.getImages(pageParam, {
-        limit,
-        initialLimit,
-      }, filtersValue);
+      const searchVal = toValue(search);
+      if (searchVal) {
+        return api.searchImages({ ...searchVal, page: pageParam });
+      }
+      return api.getImages(pageParam, { limit, initialLimit });
     },
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage?.hasMore) {

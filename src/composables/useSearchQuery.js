@@ -6,10 +6,12 @@ const SEARCH_MODE_KEY = "searchMode";
 
 const SEARCH_KEYS = [
   "q",
+  "title",
   "dateStart",
   "dateEnd",
   "color",
   "subject",
+  "subject_term",
   "author",
   "location",
   "use",
@@ -51,10 +53,12 @@ function assignQueryValue(target, key, value) {
 
 function buildAdvancedFiltersFromQuery(query) {
   const qValues = toArray(query.q);
+  const titleValues = toArray(query.title);
   const authorValues = toArray(query.author);
   const subjects = toArray(query.subject);
   const locations = toArray(query.location);
   const useValue = typeof query.use === "string" && query.use.length > 0 ? query.use : null;
+  const subjectTermRaw = typeof query.subject_term === "string" ? query.subject_term : null;
 
   const terms = [];
 
@@ -62,9 +66,17 @@ function buildAdvancedFiltersFromQuery(query) {
     terms.push({ field: "all", value, label: `Todos os campos: ${value}` });
   });
 
+  titleValues.forEach((value) => {
+    terms.push({ field: "title", value, label: `Título: ${value}` });
+  });
+
   authorValues.forEach((value) => {
     terms.push({ field: "author", value, label: `Autoria: ${value}` });
   });
+
+  if (subjectTermRaw) {
+    terms.push({ field: "tag", value: subjectTermRaw, label: `Tag: ${subjectTermRaw}` });
+  }
 
   return {
     terms,
@@ -79,10 +91,13 @@ function normalizeAdvancedFilters(filters) {
   const terms = Array.isArray(safe.terms) ? safe.terms : [];
   const locations = Array.isArray(safe.locations) ? safe.locations : [];
   const subjects = Array.isArray(safe.subjects) ? safe.subjects : [];
+  const tags = Array.isArray(safe.tags) ? safe.tags : [];
   const use = typeof safe.use === "string" && safe.use.length > 0 ? safe.use : null;
 
   const qValues = [];
+  const titleValues = [];
   const authorValues = [];
+  const subjectTermValues = [];
   const subjectValues = [...subjects];
   const locationValues = [...locations];
 
@@ -103,6 +118,11 @@ function normalizeAdvancedFilters(filters) {
         locationValues.push(value);
         break;
       case "title":
+        titleValues.push(value);
+        break;
+      case "tag":
+        subjectTermValues.push(value);
+        break;
       case "all":
       default:
         qValues.push(value);
@@ -110,9 +130,17 @@ function normalizeAdvancedFilters(filters) {
     }
   });
 
+  tags.forEach((tag) => {
+    if (typeof tag === "string" && tag.length > 0) {
+      subjectTermValues.push(tag);
+    }
+  });
+
   return {
     qValues: dedupe(qValues),
+    titleValues: dedupe(titleValues),
     authorValues: dedupe(authorValues),
+    subjectTermValues: dedupe(subjectTermValues),
     subjectValues: dedupe(subjectValues),
     locationValues: dedupe(locationValues),
     use,
@@ -226,8 +254,14 @@ export function useSearchQuery() {
         if (normalized.qValues.length > 0) {
           assignQueryValue(base, "q", normalized.qValues);
         }
+        if (normalized.titleValues.length > 0) {
+          assignQueryValue(base, "title", normalized.titleValues);
+        }
         if (normalized.authorValues.length > 0) {
           assignQueryValue(base, "author", normalized.authorValues);
+        }
+        if (normalized.subjectTermValues.length > 0) {
+          assignQueryValue(base, "subject_term", normalized.subjectTermValues[0]);
         }
         if (normalized.subjectValues.length > 0) {
           assignQueryValue(base, "subject", normalized.subjectValues);

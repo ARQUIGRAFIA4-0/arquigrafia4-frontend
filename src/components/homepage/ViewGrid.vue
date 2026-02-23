@@ -47,34 +47,37 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted } from "vue";
-import { RouterLink, useRoute, useRouter } from "vue-router";
+import { computed, onBeforeUnmount, onMounted, toRef, watch } from "vue";
+import { RouterLink, useRouter, useRoute } from "vue-router";
 import UiCard from "@/components/ui/UiCard.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
+import { DEFAULT_VIEW_ROUTE } from "@/constants/viewModes";
 
-const route = useRoute();
 const router = useRouter();
+const route = useRoute();
 
-// Extrai filtros dos parâmetros de consulta da URL
-const filters = computed(() => {
-  const subjects = route.query.subject;
-  const subjectArray = subjects ? (Array.isArray(subjects) ? subjects : [subjects]) : [];
-  const subjectTerm = route.query.subject_term && typeof route.query.subject_term === 'string' 
-    ? route.query.subject_term 
-    : null;
-  
-  const hasFilters = subjectArray.length > 0 || subjectTerm !== null;
-  if (!hasFilters) return undefined;
-  
-  const result = {};
-  if (subjectArray.length > 0) result.subjects = subjectArray;
-  if (subjectTerm) result.subjectTerm = subjectTerm;
-  
-  return result;
+const props = defineProps({
+  search: {
+    type: Object,
+    default: null,
+  },
 });
 
-const { items, hasNextPage, fetchNextPage, isPending, isFetchingNextPage } =
-  useImagesInfiniteQuery({ initialLimit: 100, filters });
+const emit = defineEmits(["no-results"]);
+
+const {
+  items,
+  hasNextPage,
+  fetchNextPage,
+  isPending,
+  isFetchingNextPage,
+} = useImagesInfiniteQuery({ search: toRef(props, "search") });
+
+watch(items, (val) => {
+  if (props.search && !isPending.value && val.length === 0) {
+    emit("no-results");
+  }
+});
 
 const loading = computed(() => isPending.value || isFetchingNextPage.value);
 
@@ -113,10 +116,11 @@ const handleImageError = (event) => {
 };
 
 const handleTagClick = (subject) => {
-  // Navega para visualização de grid com filtro de subject (substitui qualquer filtro de subject existente)
+  const currentViewMode = route.params.viewMode || DEFAULT_VIEW_ROUTE;
   router.push({
-    path: '/explore/acervo/grid',
-    query: { subject: subject.id }
+    name: "explore",
+    params: { viewMode: currentViewMode },
+    query: { searchMode: "avancada", subject: subject.id },
   });
 };
 
