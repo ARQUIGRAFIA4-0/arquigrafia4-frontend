@@ -431,6 +431,42 @@ const getTotalImages = async () => {
 };
 
 /**
+ * Busca um subject específico por ID
+ * @param {string} id - UUID do subject
+ * @returns {Promise<{id: string, term: string}|null>} Objeto com id e term, ou null em caso de erro
+ */
+const getSubjectById = async (id) => {
+  if (!id || typeof id !== 'string') {
+    console.error('getSubjectById: ID inválido', id);
+    return null;
+  }
+
+  const apiBaseUrl = "https://api-dev.arquigrafia.org.br";
+  const apiUrl = `${apiBaseUrl}/api/vrac-subjects/${id}`;
+
+  try {
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch subject: ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    const term = responseData.data?.term;
+
+    if (!term) {
+      console.warn(`Subject ${id} sem termo válido`);
+      return null;
+    }
+
+    return { id, term };
+  } catch (error) {
+    console.error(`Error fetching subject ${id}:`, error);
+    return null;
+  }
+};
+
+/**
  * Objeto de API com métodos para interação com o backend
  * @namespace api
  * @property {Function} getImages - Obtém imagens paginadas da API
@@ -441,6 +477,7 @@ const getTotalImages = async () => {
  * @property {Function} getPublishingIdentities - Obtém identidades de publicação
  * @property {Function} searchImages - Busca imagens por parâmetros
  * @property {Function} getTotalImages - Obtém o total de imagens cadastradas
+ * @property {Function} getSubjectById - Obtém subject por ID
  */
 export const api = {
   getImages: fetchImages, // Agora usa a API real
@@ -451,4 +488,5 @@ export const api = {
   getPublishingIdentities,
   searchImages,
   getTotalImages,
+  getSubjectById,
 };
