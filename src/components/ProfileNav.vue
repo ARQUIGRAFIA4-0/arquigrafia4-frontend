@@ -12,18 +12,18 @@ const props = defineProps({
 const navItems = computed(() => {
   const publicNavItems = [
     { label: 'Imagens', value: 'Imagens' },
-    { label: 'Álbuns', value: 'Álbuns' },
-    { label: 'Percursos', value: 'Percursos' },
-    { label: 'Obras', value: 'Obras' },
-    { label: 'Avaliações', value: 'Avaliações' }
+    // { label: 'Álbuns', value: 'Álbuns' },
+    // { label: 'Percursos', value: 'Percursos' },
+    // { label: 'Obras', value: 'Obras' },
+    // { label: 'Avaliações', value: 'Avaliações' }
   ];
 
   const privateNavItems = [
     { label: 'Minhas imagens', value: 'Imagens' },
-    { label: 'Meus álbuns', value: 'Álbuns' },
-    { label: 'Meus percursos', value: 'Percursos' },
-    { label: 'Obras', value: 'Obras' },
-    { label: 'Minhas avaliações', value: 'Avaliações' }
+    // { label: 'Meus álbuns', value: 'Álbuns' },
+    // { label: 'Meus percursos', value: 'Percursos' },
+    // { label: 'Obras', value: 'Obras' },
+    // { label: 'Minhas avaliações', value: 'Avaliações' }
   ];
 
   if (props.isCurrentUser) {

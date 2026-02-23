@@ -38,6 +38,7 @@
         type="button"
         class="menu-button"
         aria-label="Abrir manifesto IIIF"
+        @click="openIiifManifest"
       >
         <img src="@/assets/logo_iiif.svg" alt="IIIF logo" class="iiif-svg-icon" width="18" height="16" draggable="false" />
       </button>
@@ -54,23 +55,25 @@
       </button>
     </div>
 
-    <DownloadModal
-      v-model="showDownloadModal"
-      :image="props.image"
-      @confirm="handleDownloadConfirm"
-    />
+    <Teleport to="body">
+      <DownloadModal
+        v-model="showDownloadModal"
+        :image="props.image"
+        @confirm="handleDownloadConfirm"
+      />
 
-    <ShareModal
-      v-model="showShareModal"
-      :image="props.image"
-      @confirm="handleShareConfirm"
-    />
+      <ShareModal
+        v-model="showShareModal"
+        :image="props.image"
+        @confirm="handleShareConfirm"
+      />
 
-    <ReportModal
-      v-model="showReportModal"
-      :image="props.image"
-      @submit="handleReportSubmit"
-    />
+      <ReportModal
+        v-model="showReportModal"
+        :image="props.image"
+        @submit="handleReportSubmit"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -108,6 +111,10 @@ const handleShareConfirm = (shareData) => {
 const handleReportSubmit = (payload) => {
   emit("report-submit", payload);
 };
+
+function openIiifManifest() {
+  window.open(`https://api-dev.arquigrafia.org.br/iiif/${props.image.id}/manifest`, "_blank");
+}
 </script>
 
 <style lang="scss" scoped>

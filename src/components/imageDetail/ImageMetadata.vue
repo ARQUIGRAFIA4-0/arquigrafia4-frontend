@@ -14,7 +14,14 @@
         >
           <span>{{ uploaderInitial }}</span>
         </div>
-        <p class="metadata-text">{{ uploaderName }}</p>
+        <RouterLink 
+          v-if="uploaderUserId"
+          :to="`/profile/${uploaderUserId}`"
+          class="metadata-uploader-link"
+        >
+          {{ uploaderName }}
+        </RouterLink>
+        <p v-else class="metadata-text">{{ uploaderName }}</p>
       </div>
     </div>
 
@@ -45,6 +52,7 @@
           :key="subject.id"
           type="button"
           class="btn btn-outline-primary btn-sm btn-tag"
+          @click="searchBySubject(subject)"
         >
           {{ subject.term }}
         </button>
@@ -86,8 +94,12 @@
 
 <script setup>
 import { computed } from "vue";
+import { RouterLink, useRouter } from "vue-router";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import { findLicenseByUrl } from "@/constants/creativeCommonsLicenses";
+import { DEFAULT_VIEW_ROUTE } from "@/constants/viewModes";
+
+const router = useRouter();
 
 const props = defineProps({
   image: {
@@ -96,8 +108,17 @@ const props = defineProps({
   },
 });
 
+function searchBySubject(subject) {
+  router.push({
+    name: "explore",
+    params: { viewMode: DEFAULT_VIEW_ROUTE },
+    query: { searchMode: "avancada", subject: subject.id },
+  });
+}
+
 const uploaderName = computed(() => props.image?.uploader?.name ?? null);
 const uploaderAvatar = computed(() => props.image?.uploader?.avatar ?? null);
+const uploaderUserId = computed(() => props.image?.uploader?.id ?? null);
 const uploaderInitial = computed(() => {
   if (!uploaderName.value) {
     return "";
@@ -164,9 +185,19 @@ const markerPosition = computed(() => {
   const [lng, lat] = center;
   return { lng, lat };
 });
+
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use "@/scss/variables" as *;
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
 .metadata-section {
   padding: 1rem 0;
 }
@@ -212,6 +243,20 @@ const markerPosition = computed(() => {
   border: 1px solid #ced4da;
 }
 
+.metadata-uploader-link {
+  color: #495057;
+  text-decoration: none;
+  line-height: 1.6;
+  margin: 0;
+  cursor: pointer;
+  transition: text-decoration 0.2s ease;
+}
+
+.metadata-uploader-link:hover {
+  text-decoration: underline;
+  color: #343a40;
+}
+
 .metadata-tags {
   display: flex;
   flex-wrap: wrap;
@@ -220,6 +265,7 @@ const markerPosition = computed(() => {
 
 .metadata-tags .btn-tag {
   min-height: 36px;
+  cursor: pointer;
 }
 
 .metadata-map {
@@ -227,7 +273,6 @@ const markerPosition = computed(() => {
   aspect-ratio: 1 / 1;
   overflow: hidden;
   background-color: #f1f3f5;
-  z-index: -1;
   margin-bottom: 36px;
 }
 
@@ -241,6 +286,10 @@ const markerPosition = computed(() => {
 .metadata-license-image {
   display: flex;
   align-items: flex-start;
+
+  @include md {
+    margin-bottom: 0;
+  }
 }
 
 .license-img {
@@ -252,16 +301,5 @@ const markerPosition = computed(() => {
 .metadata-license-text {
   flex: 1 1 220px;
   min-width: 220px;
-}
-
-@media (max-width: 575.98px) {
-  .metadata-license-content {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .metadata-license-image {
-    margin-bottom: 0;
-  }
 }
 </style>

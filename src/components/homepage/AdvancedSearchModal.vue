@@ -36,6 +36,7 @@
               type="text"
               class="form-control border-preto border-end-0"
               placeholder="Texto exemplo"
+              @keydown.enter="addSearchTerm"
             />
             <button
               class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
@@ -76,7 +77,7 @@
         </div>
 
         <div class="row g-4">
-          <div class="col-12 col-md-6">
+          <div class="col-12 col-md-6" style="opacity: 0.4; pointer-events: none;">
             <div class="p">Localização</div>
             <div class="text-muted small mb-2">
               (localizações mais recorrentes em nosso acervo)
@@ -92,7 +93,7 @@
                     ? 'btn-dark'
                     : 'btn-outline-secondary',
                 ]"
-                @click="toggleLocation(city)"
+                disabled
               >
                 {{ city }}
               </button>
