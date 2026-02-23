@@ -407,6 +407,30 @@ const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT, filter
 };
 
 /**
+ * Busca o total de imagens cadastradas no sistema
+ * Faz uma chamada mínima à API (per_page=1) para obter apenas o total
+ * @returns {Promise<number>} Total de imagens cadastradas
+ */
+const getTotalImages = async () => {
+  const apiBaseUrl = "https://api-dev.arquigrafia.org.br";
+  const apiUrl = `${apiBaseUrl}/api/images?per_page=1`;
+
+  try {
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch images total: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.meta?.total || 0;
+  } catch (error) {
+    console.error("Error fetching images total:", error);
+    return 0;
+  }
+};
+
+/**
  * Objeto de API com métodos para interação com o backend
  * @namespace api
  * @property {Function} getImages - Obtém imagens paginadas da API
@@ -416,6 +440,7 @@ const fetchImages = async (page = 1, limitOrOptions = DEFAULT_PAGE_LIMIT, filter
  * @property {Function} getImageComments - Obtém comentários de uma imagem
  * @property {Function} getPublishingIdentities - Obtém identidades de publicação
  * @property {Function} searchImages - Busca imagens por parâmetros
+ * @property {Function} getTotalImages - Obtém o total de imagens cadastradas
  */
 export const api = {
   getImages: fetchImages, // Agora usa a API real
@@ -425,4 +450,5 @@ export const api = {
   getImageComments,
   getPublishingIdentities,
   searchImages,
+  getTotalImages,
 };

@@ -1,3 +1,18 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { api } from '@/services/api';
+
+const totalImages = ref(0);
+
+const formattedTotal = computed(() => {
+  return totalImages.value.toLocaleString('pt-BR');
+});
+
+onMounted(async () => {
+  totalImages.value = await api.getTotalImages();
+});
+</script>
+
 <template>
   <footer class="app-footer">
     <div class="app-footer__content">
@@ -25,7 +40,7 @@
 
       <!-- Texto -->
       <div class="app-footer__info">
-        <p class="app-footer__text">O ARQUIGRAFIA conta com um total de _ fotos.</p>
+        <p class="app-footer__text">O ARQUIGRAFIA conta com um total de {{ formattedTotal }} fotos.</p>
         <p class="app-footer__text">Este site possui uma licença <a href="https://creativecommons.org/licenses/by/4.0/"
             target="_blank" rel="noopener noreferrer">Creative Commons Attribution 4.0</a></p>
       </div>
