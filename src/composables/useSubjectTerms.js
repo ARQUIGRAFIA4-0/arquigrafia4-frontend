@@ -68,6 +68,24 @@ export function useSubjectTerms() {
   }
 
   /**
+   * Verifica se o termo para um ID específico já foi carregado
+   * @param {string} id - ID do subject
+   * @returns {boolean} true se o termo está no cache
+   */
+  function isTermLoaded(id) {
+    return Boolean(subjectTermsCache.value[id]);
+  }
+
+  /**
+   * Verifica se um ID específico está sendo carregado no momento
+   * @param {string} id - ID do subject
+   * @returns {boolean} true se o ID está sendo carregado
+   */
+  function isTermLoading(id) {
+    return loadingIds.has(id);
+  }
+
+  /**
    * Verifica se há IDs sendo carregados
    * @returns {boolean}
    */
@@ -86,6 +104,8 @@ export function useSubjectTerms() {
   return {
     loadSubjectTerms,
     getTermById,
+    isTermLoaded,
+    isTermLoading,
     isLoading,
     clearCache,
   };
