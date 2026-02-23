@@ -141,9 +141,9 @@
         >
           <div class="d-flex align-items-center gap-2">
             <span class="text-preto">De</span>
-            <input type="number" class="form-control" style="width: 6rem;" v-model="startDateModel" placeholder="início" @blur="emitDateRange" @keydown.enter="emitDateRange(); onConfirm()" />
+            <input type="number" class="form-control" style="width: 6rem;" v-model="startDateModel" placeholder="1960" @blur="emitDateRange" @keydown.enter="emitDateRange(); onConfirm()" />
             <span class="text-preto">a</span>
-            <input type="number" class="form-control" style="width: 6rem;" v-model="endDateModel" placeholder="fim" @blur="emitDateRange" @keydown.enter="emitDateRange(); onConfirm()" />
+            <input type="number" class="form-control" style="width: 6rem;" v-model="endDateModel" placeholder="1973" @blur="emitDateRange" @keydown.enter="emitDateRange(); onConfirm()" />
           </div>
         </div>
 
