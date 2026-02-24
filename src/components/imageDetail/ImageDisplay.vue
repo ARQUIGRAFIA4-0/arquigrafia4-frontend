@@ -100,7 +100,23 @@ const showDownloadModal = ref(false);
 const showReportModal = ref(false);
 const showShareModal = ref(false);
 
-const handleDownloadConfirm = (image) => {
+const handleDownloadConfirm = async (image) => {
+  const url = image.fullUrl || `https://api-dev.arquigrafia.org.br/iiif/${image.id}/full/max/0/default.jpg`;
+  const filename = `${image.title || image.id}.jpg`;
+
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    window.open(url, "_blank");
+  }
+
   emit("download", image);
 };
 
