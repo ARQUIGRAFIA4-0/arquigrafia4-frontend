@@ -214,9 +214,22 @@ const fetchImages = async (page = 1, filters = {}) => {
       params.q = filters.q.trim();
     }
     
+    // Filtro por intervalo de datas
+    if (filters.date_from) {
+      params.date_from = filters.date_from;
+    }
+    if (filters.date_to) {
+      params.date_to = filters.date_to;
+    }
+    
     // Filtro por user_id
     if (filters.userId) {
       params.user_id = filters.userId;
+    }
+    
+    // Filtro por assuntos (tags de sujeito)
+    if (filters.subjects?.length) {
+      params['subject[]'] = filters.subjects.length === 1 ? filters.subjects[0] : filters.subjects;
     }
     
     const { data } = await axios.get("/api/images", { params });
