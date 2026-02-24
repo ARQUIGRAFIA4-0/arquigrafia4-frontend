@@ -17,7 +17,17 @@ export const useImagesInfiniteQuery = (options = {}) => {
       return [...normalizedBaseKey, "search", searchVal];
     }
     if (filtersVal) {
-      return [...normalizedBaseKey, "filters", filtersVal];
+      // Cria uma chave dinâmica baseada nos filtros presentes
+      const filterKey = {};
+      if (filtersVal.q) filterKey.q = filtersVal.q;
+      if (filtersVal.date_from) filterKey.date_from = filtersVal.date_from;
+      if (filtersVal.date_to) filterKey.date_to = filtersVal.date_to;
+      if (filtersVal.userId) filterKey.userId = filtersVal.userId;
+      if (filtersVal.subjects?.length) filterKey.subjects = [...filtersVal.subjects].sort().join(',');
+      
+      if (Object.keys(filterKey).length > 0) {
+        return [...normalizedBaseKey, "filters", filterKey];
+      }
     }
     return normalizedBaseKey;
   });
