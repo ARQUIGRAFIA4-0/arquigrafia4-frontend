@@ -84,6 +84,7 @@
             @open-advanced-search="openAdvancedSearch"
             @confirm="handleToolbarConfirm"
             @remove-chip="handleRemoveChip"
+            @remove-url-chip="handleRemoveUrlChip"
           />
         </template>
       </div>
@@ -469,6 +470,15 @@ function handleRemoveChip(chip) {
     activeSearch.value = null;
   } else {
     performSearch({ mode: "avancada", value: advancedFilters.value });
+  }
+}
+
+function handleRemoveUrlChip(chip) {
+  // Remove filtros de URL (q, subject_term, etc)
+  if (chip.type === "q") {
+    const query = { ...route.query };
+    delete query.q;
+    router.push({ query });
   }
 }
 
