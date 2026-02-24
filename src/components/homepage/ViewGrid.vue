@@ -51,7 +51,6 @@ import { computed, onBeforeUnmount, onMounted, toRef, watch } from "vue";
 import { RouterLink, useRouter, useRoute } from "vue-router";
 import UiCard from "@/components/ui/UiCard.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
-import { DEFAULT_VIEW_ROUTE } from "@/constants/viewModes";
 
 const router = useRouter();
 const route = useRoute();
@@ -135,11 +134,13 @@ const handleImageError = (event) => {
 };
 
 const handleTagClick = (subject) => {
-  const currentViewMode = route.params.viewMode || DEFAULT_VIEW_ROUTE;
+  const rawSubjects = route.query['subject[]'];
+  const existing = rawSubjects
+    ? (Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects])
+    : [];
+  const updated = existing.includes(subject.id) ? existing : [...existing, subject.id];
   router.push({
-    name: "explore",
-    params: { viewMode: currentViewMode },
-    query: { searchMode: "avancada", subject: subject.id },
+    query: { ...route.query, 'subject[]': updated.length === 1 ? updated[0] : updated },
   });
 };
 
