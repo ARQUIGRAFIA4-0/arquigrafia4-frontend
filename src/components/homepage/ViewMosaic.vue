@@ -104,12 +104,21 @@ const processItems = async (sourceItems) => {
   }
 };
 
-// Combina filtros da prop search com filtro q da URL
+// Combina filtros da prop search com filtros da URL
 const filters = computed(() => {
   const f = {};
-  // Se há q na URL, adiciona ao filtro
   if (route.query.q) {
     f.q = route.query.q;
+  }
+  if (route.query.date_from) {
+    f.date_from = route.query.date_from;
+  }
+  if (route.query.date_to) {
+    f.date_to = route.query.date_to;
+  }
+  const rawSubjects = route.query['subject[]'];
+  if (rawSubjects) {
+    f.subjects = Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects];
   }
   return f;
 });
@@ -152,7 +161,9 @@ let lastSearchKey = null;
 watch(
   rawItems,
   async (newItems) => {
-    const searchKey = props.search ? JSON.stringify(props.search) : null;
+    const rawSubjects = route.query['subject[]'];
+    const subjectsKey = rawSubjects ? (Array.isArray(rawSubjects) ? [...rawSubjects].sort().join(',') : rawSubjects) : null;
+    const searchKey = JSON.stringify({ search: props.search, q: route.query.q || null, date_from: route.query.date_from || null, date_to: route.query.date_to || null, subjects: subjectsKey });
     if (searchKey !== lastSearchKey) {
       // Reset when search params change (including going from search to browse)
       mosaicItems.value = [];
