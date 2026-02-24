@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from "vue";
+import { useRoute } from "vue-router";
 import MosaicCard from "@/components/MosaicCard.vue";
 import MosaicSkeleton from "@/components/MosaicSkeleton.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
@@ -13,6 +14,7 @@ const props = defineProps({
 
 const emit = defineEmits(["no-results"]);
 
+const route = useRoute();
 
 const columnWidths = [320, 200, 280, 260, 210, 220, 300];
 const isProcessing = ref(false);
@@ -102,13 +104,23 @@ const processItems = async (sourceItems) => {
   }
 };
 
+// Combina filtros da prop search com filtro q da URL
+const filters = computed(() => {
+  const f = {};
+  // Se há q na URL, adiciona ao filtro
+  if (route.query.q) {
+    f.q = route.query.q;
+  }
+  return f;
+});
+
 const {
   items: rawItems,
   hasNextPage,
   fetchNextPage,
   isPending,
   isFetchingNextPage,
-} = useImagesInfiniteQuery({ initialLimit: 100, search: toRef(props, "search") });
+} = useImagesInfiniteQuery({ initialLimit: 100, search: toRef(props, "search"), filters });
 
 watch(rawItems, (val) => {
   if (props.search && !isPending.value && val.length === 0) {

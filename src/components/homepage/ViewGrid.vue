@@ -65,13 +65,23 @@ const props = defineProps({
 
 const emit = defineEmits(["no-results"]);
 
+// Combina filtros da prop search com filtro q da URL
+const filters = computed(() => {
+  const f = {};
+  // Se há q na URL, adiciona ao filtro
+  if (route.query.q) {
+    f.q = route.query.q;
+  }
+  return f;
+});
+
 const {
   items,
   hasNextPage,
   fetchNextPage,
   isPending,
   isFetchingNextPage,
-} = useImagesInfiniteQuery({ search: toRef(props, "search") });
+} = useImagesInfiniteQuery({ search: toRef(props, "search"), filters });
 
 watch(items, (val) => {
   if (props.search && !isPending.value && val.length === 0) {
