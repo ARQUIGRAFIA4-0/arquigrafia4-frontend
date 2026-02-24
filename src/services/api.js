@@ -205,11 +205,11 @@ const searchImages = async ({ mode, value, page = 1 } = {}) => {
 /**
  * Busca imagens paginadas da API
  */
-const fetchImages = async (page = 1) => {
+const fetchImages = async (page = 1, filters = {}) => {
   try {
-    const { data } = await axios.get("/api/images", {
-      params: { page },
-    });
+    const params = { page };
+    if (filters.userId) params.user_id = filters.userId;
+    const { data } = await axios.get("/api/images", { params });
 
     const items = data.data.map(mapImageListItem);
 
