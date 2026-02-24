@@ -3,7 +3,7 @@ import { useInfiniteQuery } from "@tanstack/vue-query";
 import { api } from "@/services/api";
 
 export const useImagesInfiniteQuery = (options = {}) => {
-  const { limit, initialLimit, search, queryKey = ["images"], ...queryOptions } =
+  const { limit, initialLimit, search, filters, queryKey = ["images"], ...queryOptions } =
     options;
 
   const normalizedBaseKey = Array.isArray(queryKey)
@@ -12,8 +12,12 @@ export const useImagesInfiniteQuery = (options = {}) => {
 
   const resolvedQueryKey = computed(() => {
     const searchVal = toValue(search);
+    const filtersVal = toValue(filters);
     if (searchVal) {
       return [...normalizedBaseKey, "search", searchVal];
+    }
+    if (filtersVal) {
+      return [...normalizedBaseKey, "filters", filtersVal];
     }
     return normalizedBaseKey;
   });
@@ -22,10 +26,11 @@ export const useImagesInfiniteQuery = (options = {}) => {
     queryKey: resolvedQueryKey,
     queryFn: ({ pageParam = 1 }) => {
       const searchVal = toValue(search);
+      const filtersVal = toValue(filters);
       if (searchVal) {
         return api.searchImages({ ...searchVal, page: pageParam });
       }
-      return api.getImages(pageParam, { limit, initialLimit });
+      return api.getImages(pageParam, filtersVal);
     },
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage?.hasMore) {
