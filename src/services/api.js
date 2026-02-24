@@ -208,7 +208,17 @@ const searchImages = async ({ mode, value, page = 1 } = {}) => {
 const fetchImages = async (page = 1, filters = {}) => {
   try {
     const params = { page };
-    if (filters.userId) params.user_id = filters.userId;
+    
+    // Filtro por busca textual geral (q)
+    if (filters.q && typeof filters.q === 'string') {
+      params.q = filters.q.trim();
+    }
+    
+    // Filtro por user_id
+    if (filters.userId) {
+      params.user_id = filters.userId;
+    }
+    
     const { data } = await axios.get("/api/images", { params });
 
     const items = data.data.map(mapImageListItem);
