@@ -286,6 +286,10 @@ watch(
               : false;
     if (hasValue) {
       performSearch({ mode: snapshot.mode, value: snapshot.value });
+    } else {
+      // Limpa busca ativa quando não há mais filtros (ex: chip 'q' removido)
+      hasNoResults.value = false;
+      activeSearch.value = null;
     }
   },
   { deep: true }
@@ -474,12 +478,27 @@ function handleRemoveChip(chip) {
 }
 
 function handleRemoveUrlChip(chip) {
-  // Remove filtros de URL (q, subject_term, etc)
+  const query = { ...route.query };
+  
   if (chip.type === "q") {
-    const query = { ...route.query };
     delete query.q;
-    router.push({ query });
+  } else if (chip.type === "date_range") {
+    delete query.date_from;
+    delete query.date_to;
+  } else if (chip.type === "subject_url") {
+    const rawSubjects = query['subject[]'];
+    const existing = rawSubjects
+      ? (Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects])
+      : [];
+    const updated = existing.filter((id) => id !== chip.subjectId);
+    if (updated.length === 0) {
+      delete query['subject[]'];
+    } else {
+      query['subject[]'] = updated.length === 1 ? updated[0] : updated;
+    }
   }
+  
+  router.push({ query });
 }
 
 function performSearch({ mode, value }) {
