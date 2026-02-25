@@ -384,9 +384,16 @@ function buildAdvancedFiltersFromUrl() {
     terms.push({ field: 'tag', value: term, label: `Tag: ${term}` });
   });
 
+  // Tags/subjects selecionados (IDs) vindos de subject[] na URL
+  const rawSubjects = query['subject[]'];
+  const tags = rawSubjects
+    ? (Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects])
+    : [];
+
   return {
     ...createDefaultAdvancedFilters(),
     terms,
+    tags,
   };
 }
 
