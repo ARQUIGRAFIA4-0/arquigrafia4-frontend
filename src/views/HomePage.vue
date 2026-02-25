@@ -439,6 +439,14 @@ function confirmAdvancedSearch(payload) {
     newQuery['subject_term[]'] = subjectTermValues;
   }
 
+  // Tags sugeridas (IDs de subjects)
+  const subjectIds = Array.isArray(payload.tags) ? payload.tags.filter((id) => typeof id === 'string' && id.length > 0) : [];
+  if (subjectIds.length === 1) {
+    newQuery['subject[]'] = subjectIds[0];
+  } else if (subjectIds.length > 1) {
+    newQuery['subject[]'] = subjectIds;
+  }
+
   router.push({ query: newQuery });
   modalAdvancedSearch.value = false;
 }
