@@ -1,78 +1,44 @@
 <template>
   <div id="toolbar" class="d-flex flex-row justify-content-between gap-4">
-    <div
-      id="view-mode-container"
-      class="d-flex align-items-center rounded-3 bg-white gap-2"
-    >
+    <div id="view-mode-container" class="d-flex align-items-center rounded-3 bg-white gap-2">
       <div class="dropdown dropup">
-        <button
-          id="view-mode-dropdown"
-          class="btn btn-icon dropdown-toggle caret-right"
-          type="button"
-          data-bs-toggle="dropdown"
-          data-bs-offset="0,16"
-          aria-expanded="false"
-        >
+        <button id="view-mode-dropdown" class="btn btn-icon dropdown-toggle caret-right" type="button"
+          data-bs-toggle="dropdown" data-bs-offset="0,16" aria-expanded="false">
           <i :class="['bi', viewIconClass]" />
         </button>
         <ul class="dropdown-menu menu-dark mt-3">
           <li v-for="option in viewOptionsList" :key="option.selection">
-            <button
-              class="dropdown-item"
-              :class="{ active: currentViewSelection === option.selection }"
-              @click="setViewMode(option.mode, option.selection)"
-            >
-              <i
-                :class="['bi', selectionToViewIcon(option.selection), 'me-2']"
-              />
+            <button class="dropdown-item" :class="{ active: currentViewSelection === option.selection }"
+              @click="setViewMode(option.mode, option.selection)">
+              <i :class="['bi', selectionToViewIcon(option.selection), 'me-2']" />
               {{ option.label }}
             </button>
           </li>
         </ul>
       </div>
-      <span
-        v-if="currentViewSubcontrol"
-        class="toolbar-divider"
-        aria-hidden="true"
-      />
-      <button
-        v-if="currentViewSubcontrol"
-        :class="[
-          'btn btn-icon btn-subcontrol',
-          { active: isMapSubcontrolActive },
-        ]"
-        type="button"
-        :title="currentViewSubcontrol.label"
-        :aria-label="currentViewSubcontrol.label"
-        :aria-pressed="isMapSubcontrolActive"
-        @click="onViewSubcontrol"
-      >
+      <span v-if="currentViewSubcontrol" class="toolbar-divider" aria-hidden="true" />
+      <button v-if="currentViewSubcontrol" :class="[
+        'btn btn-icon btn-subcontrol',
+        { active: isMapSubcontrolActive },
+      ]" type="button" :title="currentViewSubcontrol.label" :aria-label="currentViewSubcontrol.label"
+        :aria-pressed="isMapSubcontrolActive" @click="onViewSubcontrol">
         <i :class="['bi', currentViewSubcontrol.icon]" />
       </button>
     </div>
-    <div
-      id="search-mode-container"
-      class="d-flex align-items-center p-2 px-3 rounded-3 gap-3 flex-fill bg-white"
-    >
+    <div id="search-mode-container" class="d-flex align-items-center p-2 px-3 rounded-3 gap-3 flex-fill bg-white">
       <div class="dropdown dropup">
-        <button
-          id="search-mode-dropdown"
-          class="btn btn-icon dropdown-toggle caret-right"
-          type="button"
-          data-bs-toggle="dropdown"
-          data-bs-offset="0,16"
-          aria-expanded="false"
-        >
-          <i :class="['bi', searchIconClass]" />
+        <button id="search-mode-dropdown" class="btn btn-icon dropdown-toggle caret-right pe-2" type="button"
+          data-bs-toggle="dropdown" data-bs-offset="0,16" aria-expanded="false" :disabled="hasActiveUrlFilter"
+          :title="hasActiveUrlFilter ? 'Remova o filtro de busca para alterar o modo' : ''">
+          <span class="search-icon-wrapper">
+            <i :class="['bi', searchIconClass]" />
+            <span v-if="hasActiveUrlFilter && !isAdvancedByUrl" class="search-active-dot" />
+          </span>
         </button>
         <ul class="dropdown-menu menu-dark mt-3">
           <li v-for="option in searchOptionsList" :key="option.mode">
-            <button
-              class="dropdown-item"
-              :class="{ active: currentSearchMode === option.mode }"
-              :disabled="option.mode === 'cor'"
-              @click="option.mode !== 'cor' && setSearchMode(option.mode)"
-            >
+            <button class="dropdown-item" :class="{ active: effectiveSearchMode === option.mode }"
+              :disabled="option.mode === 'cor'" @click="option.mode !== 'cor' && setSearchMode(option.mode)">
               <i :class="['bi', getSearchIcon(option.mode), 'me-2']" />
               {{ option.label }}
             </button>
@@ -80,53 +46,52 @@
         </ul>
       </div>
 
+      <!-- Estado avançado derivado da URL (2+ tipos de filtro) -->
+      <template v-if="isAdvancedByUrl">
+        <span class="toolbar__advanced-label text-preto text-nowrap small">Busca avançada ativa</span>
+        <button class="btn btn-sm btn-outline-secondary btn-icon" type="button" title="Limpar todos os filtros"
+          aria-label="Limpar todos os filtros" @click="emit('clear-all-filters')">
+          <i class="bi bi-x-lg" style="font-size: 0.75rem;" />
+          Limpar
+        </button>
+        <button class="btn btn-sm btn-secondary btn-icon" type="button" title="Editar busca avançada"
+          aria-label="Editar busca avançada" @click="emit('open-advanced-search')">
+          <i class="bi bi-pencil-square" style="font-size: 0.75rem;" />
+          Editar
+        </button>
+      </template>
+
+      <!-- Chips de URL (visíveis quando NÃO em modo avançado derivado) -->
+      <div v-else-if="urlChips.length > 0" class="d-flex align-items-center flex-wrap gap-2">
+        <button v-for="chip in urlChips" :key="chip.uid" class="btn btn-primary btn-sm btn-tag" type="button">
+          <span v-if="chip.label === null" class="spinner-border spinner-border-sm" role="status"
+            aria-label="Carregando..." />
+          <template v-else>{{ chip.label }}</template>
+          <button type="button" class="btn-close ms-1" aria-label="Remover filtro"
+            @click.stop="emit('remove-url-chip', chip)" />
+        </button>
+      </div>
+
       <!-- Área de entrada da busca -->
       <div class="d-flex align-items-center flex-grow-1">
         <!-- Textual (padrão visível) -->
-        <div
-          class="w-100"
-          id="search-input-textual"
-          v-show="currentSearchMode === 'textual'"
-        >
-          <input
-            type="text"
-            class="form-control"
-            placeholder="Digite o termo de busca"
-            v-model="textModel"
-            @keydown.enter="onConfirm"
-          />
+        <div class="w-100" id="search-input-textual" v-show="currentSearchMode === 'textual' && !hasActiveUrlFilter">
+          <input type="text" class="form-control" placeholder="Digite o termo de busca" v-model="textModel"
+            @keydown.enter="onConfirm" />
         </div>
 
         <!-- Avançada -->
-        <div
-          class="w-100"
-          id="search-input-avancada"
-          v-show="currentSearchMode === 'avancada'"
-        >
-          <div
-            class="advanced-filters-container d-flex align-items-center flex-wrap gap-2"
-          >
+        <div class="w-100" id="search-input-avancada" v-show="currentSearchMode === 'avancada'">
+          <div class="advanced-filters-container d-flex align-items-center flex-wrap gap-2">
             <template v-if="hasAdvancedFilters">
-              <button
-                v-for="chip in visibleAdvancedChips"
-                :key="chip.uid"
-                class="btn btn-info btn-sm btn-tag"
-                type="button"
-              >
+              <button v-for="chip in visibleAdvancedChips" :key="chip.uid" class="btn btn-info btn-sm btn-tag"
+                type="button">
                 {{ chip.label }}
-                <button
-                  type="button"
-                  class="btn-close ms-1"
-                  aria-label="Remover filtro"
-                  @click.stop="emit('remove-chip', chip)"
-                />
+                <button type="button" class="btn-close ms-1" aria-label="Remover filtro"
+                  @click.stop="emit('remove-chip', chip)" />
               </button>
-              <button
-                v-if="advancedChipsOverflow > 0"
-                key="advanced-chips-overflow"
-                class="btn btn-info btn-sm btn-tag"
-                type="button"
-              >
+              <button v-if="advancedChipsOverflow > 0" key="advanced-chips-overflow" class="btn btn-info btn-sm btn-tag"
+                type="button">
                 +{{ advancedChipsOverflow }}
               </button>
             </template>
@@ -134,45 +99,28 @@
         </div>
 
         <!-- Data -->
-        <div
-          class="w-100"
-          id="search-input-data"
-          v-show="currentSearchMode === 'data'"
-        >
+        <div class="w-100" id="search-input-data" v-show="currentSearchMode === 'data' && !hasActiveUrlFilter">
           <div class="d-flex align-items-center gap-2">
             <span class="text-preto">De</span>
-            <input type="number" class="form-control" style="width: 6rem;" v-model="startDateModel" placeholder="1960" @blur="emitDateRange" @keydown.enter="emitDateRange(); onConfirm()" />
+            <input type="number" class="form-control" style="width: 6rem;" v-model="startDateModel" placeholder="1960"
+              @blur="emitDateRange" @keydown.enter="emitDateRange(); onConfirm()" />
             <span class="text-preto">a</span>
-            <input type="number" class="form-control" style="width: 6rem;" v-model="endDateModel" placeholder="1973" @blur="emitDateRange" @keydown.enter="emitDateRange(); onConfirm()" />
+            <input type="number" class="form-control" style="width: 6rem;" v-model="endDateModel" placeholder="1973"
+              @blur="emitDateRange" @keydown.enter="emitDateRange(); onConfirm()" />
           </div>
         </div>
 
         <!-- Cor -->
-        <div
-          class="w-100"
-          id="search-input-cor"
-          v-show="currentSearchMode === 'cor'"
-        >
+        <div class="w-100" id="search-input-cor" v-show="currentSearchMode === 'cor'">
           <div class="d-flex align-items-center gap-2">
-            <input
-              type="range"
-              class="form-range form-range-sm form-range-hue w-100"
-              style="min-width: 250px"
-              min="0"
-              max="360"
-              v-model="hue"
-              :style="{ '--hue': hue }"
-              @input="onHueInput"
-            />
+            <input type="range" class="form-range form-range-sm form-range-hue w-100" style="min-width: 250px" min="0"
+              max="360" v-model="hue" :style="{ '--hue': hue }" @input="onHueInput" />
           </div>
         </div>
       </div>
 
-      <button
-        id="confirm-search"
-        class="btn btn-sm btn-secondary"
-        @click="onPrimaryAction"
-      >
+      <button v-show="!hasActiveUrlFilter && !isAdvancedByUrl" id="confirm-search" class="btn btn-sm btn-secondary"
+        @click="onPrimaryAction">
         <i :class="['bi', primaryActionIcon]" />
       </button>
     </div>
@@ -181,6 +129,7 @@
 
 <script setup>
 import { computed, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import hslToHex from "@/helpers/hslToHex";
 import hexToHue from "@/helpers/hexToHue";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
@@ -195,7 +144,9 @@ import { useSubjectTerms } from "@/composables/useSubjectTerms";
 
 defineOptions({ name: "AppToolbar" });
 
-const { getTermById, loadSubjectTerms } = useSubjectTerms();
+const route = useRoute();
+const router = useRouter();
+const { getTermById, loadSubjectTerms, isTermLoaded } = useSubjectTerms();
 
 const props = defineProps({
   searchMode: {
@@ -239,7 +190,44 @@ const emit = defineEmits([
   "update:color",
   "update:map-settings",
   "remove-chip",
+  "remove-url-chip",
+  "clear-all-filters",
 ]);
+
+// Detecta se há filtro de URL ativo
+const hasActiveUrlFilter = computed(() => Boolean(
+  route.query.q ||
+  route.query.date_from ||
+  route.query.date_to ||
+  route.query['subject[]'] ||
+  route.query['subject_term[]'] ||
+  route.query.title ||
+  route.query.contributor
+));
+
+// Conta tipos de filtro distintos na URL (date_from + date_to = 1 tipo; arrays acumuláveis contam individualmente)
+const activeFilterTypeCount = computed(() => {
+  let count = 0;
+  if (route.query.q) count++;
+  if (route.query.date_from || route.query.date_to) count++;
+  if (route.query.title) count++;
+  if (route.query.contributor) count++;
+  const rawSubjects = route.query['subject[]'];
+  if (rawSubjects) {
+    count += Array.isArray(rawSubjects) ? rawSubjects.length : 1;
+  }
+  const rawSubjectTerms = route.query['subject_term[]'];
+  if (rawSubjectTerms) {
+    count += Array.isArray(rawSubjectTerms) ? rawSubjectTerms.length : 1;
+  }
+  return count;
+});
+
+// Se 2+ tipos distintos de filtro, considera busca avançada derivada da URL
+const isAdvancedByUrl = computed(() => activeFilterTypeCount.value >= 2);
+
+// Modo visual efetivo: avançada se derivado da URL, senão usa o prop
+const effectiveSearchMode = computed(() => isAdvancedByUrl.value ? 'avancada' : currentSearchMode.value);
 
 const DEFAULT_HUE = 36;
 const hue = ref(DEFAULT_HUE);
@@ -278,13 +266,26 @@ const searchOptionsList = searchOptions();
 const viewIconClass = computed(() =>
   selectionToViewIcon(currentViewSelection.value)
 );
-const searchIconClass = computed(() => getSearchIcon(currentSearchMode.value));
+const searchIconClass = computed(() => getSearchIcon(effectiveSearchMode.value));
 
 watch(
   () => props.advancedFilters?.subjects,
   (subjects) => {
     if (Array.isArray(subjects) && subjects.length > 0) {
       loadSubjectTerms(subjects);
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => route.query['subject[]'],
+  (rawSubjects) => {
+    if (rawSubjects) {
+      const subjects = Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects];
+      if (subjects.length > 0) {
+        loadSubjectTerms(subjects);
+      }
     }
   },
   { immediate: true }
@@ -299,6 +300,91 @@ const hasAdvancedFilters = computed(() => {
     (filters.subjects && filters.subjects.length > 0) ||
     Boolean(filters.use)
   );
+});
+
+// Chips criados diretamente dos parâmetros da URL (bypass searchMode)
+const urlChips = computed(() => {
+  const chips = [];
+
+  // Chip para ?q= (busca textual direta)
+  if (route.query.q) {
+    chips.push({
+      uid: `q-${route.query.q}`,
+      type: "q",
+      value: route.query.q,
+      label: `Termo: ${route.query.q}`,
+    });
+  }
+
+  // Chip para ?date_from= e ?date_to= (filtro por período)
+  if (route.query.date_from || route.query.date_to) {
+    const fromYear = route.query.date_from ? route.query.date_from.substring(0, 4) : null;
+    const toYear = route.query.date_to ? route.query.date_to.substring(0, 4) : null;
+    let dateLabel;
+    if (fromYear && toYear) {
+      dateLabel = `${fromYear} - ${toYear}`;
+    } else if (fromYear) {
+      dateLabel = `A partir de ${fromYear}`;
+    } else {
+      dateLabel = `Até ${toYear}`;
+    }
+    chips.push({
+      uid: `date-${route.query.date_from || ''}-${route.query.date_to || ''}`,
+      type: "date_range",
+      value: { date_from: route.query.date_from, date_to: route.query.date_to },
+      label: dateLabel,
+    });
+  }
+
+// Chips para ?subject[]= (tags de assunto por ID, com lookup assíncrono)
+  const rawSubjects = route.query['subject[]'];
+  const activeSubjects = rawSubjects
+    ? (Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects])
+    : [];
+  activeSubjects.forEach((id) => {
+    chips.push({
+      uid: `subject-url-${id}`,
+      type: 'subject_url',
+      subjectId: id,
+      label: isTermLoaded(id) ? getTermById(id) : null,
+    });
+  });
+
+  // Chips para ?subject_term[]= (termos de assunto, label direta sem lookup)
+  const rawSubjectTerms = route.query['subject_term[]'];
+  const activeSubjectTerms = rawSubjectTerms
+    ? (Array.isArray(rawSubjectTerms) ? rawSubjectTerms : [rawSubjectTerms])
+    : [];
+  activeSubjectTerms.forEach((term) => {
+    chips.push({
+      uid: `subject-term-${term}`,
+      type: 'subject_term',
+      termValue: term,
+      label: `Tag: ${term}`,
+    });
+  });
+
+  // Chip para ?title=
+  if (route.query.title) {
+    chips.push({
+      uid: `title-${route.query.title}`,
+      type: 'title',
+      value: route.query.title,
+      label: `Título: ${route.query.title}`,
+    });
+  }
+
+  // Chip para ?contributor=
+  if (route.query.contributor) {
+    chips.push({
+      uid: `contributor-${route.query.contributor}`,
+      type: 'contributor',
+      value: route.query.contributor,
+      label: `Autor: ${route.query.contributor}`,
+    });
+  }
+
+  return chips;
 });
 
 const advancedChips = computed(() => {
@@ -413,18 +499,17 @@ function onHueInput() {
 }
 
 async function handleSearchModeChange(mode) {
+  // Avançada: apenas abre o modal, sem escrever searchMode na URL
+  if (mode === "avancada") {
+    emit("open-advanced-search");
+    return;
+  }
+
   if (currentSearchMode.value === mode) {
-    if (mode === "avancada") {
-      emit("open-advanced-search");
-    }
     return;
   }
 
   emit("search-mode-change", mode);
-
-  if (mode === "avancada") {
-    emit("open-advanced-search");
-  }
 }
 
 function setSearchMode(mode) {
@@ -451,6 +536,32 @@ function resolveConfirmValue() {
 }
 
 function onConfirm() {
+  // Bypass: se modo textual, navega diretamente com ?q= em vez de usar searchMode
+  if (currentSearchMode.value === 'textual') {
+    const query = textModel.value.trim();
+    if (query) {
+      router.push({ query: { ...route.query, q: query } });
+    }
+    return;
+  }
+
+  // Bypass: se modo data, navega diretamente com ?date_from= e ?date_to=
+  if (currentSearchMode.value === 'data') {
+    const startYear = parseInt(startDateModel.value, 10);
+    const endYear = parseInt(endDateModel.value, 10);
+    const newQuery = { ...route.query };
+    if (Number.isFinite(startYear)) {
+      newQuery.date_from = `${startYear}-01-01`;
+    }
+    if (Number.isFinite(endYear)) {
+      newQuery.date_to = `${endYear}-12-31`;
+    }
+    if (newQuery.date_from || newQuery.date_to) {
+      router.push({ query: newQuery });
+    }
+    return;
+  }
+
   const value = resolveConfirmValue();
   emit("confirm", { mode: currentSearchMode.value, value });
 }
@@ -565,8 +676,41 @@ function onViewSubcontrol() {
   border: none;
 }
 
-#toolbar .btn-subcontrol.active > .bi,
-#toolbar .btn-subcontrol.active > i[class^="bi"] {
+#toolbar .btn-subcontrol.active>.bi,
+#toolbar .btn-subcontrol.active>i[class^="bi"] {
   color: currentColor;
+}
+
+/* Remove borda do dropdown quando disabled */
+.btn-icon.dropdown-toggle:disabled {
+  border-color: transparent;
+  opacity: 0.65;
+}
+
+.toolbar__advanced-label {
+  font-weight: 400;
+  font-style: italic;
+  font-size: 14px;
+  line-height: 150%;
+  letter-spacing: 0%;
+}
+
+.search-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-active-dot {
+  position: absolute;
+  top: 0px;
+  right: -3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #D27D30;
+  pointer-events: none;
+  border: 2px solid var(--Branco);
 }
 </style>
