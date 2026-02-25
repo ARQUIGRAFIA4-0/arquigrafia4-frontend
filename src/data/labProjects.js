@@ -1,14 +1,14 @@
-import lab01Projeto from '@/assets/lab_01_projeto.png';
+import lab01Projeto from '@/assets/lab_01_projeto.jpg';
 import lab01Pesquisador from '@/assets/lab_01_pesquisador.jpeg';
 
 export const labProjects = [
     {
         id: 1,
         slug: "centro-historico-sp",
-        cardTitle: "Centro histórico de SP",
+        cardTitle: "Centro Histórico de São Paulo em 3D - Projeto Piloto",
         fullTitle: "Modelo tridimensional do Centro Histórico de São Paulo",
         image: lab01Projeto,
-        cardDescription: "Lorem ipsum dolor sit amet consectetur. Lectus hac rhoncus integer at urna tellus mauris.",
+        cardDescription: "Explore as camadas históricas e a transformação urbana ao longo do tempo em um ambiente digital interativo.",
         fullDescription: `<p>O ARQUIGRAFIA apresenta uma nova forma de representação de sítios históricos em um ambiente 3D baseado na web. Por meio da navegação ao longo do tempo, os usuários podem explorar o processo de transformação histórica e de verticalização do Centro Histórico de São Paulo. A plataforma permite percorrer diferentes décadas e compreender visualmente como os edifícios surgiram, se transformaram ou desapareceram ao longo do tempo. Em qualquer momento da linha do tempo histórica, os usuários podem selecionar edifícios individuais e interagir com seus metadados associados, incluindo características arquitetônicas, períodos de construção, materiais e imagens ilustrativas. Além da exploração, o sistema possibilita a participação colaborativa: os usuários podem contribuir com informações adicionais, referências, imagens e links externos relacionados a um edifício específico e a um período específico de sua história. O ARQUIGRAFIA 3D é desenvolvida como um projeto piloto para o Centro Histórico de São Paulo, com possibilidade de extensão para outros centros históricos.</p>`,
         researcher: {
             name: "Sayed Samimi",
@@ -24,7 +24,7 @@ export const labProjects = [
             {
                 type: "publications",
                 label: "Publicações",
-                url: "https://exemplo.com/publicacoes",
+                url: "https://doi.org/10.1016/j.cities.2024.105529",
             },
             {
                 type: "manual",
