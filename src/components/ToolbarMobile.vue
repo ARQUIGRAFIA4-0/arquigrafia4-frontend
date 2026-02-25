@@ -31,7 +31,7 @@
       >
         <i class="bi bi-search" />
       </button>
-      <button
+      <!-- <button
         id="search-color-button"
         :class="searchButtonClasses('cor')"
         type="button"
@@ -39,7 +39,7 @@
         @click="handleSearchButton('cor', 'open-search-color')"
       >
         <i class="bi bi-palette" />
-      </button>
+      </button> -->
       <button
         id="search-date-button"
         :class="searchButtonClasses('data')"
@@ -47,7 +47,10 @@
         aria-label="Buscar por data"
         @click="handleSearchButton('data', 'open-search-date')"
       >
-        <i class="bi bi-calendar2-week" />
+        <span class="search-icon-wrapper">
+          <i class="bi bi-calendar2-week" />
+          <span v-if="hasActiveDateFilter" class="search-active-dot" />
+        </span>
       </button>
     </div>
   </div>
@@ -55,8 +58,15 @@
 
 <script setup>
 import { computed } from "vue";
+import { useRoute } from "vue-router";
 
 defineOptions({ name: "ToolbarMobile" });
+
+const route = useRoute();
+
+const hasActiveDateFilter = computed(() => Boolean(
+  route.query.date_from || route.query.date_to
+));
 
 const props = defineProps({
   viewSelection: {
@@ -114,5 +124,24 @@ function openViewMenu() {
 <style scoped>
 #toolbar-mobile .toolbar-group {
   box-shadow: var(--shadow-elevation-medium);
+}
+
+.search-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-active-dot {
+  position: absolute;
+  top: 0px;
+  right: -3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #D27D30;
+  pointer-events: none;
+  border: 2px solid var(--Branco);
 }
 </style>
