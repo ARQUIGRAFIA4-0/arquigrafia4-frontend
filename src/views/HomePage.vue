@@ -85,6 +85,7 @@
             @confirm="handleToolbarConfirm"
             @remove-chip="handleRemoveChip"
             @remove-url-chip="handleRemoveUrlChip"
+            @clear-all-filters="handleClearAllFilters"
           />
         </template>
       </div>
@@ -498,6 +499,15 @@ function handleRemoveUrlChip(chip) {
     }
   }
   
+  router.push({ query });
+}
+
+function handleClearAllFilters() {
+  const query = { ...route.query };
+  delete query.q;
+  delete query.date_from;
+  delete query.date_to;
+  delete query['subject[]'];
   router.push({ query });
 }
 
