@@ -32,7 +32,7 @@
           :title="hasActiveUrlFilter ? 'Remova o filtro de busca para alterar o modo' : ''">
           <span class="search-icon-wrapper">
             <i :class="['bi', searchIconClass]" />
-            <span v-if="hasActiveUrlFilter && !isAdvancedByUrl" class="search-active-dot" />
+            <span v-if="hasActiveUrlFilter" class="search-active-dot" />
           </span>
         </button>
         <ul class="dropdown-menu menu-dark mt-3">
@@ -103,9 +103,13 @@
           <div class="d-flex align-items-center gap-2">
             <span class="text-preto">De</span>
             <input type="number" class="form-control" style="width: 6rem;" v-model="startDateModel" placeholder="1960"
+              :min="MIN_YEAR" :max="CURRENT_YEAR"
+              @keydown="onYearKeydown" @input="onYearInput('start')"
               @blur="emitDateRange" @keydown.enter="emitDateRange(); onConfirm()" />
             <span class="text-preto">a</span>
             <input type="number" class="form-control" style="width: 6rem;" v-model="endDateModel" placeholder="1973"
+              :min="MIN_YEAR" :max="CURRENT_YEAR"
+              @keydown="onYearKeydown" @input="onYearInput('end')"
               @blur="emitDateRange" @keydown.enter="emitDateRange(); onConfirm()" />
           </div>
         </div>
@@ -228,6 +232,29 @@ const isAdvancedByUrl = computed(() => activeFilterTypeCount.value >= 2);
 
 // Modo visual efetivo: avançada se derivado da URL, senão usa o prop
 const effectiveSearchMode = computed(() => isAdvancedByUrl.value ? 'avancada' : currentSearchMode.value);
+
+const CURRENT_YEAR = new Date().getFullYear();
+const MIN_YEAR = 1;
+
+function sanitizeYearInput(raw) {
+  const n = parseInt(raw, 10);
+  if (!Number.isFinite(n)) return null;
+  return Math.min(CURRENT_YEAR, Math.max(MIN_YEAR, n));
+}
+
+function onYearKeydown(event) {
+  const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+  if (!allowed.includes(event.key) && !/^\d$/.test(event.key)) {
+    event.preventDefault();
+  }
+}
+
+function onYearInput(which) {
+  const modelRef = which === 'start' ? startDateModel : endDateModel;
+  if (String(modelRef.value).length > 4) {
+    modelRef.value = String(modelRef.value).slice(0, 4);
+  }
+}
 
 const DEFAULT_HUE = 36;
 const hue = ref(DEFAULT_HUE);
@@ -469,19 +496,24 @@ watch(
   (val) => {
     const startYear = parseYearFromDateString(val.start);
     const endYear = parseYearFromDateString(val.end);
-    if (startYear !== null) startDateModel.value = String(startYear);
+    const sanitizedStart = startYear !== null ? sanitizeYearInput(startYear) : null;
+    const sanitizedEnd = endYear !== null ? sanitizeYearInput(endYear) : null;
+    if (sanitizedStart !== null) startDateModel.value = String(sanitizedStart);
     else if (!val.start) startDateModel.value = "";
-    if (endYear !== null) endDateModel.value = String(endYear);
+    if (sanitizedEnd !== null) endDateModel.value = String(sanitizedEnd);
     else if (!val.end) endDateModel.value = "";
   },
   { immediate: true }
 );
 
 function emitDateRange() {
-  const startYear = parseInt(startDateModel.value, 10);
-  const endYear = parseInt(endDateModel.value, 10);
-  const start = Number.isFinite(startYear) ? setDateYear("", startYear, true) : "";
-  const end = Number.isFinite(endYear) ? setDateYear("", endYear, false) : "";
+  let startYear = sanitizeYearInput(startDateModel.value);
+  let endYear = sanitizeYearInput(endDateModel.value);
+  if (startYear !== null && endYear !== null && endYear < startYear) {
+    endYear = startYear;
+  }
+  const start = startYear !== null ? setDateYear("", startYear, true) : "";
+  const end = endYear !== null ? setDateYear("", endYear, false) : "";
   emit("update:date-range", { start, end });
 }
 
@@ -519,10 +551,11 @@ function setSearchMode(mode) {
 function resolveConfirmValue() {
   switch (currentSearchMode.value) {
     case "data": {
-      const startYear = parseInt(startDateModel.value, 10);
-      const endYear = parseInt(endDateModel.value, 10);
-      const start = Number.isFinite(startYear) ? setDateYear("", startYear, true) : "";
-      const end = Number.isFinite(endYear) ? setDateYear("", endYear, false) : "";
+      let startYear = sanitizeYearInput(startDateModel.value);
+      let endYear = sanitizeYearInput(endDateModel.value);
+      if (startYear !== null && endYear !== null && endYear < startYear) endYear = startYear;
+      const start = startYear !== null ? setDateYear("", startYear, true) : "";
+      const end = endYear !== null ? setDateYear("", endYear, false) : "";
       return { start, end };
     }
     case "cor":
@@ -547,13 +580,14 @@ function onConfirm() {
 
   // Bypass: se modo data, navega diretamente com ?date_from= e ?date_to=
   if (currentSearchMode.value === 'data') {
-    const startYear = parseInt(startDateModel.value, 10);
-    const endYear = parseInt(endDateModel.value, 10);
+    let startYear = sanitizeYearInput(startDateModel.value);
+    let endYear = sanitizeYearInput(endDateModel.value);
+    if (startYear !== null && endYear !== null && endYear < startYear) endYear = startYear;
     const newQuery = { ...route.query };
-    if (Number.isFinite(startYear)) {
+    if (startYear !== null) {
       newQuery.date_from = `${startYear}-01-01`;
     }
-    if (Number.isFinite(endYear)) {
+    if (endYear !== null) {
       newQuery.date_to = `${endYear}-12-31`;
     }
     if (newQuery.date_from || newQuery.date_to) {
