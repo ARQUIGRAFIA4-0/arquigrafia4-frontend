@@ -116,9 +116,11 @@
       <mobile-drawer-search-date
         v-model="drawerSearchDate"
         :value="dateRange"
+        :active-range="{ from: route.query.date_from || '', to: route.query.date_to || '' }"
         @update:value="handleDateRangeUpdate"
         @open="handleDrawerDateOpen"
         @confirm="confirmDate"
+        @clear="handleClearDateFilter"
       />
 
       <advanced-search-modal
@@ -507,7 +509,19 @@ function handleDrawerColorOpen() {
 }
 
 function handleDrawerDateOpen() {
-  syncFromSnapshot("data");
+  dateRange.value = {
+    start: route.query.date_from || "",
+    end: route.query.date_to || "",
+  };
+}
+
+function handleClearDateFilter() {
+  const query = { ...route.query };
+  delete query.date_from;
+  delete query.date_to;
+  dateRange.value = { start: "", end: "" };
+  drawerSearchDate.value = false;
+  router.push({ query });
 }
 
 function confirmColor(color) {
@@ -519,9 +533,17 @@ function confirmColor(color) {
 
 function confirmDate(range) {
   dateRange.value = { ...range };
-  submitSearch({ mode: "data", value: range });
   drawerSearchDate.value = false;
-  performSearch({ mode: "data", value: range });
+  const newQuery = { ...route.query };
+  // Remove legacy params
+  delete newQuery.searchMode;
+  delete newQuery.dateStart;
+  delete newQuery.dateEnd;
+  if (range.start) newQuery.date_from = range.start;
+  if (range.end) newQuery.date_to = range.end;
+  if (newQuery.date_from || newQuery.date_to) {
+    router.push({ query: newQuery });
+  }
 }
 
 function confirmAdvancedDrawer({ value }) {
