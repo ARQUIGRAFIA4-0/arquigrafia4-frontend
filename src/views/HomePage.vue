@@ -629,6 +629,11 @@ function handleClearSearch() {
   advancedFilters.value = createDefaultAdvancedFilters();
   hasNoResults.value = false;
   activeSearch.value = null;
+  // Navega para a mesma view sem nenhum parâmetro de busca na URL
+  router.push({
+    name: "explore",
+    params: { viewMode: route.params.viewMode || "mosaic" },
+  });
 }
 
 function handleNewSearch() {
