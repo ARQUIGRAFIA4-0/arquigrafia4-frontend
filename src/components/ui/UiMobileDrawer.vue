@@ -129,7 +129,7 @@ onBeforeUnmount(() => {
   padding-bottom: 66px;
 }
 .offcanvas-header {
-  padding: 12px 16px;
+  padding: 12px 16px 0px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
