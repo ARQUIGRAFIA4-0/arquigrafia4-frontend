@@ -115,25 +115,12 @@ function goToMetadata() {
         <div v-if="imagePreviews.length < uploadStore.MAX_FILES">
           <label class="preview-box__add-item">
             <i class="bi bi-plus-circle-fill"></i>
-            <input
-              class="upload-box__input"
-              type="file"
-              multiple
-              accept="image/*,.heic,.heif"
-              @change="appendImagesToUpload"
-            />
+            <input class="upload-box__input" type="file" multiple accept="image/*,.heic,.heif"
+              @change="appendImagesToUpload" />
           </label>
         </div>
-        <div
-          v-for="(preview, index) in imagePreviews"
-          :key="index"
-          class="preview-box__item"
-        >
-          <img
-            :src="preview.url"
-            :alt="preview.file.name"
-            class="preview-box__image"
-          />
+        <div v-for="(preview, index) in imagePreviews" :key="index" class="preview-box__item">
+          <img :src="preview.url" :alt="preview.file.name" class="preview-box__image" />
           <button @click="removeImage(index)" class="preview-box__remove-btn">
             &times;
           </button>
@@ -151,14 +138,8 @@ function goToMetadata() {
 
     <!-- Caixa de upload inicial -->
     <div v-else>
-      <div
-        class="upload-box"
-        :class="{ 'upload-box--dragging': isDragging }"
-        @click="openFileDialog"
-        @dragover="handleDragOver"
-        @dragleave="handleDragLeave"
-        @drop="handleDrop"
-      >
+      <div class="upload-box" :class="{ 'upload-box--dragging': isDragging }" @click="openFileDialog"
+        @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
         <h1 v-if="showUploadInstructions" v-html="instructionsTitle"></h1>
         <i class="bi bi-plus-circle-fill upload-box__icon"></i>
         <div class="upload-box__instructions">
@@ -167,33 +148,20 @@ function goToMetadata() {
             Limite aceito: {{ uploadStore.MAX_FILES }} imagens / 6Mb por arquivo
           </p>
         </div>
-        <input
-          class="upload-box__input"
-          type="file"
-          ref="fileInputRef"
-          multiple
-          accept="image/*,.heic,.heif"
-          @change="uploadImages"
-        />
+        <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*,.heic,.heif"
+          @change="uploadImages" />
       </div>
     </div>
 
     <!-- Alerta de erro -->
     <transition name="fade">
       <div class="upload-box__alert" v-if="showAlert">
-        <div
-          class="alert alert-danger h-auto bg-negativo-c fs-6 text-negativo-e border border-danger border-start-3"
-          role="alert"
-        >
+        <div class="alert alert-danger h-auto bg-negativo-c fs-6 text-negativo-e border border-danger border-start-3"
+          role="alert">
           <i class="bi bi-exclamation-triangle-fill text-negativo-e" />
           <span>{{ alertMessage }}</span>
-          <button
-            type="button"
-            class="btn-close text-negativo-e"
-            data-bs-dismiss="alert"
-            aria-label="Close"
-            @click="showAlert = false"
-          />
+          <button type="button" class="btn-close text-negativo-e" data-bs-dismiss="alert" aria-label="Close"
+            @click="showAlert = false" />
         </div>
       </div>
     </transition>
@@ -317,7 +285,7 @@ $breakpoint-md: 768px;
 }
 
 .upload-box {
-  > * + * {
+  >*+* {
     margin-top: 1.5rem;
   }
 
@@ -328,12 +296,15 @@ $breakpoint-md: 768px;
   background-color: #faf9f9;
   border: 2px solid #636262;
   width: 100%;
-  min-height: 500px;
   border-radius: 7px;
   border-width: 2px;
   padding: 80px 0;
   box-shadow: 4px 4px 8px 0px #0000001a;
   cursor: pointer;
+
+  @include md {
+    min-height: 500px;
+  }
 
   &--dragging {
     background-color: rgba(#b46013, 0.6);
@@ -341,11 +312,15 @@ $breakpoint-md: 768px;
 
   h1 {
     font-weight: 500;
-    font-size: 30px;
+    font-size: 16px;
     line-height: 150%;
     letter-spacing: 0%;
     text-align: center;
     vertical-align: middle;
+
+    @include md {
+      font-size: 30px;
+    }
   }
 
   &__icon {
@@ -356,11 +331,17 @@ $breakpoint-md: 768px;
   &__instructions {
     p {
       font-weight: 400;
-      font-size: 16px;
-      line-height: 20px;
+      font-size: 12px;
+      line-height: 125%;
+      letter-spacing: 0%;
       text-align: center;
       vertical-align: middle;
-      margin-bottom: 0.5rem;
+
+      @include md {
+        font-size: 16px;
+        line-height: 20px;
+        margin-bottom: 0.5rem;
+      }
     }
   }
 
