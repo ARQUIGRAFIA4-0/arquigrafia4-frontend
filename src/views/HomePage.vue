@@ -153,6 +153,7 @@ import {
 } from "@/constants/viewModes";
 import { useSearchQuery } from "@/composables/useSearchQuery";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
+import { sanitizeDateParam } from "@/helpers/dateUtils";
 
 const route = useRoute();
 const router = useRouter();
@@ -262,6 +263,39 @@ syncFromSnapshot(searchMode.value);
     performSearch({ mode: snapshot.mode, value: snapshot.value });
   }
 }
+
+// Guard: sanitiza date_from/date_to inválidos na URL (ex: acesso manual com ano absurdo)
+watch(
+  () => [route.query.date_from, route.query.date_to],
+  ([df, dt]) => {
+    const query = { ...route.query };
+    let changed = false;
+    if (df) {
+      const sanitized = sanitizeDateParam(df, true);
+      if (sanitized && sanitized !== df) {
+        query.date_from = sanitized;
+        changed = true;
+      } else if (!sanitized) {
+        delete query.date_from;
+        changed = true;
+      }
+    }
+    if (dt) {
+      const sanitized = sanitizeDateParam(dt, false);
+      if (sanitized && sanitized !== dt) {
+        query.date_to = sanitized;
+        changed = true;
+      } else if (!sanitized) {
+        delete query.date_to;
+        changed = true;
+      }
+    }
+    if (changed) {
+      router.replace({ query });
+    }
+  },
+  { immediate: true }
+);
 
 watch(
   () => route.query,

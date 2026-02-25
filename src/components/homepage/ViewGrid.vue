@@ -51,6 +51,7 @@ import { computed, onBeforeUnmount, onMounted, toRef, watch } from "vue";
 import { RouterLink, useRouter, useRoute } from "vue-router";
 import UiCard from "@/components/ui/UiCard.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
+import { sanitizeDateParam } from "@/helpers/dateUtils";
 
 const router = useRouter();
 const route = useRoute();
@@ -71,10 +72,10 @@ const filters = computed(() => {
     f.q = route.query.q;
   }
   if (route.query.date_from) {
-    f.date_from = route.query.date_from;
+    f.date_from = sanitizeDateParam(route.query.date_from, true) || route.query.date_from;
   }
   if (route.query.date_to) {
-    f.date_to = route.query.date_to;
+    f.date_to = sanitizeDateParam(route.query.date_to, false) || route.query.date_to;
   }
   const rawSubjects = route.query['subject[]'];
   if (rawSubjects) {
