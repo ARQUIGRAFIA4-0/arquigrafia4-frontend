@@ -55,7 +55,7 @@
         <template v-if="isMobile">
           <page-toolbar-mobile
             :view-selection="viewSelection"
-            :search-mode="searchMode"
+            :search-mode="localSearchMode"
             data-cy="toolbar-mobile"
             @search-mode-change="handleMobileSearchModeChange"
             @open-view-menu="openViewMenu"
@@ -66,7 +66,7 @@
         </template>
         <template v-else>
           <page-toolbar
-            :search-mode="searchMode"
+            :search-mode="localSearchMode"
             :text-query="textQuery"
             :date-range="dateRange"
             :color="selectedColor"
@@ -168,6 +168,8 @@ const viewMode = computed(() => selectionToViewMode(viewSelection.value));
 
 const { searchMode, loadSnapshot, setSearchMode, submitSearch } =
   useSearchQuery();
+
+const localSearchMode = ref(searchMode.value ?? "textual");
 
 const textQuery = ref("");
 const dateRange = ref({ start: "", end: "" });
@@ -370,8 +372,8 @@ function handleToolbarConfirm({ mode, value }) {
   performSearch({ mode, value });
 }
 
-async function handleToolbarSearchModeChange(mode) {
-  await setSearchMode(mode, { replace: true });
+function handleToolbarSearchModeChange(mode) {
+  localSearchMode.value = mode;
   syncFromSnapshot(mode);
 }
 
