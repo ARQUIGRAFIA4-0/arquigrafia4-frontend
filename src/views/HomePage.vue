@@ -363,7 +363,35 @@ function handleMapSettingsUpdate(value) {
   updateMapSettings(value);
 }
 
+function buildAdvancedFiltersFromUrl() {
+  const query = route.query;
+  const terms = [];
+
+  if (query.q) {
+    terms.push({ field: 'all', value: query.q, label: `Todos os campos: ${query.q}` });
+  }
+  if (query.title) {
+    terms.push({ field: 'title', value: query.title, label: `Título: ${query.title}` });
+  }
+  if (query.contributor) {
+    terms.push({ field: 'author', value: query.contributor, label: `Autoria: ${query.contributor}` });
+  }
+  const rawSubjectTerms = query['subject_term[]'];
+  const subjectTerms = rawSubjectTerms
+    ? (Array.isArray(rawSubjectTerms) ? rawSubjectTerms : [rawSubjectTerms])
+    : [];
+  subjectTerms.forEach((term) => {
+    terms.push({ field: 'tag', value: term, label: `Tag: ${term}` });
+  });
+
+  return {
+    ...createDefaultAdvancedFilters(),
+    terms,
+  };
+}
+
 function openAdvancedSearch() {
+  advancedFilters.value = buildAdvancedFiltersFromUrl();
   modalAdvancedSearch.value = true;
 }
 
