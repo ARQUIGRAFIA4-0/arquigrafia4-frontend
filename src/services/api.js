@@ -128,12 +128,32 @@ const getImageComments = async () => {
   return [];
 };
 
-// TODO: implementar endpoint real de GeoJSON
 const getGeoJSON = async () => {
-  return {
-    obra: createEmptyFeatureCollection(),
-    imagem: createEmptyFeatureCollection(),
-  };
+  try {
+    const { data } = await axios.get("/api/locations/geojson");
+
+    const features = (data.features ?? []).map((feature) => ({
+      ...feature,
+      properties: {
+        ...feature.properties,
+        imageUrl: feature.properties?.thumb_url ?? null,
+        title: feature.properties?.title ?? null,
+      },
+    }));
+
+    const featureCollection = { type: "FeatureCollection", features };
+
+    return {
+      obra: createEmptyFeatureCollection(),
+      imagem: featureCollection,
+    };
+  } catch (error) {
+    console.error("Erro ao carregar GeoJSON de localizações", error);
+    return {
+      obra: createEmptyFeatureCollection(),
+      imagem: createEmptyFeatureCollection(),
+    };
+  }
 };
 
 /**

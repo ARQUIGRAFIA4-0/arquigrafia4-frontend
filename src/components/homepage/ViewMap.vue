@@ -34,7 +34,7 @@ const initialState = {
 
 const PLACEHOLDER_IMAGE_URL = "https://placehold.co/320x180?text=Imagem";
 
-const createPopupCardContent = ({ imageUrl, title }) => {
+const createPopupCardContent = ({ imageUrl, title, imageId }) => {
   const resolvedImageUrl = (() => {
     if (typeof imageUrl === "string") {
       const trimmed = imageUrl.trim();
@@ -46,16 +46,18 @@ const createPopupCardContent = ({ imageUrl, title }) => {
   })();
 
   const safeTitle = title ? escapeHtml(title) : "Imagem ARQUIGRAFIA";
+  const titleContent = imageId
+    ? `<a class="popup-card__title-link" href="/explore/dados/image/${escapeHtml(imageId)}">${safeTitle}</a>`
+    : safeTitle;
 
   return `<article class="popup-card"><div class="popup-card__media"><img src="${escapeHtml(
     resolvedImageUrl
-  )}" alt="" loading="lazy" /></div><div class="popup-card__content"><header class="popup-card__header"><h3 class="popup-card__title">${safeTitle}</h3></header></div></article>`;
+  )}" alt="" loading="lazy" /></div><div class="popup-card__content"><header class="popup-card__header"><h3 class="popup-card__title">${titleContent}</h3></header></div></article>`;
 };
 
-const styleUrl = "https://tiles.openfreemap.org/styles/positron";
+const styleUrl = "https://tiles.openfreemap.org/styles/bright";
 
 const cameraIconId = "camera-fill-icon";
-const imagemIconId = "paris-sight-icon";
 
 const obraSourceId = "arquigrafia-obras";
 const obraClusterColor = "#D27D30";
@@ -65,9 +67,6 @@ const imagemClusterColor = "#1D70B8";
 
 const cameraIconSvg =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#D27D30" /><g transform="translate(8 8) scale(0.75) translate(-8 -8)"><path fill="#FFFFFF" d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0" /><path fill="#FFFFFF" d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4Zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0" /></g></svg>';
-
-const imagemIconSvg =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#1D70B8" /><g transform="translate(14 14) scale(1) translate(-8 -8)"><path fill="#FFFFFF" d="M14.763.075A.5.5 0 0 1 15 .5v15a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5V14h-1v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V10a.5.5 0 0 1 .342-.474L6 7.64V4.5a.5.5 0 0 1 .276-.447l8-4a.5.5 0 0 1 .487.022M6 8.694 1 10.36V15h5zM7 15h2v-1.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5V15h2V1.309l-7 3.5z" /><path fill="#FFFFFF" d="M2 11h1v1H2zm2 0h1v1H4zm-2 2h1v1H2zm2 0h1v1H4zm4-4h1v1H8zm2 0h1v1h-1zm-2 2h1v1H8zm2 0h1v1h-1zm2-2h1v1h-1zm0 2h1v1h-1zM8 7h1v1H8zm2 0h1v1h-1zm2 0h1v1h-1zM8 5h1v1H8zm2 0h1v1h-1zm2 0h1v1h-1zm0-2h1v1h-1z" /></g></svg>';
 
 const obraData = shallowRef({ type: "FeatureCollection", features: [] });
 const imagemData = shallowRef({ type: "FeatureCollection", features: [] });
@@ -115,15 +114,16 @@ const { setupLayer: setupImagemLayer, teardownLayer: teardownImagemLayer } =
   useIconLayer({
     mapRef: mapInstance,
     sourceId: imagemSourceId,
-    iconId: imagemIconId,
-    iconSvg: imagemIconSvg,
+    iconId: cameraIconId,
+    iconSvg: cameraIconSvg,
     baseColor: imagemClusterColor,
     data: imagemData,
     getPopupContent: (feature) => {
       const imageUrl = feature.properties?.imageUrl ?? null;
       const title = feature.properties?.title ?? "Imagem";
+      const imageId = feature.properties?.image_id ?? null;
 
-      return createPopupCardContent({ imageUrl, title });
+      return createPopupCardContent({ imageUrl, title, imageId });
     },
   });
 
@@ -141,9 +141,28 @@ const handleMapLoad = () => {
   applyMapTilt(mapSettingsQuery.value);
 };
 
+const setMapLanguagePt = (map) => {
+  const style = map.getStyle();
+  if (!style?.layers) return;
+
+  style.layers.forEach((layer) => {
+    if (layer.type !== "symbol") return;
+    const textField = map.getLayoutProperty(layer.id, "text-field");
+    if (!textField) return;
+
+    map.setLayoutProperty(layer.id, "text-field", [
+      "coalesce",
+      ["get", "name:pt"],
+      ["get", "name:latin"],
+      ["get", "name"],
+    ]);
+  });
+};
+
 const handleMapReady = (map) => {
   mapInstance.value = markRaw(map);
   handleMapLoad();
+  setMapLanguagePt(map);
 };
 
 const handleMapError = (error) => {
@@ -168,7 +187,7 @@ onUnmounted(() => {
 }
 
 .maplibregl-popup {
-  font-family: inherit;
+  font-family: "DM Sans", sans-serif;
   margin-left: -13px;
 }
 
@@ -228,9 +247,21 @@ onUnmounted(() => {
 
 .popup-card__title {
   margin: 0;
-  font-size: var(--h5-fs);
-  font-weight: var(--h5-fw);
-  line-height: var(--h5-lh);
+  font-size: var(--h3-fs);
+  font-weight: var(--h3-fw);
+  line-height: var(--h3-lh);
+}
+
+.popup-card__title-link {
+  color: var(--Cinza_E);
+  text-decoration: none;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+.popup-card__title-link:hover {
+  text-decoration: underline;
 }
 
 .popup-card__subtitle {
