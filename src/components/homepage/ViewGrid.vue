@@ -80,6 +80,16 @@ const filters = computed(() => {
   if (rawSubjects) {
     f.subjects = Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects];
   }
+  const rawSubjectTerms = route.query['subject_term[]'];
+  if (rawSubjectTerms) {
+    f.subjectTerms = Array.isArray(rawSubjectTerms) ? rawSubjectTerms : [rawSubjectTerms];
+  }
+  if (route.query.title) {
+    f.title = route.query.title;
+  }
+  if (route.query.contributor) {
+    f.contributor = route.query.contributor;
+  }
   return f;
 });
 

@@ -227,9 +227,24 @@ const fetchImages = async (page = 1, filters = {}) => {
       params.user_id = filters.userId;
     }
     
-    // Filtro por assuntos (tags de sujeito)
+    // Filtro por assuntos (tags de sujeito por ID)
     if (filters.subjects?.length) {
       params['subject[]'] = filters.subjects.length === 1 ? filters.subjects[0] : filters.subjects;
+    }
+    
+    // Filtro por termos de assunto (partial match)
+    if (filters.subjectTerms?.length) {
+      params['subject_term[]'] = filters.subjectTerms.length === 1 ? filters.subjectTerms[0] : filters.subjectTerms;
+    }
+    
+    // Filtro por título (partial match)
+    if (filters.title && typeof filters.title === 'string') {
+      params.title = filters.title.trim();
+    }
+    
+    // Filtro por contribuidor/autor (partial match)
+    if (filters.contributor && typeof filters.contributor === 'string') {
+      params.contributor = filters.contributor.trim();
     }
     
     const { data } = await axios.get("/api/images", { params });

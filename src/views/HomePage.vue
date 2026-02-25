@@ -497,6 +497,21 @@ function handleRemoveUrlChip(chip) {
     } else {
       query['subject[]'] = updated.length === 1 ? updated[0] : updated;
     }
+  } else if (chip.type === "subject_term") {
+    const rawTerms = query['subject_term[]'];
+    const existing = rawTerms
+      ? (Array.isArray(rawTerms) ? rawTerms : [rawTerms])
+      : [];
+    const updated = existing.filter((t) => t !== chip.termValue);
+    if (updated.length === 0) {
+      delete query['subject_term[]'];
+    } else {
+      query['subject_term[]'] = updated.length === 1 ? updated[0] : updated;
+    }
+  } else if (chip.type === "title") {
+    delete query.title;
+  } else if (chip.type === "contributor") {
+    delete query.contributor;
   }
   
   router.push({ query });
@@ -508,6 +523,9 @@ function handleClearAllFilters() {
   delete query.date_from;
   delete query.date_to;
   delete query['subject[]'];
+  delete query['subject_term[]'];
+  delete query.title;
+  delete query.contributor;
   router.push({ query });
 }
 
