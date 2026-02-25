@@ -52,14 +52,14 @@
         <div class="mb-4">
           <div class="h3 pt-2">Termos de busca</div>
           <div class="d-flex flex-wrap gap-2">
-            <span v-if="searchTerms.length === 0" class="text-muted"
+            <span v-if="searchTerms.length === 0 && extraSelectedTags.length === 0" class="text-muted"
               >Nenhum termo adicionado.</span
             >
             <button
               v-for="(term, idx) in searchTerms"
               :key="idx"
               type="button"
-              class="btn btn-info btn-sm btn-tag"
+              class="btn btn-primary btn-sm btn-tag"
             >
               {{ term.label }}
               <button
@@ -67,6 +67,21 @@
                 class="btn-close ms-2"
                 aria-label="Remover termo"
                 @click.stop="removeSearchTerm(idx)"
+              ></button>
+            </button>
+            <button
+              v-for="id in extraSelectedTags"
+              :key="id"
+              type="button"
+              class="btn btn-primary btn-sm btn-tag"
+            >
+              <span v-if="!isTermLoaded(id)" class="spinner-border spinner-border-sm" role="status" aria-label="Carregando..." />
+              <template v-else>Tag [id]: {{ getTermById(id) }}</template>
+              <button
+                type="button"
+                class="btn-close ms-1"
+                aria-label="Remover tag"
+                @click.stop="toggleTag(id)"
               ></button>
             </button>
           </div>
@@ -80,7 +95,7 @@
           <div class="col-12 col-md-6" style="opacity: 0.4; pointer-events: none;">
             <div class="p">Localização</div>
             <div class="text-muted small mb-2">
-              (localizações mais recorrentes em nosso acervo)
+              (localizações mais utilizadas em nosso acervo)
             </div>
             <div class="d-flex flex-wrap gap-2">
               <button
@@ -108,23 +123,23 @@
             <div class="d-flex flex-wrap gap-2">
               <button
                 v-for="tag in tagSuggestions"
-                :key="tag"
+                :key="tag.id"
                 type="button"
                 :class="[
                   'btn btn-sm',
-                  selectedTags.includes(tag)
-                    ? 'btn-dark'
+                  selectedTags.includes(tag.id)
+                    ? 'btn-primary'
                     : 'btn-outline-secondary',
                 ]"
-                @click="toggleTag(tag)"
+                @click="toggleTag(tag.id)"
               >
-                {{ tag }}
+                {{ tag.label }}
               </button>
             </div>
           </div>
         </div>
 
-        <div class="mb-1 mt-2">
+        <!-- <div class="mb-1 mt-2" style="opacity: 0.4; pointer-events: none;">
           <div class="p pb-2">Uso permitido</div>
           <div class="d-flex flex-wrap gap-2">
             <button
@@ -152,7 +167,7 @@
               Não permite uso comercial
             </button>
           </div>
-        </div>
+        </div> -->
       </div>
 
       <div class="modal-footer footer-grid">
@@ -179,6 +194,7 @@
 import { computed, ref, watch } from "vue";
 import toggleArrayItem from "@/helpers/toggleArrayItem";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
+import { useSubjectTerms } from "@/composables/useSubjectTerms";
 
 defineOptions({
   name: "AdvancedSearchModal",
@@ -197,11 +213,12 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue", "confirm"]);
 
+const { getTermById, isTermLoaded, loadSubjectTerms } = useSubjectTerms();
+
 const fieldOptions = [
   { value: "all", label: "Todos os campos" },
   { value: "author", label: "Autoria" },
   { value: "tag", label: "Tag" },
-  { value: "location", label: "Localização" },
   { value: "title", label: "Título" },
 ];
 
@@ -222,19 +239,25 @@ const locationSuggestions = [
 ];
 const selectedLocations = ref([]);
 const tagSuggestions = [
-  "Concreto",
-  "Público",
-  "Ferro",
-  "Vidro",
-  "Alvenaria",
-  "Vegetação",
-  "Fachada",
-  "Edifício",
-  "Prédio",
-  "Pilar",
+  { id: "f5c68f66-549f-43db-96b2-ac34ebbd9f9b", label: "alvenaria" },
+  { id: "019adaf3-b4f0-7139-be65-66b693091ff5", label: "concreto" },
+  { id: "7084a2b8-0145-4ac7-8795-8d12c415f999", label: "edifício" },
+  { id: "3de8e1d7-afb9-4fd8-b43f-5c25dabe7cc7", label: "fachada" },
+  { id: "019adaf2-9fd6-71dc-b6bb-e6eb55a8c718", label: "ferro" },
+  { id: "b466374c-314b-4be7-88fb-9397d44d7c1b", label: "pilar" },
+  { id: "7c509819-bafb-4b12-972e-75fb966c3dbd", label: "público" },
+  { id: "862f85cb-3443-45cf-bc75-fe76f16c63ef", label: "prédio" },
+  { id: "019adaf5-95cd-7271-a1e1-c765025d2fb5", label: "vegetação" },
+  { id: "019adaf2-9303-7336-84e3-f5706bc684bb", label: "vidro" },
 ];
+const knownTagIds = new Set(tagSuggestions.map((t) => t.id));
 const selectedTags = ref([]);
 const selectedUse = ref(null);
+
+// Tags selecionadas que não estão nas sugestões hardcoded (vindas do ViewGrid, etc.)
+const extraSelectedTags = computed(() =>
+  selectedTags.value.filter((id) => !knownTagIds.has(id))
+);
 
 const selectedFieldLabel = computed(() => {
   const found = fieldOptions.find((f) => f.value === selectedField.value);
@@ -264,6 +287,11 @@ watch(
   (value) => {
     if (value) {
       syncFromFilters(props.filters);
+      // Carrega labels para tags extras (vindas do ViewGrid, não conhecidas pelo modal)
+      const extras = selectedTags.value.filter((id) => !knownTagIds.has(id));
+      if (extras.length > 0) {
+        loadSubjectTerms(extras);
+      }
     }
   }
 );

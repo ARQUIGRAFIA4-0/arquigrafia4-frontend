@@ -381,7 +381,7 @@ function buildAdvancedFiltersFromUrl() {
     ? (Array.isArray(rawSubjectTerms) ? rawSubjectTerms : [rawSubjectTerms])
     : [];
   subjectTerms.forEach((term) => {
-    terms.push({ field: 'tag', value: term, label: `Tag: ${term}` });
+    terms.push({ field: 'tag', value: term, label: `Tag [termo]: ${term}` });
   });
 
   // Tags/subjects selecionados (IDs) vindos de subject[] na URL
