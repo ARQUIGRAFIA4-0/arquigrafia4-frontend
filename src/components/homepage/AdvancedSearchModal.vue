@@ -191,7 +191,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import toggleArrayItem from "@/helpers/toggleArrayItem";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
@@ -286,15 +286,22 @@ watch(
   () => props.modelValue,
   (value) => {
     if (value) {
+      document.body.style.overflow = "hidden";
       syncFromFilters(props.filters);
       // Carrega labels para tags extras (vindas do ViewGrid, não conhecidas pelo modal)
       const extras = selectedTags.value.filter((id) => !knownTagIds.has(id));
       if (extras.length > 0) {
         loadSubjectTerms(extras);
       }
+    } else {
+      document.body.style.overflow = "";
     }
   }
 );
+
+onUnmounted(() => {
+  document.body.style.overflow = "";
+});
 
 watch(
   () => props.filters,
