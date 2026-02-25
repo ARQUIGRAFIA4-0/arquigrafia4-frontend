@@ -126,6 +126,10 @@ function openViewMenu() {
   box-shadow: var(--shadow-elevation-medium);
 }
 
+.btn.active {
+  border: 0px;
+}
+
 .search-icon-wrapper {
   position: relative;
   display: inline-flex;
