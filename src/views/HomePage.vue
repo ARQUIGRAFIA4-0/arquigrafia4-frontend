@@ -55,7 +55,7 @@
         <template v-if="isMobile">
           <page-toolbar-mobile
             :view-selection="viewSelection"
-            :search-mode="searchMode"
+            :search-mode="localSearchMode"
             data-cy="toolbar-mobile"
             @search-mode-change="handleMobileSearchModeChange"
             @open-view-menu="openViewMenu"
@@ -66,7 +66,7 @@
         </template>
         <template v-else>
           <page-toolbar
-            :search-mode="searchMode"
+            :search-mode="localSearchMode"
             :text-query="textQuery"
             :date-range="dateRange"
             :color="selectedColor"
@@ -84,6 +84,8 @@
             @open-advanced-search="openAdvancedSearch"
             @confirm="handleToolbarConfirm"
             @remove-chip="handleRemoveChip"
+            @remove-url-chip="handleRemoveUrlChip"
+            @clear-all-filters="handleClearAllFilters"
           />
         </template>
       </div>
@@ -151,6 +153,7 @@ import {
 } from "@/constants/viewModes";
 import { useSearchQuery } from "@/composables/useSearchQuery";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
+import { sanitizeDateParam } from "@/helpers/dateUtils";
 
 const route = useRoute();
 const router = useRouter();
@@ -165,6 +168,8 @@ const viewMode = computed(() => selectionToViewMode(viewSelection.value));
 
 const { searchMode, loadSnapshot, setSearchMode, submitSearch } =
   useSearchQuery();
+
+const localSearchMode = ref(searchMode.value ?? "textual");
 
 const textQuery = ref("");
 const dateRange = ref({ start: "", end: "" });
@@ -261,6 +266,39 @@ syncFromSnapshot(searchMode.value);
   }
 }
 
+// Guard: sanitiza date_from/date_to inválidos na URL (ex: acesso manual com ano absurdo)
+watch(
+  () => [route.query.date_from, route.query.date_to],
+  ([df, dt]) => {
+    const query = { ...route.query };
+    let changed = false;
+    if (df) {
+      const sanitized = sanitizeDateParam(df, true);
+      if (sanitized && sanitized !== df) {
+        query.date_from = sanitized;
+        changed = true;
+      } else if (!sanitized) {
+        delete query.date_from;
+        changed = true;
+      }
+    }
+    if (dt) {
+      const sanitized = sanitizeDateParam(dt, false);
+      if (sanitized && sanitized !== dt) {
+        query.date_to = sanitized;
+        changed = true;
+      } else if (!sanitized) {
+        delete query.date_to;
+        changed = true;
+      }
+    }
+    if (changed) {
+      router.replace({ query });
+    }
+  },
+  { immediate: true }
+);
+
 watch(
   () => route.query,
   () => {
@@ -285,6 +323,10 @@ watch(
               : false;
     if (hasValue) {
       performSearch({ mode: snapshot.mode, value: snapshot.value });
+    } else {
+      // Limpa busca ativa quando não há mais filtros (ex: chip 'q' removido)
+      hasNoResults.value = false;
+      activeSearch.value = null;
     }
   },
   { deep: true }
@@ -330,8 +372,8 @@ function handleToolbarConfirm({ mode, value }) {
   performSearch({ mode, value });
 }
 
-async function handleToolbarSearchModeChange(mode) {
-  await setSearchMode(mode, { replace: true });
+function handleToolbarSearchModeChange(mode) {
+  localSearchMode.value = mode;
   syncFromSnapshot(mode);
 }
 
@@ -357,15 +399,99 @@ function handleMapSettingsUpdate(value) {
   updateMapSettings(value);
 }
 
+function buildAdvancedFiltersFromUrl() {
+  const query = route.query;
+  const terms = [];
+
+  if (query.q) {
+    terms.push({ field: 'all', value: query.q, label: `Todos os campos: ${query.q}` });
+  }
+  if (query.title) {
+    terms.push({ field: 'title', value: query.title, label: `Título: ${query.title}` });
+  }
+  if (query.contributor) {
+    terms.push({ field: 'author', value: query.contributor, label: `Autoria: ${query.contributor}` });
+  }
+  const rawSubjectTerms = query['subject_term[]'];
+  const subjectTerms = rawSubjectTerms
+    ? (Array.isArray(rawSubjectTerms) ? rawSubjectTerms : [rawSubjectTerms])
+    : [];
+  subjectTerms.forEach((term) => {
+    terms.push({ field: 'tag', value: term, label: `Tag [termo]: ${term}` });
+  });
+
+  // Tags/subjects selecionados (IDs) vindos de subject[] na URL
+  const rawSubjects = query['subject[]'];
+  const tags = rawSubjects
+    ? (Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects])
+    : [];
+
+  return {
+    ...createDefaultAdvancedFilters(),
+    terms,
+    tags,
+  };
+}
+
 function openAdvancedSearch() {
+  advancedFilters.value = buildAdvancedFiltersFromUrl();
   modalAdvancedSearch.value = true;
 }
 
 function confirmAdvancedSearch(payload) {
+  // Mantém advancedFilters sincronizado (necessário para "Editar" reabrir com dados)
   handleAdvancedFiltersUpdate(payload);
-  submitSearch({ mode: "avancada", value: advancedFilters.value });
+
+  // --- Bypass: monta URL diretamente a partir do payload ---
+  const terms = Array.isArray(payload.terms) ? payload.terms : [];
+
+  // Agrupa termos por campo
+  const qValues = [];
+  const titleValues = [];
+  const contributorValues = [];
+  const subjectTermValues = [];
+
+  terms.forEach((term) => {
+    if (!term || typeof term.value !== 'string' || !term.value.trim()) return;
+    const v = term.value.trim();
+    switch (term.field) {
+      case 'title':  titleValues.push(v); break;
+      case 'author': contributorValues.push(v); break;
+      case 'tag':    subjectTermValues.push(v); break;
+      case 'all':
+      default:       qValues.push(v); break;
+    }
+  });
+
+  // Clona query atual e remove chaves do pipeline legado + bypass anteriores
+  const legacyKeys = [
+    'searchMode', 'author', 'subject_term', 'subject', 'dateStart',
+    'dateEnd', 'color', 'location', 'use',
+  ];
+  const bypassKeys = ['q', 'title', 'contributor', 'subject_term[]', 'date_from', 'date_to', 'subject[]'];
+  const newQuery = { ...route.query };
+  [...legacyKeys, ...bypassKeys].forEach((k) => { delete newQuery[k]; });
+
+  // Atribui novos params de bypass
+  if (qValues.length > 0) newQuery.q = qValues.join(' ');
+  if (titleValues.length > 0) newQuery.title = titleValues.join(' ');
+  if (contributorValues.length > 0) newQuery.contributor = contributorValues.join(' ');
+  if (subjectTermValues.length === 1) {
+    newQuery['subject_term[]'] = subjectTermValues[0];
+  } else if (subjectTermValues.length > 1) {
+    newQuery['subject_term[]'] = subjectTermValues;
+  }
+
+  // Tags sugeridas (IDs de subjects)
+  const subjectIds = Array.isArray(payload.tags) ? payload.tags.filter((id) => typeof id === 'string' && id.length > 0) : [];
+  if (subjectIds.length === 1) {
+    newQuery['subject[]'] = subjectIds[0];
+  } else if (subjectIds.length > 1) {
+    newQuery['subject[]'] = subjectIds;
+  }
+
+  router.push({ query: newQuery });
   modalAdvancedSearch.value = false;
-  performSearch({ mode: "avancada", value: advancedFilters.value });
 }
 
 function handleToolbarViewSubcontrol(payload) {
@@ -472,6 +598,57 @@ function handleRemoveChip(chip) {
   }
 }
 
+function handleRemoveUrlChip(chip) {
+  const query = { ...route.query };
+  
+  if (chip.type === "q") {
+    delete query.q;
+  } else if (chip.type === "date_range") {
+    delete query.date_from;
+    delete query.date_to;
+  } else if (chip.type === "subject_url") {
+    const rawSubjects = query['subject[]'];
+    const existing = rawSubjects
+      ? (Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects])
+      : [];
+    const updated = existing.filter((id) => id !== chip.subjectId);
+    if (updated.length === 0) {
+      delete query['subject[]'];
+    } else {
+      query['subject[]'] = updated.length === 1 ? updated[0] : updated;
+    }
+  } else if (chip.type === "subject_term") {
+    const rawTerms = query['subject_term[]'];
+    const existing = rawTerms
+      ? (Array.isArray(rawTerms) ? rawTerms : [rawTerms])
+      : [];
+    const updated = existing.filter((t) => t !== chip.termValue);
+    if (updated.length === 0) {
+      delete query['subject_term[]'];
+    } else {
+      query['subject_term[]'] = updated.length === 1 ? updated[0] : updated;
+    }
+  } else if (chip.type === "title") {
+    delete query.title;
+  } else if (chip.type === "contributor") {
+    delete query.contributor;
+  }
+  
+  router.push({ query });
+}
+
+function handleClearAllFilters() {
+  const query = { ...route.query };
+  delete query.q;
+  delete query.date_from;
+  delete query.date_to;
+  delete query['subject[]'];
+  delete query['subject_term[]'];
+  delete query.title;
+  delete query.contributor;
+  router.push({ query });
+}
+
 function performSearch({ mode, value }) {
   hasNoResults.value = false;
   activeSearch.value = { mode, value };
@@ -488,6 +665,11 @@ function handleClearSearch() {
   advancedFilters.value = createDefaultAdvancedFilters();
   hasNoResults.value = false;
   activeSearch.value = null;
+  // Navega para a mesma view sem nenhum parâmetro de busca na URL
+  router.push({
+    name: "explore",
+    params: { viewMode: route.params.viewMode || "mosaic" },
+  });
 }
 
 function handleNewSearch() {

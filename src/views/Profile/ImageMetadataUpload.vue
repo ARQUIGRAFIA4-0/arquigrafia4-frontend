@@ -17,7 +17,7 @@
           <span>{{ alertMessage }}</span>
           <button
             type="button"
-            class="btn-close text-negativo-e"
+            :class="['btn-close', alertType === 'success' ? 'text-positivo-e' : 'text-negativo-e']"
             data-bs-dismiss="alert"
             aria-label="Close"
             @click="showAlert = false"
@@ -1402,9 +1402,16 @@ const handleSubmit = async () => {
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
 
 .upload-box__alert {
-  position: absolute;
+  position: fixed;
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
@@ -1463,13 +1470,37 @@ const handleSubmit = async () => {
   left: 0;
   right: 0;
   background-color: white;
-  padding: 1rem 2rem;
+  padding: 1rem;
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 3rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
   box-shadow: 2px -2px 5px 2px rgba(0, 0, 0, 0.1);
   z-index: 1000;
+
+  .d-flex.gap-3 {
+    width: 100%;
+
+    .btn {
+      flex: 1;
+    }
+  }
+
+  @include md {
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 3rem;
+    padding: 1rem 2rem;
+
+    .d-flex.gap-3 {
+      width: auto;
+
+      .btn {
+        flex: unset;
+      }
+    }
+  }
 }
 
 .preview-actions-bar button {

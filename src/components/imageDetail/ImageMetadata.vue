@@ -94,11 +94,12 @@
 
 <script setup>
 import { computed } from "vue";
-import { RouterLink, useRouter } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import { findLicenseByUrl } from "@/constants/creativeCommonsLicenses";
 import { DEFAULT_VIEW_ROUTE } from "@/constants/viewModes";
 
+const route = useRoute();
 const router = useRouter();
 
 const props = defineProps({
@@ -109,10 +110,15 @@ const props = defineProps({
 });
 
 function searchBySubject(subject) {
+  const rawSubjects = route.query['subject[]'];
+  const existing = rawSubjects
+    ? Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects]
+    : [];
+  const updated = existing.includes(subject.id) ? existing : [...existing, subject.id];
   router.push({
     name: "explore",
     params: { viewMode: DEFAULT_VIEW_ROUTE },
-    query: { searchMode: "avancada", subject: subject.id },
+    query: { ...route.query, 'subject[]': updated.length === 1 ? updated[0] : updated },
   });
 }
 

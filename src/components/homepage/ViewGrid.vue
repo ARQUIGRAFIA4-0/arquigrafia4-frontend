@@ -51,7 +51,7 @@ import { computed, onBeforeUnmount, onMounted, toRef, watch } from "vue";
 import { RouterLink, useRouter, useRoute } from "vue-router";
 import UiCard from "@/components/ui/UiCard.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
-import { DEFAULT_VIEW_ROUTE } from "@/constants/viewModes";
+import { sanitizeDateParam } from "@/helpers/dateUtils";
 
 const router = useRouter();
 const route = useRoute();
@@ -65,13 +65,42 @@ const props = defineProps({
 
 const emit = defineEmits(["no-results"]);
 
+// Combina filtros da prop search com filtros da URL
+const filters = computed(() => {
+  const f = {};
+  if (route.query.q) {
+    f.q = route.query.q;
+  }
+  if (route.query.date_from) {
+    f.date_from = sanitizeDateParam(route.query.date_from, true) || route.query.date_from;
+  }
+  if (route.query.date_to) {
+    f.date_to = sanitizeDateParam(route.query.date_to, false) || route.query.date_to;
+  }
+  const rawSubjects = route.query['subject[]'];
+  if (rawSubjects) {
+    f.subjects = Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects];
+  }
+  const rawSubjectTerms = route.query['subject_term[]'];
+  if (rawSubjectTerms) {
+    f.subjectTerms = Array.isArray(rawSubjectTerms) ? rawSubjectTerms : [rawSubjectTerms];
+  }
+  if (route.query.title) {
+    f.title = route.query.title;
+  }
+  if (route.query.contributor) {
+    f.contributor = route.query.contributor;
+  }
+  return f;
+});
+
 const {
   items,
   hasNextPage,
   fetchNextPage,
   isPending,
   isFetchingNextPage,
-} = useImagesInfiniteQuery({ search: toRef(props, "search") });
+} = useImagesInfiniteQuery({ search: toRef(props, "search"), filters });
 
 watch(items, (val) => {
   if (props.search && !isPending.value && val.length === 0) {
@@ -116,11 +145,13 @@ const handleImageError = (event) => {
 };
 
 const handleTagClick = (subject) => {
-  const currentViewMode = route.params.viewMode || DEFAULT_VIEW_ROUTE;
+  const rawSubjects = route.query['subject[]'];
+  const existing = rawSubjects
+    ? (Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects])
+    : [];
+  const updated = existing.includes(subject.id) ? existing : [...existing, subject.id];
   router.push({
-    name: "explore",
-    params: { viewMode: currentViewMode },
-    query: { searchMode: "avancada", subject: subject.id },
+    query: { ...route.query, 'subject[]': updated.length === 1 ? updated[0] : updated },
   });
 };
 

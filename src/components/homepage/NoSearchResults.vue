@@ -17,7 +17,7 @@
           Limpar busca
         </button>
         <button class="btn btn-secondary btn-sm" @click="$emit('new-search')">
-          Nova busca
+          Editar busca
         </button>
       </div>
     </div>

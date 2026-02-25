@@ -1,8 +1,10 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from "vue";
+import { useRoute } from "vue-router";
 import MosaicCard from "@/components/MosaicCard.vue";
 import MosaicSkeleton from "@/components/MosaicSkeleton.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
+import { sanitizeDateParam } from "@/helpers/dateUtils";
 
 const props = defineProps({
   search: {
@@ -13,6 +15,7 @@ const props = defineProps({
 
 const emit = defineEmits(["no-results"]);
 
+const route = useRoute();
 
 const columnWidths = [320, 200, 280, 260, 210, 220, 300];
 const isProcessing = ref(false);
@@ -102,13 +105,42 @@ const processItems = async (sourceItems) => {
   }
 };
 
+// Combina filtros da prop search com filtros da URL
+const filters = computed(() => {
+  const f = {};
+  if (route.query.q) {
+    f.q = route.query.q;
+  }
+  if (route.query.date_from) {
+    f.date_from = sanitizeDateParam(route.query.date_from, true) || route.query.date_from;
+  }
+  if (route.query.date_to) {
+    f.date_to = sanitizeDateParam(route.query.date_to, false) || route.query.date_to;
+  }
+  const rawSubjects = route.query['subject[]'];
+  if (rawSubjects) {
+    f.subjects = Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects];
+  }
+  const rawSubjectTerms = route.query['subject_term[]'];
+  if (rawSubjectTerms) {
+    f.subjectTerms = Array.isArray(rawSubjectTerms) ? rawSubjectTerms : [rawSubjectTerms];
+  }
+  if (route.query.title) {
+    f.title = route.query.title;
+  }
+  if (route.query.contributor) {
+    f.contributor = route.query.contributor;
+  }
+  return f;
+});
+
 const {
   items: rawItems,
   hasNextPage,
   fetchNextPage,
   isPending,
   isFetchingNextPage,
-} = useImagesInfiniteQuery({ initialLimit: 100, search: toRef(props, "search") });
+} = useImagesInfiniteQuery({ initialLimit: 100, search: toRef(props, "search"), filters });
 
 watch(rawItems, (val) => {
   if (props.search && !isPending.value && val.length === 0) {
@@ -140,7 +172,11 @@ let lastSearchKey = null;
 watch(
   rawItems,
   async (newItems) => {
-    const searchKey = props.search ? JSON.stringify(props.search) : null;
+    const rawSubjects = route.query['subject[]'];
+    const subjectsKey = rawSubjects ? (Array.isArray(rawSubjects) ? [...rawSubjects].sort().join(',') : rawSubjects) : null;
+    const rawSubjectTerms = route.query['subject_term[]'];
+    const subjectTermsKey = rawSubjectTerms ? (Array.isArray(rawSubjectTerms) ? [...rawSubjectTerms].sort().join(',') : rawSubjectTerms) : null;
+    const searchKey = JSON.stringify({ search: props.search, q: route.query.q || null, date_from: route.query.date_from || null, date_to: route.query.date_to || null, subjects: subjectsKey, subjectTerms: subjectTermsKey, title: route.query.title || null, contributor: route.query.contributor || null });
     if (searchKey !== lastSearchKey) {
       // Reset when search params change (including going from search to browse)
       mosaicItems.value = [];

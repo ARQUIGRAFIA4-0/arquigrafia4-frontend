@@ -1,5 +1,5 @@
 export const SEARCH_OPTIONS = [
-  { mode: "avancada", label: "Busca avançada", icon: "bi-gear" },
+  { mode: "avancada", label: "Busca avançada", icon: "bi-sliders" },
   { mode: "textual", label: "Busca textual", icon: "bi-search" },
   { mode: "data", label: "Busca por data", icon: "bi-calendar2-week" },
   { mode: "cor", label: "Busca por cor", icon: "bi-palette" },

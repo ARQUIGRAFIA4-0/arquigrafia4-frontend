@@ -62,3 +62,25 @@ export function setDateYear(dateStr, newYear, isStart = true) {
   const safeDay = Math.min(Math.max(day, 1), 31);
   return formatDate(newYear, safeMonth, safeDay);
 }
+
+/**
+ * Sanitiza um parâmetro de data vindo da URL (ex: "32138109823-01-01" → "2026-01-01").
+ * Extrai o ano (que pode ter qualquer quantidade de dígitos), limita a [1, anoAtual],
+ * e reconstrói a data com mês/dia válidos.
+ * @param {string} dateStr - Valor bruto da query string (ex: "32138109823-01-01")
+ * @param {boolean} [isStart=true] - Se é data inicial (default 01-01) ou final (default 12-31)
+ * @returns {string|null} Data sanitizada no formato YYYY-MM-DD, ou null se inválido
+ */
+export function sanitizeDateParam(dateStr, isStart = true) {
+  if (!dateStr || typeof dateStr !== "string") return null;
+  const parts = dateStr.split("-");
+  const rawYear = parseInt(parts[0], 10);
+  if (!Number.isFinite(rawYear) || rawYear < 1) return null;
+  const currentYear = new Date().getFullYear();
+  const year = Math.min(Math.max(rawYear, 1), currentYear);
+  const defaultMonth = isStart ? 1 : 12;
+  const defaultDay = isStart ? 1 : 31;
+  const month = parts[1] ? Math.min(Math.max(parseInt(parts[1], 10) || defaultMonth, 1), 12) : defaultMonth;
+  const day = parts[2] ? Math.min(Math.max(parseInt(parts[2], 10) || defaultDay, 1), 31) : defaultDay;
+  return formatDate(year, month, day);
+}
