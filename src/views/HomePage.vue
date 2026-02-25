@@ -396,10 +396,51 @@ function openAdvancedSearch() {
 }
 
 function confirmAdvancedSearch(payload) {
+  // Mantém advancedFilters sincronizado (necessário para "Editar" reabrir com dados)
   handleAdvancedFiltersUpdate(payload);
-  submitSearch({ mode: "avancada", value: advancedFilters.value });
+
+  // --- Bypass: monta URL diretamente a partir do payload ---
+  const terms = Array.isArray(payload.terms) ? payload.terms : [];
+
+  // Agrupa termos por campo
+  const qValues = [];
+  const titleValues = [];
+  const contributorValues = [];
+  const subjectTermValues = [];
+
+  terms.forEach((term) => {
+    if (!term || typeof term.value !== 'string' || !term.value.trim()) return;
+    const v = term.value.trim();
+    switch (term.field) {
+      case 'title':  titleValues.push(v); break;
+      case 'author': contributorValues.push(v); break;
+      case 'tag':    subjectTermValues.push(v); break;
+      case 'all':
+      default:       qValues.push(v); break;
+    }
+  });
+
+  // Clona query atual e remove chaves do pipeline legado + bypass anteriores
+  const legacyKeys = [
+    'searchMode', 'author', 'subject_term', 'subject', 'dateStart',
+    'dateEnd', 'color', 'location', 'use',
+  ];
+  const bypassKeys = ['q', 'title', 'contributor', 'subject_term[]', 'date_from', 'date_to', 'subject[]'];
+  const newQuery = { ...route.query };
+  [...legacyKeys, ...bypassKeys].forEach((k) => { delete newQuery[k]; });
+
+  // Atribui novos params de bypass
+  if (qValues.length > 0) newQuery.q = qValues.join(' ');
+  if (titleValues.length > 0) newQuery.title = titleValues.join(' ');
+  if (contributorValues.length > 0) newQuery.contributor = contributorValues.join(' ');
+  if (subjectTermValues.length === 1) {
+    newQuery['subject_term[]'] = subjectTermValues[0];
+  } else if (subjectTermValues.length > 1) {
+    newQuery['subject_term[]'] = subjectTermValues;
+  }
+
+  router.push({ query: newQuery });
   modalAdvancedSearch.value = false;
-  performSearch({ mode: "avancada", value: advancedFilters.value });
 }
 
 function handleToolbarViewSubcontrol(payload) {
