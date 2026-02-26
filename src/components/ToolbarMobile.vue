@@ -30,7 +30,7 @@
         @click="handleSearchButton('textual', 'open-search-text')"
       >
         <span class="search-icon-wrapper">
-        <i class="bi bi-search" />
+          <i class="bi bi-search" />
           <span v-if="hasActiveTextFilter" class="search-active-dot" />
         </span>
       </button>
