@@ -99,9 +99,11 @@
       <mobile-drawer-search-text
         v-model="drawerSearchText"
         :filters="advancedFilters"
+        :has-active-filters="Boolean(route.query.q || route.query.title || route.query.contributor || route.query['subject_term[]'] || route.query['subject[]'])"
         @update:filters="handleAdvancedFiltersUpdate"
         @open="handleDrawerTextOpen"
         @confirm="confirmAdvancedDrawer"
+        @clear="handleClearTextFilters"
       />
 
       <mobile-drawer-search-color
@@ -501,7 +503,7 @@ function handleToolbarViewSubcontrol(payload) {
 }
 
 function handleDrawerTextOpen() {
-  syncFromSnapshot("avancada");
+  advancedFilters.value = buildAdvancedFiltersFromUrl();
 }
 
 function handleDrawerColorOpen() {
@@ -548,9 +550,63 @@ function confirmDate(range) {
 
 function confirmAdvancedDrawer({ value }) {
   handleAdvancedFiltersUpdate(value);
-  submitSearch({ mode: "avancada", value: advancedFilters.value });
+
+  // Bypass: build URL directly from payload (same logic as confirmAdvancedSearch)
+  const terms = Array.isArray(value.terms) ? value.terms : [];
+  const qValues = [];
+  const titleValues = [];
+  const contributorValues = [];
+  const subjectTermValues = [];
+
+  terms.forEach((term) => {
+    if (!term || typeof term.value !== 'string' || !term.value.trim()) return;
+    const v = term.value.trim();
+    switch (term.field) {
+      case 'title':  titleValues.push(v); break;
+      case 'author': contributorValues.push(v); break;
+      case 'tag':    subjectTermValues.push(v); break;
+      case 'all':
+      default:       qValues.push(v); break;
+    }
+  });
+
+  const legacyKeys = [
+    'searchMode', 'author', 'subject_term', 'subject', 'dateStart',
+    'dateEnd', 'color', 'location', 'use',
+  ];
+  const bypassKeys = ['q', 'title', 'contributor', 'subject_term[]', 'subject[]'];
+  const newQuery = { ...route.query };
+  [...legacyKeys, ...bypassKeys].forEach((k) => { delete newQuery[k]; });
+
+  if (qValues.length > 0) newQuery.q = qValues.join(' ');
+  if (titleValues.length > 0) newQuery.title = titleValues.join(' ');
+  if (contributorValues.length > 0) newQuery.contributor = contributorValues.join(' ');
+  if (subjectTermValues.length === 1) {
+    newQuery['subject_term[]'] = subjectTermValues[0];
+  } else if (subjectTermValues.length > 1) {
+    newQuery['subject_term[]'] = subjectTermValues;
+  }
+
+  const subjectIds = Array.isArray(value.tags)
+    ? value.tags.filter((id) => typeof id === 'string' && id.length > 0)
+    : [];
+  if (subjectIds.length === 1) newQuery['subject[]'] = subjectIds[0];
+  else if (subjectIds.length > 1) newQuery['subject[]'] = subjectIds;
+
   drawerSearchText.value = false;
-  performSearch({ mode: "avancada", value: advancedFilters.value });
+  router.push({ query: newQuery });
+}
+
+function handleClearTextFilters() {
+  const query = { ...route.query };
+  delete query.q;
+  delete query.title;
+  delete query.contributor;
+  delete query['subject_term[]'];
+  delete query['subject[]'];
+  advancedFilters.value = createDefaultAdvancedFilters();
+  drawerSearchText.value = false;
+  router.push({ query });
 }
 
 function handleMobileSearchModeChange(mode) {
