@@ -23,15 +23,15 @@
       class="d-flex align-items-center bg-white rounded-3 p-2 toolbar-group gap-1"
     >
       <button
-        id="search-text-button"
-        :class="searchButtonClasses('textual')"
+        id="search-date-button"
+        :class="searchButtonClasses('data')"
         type="button"
-        aria-label="Buscar por texto"
-        @click="handleSearchButton('textual', 'open-search-text')"
+        aria-label="Buscar por data"
+        @click="handleSearchButton('data', 'open-search-date')"
       >
         <span class="search-icon-wrapper">
-          <i class="bi bi-search" />
-          <span v-if="hasActiveTextFilter" class="search-active-dot" />
+          <i class="bi bi-calendar2-week" />
+          <span v-if="hasActiveDateFilter" class="search-active-dot" />
         </span>
       </button>
       <!-- <button
@@ -44,15 +44,15 @@
         <i class="bi bi-palette" />
       </button> -->
       <button
-        id="search-date-button"
-        :class="searchButtonClasses('data')"
+        id="search-text-button"
+        :class="searchButtonClasses('textual')"
         type="button"
-        aria-label="Buscar por data"
-        @click="handleSearchButton('data', 'open-search-date')"
+        aria-label="Buscar avançada ou textual"
+        @click="handleSearchButton('textual', 'open-search-text')"
       >
         <span class="search-icon-wrapper">
-          <i class="bi bi-calendar2-week" />
-          <span v-if="hasActiveDateFilter" class="search-active-dot" />
+          <i class="bi bi-sliders" />
+          <span v-if="hasActiveTextFilter" class="search-active-dot" />
         </span>
       </button>
     </div>
