@@ -126,7 +126,6 @@ onBeforeUnmount(() => {
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
   box-shadow: var(--shadow-elevation-high);
-  padding-bottom: 66px;
 }
 .offcanvas-header {
   padding: 12px 16px 0px 16px;

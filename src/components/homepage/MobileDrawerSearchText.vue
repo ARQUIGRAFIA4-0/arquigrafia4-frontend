@@ -2,9 +2,21 @@
   <ui-mobile-drawer
     id="drawer-search-text"
     v-model="open"
-    title="Busca por palavras"
+    title=""
   >
     <div class="p-3 drawer-content">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="h2 m-0">Busca por palavras</div>
+        <button
+          type="button"
+          class="drawer-close-btn"
+          aria-label="Fechar"
+          @click="open = false"
+        >
+          <i class="bi bi-x" />
+        </button>
+      </div>
+
       <div class="mb-3">
         <div class="input-group">
           <button
@@ -46,14 +58,14 @@
       <div class="mb-4">
         <div class="h2 pt-3">Termos de busca</div>
         <div class="d-flex flex-wrap gap-2">
-          <span v-if="searchTerms.length === 0" class="text-muted"
+          <span v-if="searchTerms.length === 0 && extraSelectedTags.length === 0" class="text-muted"
             >Nenhum termo adicionado.</span
           >
           <button
             v-for="(term, idx) in searchTerms"
             :key="idx"
             type="button"
-            class="btn btn-info btn-sm btn-tag"
+            class="btn btn-primary btn-sm btn-tag"
           >
             {{ term.label }}
             <button
@@ -63,6 +75,21 @@
               @click.stop="removeSearchTerm(idx)"
             ></button>
           </button>
+          <button
+            v-for="id in extraSelectedTags"
+            :key="id"
+            type="button"
+            class="btn btn-primary btn-sm btn-tag"
+          >
+            <span v-if="!isTermLoaded(id)" class="spinner-border spinner-border-sm" role="status" aria-label="Carregando..." />
+            <template v-else>Tag [id]: {{ getTermById(id) }}</template>
+            <button
+              type="button"
+              class="btn-close ms-1"
+              aria-label="Remover tag"
+              @click.stop="toggleTagId(id)"
+            ></button>
+          </button>
         </div>
       </div>
 
@@ -70,7 +97,7 @@
         <div class="h2">Sugestões de busca</div>
       </div>
 
-      <div class="mb-3">
+      <!-- <div class="mb-3">
         <div class="p">Localização</div>
         <div class="text-muted small mb-2">
           (localizações mais recorrentes em nosso acervo)
@@ -91,7 +118,7 @@
             {{ city }}
           </button>
         </div>
-      </div>
+      </div> -->
 
       <div class="mb-3">
         <div class="p">Tags</div>
@@ -101,20 +128,20 @@
         <div class="d-flex flex-wrap gap-2">
           <button
             v-for="tag in tagSuggestions"
-            :key="tag"
+            :key="tag.id"
             type="button"
             :class="[
               'btn btn-sm',
-              selectedTags.includes(tag) ? 'btn-dark' : 'btn-outline-secondary',
+              selectedTags.includes(tag.id) ? 'btn-primary' : 'btn-outline-secondary',
             ]"
-            @click="toggleTag(tag)"
+            @click="toggleTag(tag.id)"
           >
-            {{ tag }}
+            {{ tag.label }}
           </button>
         </div>
       </div>
 
-      <div class="mb-4">
+      <!-- <div class="mb-4">
         <div class="p pb-2">Uso permitido</div>
         <div class="d-flex flex-wrap gap-2">
           <button
@@ -142,11 +169,11 @@
             Não permite uso comercial
           </button>
         </div>
-      </div>
+      </div> -->
 
       <div class="drawer-actions d-grid gap-2 pt-3">
-        <button class="btn btn-outline-secondary" @click="open = false">
-          Cancelar
+        <button class="btn btn-outline-secondary" @click="hasActiveFilters ? emit('clear') : open = false">
+          {{ hasActiveFilters ? 'Limpar busca' : 'Cancelar' }}
         </button>
         <button class="btn btn-dark" @click="confirm">Buscar</button>
       </div>
@@ -155,10 +182,11 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import UiMobileDrawer from "@/components/ui/UiMobileDrawer.vue";
 import toggleArrayItem from "@/helpers/toggleArrayItem";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
+import { useSubjectTerms } from "@/composables/useSubjectTerms";
 
 defineOptions({ name: "MobileDrawerSearchText" });
 
@@ -171,6 +199,10 @@ const props = defineProps({
     type: Object,
     default: () => createDefaultAdvancedFilters(),
   },
+  hasActiveFilters: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([
@@ -178,6 +210,7 @@ const emit = defineEmits([
   "update:filters",
   "confirm",
   "open",
+  "clear",
 ]);
 
 const open = computed({
@@ -185,11 +218,15 @@ const open = computed({
   set: (value) => emit("update:modelValue", value),
 });
 
+const { getTermById, isTermLoaded, loadSubjectTerms } = useSubjectTerms();
+const extraSelectedTags = computed(() =>
+  selectedTags.value.filter((id) => !knownTagIds.has(id))
+);
+
 const fieldOptions = ref([
   { value: "all", label: "Todos os campos" },
   { value: "author", label: "Autoria" },
   { value: "tag", label: "Tag" },
-  { value: "location", label: "Localização" },
   { value: "title", label: "Título" },
 ]);
 const selectedField = ref("all");
@@ -210,6 +247,9 @@ watch(
     selectedLocations.value = [...(filters?.locations || [])];
     selectedTags.value = [...(filters?.tags || [])];
     selectedUse.value = filters?.use || null;
+    // Load labels for extra tags (IDs not in hardcoded suggestions)
+    const extras = selectedTags.value.filter((id) => !knownTagIds.has(id));
+    if (extras.length > 0) loadSubjectTerms(extras);
   },
   { immediate: true }
 );
@@ -248,6 +288,11 @@ function removeSearchTerm(index) {
   emitFiltersUpdate();
 }
 
+function toggleTagId(id) {
+  toggleArrayItem(selectedTags.value, id);
+  emitFiltersUpdate();
+}
+
 const locationSuggestions = ref([
   "São Paulo",
   "Rio de Janeiro",
@@ -265,20 +310,22 @@ function toggleLocation(city) {
   emitFiltersUpdate();
 }
 
-const tagSuggestions = ref([
-  "Concreto",
-  "Público",
-  "Ferro",
-  "Vidro",
-  "Alvenaria",
-  "Vegetação",
-  "Fachada",
-  "Edifício",
-  "Prédio",
-  "Pilar",
-]);
-function toggleTag(tag) {
-  toggleArrayItem(selectedTags.value, tag);
+const tagSuggestions = [
+  { id: "f5c68f66-549f-43db-96b2-ac34ebbd9f9b", label: "alvenaria" },
+  { id: "019adaf3-b4f0-7139-be65-66b693091ff5", label: "concreto" },
+  { id: "7084a2b8-0145-4ac7-8795-8d12c415f999", label: "edifício" },
+  { id: "3de8e1d7-afb9-4fd8-b43f-5c25dabe7cc7", label: "fachada" },
+  { id: "019adaf2-9fd6-71dc-b6bb-e6eb55a8c718", label: "ferro" },
+  { id: "b466374c-314b-4be7-88fb-9397d44d7c1b", label: "pilar" },
+  { id: "7c509819-bafb-4b12-972e-75fb966c3dbd", label: "público" },
+  { id: "862f85cb-3443-45cf-bc75-fe76f16c63ef", label: "prédio" },
+  { id: "019adaf5-95cd-7271-a1e1-c765025d2fb5", label: "vegetação" },
+  { id: "019adaf2-9303-7336-84e3-f5706bc684bb", label: "vidro" },
+];
+const knownTagIds = new Set(tagSuggestions.map((t) => t.id));
+
+function toggleTag(id) {
+  toggleArrayItem(selectedTags.value, id);
   emitFiltersUpdate();
 }
 
@@ -303,9 +350,17 @@ watch(
   (isOpen, wasOpen) => {
     if (isOpen && !wasOpen) {
       emit("open");
+      document.body.style.overflow = "hidden";
+    }
+    if (!isOpen && wasOpen) {
+      document.body.style.overflow = "";
     }
   }
 );
+
+onUnmounted(() => {
+  document.body.style.overflow = "";
+});
 </script>
 
 <style scoped>
@@ -336,5 +391,22 @@ watch(
 .drawer-content .btn-enlarge-40 > i.bi {
   font-size: 1.6rem;
   line-height: 1.4;
+}
+
+.drawer-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 50%;
+  background-color: #000;
+  color: #fff;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
 }
 </style>

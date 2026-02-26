@@ -29,7 +29,10 @@
         aria-label="Buscar por texto"
         @click="handleSearchButton('textual', 'open-search-text')"
       >
-        <i class="bi bi-search" />
+        <span class="search-icon-wrapper">
+          <i class="bi bi-search" />
+          <span v-if="hasActiveTextFilter" class="search-active-dot" />
+        </span>
       </button>
       <!-- <button
         id="search-color-button"
@@ -66,6 +69,14 @@ const route = useRoute();
 
 const hasActiveDateFilter = computed(() => Boolean(
   route.query.date_from || route.query.date_to
+));
+
+const hasActiveTextFilter = computed(() => Boolean(
+  route.query.q ||
+  route.query.title ||
+  route.query.contributor ||
+  route.query['subject_term[]'] ||
+  route.query['subject[]']
 ));
 
 const props = defineProps({
@@ -124,6 +135,10 @@ function openViewMenu() {
 <style scoped>
 #toolbar-mobile .toolbar-group {
   box-shadow: var(--shadow-elevation-medium);
+}
+
+.btn.active {
+  border: 0px;
 }
 
 .search-icon-wrapper {

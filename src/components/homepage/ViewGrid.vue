@@ -1,6 +1,20 @@
 <template>
   <div>
-    <div class="row g-4">
+    <template v-if="isPending && items.length === 0">
+      <div class="row g-2 g-md-4">
+        <div v-for="n in 12" :key="`skeleton-${n}`" class="col-6 col-md-4 col-lg-2">
+          <div class="view-grid__card view-grid__card--skeleton">
+            <div class="view-grid__skeleton-image"></div>
+            <div class="view-grid__skeleton-body">
+              <div class="view-grid__skeleton-title"></div>
+              <div class="view-grid__skeleton-subtitle"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <div class="row g-2 g-md-4">
       <div v-for="item in items" :key="item.id" class="col-6 col-md-4 col-lg-2">
         <RouterLink
           :to="`/explore/dados/image/${item.id}`"
@@ -38,7 +52,7 @@
       </div>
     </div>
 
-    <div v-if="loading" class="text-center my-4">
+    <div v-if="isFetchingNextPage" class="text-center my-4">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
@@ -284,5 +298,50 @@ $breakpoint-md: 768px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+// Skeleton
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.view-grid__card--skeleton {
+  border: 0.25px solid #e0e0e0;
+  box-shadow: 1px 1px 3px 2px #0000001A;
+  border-radius: 5px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.view-grid__skeleton-image {
+  width: 100%;
+  padding-top: 100%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+.view-grid__skeleton-body {
+  padding: 8px;
+}
+
+.view-grid__skeleton-title {
+  height: 14px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  width: 80%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+.view-grid__skeleton-subtitle {
+  height: 12px;
+  border-radius: 4px;
+  width: 50%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
 }
 </style>
