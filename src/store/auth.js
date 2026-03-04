@@ -15,6 +15,9 @@ export const useAuthStore = defineStore("auth", () => {
   const isRegistering = ref(false);
   const isLoading = ref(false);
   const isForgotPassword = ref(false);
+  const isPasswordReset = ref(false);
+  const isSettingNewPassword = ref(false);
+  const verifiedResetCode = ref("");
   const showPassword = ref(false);
   const showConfirmPassword = ref(false);
   const verificationEmail = ref("");
@@ -34,6 +37,7 @@ export const useAuthStore = defineStore("auth", () => {
   const isLoggedIn = computed(() => !!accessToken.value);
   const authHeader = computed(() => "Bearer " + accessToken.value);
   const pageTitle = computed(() => {
+    if (isSettingNewPassword.value) return "Criar nova senha";
     if (isVerifying.value) return "Valide seu e-mail";
     if (isForgotPassword.value) return "Recuperar senha";
     return isRegistering.value ? "Crie sua conta" : "Acesse seu perfil";
@@ -124,6 +128,9 @@ export const useAuthStore = defineStore("auth", () => {
   async function toggleRegister() {
     isRegistering.value = !isRegistering.value;
     isVerifying.value = false;
+    isPasswordReset.value = false;
+    isSettingNewPassword.value = false;
+    verifiedResetCode.value = "";
     showPassword.value = false;
     showConfirmPassword.value = false;
     resetForm();
@@ -204,6 +211,9 @@ export const useAuthStore = defineStore("auth", () => {
     accessToken.value = "";
     refreshToken.value = "";
     isVerifying.value = false;
+    isPasswordReset.value = false;
+    isSettingNewPassword.value = false;
+    verifiedResetCode.value = "";
     verificationEmail.value = "";
 
     localStorage.removeItem("loggedUser");
@@ -249,7 +259,7 @@ export const useAuthStore = defineStore("auth", () => {
     }
 
     isLoading.value = true;
-    loadingMessage.value = "Enviando email de recuperação...";
+    loadingMessage.value = "Enviando email de recuperação.";
 
     try {
       await axios.post("/api/forgot-password-email", {
@@ -257,6 +267,7 @@ export const useAuthStore = defineStore("auth", () => {
       });
       isForgotPassword.value = false;
       isVerifying.value = true;
+      isPasswordReset.value = true;
       return { success: true, message: "Um email com instruções foi enviado para você." };
     } catch (error) {
       console.error("Error sending reset email:", error);
@@ -337,6 +348,25 @@ export const useAuthStore = defineStore("auth", () => {
   }
   async function verifyCode() {
     const code = verificationDigits.value.join("");
+
+    // Fluxo de recuperação de senha
+    if (isPasswordReset.value) {
+      try {
+        await axios.post("/api/verify-password-reset", {
+          email: formData.value.email,
+          code,
+        });
+        verifiedResetCode.value = code;
+        isVerifying.value = false;
+        isSettingNewPassword.value = true;
+        return { success: true };
+      } catch (error) {
+        console.error("Error verifying password reset code:", error);
+        return { success: false, message: "Código inválido. Tente novamente." };
+      }
+    }
+
+    // Fluxo original de verificação de conta
     try {
       await verifyAccount(formData.value.email, code);
 
@@ -360,6 +390,45 @@ export const useAuthStore = defineStore("auth", () => {
       return { success: false, message: "Código inválido. Tente novamente." };
     }
   }
+  async function changePassword() {
+    if (!formData.value.password) {
+      return { success: false, message: "Preencha a nova senha." };
+    }
+    if (formData.value.password.length < 8) {
+      return { success: false, message: "A senha deve ter no mínimo 8 caracteres." };
+    }
+    if (formData.value.password !== formData.value.confirmPassword) {
+      return { success: false, message: "As senhas não coincidem." };
+    }
+
+    isLoading.value = true;
+    loadingMessage.value = "Atualizando sua senha.";
+
+    try {
+      await axios.post("/api/change-password-reset", {
+        email: formData.value.email,
+        code: verifiedResetCode.value,
+        password: formData.value.password,
+      });
+
+      // Limpa todo o estado do fluxo de recuperação
+      isPasswordReset.value = false;
+      isSettingNewPassword.value = false;
+      verifiedResetCode.value = "";
+      verificationDigits.value = Array(6).fill("");
+      resetForm();
+
+      router.push("/login");
+      return { success: true, message: "Senha alterada com sucesso! Faça login com a nova senha." };
+    } catch (error) {
+      console.error("Error changing password:", error);
+      const msg = error.response?.data?.message || "Erro ao alterar a senha. Tente novamente.";
+      return { success: false, message: msg };
+    } finally {
+      isLoading.value = false;
+      loadingMessage.value = "";
+    }
+  }
   return {
     formData,
     loggedUser,
@@ -380,6 +449,8 @@ export const useAuthStore = defineStore("auth", () => {
     showConfirmPassword,
     isCodeComplete,
     isForgotPassword,
+    isPasswordReset,
+    isSettingNewPassword,
     toggleRegister,
     handleLogin,
     handleRegister,
@@ -398,5 +469,6 @@ export const useAuthStore = defineStore("auth", () => {
     validEmail,
     resendCode,
     verifyCode,
+    changePassword,
   };
 });
