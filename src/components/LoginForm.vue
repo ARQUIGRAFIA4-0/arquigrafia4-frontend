@@ -23,6 +23,7 @@ const {
   showPassword,
   showConfirmPassword,
   isForgotPassword,
+  isSettingNewPassword,
 } = storeToRefs(auth);
 const {
   handleLogin,
@@ -36,6 +37,7 @@ const {
   verifyCode,
   resendCode,
   sendPasswordResetEmail,
+  changePassword,
 } = auth;
 
 // Alert system
@@ -95,6 +97,14 @@ async function sendPasswordResetEmailWithAlert() {
   }
 }
 
+async function changePasswordWithAlert() {
+  closeAlert();
+  const result = await changePassword();
+  if (result) {
+    displayAlert(result.message, result.success ? "success" : "error");
+  }
+}
+
 // Redireciona para a home se o usuário já estiver logado e verificado
 watchEffect(() => {
   if (isLoggedIn.value && loggedUser.value?.email_verified_at) {
@@ -107,12 +117,9 @@ onMounted(() => {
   isVerifying.value = false;
   isRegistering.value = false;
   isForgotPassword.value = false;
+  isSettingNewPassword.value = false;
   showPassword.value = false;
   showConfirmPassword.value = false;
-  // if (!isVerifying.value) {
-  //   isRegistering.value = false;
-  //   isForgotPassword.value = false;
-  // }
   closeAlert();
 });
 
@@ -123,7 +130,7 @@ onMounted(() => {
     v-if="!isLoggedIn || (isLoggedIn && !loggedUser?.email_verified_at)"
     class="login-container"
   >
-    <!-- Loading Overlay -->
+    <!-- Loading -->
     <div v-if="isLoading" class="loading-overlay">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Carregando...</span>
@@ -133,7 +140,7 @@ onMounted(() => {
 
     <h2 class="form-title text-start mb-4">{{ pageTitle }}</h2>
 
-    <!-- Custom Alert -->
+    <!-- Alerta -->
     <div v-if="showAlert" 
          :class="['alert', 'fs-6', alertType === 'success' ? 'bg-positivo-e' : 'bg-negativo-e', 'text-white', 'mb-3', 'd-flex', 'align-items-center', 'justify-content-between', 'auth-alert']"
          role="alert">
@@ -149,7 +156,7 @@ onMounted(() => {
       ></button>
     </div>
 
-    <!-- Email Verification Form -->
+    <!-- Formulário de Verificação de Email -->
     <form v-if="isVerifying" @submit.prevent="verifyCodeWithAlert">
       <label class="input-label mb-1">Código</label>
       <div class="verification-code mb-4">
@@ -210,7 +217,7 @@ onMounted(() => {
         Caso não tenha recebido o código, verifique sua caixa de spam ou solicite o reenvio.
       </div>
     </form>
-    <!-- Password Reset Form -->
+    <!-- Formulário de Redefinição de Senha -->
     <div v-else-if="isForgotPassword" class="form-floating mb-3">
       <div class="forgot-password-form-box">
         <label class="input-label mb-1">Qual o e-mail cadastrado?</label>
@@ -240,7 +247,64 @@ onMounted(() => {
         </button>
       </div>
     </div>
-    <!-- Registration/Login Form -->
+    <!-- Formulário de Nova Senha (após validação de código de redefinição) -->
+    <form v-else-if="isSettingNewPassword" @submit.prevent="changePasswordWithAlert">
+      <div class="mb-3">
+        <label class="input-label mb-1">Nova senha</label>
+        <div class="position-relative">
+          <input
+            v-model="formData.password"
+            :type="showPassword ? 'text' : 'password'"
+            class="form-control"
+            placeholder="Nova senha"
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3"
+            @click="showPassword = !showPassword"
+            tabindex="-1"
+          >
+            <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+          </button>
+        </div>
+        <small class="form-text text-muted d-block mt-1 form-input-subtitle">Crie uma senha com pelo menos 8 dígitos.</small>
+      </div>
+      <div class="mb-4">
+        <label class="input-label mb-1">Repita a nova senha</label>
+        <div class="position-relative">
+          <input
+            v-model="formData.confirmPassword"
+            :type="showConfirmPassword ? 'text' : 'password'"
+            class="form-control"
+            placeholder="Confirme a nova senha"
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3"
+            @click="showConfirmPassword = !showConfirmPassword"
+            tabindex="-1"
+          >
+            <i class="bi" :class="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+          </button>
+        </div>
+        <small class="form-text text-muted d-block mt-1 form-input-subtitle">Repita a senha para confirmar.</small>
+      </div>
+      <div class="form-btn-row">
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm form-btn-half"
+          @click="isSettingNewPassword = false; isVerifying = false; closeAlert();"
+        >
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary btn-sm form-btn-half">
+          Salvar nova senha
+        </button>
+      </div>
+    </form>
+    <!-- Formulário de Registro/Login -->
     <form
       v-else
       @submit.prevent="isRegistering ? handleRegisterWithAlert() : handleLoginWithAlert()"
