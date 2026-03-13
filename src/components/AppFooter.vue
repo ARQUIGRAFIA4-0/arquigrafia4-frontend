@@ -54,7 +54,7 @@ onMounted(async () => {
 
 .app-footer {
   padding: 40px 32px 32px 32px;
-  margin-top: 100px;
+  margin-top: 32px;
   border-top: 0.1px solid var(--Cinza_C);
 
   @include md {

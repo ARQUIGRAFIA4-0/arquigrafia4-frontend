@@ -19,6 +19,12 @@
           <i class="bi bi-arrow-right about-menu__icon"></i>
         </router-link>
       </li>
+      <li class="about-menu__item" :class="{ 'about-menu__item--active': $route.name === 'about-faq' }">
+        <router-link :to="{ name: 'about-faq' }" class="about-menu__link">
+          <span class="about-menu__text">FAQ</span>
+          <i class="bi bi-arrow-right about-menu__icon"></i>
+        </router-link>
+      </li>
     </ul>
   </nav>
 </template>
