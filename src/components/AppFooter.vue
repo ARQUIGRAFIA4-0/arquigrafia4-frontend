@@ -36,6 +36,10 @@ onMounted(async () => {
         <router-link to="/about/policies" class="app-footer__link">
           políticas
         </router-link>
+        <span>•</span>
+        <router-link to="/about/faq" class="app-footer__link">
+          faq
+        </router-link>
       </nav>
 
       <!-- Texto -->
