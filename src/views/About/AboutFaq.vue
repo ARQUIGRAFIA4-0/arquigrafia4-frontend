@@ -121,37 +121,47 @@ $breakpoint-md: 768px;
 
 .about-faq {
   &__title {
+    width: fit-content;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 150%;
+    vertical-align: middle;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #000000;
+    margin-bottom: 46px;
+
     @include md {
-      width: fit-content;
-      font-weight: 600;
       font-size: 30px;
-      line-height: 150%;
-      letter-spacing: 0%;
-      vertical-align: middle;
-      margin-bottom: 55px;
-      border-bottom: 4px solid #000000;
       padding-bottom: 20px;
+      border-bottom: 4px solid #000000;
+      margin-bottom: 55px;
     }
   }
 
-  &__subtitle {
-    @include md {
-      font-weight: 500;
-      font-size: 20px;
-      line-height: 150%;
-      letter-spacing: 0%;
-      margin-bottom: 32px;
-    }
+  &__item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
   }
 
-  &__paragraph {
-    @include md {
-      font-weight: 500;
-      font-size: 16px;
-      line-height: 150%;
-      letter-spacing: 0%;
-      padding: 0 48px;
-    }
+  &__question {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 150%;
+    color: var(--Laranja_M);
+    margin: 0;
+
+    @include md {}
+  }
+
+  &__answer {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 125%;
+    margin: 0;
+
+    @include md {}
   }
 }
 </style>
