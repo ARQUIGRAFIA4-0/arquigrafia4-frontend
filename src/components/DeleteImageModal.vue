@@ -88,3 +88,57 @@ function confirmDelete() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.modal-panel {
+  width: 100%;
+  max-width: 600px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: var(--shadow-elevation-medium);
+  padding: 0px 15px;
+}
+
+.modal-header {
+  padding: 16px 40px 0 40px;
+  border-bottom: none;
+}
+
+.modal-body {
+  padding: 20px 40px;
+}
+
+.modal-footer {
+  padding: 12px 0px 15px 0px;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.modal-text {
+  margin: 0 0 12px 0;
+  font-size: 0.95rem;
+  color: var(--Cinza_E, #555);
+  line-height: 1.5;
+}
+
+.modal-warning {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--Cinza_F, #333);
+  font-weight: 500;
+}
+</style>
