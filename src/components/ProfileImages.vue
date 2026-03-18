@@ -42,6 +42,24 @@ const { items, hasNextPage, fetchNextPage, isPending, isFetchingNextPage } =
 
 const loading = computed(() => isPending.value || isFetchingNextPage.value);
 
+// Alert system
+const alertMessage = ref("");
+const alertType = ref("");
+const showAlert = ref(false);
+
+function displayAlert(message, type = "error") {
+  alertMessage.value = message;
+  alertType.value = type;
+  showAlert.value = true;
+}
+
+function closeAlert() {
+  showAlert.value = false;
+  alertMessage.value = "";
+  alertType.value = "";
+}
+
+
 // Função para formatar data com lógica de circa e intervalo
 const formatDate = (dates) => {
   if (!dates || dates.length === 0) return null;
@@ -104,6 +122,33 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
+    <!-- Alerta de sucesso/erro -->
+    <div 
+      v-if="showAlert" 
+      :class="[
+        'alert', 
+        'fs-6', 
+        alertType === 'success' ? 'bg-positivo-e' : 'bg-negativo-e', 
+        'text-white', 
+        'mb-3', 
+        'd-flex', 
+        'align-items-center', 
+        'justify-content-between', 
+        'profile-images__alert'
+      ]"
+      role="alert"
+    >
+      <div class="d-flex align-items-center gap-2">
+        <i :class="alertType === 'success' ? 'bi bi-check-all' : 'bi bi-exclamation-triangle-fill'"></i>
+        <span>{{ alertMessage }}</span>
+      </div>
+      <button
+        type="button"
+        class="btn-close text-white"
+        @click="closeAlert"
+        aria-label="Close"
+      ></button>
+    </div>
     <!-- Loading: skeleton cards durante carregamento inicial -->
     <div v-if="!shouldFetch || (isPending && items.length === 0)">
       <!-- <div v-if="true"> -->
