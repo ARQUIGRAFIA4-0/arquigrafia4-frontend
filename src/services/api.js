@@ -324,6 +324,26 @@ const getSubjectById = async (id) => {
   }
 };
 
+/**
+ * Deleta uma imagem pelo ID
+ * @param {string} authHeader - Header de autorização (Bearer token)
+ * @param {string} imageId - UUID da imagem a ser deletada
+ * @returns {Promise<boolean>} True se deletado com sucesso
+ */
+const deleteImage = async (authHeader, imageId) => {
+  try {
+    await axios.delete(`/api/images/${imageId}`, {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authHeader,
+      },
+    });
+    return true;
+  } catch (error) {
+    throw Error("Não foi possível excluir a imagem.");
+  }
+};
+
 export const api = {
   getImages: fetchImages,
   getGeoJSON,
@@ -332,4 +352,5 @@ export const api = {
   searchImages,
   getTotalImages,
   getSubjectById,
+  deleteImage,
 };
