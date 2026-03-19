@@ -25,6 +25,18 @@
           <i class="bi bi-arrow-right about-menu__icon"></i>
         </router-link>
       </li>
+      <li class="about-menu__item" :class="{ 'about-menu__item--active': $route.name === 'about-open-source' }">
+        <router-link :to="{ name: 'about-open-source' }" class="about-menu__link">
+          <span class="about-menu__text">Código aberto</span>
+          <i class="bi bi-arrow-right about-menu__icon"></i>
+        </router-link>
+      </li>
+      <li class="about-menu__item" :class="{ 'about-menu__item--active': $route.name === 'about-vocabulary' }">
+        <router-link :to="{ name: 'about-vocabulary' }" class="about-menu__link">
+          <span class="about-menu__text">Vocabulário</span>
+          <i class="bi bi-arrow-right about-menu__icon"></i>
+        </router-link>
+      </li>
     </ul>
   </nav>
 </template>
