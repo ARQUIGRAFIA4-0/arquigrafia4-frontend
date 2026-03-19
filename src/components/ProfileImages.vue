@@ -72,6 +72,18 @@ function closeAlert() {
 const showDeleteModal = ref(false);
 const imageToDelete = ref(null);
 
+// Estado para controlar qual card está expandido (mostra botões de ação)
+const expandedCardId = ref(null);
+
+// Função para alternar estado expandido de um card
+const toggleCardExpanded = (itemId) => {
+  if (expandedCardId.value === itemId) {
+    expandedCardId.value = null;
+  } else {
+    expandedCardId.value = itemId;
+  }
+};
+
 // Função para abrir modal de confirmação da ação de deletar
 const handleDelete = (imageId) => {
   const item = items.value.find(img => img.id === imageId);
@@ -109,6 +121,12 @@ const confirmDelete = async () => {
     console.error('Erro ao deletar imagem:', error);
     displayAlert('Erro ao excluir imagem. Tente novamente.', 'error');
   }
+};
+};
+
+// Verifica se um card específico está expandido
+const isCardExpanded = (itemId) => {
+  return expandedCardId.value === itemId;
 };
 
 // Função para formatar data com lógica de circa e intervalo
@@ -159,15 +177,31 @@ const handleScroll = () => {
   }
 };
 
+// Função para fechar card expandido ao clicar fora
+const handleClickOutside = (event) => {
+  if (expandedCardId.value !== null) {
+    const expandedCard = event.target.closest('.profile-images__card--expanded');
+    if (!expandedCard) {
+      expandedCardId.value = null;
+    }
+  }
+};
+
 onMounted(async () => {
   if (items.value.length === 0 && hasNextPage.value) {
     await fetchNextPage();
   }
   window.addEventListener("scroll", handleScroll, { passive: true });
+  
+  // Adiciona listener para click fora do card após um tick para evitar fechamento imediato
+  nextTick(() => {
+    document.addEventListener("click", handleClickOutside);
+  });
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("scroll", handleScroll);
+  document.removeEventListener("click", handleClickOutside);
 });
 </script>
 
