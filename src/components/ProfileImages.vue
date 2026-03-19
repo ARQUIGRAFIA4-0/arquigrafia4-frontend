@@ -400,11 +400,26 @@ $breakpoint-md: 768px;
 }
 
 .profile-images {
+  &__alert {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050;
+    width: auto;
+    max-width: 90%;
+    height: auto;
+  }
+
   &__link {
     display: block;
     height: 100%;
     text-decoration: none;
     color: inherit;
+
+    &--clickable {
+      cursor: pointer;
+    }
   }
 
   &__card {
@@ -413,9 +428,19 @@ $breakpoint-md: 768px;
     border-radius: 5px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 
-    &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+    &:deep(.ui-card__content) {
+      flex: 1;
+    }
+
+    &:deep(.ui-card__body) {
+      flex: 1;
+    }
+
+    @media (hover: hover) {
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+      }
     }
 
     &--skeleton {
@@ -425,6 +450,59 @@ $breakpoint-md: 768px;
         transform: none;
         box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
       }
+    }
+
+    &--expanded {
+      transform: translateY(-4px);
+      border-color: var(--Laranja_E, #AA4F28);
+      box-shadow: 0 4px 12px rgba(170, 79, 40, 0.2);
+    }
+  }
+
+  &__actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    gap: 8px;
+    padding: 8px 0px 8px 0px;
+    background: white;
+    z-index: 1;
+  }
+
+  &__action-btn {
+    width: calc(50% - 4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    font-size: 14px;
+    word-wrap: break-word;
+    white-space: normal;
+    text-align: center;
+    min-width: 0;
+    gap: 6px;
+    padding: 8px;
+
+    @include md {
+      padding: 8px 14px;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &--delete {
+      &:hover {
+        background-color: #dc3545;
+        color: white;
+      }
+    }
+
+    i {
+      font-size: 14px;
     }
   }
 
@@ -501,6 +579,10 @@ $breakpoint-md: 768px;
 }
 
 .ui-card__header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   padding-bottom: 8px;
 
   &--skeleton {
@@ -522,6 +604,13 @@ $breakpoint-md: 768px;
 }
 
 .ui-card__subtitle {
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  
   @include md {
     font-weight: 400;
     font-size: 14px;
