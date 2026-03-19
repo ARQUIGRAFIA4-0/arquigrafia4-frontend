@@ -1,9 +1,18 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted } from "vue";
-import { RouterLink } from "vue-router";
+import { computed, onBeforeUnmount, onMounted, ref, nextTick } from "vue";
+import { RouterLink, useRouter } from "vue-router";
 import UiCard from "@/components/ui/UiCard.vue";
 import UploadImageBox from "@/components/UploadImageBox.vue";
+import DeleteImageModal from "@/components/DeleteImageModal.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
+import { useAuthStore } from "@/store/auth";
+import { useQueryClient } from "@tanstack/vue-query";
+import { api } from "@/services/api";
+
+const router = useRouter();
+const authStore = useAuthStore();
+const authHeader = computed(() => authStore.authHeader);
+const queryClient = useQueryClient();
 
 const props = defineProps({
   isCurrentUser: {
@@ -59,6 +68,48 @@ function closeAlert() {
   alertType.value = "";
 }
 
+// Modal de deletar
+const showDeleteModal = ref(false);
+const imageToDelete = ref(null);
+
+// Função para abrir modal de confirmação da ação de deletar
+const handleDelete = (imageId) => {
+  const item = items.value.find(img => img.id === imageId);
+  imageToDelete.value = item;
+  showDeleteModal.value = true;
+  // Fecha o card expandido
+  expandedCardId.value = null;
+};
+
+// Função para confirmar ação de deletar via modal
+const confirmDelete = async () => {
+  const deletedId = imageToDelete.value?.id;
+  if (!deletedId) return;
+
+  try {
+    await api.deleteImage(authHeader.value, deletedId);
+    
+    // Atualiza o cache do TanStack Query removendo a imagem deletada
+    queryClient.setQueriesData(
+      { queryKey: ["images"] },
+      (oldData) => {
+        if (!oldData?.pages) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page) => ({
+            ...page,
+            items: page.items.filter((item) => item.id !== deletedId),
+          })),
+        };
+      }
+    );
+    
+    displayAlert('Imagem excluída com sucesso!', 'success');
+  } catch (error) {
+    console.error('Erro ao deletar imagem:', error);
+    displayAlert('Erro ao excluir imagem. Tente novamente.', 'error');
+  }
+};
 
 // Função para formatar data com lógica de circa e intervalo
 const formatDate = (dates) => {
@@ -149,6 +200,14 @@ onBeforeUnmount(() => {
         aria-label="Close"
       ></button>
     </div>
+
+    <!-- Modal de confirmação da ação de deletar -->
+    <DeleteImageModal 
+      v-model="showDeleteModal" 
+      :image-data="imageToDelete" 
+      @confirm="confirmDelete" 
+    />
+
     <!-- Loading: skeleton cards durante carregamento inicial -->
     <div v-if="!shouldFetch || (isPending && items.length === 0)">
       <!-- <div v-if="true"> -->
