@@ -122,6 +122,10 @@ const confirmDelete = async () => {
     displayAlert('Erro ao excluir imagem. Tente novamente.', 'error');
   }
 };
+
+// Função para navegar para página de visualização da imagem
+const handleNavigate = (imageId) => {
+  router.push(`/explore/dados/image/${imageId}`);
 };
 
 // Verifica se um card específico está expandido
@@ -280,7 +284,64 @@ onBeforeUnmount(() => {
     <div v-else-if="shouldFetch && items.length > 0">
       <div class="row g-4">
         <div v-for="item in items" :key="item.id" class="col-6 col-md-3">
+          
+          <!-- Card do próprio usuário: clicável para expandir e mostrar ações -->
+          <div
+            v-if="props.isCurrentUser"
+            class="profile-images__link profile-images__link--clickable"
+            @click="toggleCardExpanded(item.id)"
+          >
+            <UiCard 
+              class="h-100 profile-images__card" 
+              :class="{ 'profile-images__card--expanded': isCardExpanded(item.id) }"
+            >
+              <template #image>
+                <div class="profile-images__image-wrapper">
+                  <img
+                    :src="item.imageUrl"
+                    class="profile-images__image"
+                    :alt="item.title"
+                    @error="handleImageError"
+                  />
+                </div>
+              </template>
+              <div class="ui-card__header">
+                <h3 class="ui-card__title">{{ item.title }}</h3>
+                
+                <!-- Data sempre visível (garante altura consistente) -->
+                <p class="ui-card__subtitle">
+                  {{ formatDate(item.dates) || '\u00A0' }}
+                </p>
+                
+                <!-- Botões de ação como overlay sobre a área de metadados -->
+                <div 
+                  v-if="isCardExpanded(item.id)" 
+                  class="profile-images__actions"
+                >
+                  <button 
+                    @click.stop="handleDelete(item.id)" 
+                    class="btn btn-outline-primary btn-sm profile-images__action-btn profile-images__action-btn--delete"
+                    title="Excluir imagem"
+                  >
+                    <i class="bi bi-trash"></i>
+                    <span class="d-none d-md-inline">Apagar</span>
+                  </button>
+                  <button 
+                    @click.stop="handleNavigate(item.id)" 
+                    class="btn btn-primary btn-sm profile-images__action-btn profile-images__action-btn--view"
+                    title="Visualizar imagem"
+                  >
+                    <i class="bi bi-arrow-right"></i>
+                    <span class="d-none d-md-inline">Ver</span>
+                  </button>
+                </div>
+              </div>
+            </UiCard>
+          </div>
+
+          <!-- Card de outros usuários: visualização direta -->
           <RouterLink
+            v-else
             :to="`/explore/dados/image/${item.id}`"
             class="profile-images__link"
           >
