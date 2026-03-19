@@ -64,10 +64,11 @@
             id="include-tags"
             class="about-vocabulary__accordion-content"
           >
-            <p class="about-vocabulary__accordion-paragraph">
-              -
-            </p>
 
+            <p class="about-vocabulary__accordion-paragraph">
+              Ao fazer upload de imagens no ARQUIGRAFIA, no campo “Tags da imagem” você pode atribuir palavras novas, selecionar palavras sugeridas ao iniciar a digitação (conforme imagem ilustrativa abaixo) ou incluir termos que você encontrou no VCAA.
+            </p>
+        
           </div>
         </article>
 
@@ -104,9 +105,19 @@
             id="use-vcaa"
             class="about-vocabulary__accordion-content"
           >
+
             <p class="about-vocabulary__accordion-paragraph">
-              -
+              Para usar o VCAA, você pode utilizar a navegação pelas hierarquias ou a navegação por busca.
             </p>
+
+            <p class="about-vocabulary__accordion-paragraph">
+              A estrutura do vocabulário está dividida por categorias, que podem ser domínios do conhecimento ou facetas, conforme apresentado na imagem abaixo. A partir delas, os termos do VCAA são organizados por características em comum.
+            </p> 
+            
+            <p class="about-vocabulary__accordion-paragraph">
+              As categorias e/ou facetas estão sinalizadas com <... > e não apresentam definições explicativas.
+            </p>
+
           </div>
         </article>
 
@@ -144,7 +155,49 @@
             class="about-vocabulary__accordion-content"
           >
             <p class="about-vocabulary__accordion-paragraph">
-              -
+              Exemplo: <span class="about-vocabulary__accordion-term">"cidades"</span>.
+            </p>
+            <p class="about-vocabulary__accordion-paragraph">
+              No registro de "cidades", você encontrará os seguintes elementos:
+            </p>
+            <p class="about-vocabulary__accordion-paragraph">
+              <strong>Hierarquia do termo:</strong> apresenta a estrutura hierárquica do termo.
+              <br />
+              <span class="about-vocabulary__accordion-term">
+                Arquitetura e Urbanismo &gt; Planejamento territorial urbano &gt; cidades
+              </span>
+            </p>
+            <p class="about-vocabulary__accordion-paragraph">
+              <strong>Definição síntese:</strong> uma explicação concisa sobre o termo elaborada pela equipe do
+              ARQUIGRAFIA.
+              <br />
+              <span class="about-vocabulary__accordion-term">
+                "Grande comunidade ou assentamento urbano, delimitada administrativamente e densamente povoado."
+              </span>
+            </p>
+            <p class="about-vocabulary__accordion-paragraph">
+              <strong>Nota de escopo:</strong> explicações que podem ser mais detalhadas e serviram como fonte para a
+              "definição síntese".
+            </p>
+            <p class="about-vocabulary__accordion-paragraph">
+              <strong>Termos genéricos:</strong> termos superiores na hierarquia.
+              <br />
+              <span class="about-vocabulary__accordion-term">Planejamento territorial urbano</span>
+            </p>
+            <p class="about-vocabulary__accordion-paragraph">
+              <strong>Termos específicos:</strong> termos inferiores na hierarquia e que podem indicar relações como
+              gênero/espécie, todo/parte. Esses termos são úteis caso você queira refinar sua busca.
+              <br />
+              <span class="about-vocabulary__accordion-term">
+                Exemplos: cidades antigas, cidades dormitório, cidades históricas.
+              </span>
+            </p>
+            <p class="about-vocabulary__accordion-paragraph">
+              <strong>Termo equivalente em inglês:</strong> apresenta o termo em inglês que equivale ao termo recuperado.
+              Em geral, ele está acompanhado da sua fonte de referência. Ao clicar no termo equivalente, você visualizará
+              uma explicação em inglês.
+              <br />
+              <span class="about-vocabulary__accordion-term">cities (Art and Architecture Thesaurus)</span>
             </p>
           </div>
         </article>
@@ -284,12 +337,11 @@ export default {
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
-  line-height: 150%;
-  margin-bottom: 12px;
+  line-height: 125%;
 }
 
-.about-vocabulary__accordion-paragraph:last-child {
-  margin-bottom: 0;
+.about-vocabulary__accordion-term {
+  color: var(--Laranja_E, #AA4F28);
 }
 
 @media (min-width: 768px) {
@@ -343,11 +395,13 @@ export default {
   }
 
   .about-vocabulary__accordion-content {
-    padding: 0 32px 24px 0;
+    display: flex;
+    padding: 0 0 32px 48px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    align-self: stretch;
   }
 
-  .about-vocabulary__accordion-paragraph {
-    font-size: 16px;
-  }
 }
 </style>
