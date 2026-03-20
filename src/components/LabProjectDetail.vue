@@ -14,8 +14,18 @@
     <h1 class="lab-project-detail__title">{{ project.fullTitle }}</h1>
 
     <!-- Hero Image -->
-    <div class="lab-project-detail__hero-image-wrapper">
-      <img :src="project.image" :alt="project.title" class="lab-project-detail__hero-image" />
+    <div class="lab-project-detail__hero-image-wrapper" :class="{ 'lab-project-detail__hero-image-wrapper--clickable': projectLink }">
+      <a
+        v-if="projectLink"
+        :href="projectLink.url"
+        target="_blank"
+        rel="noopener noreferrer"
+        :aria-label="projectLink.label"
+        class="lab-project-detail__hero-image-link"
+      >
+        <img :src="project.image" :alt="project.title" class="lab-project-detail__hero-image" />
+      </a>
+      <img v-else :src="project.image" :alt="project.title" class="lab-project-detail__hero-image" />
     </div>
 
     <!-- Mobile Action Menu -->
@@ -77,7 +87,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from "vue";
+
+const props = defineProps({
   project: {
     type: Object,
     required: true,
@@ -85,6 +97,11 @@ defineProps({
 });
 
 defineEmits(["back"]);
+
+const projectLink = computed(() => {
+  const links = props.project?.links ?? [];
+  return links.find((link) => link.type === "project") ?? null;
+});
 
 function getIconClass(type) {
   const icons = {
@@ -157,10 +174,28 @@ $breakpoint-md: 768px;
     background-color: var(--Cinza_C, #f5f5f5);
     margin-bottom: 24px;
     border-radius: 4px;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
 
     @include md {
       margin-bottom: 50px;
     }
+
+    &--clickable {
+      cursor: pointer;
+
+      @media (hover: hover) {
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        }
+      }
+    }
+  }
+
+  &__hero-image-link {
+    position: absolute;
+    inset: 0;
+    display: block;
   }
 
   &__hero-image {
