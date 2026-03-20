@@ -74,7 +74,6 @@
             <div class="about-vocabulary__accordion-content-item">
               <figure class="about-vocabulary__accordion-figure">
                 <img
-                  class="about-vocabulary__accordion-image"
                   src="@/assets/about_vocabulary_accordion_tags_images_acordion.png"
                   alt='Campo "Tags da imagem" com sugestões de preenchimento'
                 />
@@ -141,7 +140,6 @@
             <div class="about-vocabulary__accordion-content-item">
               <figure class="about-vocabulary__accordion-figure">
                 <img
-                  class="about-vocabulary__accordion-image"
                   src="@/assets/about_vocabulary_accordion_vcaa_acordion_1.png"
                   alt="Facetas principais do VCAA"
                 />
@@ -184,13 +182,25 @@
                 <div
                   v-show="activeUseVcaaSection === 'use-vcaa-hierarquia'"
                   id="use-vcaa-hierarquia"
-                  class="about-vocabulary__subaccordion-content"
+                  class="about-vocabulary__subaccordion-content ps-0"
                 >
                 
                   <div class="about-vocabulary__accordion-content-item">
                     <p class="about-vocabulary__accordion-paragraph">
-                      A navegação pelas hierarquias permite que você explore o vocabulário de forma hierárquica, a partir de uma categoria ou faceta.
+                      A navegação pelas hierarquias permite explorar termos relacionados àquele buscado, bem como conhecer a estrutura do vocabulário. Por exemplo, para o termo “Arquitetura” podemos ver que há quatro divisões, por exemplo, “forma” e “função”. Clique na seta indicada em cada divisão para visualizar seus respectivos termos.
                     </p>
+                    <p class="about-vocabulary__accordion-paragraph">
+                      Ao encontrar o termo desejado, você visualizará seu registro completo. Para entender a função de cada elemento que compõe um registro, clique <u><a href="https://docs.google.com/document/d/1fF7X9kLuzxLvqQIhXra9o0Xvs1JVWOiLMFjmDqsqDN0/edit?tab=t.0#bookmark=id.pem5fjv7cyd6" target="_blank" rel="noopener noreferrer">aqui</a></u>.
+                    </p>
+                    <figure class="about-vocabulary__accordion-figure">
+                      <img
+                        src="@/assets/about_vocabulary_accordion_vcaa_acordion_2.png"
+                        alt="Exemplo de hierarquias no VCAA"
+                      />
+                      <figcaption class="about-vocabulary__accordion-caption">
+                        Imagem: Exemplo de hierarquias, 2026.
+                      </figcaption>
+                    </figure>
                   </div>
 
                 </div>
