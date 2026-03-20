@@ -65,9 +65,25 @@
             class="about-vocabulary__accordion-content"
           >
 
-            <p class="about-vocabulary__accordion-paragraph">
-              Ao fazer upload de imagens no ARQUIGRAFIA, no campo “Tags da imagem” você pode atribuir palavras novas, selecionar palavras sugeridas ao iniciar a digitação (conforme imagem ilustrativa abaixo) ou incluir termos que você encontrou no VCAA.
-            </p>
+            <div class="about-vocabulary__accordion-content-item">
+              <p class="about-vocabulary__accordion-paragraph">
+                Ao fazer upload de imagens no ARQUIGRAFIA, no campo “Tags da imagem” você pode atribuir palavras novas, selecionar palavras sugeridas ao iniciar a digitação (conforme imagem ilustrativa abaixo) ou incluir termos que você encontrou no VCAA.
+              </p>
+            </div>
+
+            <div class="about-vocabulary__accordion-content-item">
+              <figure class="about-vocabulary__accordion-figure">
+                <img
+                  class="about-vocabulary__accordion-image"
+                  src="@/assets/about_vocabulary_accordion_tags_images_acordion.png"
+                  alt='Campo "Tags da imagem" com sugestões de preenchimento'
+                />
+                <figcaption class="about-vocabulary__accordion-caption">
+                  Imagem: Campo "Tags da imagem" na página Colabore do ARQUIGRAFIA, 2026.
+                </figcaption>
+              </figure>
+            </div>
+
         
           </div>
         </article>
@@ -103,20 +119,126 @@
           <div
             v-show="activeSection === 'use-vcaa'"
             id="use-vcaa"
-            class="about-vocabulary__accordion-content"
+            class="about-vocabulary__accordion-content pb-0"
           >
 
-            <p class="about-vocabulary__accordion-paragraph">
-              Para usar o VCAA, você pode utilizar a navegação pelas hierarquias ou a navegação por busca.
-            </p>
+            <div class="about-vocabulary__accordion-content-item">
 
-            <p class="about-vocabulary__accordion-paragraph">
-              A estrutura do vocabulário está dividida por categorias, que podem ser domínios do conhecimento ou facetas, conforme apresentado na imagem abaixo. A partir delas, os termos do VCAA são organizados por características em comum.
-            </p> 
-            
-            <p class="about-vocabulary__accordion-paragraph">
-              As categorias e/ou facetas estão sinalizadas com <... > e não apresentam definições explicativas.
-            </p>
+              <p class="about-vocabulary__accordion-paragraph">
+                Para usar o VCAA, você pode utilizar a navegação pelas hierarquias ou a navegação por busca.
+              </p>
+
+              <p class="about-vocabulary__accordion-paragraph">
+                A estrutura do vocabulário está dividida por categorias, que podem ser domínios do conhecimento ou facetas, conforme apresentado na imagem abaixo. A partir delas, os termos do VCAA são organizados por características em comum.
+              </p> 
+              
+              <p class="about-vocabulary__accordion-paragraph">
+                As categorias e/ou facetas estão sinalizadas com <... > e não apresentam definições explicativas.
+              </p>  
+
+            </div>
+
+            <div class="about-vocabulary__accordion-content-item">
+              <figure class="about-vocabulary__accordion-figure">
+                <img
+                  class="about-vocabulary__accordion-image"
+                  src="@/assets/about_vocabulary_accordion_vcaa_acordion_1.png"
+                  alt="Facetas principais do VCAA"
+                />
+                <figcaption class="about-vocabulary__accordion-caption">
+                  Imagem: Facetas principais do VCAA, 2026.
+                </figcaption>
+              </figure>
+            </div>
+
+            <section class="about-vocabulary__accordion mt-0" aria-label="Navegação pelas hierarquias">
+
+              <article class="about-vocabulary__accordion-item">
+                <button
+                  type="button"
+                  class="about-vocabulary__accordion-trigger about-vocabulary__subaccordion-trigger"
+                  :aria-expanded="String(activeUseVcaaSection === 'use-vcaa-hierarquia')"
+                  aria-controls="use-vcaa-hierarquia"
+                  @click="toggleUseVcaaSection('use-vcaa-hierarquia')"
+                >
+                  <span class="about-vocabulary__subaccordion-title">Navegação pelas hierarquias</span>
+                  <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  class="about-vocabulary__accordion-icon"
+                  :class="{ 'about-vocabulary__accordion-icon--open': activeUseVcaaSection === 'use-vcaa-hierarquia' }"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    clip-rule="evenodd"
+                    d="M2.46839 6.96888C2.53806 6.89903 2.62082 6.84362 2.71194 6.80581C2.80305 6.768 2.90074 6.74854 2.99939 6.74854C3.09804 6.74854 3.19572 6.768 3.28684 6.80581C3.37796 6.84362 3.46072 6.89903 3.53039 6.96888L11.9994 15.4394L20.4684 6.96888C20.5381 6.89914 20.6209 6.84383 20.712 6.80609C20.8031 6.76835 20.9008 6.74893 20.9994 6.74893C21.098 6.74893 21.1957 6.76835 21.2868 6.80609C21.3779 6.84383 21.4607 6.89914 21.5304 6.96888C21.6001 7.03861 21.6554 7.12139 21.6932 7.2125C21.7309 7.30361 21.7503 7.40126 21.7503 7.49988C21.7503 7.59849 21.7309 7.69614 21.6932 7.78725C21.6554 7.87836 21.6001 7.96114 21.5304 8.03088L12.5304 17.0309C12.4607 17.1007 12.378 17.1561 12.2868 17.1939C12.1957 17.2318 12.098 17.2512 11.9994 17.2512C11.9007 17.2512 11.8031 17.2318 11.7119 17.1939C11.6208 17.1561 11.5381 17.1007 11.4684 17.0309L2.46839 8.03088C2.39854 7.96121 2.34313 7.87844 2.30532 7.78733C2.26751 7.69621 2.24805 7.59853 2.24805 7.49988C2.24805 7.40122 2.26751 7.30354 2.30532 7.21243C2.34313 7.12131 2.39854 7.03854 2.46839 6.96888Z"
+                    fill="#636262"
+                  />
+                </svg>                
+                </button> 
+
+                <div
+                  v-show="activeUseVcaaSection === 'use-vcaa-hierarquia'"
+                  id="use-vcaa-hierarquia"
+                  class="about-vocabulary__subaccordion-content"
+                >
+                
+                  <div class="about-vocabulary__accordion-content-item">
+                    <p class="about-vocabulary__accordion-paragraph">
+                      A navegação pelas hierarquias permite que você explore o vocabulário de forma hierárquica, a partir de uma categoria ou faceta.
+                    </p>
+                  </div>
+
+                </div>
+              </article>
+
+              <article class="about-vocabulary__accordion-item border-bottom-0">
+                <button
+                  type="button"
+                  class="about-vocabulary__accordion-trigger about-vocabulary__subaccordion-trigger"
+                  :aria-expanded="String(activeUseVcaaSection === 'use-vcaa-busca')"
+                  aria-controls="use-vcaa-busca"
+                  @click="toggleUseVcaaSection('use-vcaa-busca')"
+                >
+                  <span class="about-vocabulary__subaccordion-title">Navegação por busca</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    class="about-vocabulary__accordion-icon"
+                    :class="{ 'about-vocabulary__accordion-icon--open': activeUseVcaaSection === 'use-vcaa-busca' }"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      clip-rule="evenodd"
+                      d="M2.46839 6.96888C2.53806 6.89903 2.62082 6.84362 2.71194 6.80581C2.80305 6.768 2.90074 6.74854 2.99939 6.74854C3.09804 6.74854 3.19572 6.768 3.28684 6.80581C3.37796 6.84362 3.46072 6.89903 3.53039 6.96888L11.9994 15.4394L20.4684 6.96888C20.5381 6.89914 20.6209 6.84383 20.712 6.80609C20.8031 6.76835 20.9008 6.74893 20.9994 6.74893C21.098 6.74893 21.1957 6.76835 21.2868 6.80609C21.3779 6.84383 21.4607 6.89914 21.5304 6.96888C21.6001 7.03861 21.6554 7.12139 21.6932 7.2125C21.7309 7.30361 21.7503 7.40126 21.7503 7.49988C21.7503 7.59849 21.7309 7.69614 21.6932 7.78725C21.6554 7.87836 21.6001 7.96114 21.5304 8.03088L12.5304 17.0309C12.4607 17.1007 12.378 17.1561 12.2868 17.1939C12.1957 17.2318 12.098 17.2512 11.9994 17.2512C11.9007 17.2512 11.8031 17.2318 11.7119 17.1939C11.6208 17.1561 11.5381 17.1007 11.4684 17.0309L2.46839 8.03088C2.39854 7.96121 2.34313 7.87844 2.30532 7.78733C2.26751 7.69621 2.24805 7.59853 2.24805 7.49988C2.24805 7.40122 2.26751 7.30354 2.30532 7.21243C2.34313 7.12131 2.39854 7.03854 2.46839 6.96888Z"
+                      fill="#636262"
+                    />
+                  </svg>
+                </button>
+
+                <div
+                  v-show="activeUseVcaaSection === 'use-vcaa-busca'"
+                  id="use-vcaa-busca"
+                  class="about-vocabulary__subaccordion-content"
+                >
+                  <div class="about-vocabulary__accordion-content-item">
+                    <p class="about-vocabulary__accordion-paragraph">
+                      A navegação por busca permite encontrar termos diretamente pelo campo de pesquisa do VCAA.
+                      Digite uma palavra-chave para localizar o termo desejado e acessar seu registro completo.
+                    </p>
+                  </div>
+                </div>
+              </article>
+
+            </section>
 
           </div>
         </article>
@@ -154,52 +276,57 @@
             id="record-elements"
             class="about-vocabulary__accordion-content"
           >
-            <p class="about-vocabulary__accordion-paragraph">
-              Exemplo: <span class="about-vocabulary__accordion-term">"cidades"</span>.
-            </p>
-            <p class="about-vocabulary__accordion-paragraph">
-              No registro de "cidades", você encontrará os seguintes elementos:
-            </p>
-            <p class="about-vocabulary__accordion-paragraph">
-              <strong>Hierarquia do termo:</strong> apresenta a estrutura hierárquica do termo.
-              <br />
-              <span class="about-vocabulary__accordion-term">
-                Arquitetura e Urbanismo &gt; Planejamento territorial urbano &gt; cidades
-              </span>
-            </p>
-            <p class="about-vocabulary__accordion-paragraph">
-              <strong>Definição síntese:</strong> uma explicação concisa sobre o termo elaborada pela equipe do
-              ARQUIGRAFIA.
-              <br />
-              <span class="about-vocabulary__accordion-term">
-                "Grande comunidade ou assentamento urbano, delimitada administrativamente e densamente povoado."
-              </span>
-            </p>
-            <p class="about-vocabulary__accordion-paragraph">
-              <strong>Nota de escopo:</strong> explicações que podem ser mais detalhadas e serviram como fonte para a
-              "definição síntese".
-            </p>
-            <p class="about-vocabulary__accordion-paragraph">
-              <strong>Termos genéricos:</strong> termos superiores na hierarquia.
-              <br />
-              <span class="about-vocabulary__accordion-term">Planejamento territorial urbano</span>
-            </p>
-            <p class="about-vocabulary__accordion-paragraph">
-              <strong>Termos específicos:</strong> termos inferiores na hierarquia e que podem indicar relações como
-              gênero/espécie, todo/parte. Esses termos são úteis caso você queira refinar sua busca.
-              <br />
-              <span class="about-vocabulary__accordion-term">
-                Exemplos: cidades antigas, cidades dormitório, cidades históricas.
-              </span>
-            </p>
-            <p class="about-vocabulary__accordion-paragraph">
-              <strong>Termo equivalente em inglês:</strong> apresenta o termo em inglês que equivale ao termo recuperado.
-              Em geral, ele está acompanhado da sua fonte de referência. Ao clicar no termo equivalente, você visualizará
-              uma explicação em inglês.
-              <br />
-              <span class="about-vocabulary__accordion-term">cities (Art and Architecture Thesaurus)</span>
-            </p>
+
+            <div class="about-vocabulary__accordion-content-item">
+              <p class="about-vocabulary__accordion-paragraph">
+                Exemplo: <span class="about-vocabulary__accordion-term">"cidades"</span>.
+              </p>
+              <p class="about-vocabulary__accordion-paragraph">
+                No registro de "cidades", você encontrará os seguintes elementos:
+              </p>
+              <p class="about-vocabulary__accordion-paragraph">
+                <strong>Hierarquia do termo:</strong> apresenta a estrutura hierárquica do termo.
+                <br />
+                <span class="about-vocabulary__accordion-term">
+                  Arquitetura e Urbanismo &gt; Planejamento territorial urbano &gt; cidades
+                </span>
+              </p>
+              <p class="about-vocabulary__accordion-paragraph">
+                <strong>Definição síntese:</strong> uma explicação concisa sobre o termo elaborada pela equipe do
+                ARQUIGRAFIA.
+                <br />
+                <span class="about-vocabulary__accordion-term">
+                  "Grande comunidade ou assentamento urbano, delimitada administrativamente e densamente povoado."
+                </span>
+              </p>
+              <p class="about-vocabulary__accordion-paragraph">
+                <strong>Nota de escopo:</strong> explicações que podem ser mais detalhadas e serviram como fonte para a
+                "definição síntese".
+              </p>
+              <p class="about-vocabulary__accordion-paragraph">
+                <strong>Termos genéricos:</strong> termos superiores na hierarquia.
+                <br />
+                <span class="about-vocabulary__accordion-term">Planejamento territorial urbano</span>
+              </p>
+              <p class="about-vocabulary__accordion-paragraph">
+                <strong>Termos específicos:</strong> termos inferiores na hierarquia e que podem indicar relações como
+                gênero/espécie, todo/parte. Esses termos são úteis caso você queira refinar sua busca.
+                <br />
+                <span class="about-vocabulary__accordion-term">
+                  Exemplos: cidades antigas, cidades dormitório, cidades históricas.
+                </span>
+              </p>
+              <p class="about-vocabulary__accordion-paragraph">
+                <strong>Termo equivalente em inglês:</strong> apresenta o termo em inglês que equivale ao termo recuperado.
+                Em geral, ele está acompanhado da sua fonte de referência. Ao clicar no termo equivalente, você visualizará
+                uma explicação em inglês.
+                <br />
+                <span class="about-vocabulary__accordion-term">cities (Art and Architecture Thesaurus)</span>
+              </p>              
+            </div>
+
           </div>
+
         </article>
       </section>
     </div>
@@ -217,11 +344,18 @@ export default {
   data() {
     return {
       activeSection: null,
+      activeUseVcaaSection: null,
     };
   },
   methods: {
     toggleSection(sectionId) {
       this.activeSection = this.activeSection === sectionId ? null : sectionId;
+      if (sectionId !== "use-vcaa") {
+        this.activeUseVcaaSection = null;
+      }
+    },
+    toggleUseVcaaSection(sectionId) {
+      this.activeUseVcaaSection = this.activeUseVcaaSection === sectionId ? null : sectionId;
     },
   },
 };
@@ -282,6 +416,7 @@ export default {
 .about-vocabulary__accordion {
   margin-top: 40px;
   border-top: 1px solid var(--Cinza_M, #636262);
+  width: 100%;
 }
 
 .about-vocabulary__accordion-item {
@@ -327,8 +462,26 @@ export default {
   transform: rotate(180deg);
 }
 
-.about-vocabulary__accordion-content {
-  padding: 0 0 18px;
+.about-vocabulary__subaccordion-content {
+  display: flex;
+  padding: 0 0 24px 24px;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: stretch;
+}
+
+.about-vocabulary__subaccordion-trigger {
+  height: 56px;
+  padding: 16px 0;
+}
+
+.about-vocabulary__accordion-trigger .about-vocabulary__subaccordion-title {
+  color: var(--Preto, #1F1F1F);
+  font-family: "DM Sans";
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 125%;
 }
 
 .about-vocabulary__accordion-paragraph {
@@ -340,8 +493,33 @@ export default {
   line-height: 125%;
 }
 
+.about-vocabulary__accordion-paragraph:last-child {
+  margin-bottom: 0;
+}
+
 .about-vocabulary__accordion-term {
   color: var(--Laranja_E, #AA4F28);
+}
+
+.about-vocabulary__accordion-figure {
+  margin: 0;
+  width: 100%;
+}
+
+.about-vocabulary__accordion-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.about-vocabulary__accordion-caption {
+  margin-top: 6px;
+  color: #000;
+  font-family: "DM Sans";
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 125%;
 }
 
 @media (min-width: 768px) {
@@ -401,6 +579,25 @@ export default {
     justify-content: center;
     align-items: flex-start;
     align-self: stretch;
+    gap: 32px;
+  }
+
+  .about-vocabulary__subaccordion-content {
+    padding: 0 0 24px 24px;
+  }
+
+  .about-vocabulary__subaccordion-trigger {
+    height: 56px;
+    padding: 16px 0;
+  }
+
+  .about-vocabulary__accordion-trigger .about-vocabulary__subaccordion-title {
+    color: #000;
+    font-family: "DM Sans";
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 150%;
   }
 
 }
