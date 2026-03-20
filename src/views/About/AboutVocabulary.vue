@@ -237,12 +237,11 @@
                 <div
                   v-show="activeUseVcaaSection === 'use-vcaa-busca'"
                   id="use-vcaa-busca"
-                  class="about-vocabulary__subaccordion-content"
+                  class="about-vocabulary__subaccordion-content ps-0"
                 >
                   <div class="about-vocabulary__accordion-content-item">
                     <p class="about-vocabulary__accordion-paragraph">
-                      A navegação por busca permite encontrar termos diretamente pelo campo de pesquisa do VCAA.
-                      Digite uma palavra-chave para localizar o termo desejado e acessar seu registro completo.
+                      A navegação por busca permite encontrar termos semelhantes. Para esse tipo de navegação, utilizaremos como exemplo o termo “cidade".
                     </p>
                   </div>
                 </div>
