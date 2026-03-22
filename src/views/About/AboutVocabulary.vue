@@ -1,9 +1,9 @@
 <template>
   <AboutLayout>
-    <div class="col-12 col-md-8">
+    <div class="col-12 col-md-8 about-vocabulary__content-col">
       <h1 class="about-vocabulary__title">O vocabulário do ARQUIGRAFIA</h1>
     </div>
-    <div class="col-12 col-md-8">
+    <div class="col-12 col-md-8 about-vocabulary__content-col">
       <h2 class="about-vocabulary__subtitle">
         As <i>tags</i> atribuídas pelos usuários no momento do <i>upload</i> das imagens na plataforma ARQUIGRAFIA são utilizadas como termos candidatos para o “Vocabulário Colaborativo em Artes e Arquitetura” (VCAA).
       </h2>
@@ -124,7 +124,7 @@
             <div class="about-vocabulary__accordion-content-item">
 
               <p class="about-vocabulary__accordion-paragraph">
-                Para usar o VCAA, você pode utilizar a navegação pelas hierarquias ou a navegação por busca.
+                Para usar o VCAA, você pode utilizar a <a href="#use-vcaa-hierarquia" class="about-vocabulary__accordion-link" @click.prevent="toggleUseVcaaSection('use-vcaa-hierarquia')">navegação pelas hierarquias</a> ou a <a href="#use-vcaa-busca" class="about-vocabulary__accordion-link" @click.prevent="toggleUseVcaaSection('use-vcaa-busca')">navegação por busca</a>.
               </p>
 
               <p class="about-vocabulary__accordion-paragraph">
@@ -237,13 +237,70 @@
                 <div
                   v-show="activeUseVcaaSection === 'use-vcaa-busca'"
                   id="use-vcaa-busca"
-                  class="about-vocabulary__subaccordion-content ps-0"
+                  class="about-vocabulary__subaccordion-content about-vocabulary__accordion-content ps-0"
                 >
                   <div class="about-vocabulary__accordion-content-item">
                     <p class="about-vocabulary__accordion-paragraph">
-                      A navegação por busca permite encontrar termos semelhantes. Para esse tipo de navegação, utilizaremos como exemplo o termo “cidade".
+                      A navegação por busca permite encontrar termos semelhantes. Para esse tipo de navegação, utilizaremos como exemplo o termo “cidade”.
                     </p>
                   </div>
+                  <div class="about-vocabulary__accordion-content-item">
+                    <p class="about-vocabulary__accordion-step">
+                      Passo 1
+                    </p>
+                    <p class="about-vocabulary__accordion-paragraph">
+                      Digite o termo desejado na barra de busca. Os resultados serão termos no plural. Clique em "cidades".
+                    </p>
+                  </div>
+                  <div class="about-vocabulary__accordion-content-item">
+                    <figure class="about-vocabulary__accordion-figure">
+                      <img
+                        src="@/assets/about_vocabulary_navegation_for_surch_1.png"
+                        alt="Exemplo de busca no VCAA com o termo cidade e lista de sugestões"
+                      />
+                      <figcaption class="about-vocabulary__accordion-caption">
+                        Imagem: exemplo de navegação por busca, 2026.
+                      </figcaption>
+                    </figure>
+                  </div>
+                  <div class="about-vocabulary__accordion-content-item">
+                    <p class="about-vocabulary__accordion-step">
+                      Passo 2
+                    </p>
+                    <p class="about-vocabulary__accordion-paragraph">
+                      Nesta busca, foram encontrados 20 termos. Clique em "cidades” para visualizar o registro completo do termo.
+                    </p>
+                  </div>
+                  <div class="about-vocabulary__accordion-content-item">
+                    <figure class="about-vocabulary__accordion-figure">
+                      <img
+                        src="@/assets/about_vocabulary_navegation_for_surch_2.png"
+                        alt="Lista de 20 resultados da busca por cidades no VCAA"
+                      />
+                      <figcaption class="about-vocabulary__accordion-caption">
+                        Imagem: exemplo de termos encontrados, 2026.
+                      </figcaption>
+                    </figure>
+                  </div>
+                  <div class="about-vocabulary__accordion-content-item">
+                    <p class="about-vocabulary__accordion-step">
+                      Passo 3
+                    </p>
+                    <p class="about-vocabulary__accordion-paragraph">
+                      No registro completo de "cidades" você encontrará elementos que ajudam a definir o termo e seu uso. Para entender a função de cada elemento que compõe um registro, clique <a href="https://docs.google.com/document/d/1fF7X9kLuzxLvqQIhXra9o0Xvs1JVWOiLMFjmDqsqDN0/edit?tab=t.0#bookmark=id.pem5fjv7cyd6" target="_blank" rel="noopener noreferrer">aqui</a>.
+                    </p>
+                  </div>
+                  <div class="about-vocabulary__accordion-content-item">
+                    <figure class="about-vocabulary__accordion-figure">
+                      <img
+                        src="@/assets/about_vocabulary_navegation_for_surch_3.png"
+                        alt="Exemplo de registro completo de cidades no VCAA"
+                      />
+                      <figcaption class="about-vocabulary__accordion-caption">
+                        Imagem: exemplo de registro, 2026.
+                      </figcaption>
+                    </figure>
+                  </div>                  
                 </div>
               </article>
 
@@ -400,7 +457,7 @@ export default {
   font-style: normal;
   font-weight: 400;
   line-height: 125%;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .about-vocabulary__button {
@@ -414,7 +471,7 @@ export default {
   color: #fff;
   text-decoration: none;
   width: fit-content;
-  margin: 32px 0;
+  margin: 16px 0;
 }
 
 .about-vocabulary__button:hover {
@@ -510,15 +567,20 @@ export default {
   color: var(--Laranja_E, #AA4F28);
 }
 
+.about-vocabulary__accordion-step {
+  color: #000;
+  font-family: "DM Sans";
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 125%;
+  margin: 16px 0 8px;
+  margin-top: 0;
+}
+
 .about-vocabulary__accordion-figure {
   margin: 0;
   width: 100%;
-}
-
-.about-vocabulary__accordion-image {
-  display: block;
-  width: 100%;
-  height: auto;
 }
 
 .about-vocabulary__accordion-caption {
@@ -529,6 +591,70 @@ export default {
   font-style: normal;
   font-weight: 400;
   line-height: 125%;
+}
+
+/* <768px: imagens e accordion fluidos (as <img> não usam classe — seletor via figure) */
+@media (max-width: 767.98px) {
+  .about-vocabulary__content-col {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .about-vocabulary__accordion {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .about-vocabulary__accordion-content {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    align-self: stretch;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0 0 24px 0;
+    gap: 24px;
+  }
+
+  .about-vocabulary__accordion-content-item {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .about-vocabulary__accordion .about-vocabulary__subaccordion-content {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    align-self: stretch;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 0 0 20px 0;
+    gap: 20px;
+  }
+
+  .about-vocabulary__accordion-figure {
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .about-vocabulary__accordion-figure img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    box-sizing: border-box;
+  }
+
+  .about-vocabulary__accordion-caption {
+    font-style: italic;
+  }
 }
 
 @media (min-width: 768px) {
@@ -564,10 +690,12 @@ export default {
     line-height: 125%;
     max-width: 700px;
     padding-left: 48px;
+    margin-bottom: 16px;
   }
 
   .about-vocabulary__button {
     margin-left: 48px;
+    margin-block: 32px;
   }
 
   .about-vocabulary__accordion {
@@ -589,10 +717,28 @@ export default {
     align-items: flex-start;
     align-self: stretch;
     gap: 32px;
+    max-width: 700px;
+  }
+
+  /* Desktop: tamanho natural da arte (sem forçar 100% da coluna); só limita à largura do bloco */
+  .about-vocabulary__accordion-figure {
+    width: auto;
+    max-width: 100%;
+  }
+
+  .about-vocabulary__accordion-figure img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
   }
 
   .about-vocabulary__subaccordion-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     padding: 0 0 24px 24px;
+    gap: 24px;
   }
 
   .about-vocabulary__subaccordion-trigger {
