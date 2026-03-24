@@ -8,8 +8,15 @@
           <i class="bi bi-arrow-left-square back-link__icon" aria-hidden="true"></i>
           <span class="back-link__label">Voltar</span>
         </button>
-        <ImageDisplay :image="image" :loading="loading" @load="loading = false" @download="handleDownload"
-          @share="handleShare" @report-submit="handleReportSubmit" />
+        <ImageDisplay
+          :image="image"
+          :license-info="licenseInfo"
+          :loading="loading"
+          @load="loading = false"
+          @download="handleDownload"
+          @share="handleShare"
+          @report-submit="handleReportSubmit"
+        />
       </div>
 
       <!-- Metadata -->
@@ -28,7 +35,11 @@
           </div>
         </div>
 
-        <ImageMetadata v-if="currentSection === 'dados'" :image="image" />
+        <ImageMetadata
+          v-if="currentSection === 'dados'"
+          :image="image"
+          :license-info="licenseInfo"
+        />
 
         <div v-else-if="currentSection === 'comentarios'">
           <div v-if="loadingComments" class="text-center py-4">
@@ -48,9 +59,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { api } from "@/services/api";
+import { findLicenseByUrl } from "@/constants/creativeCommonsLicenses";
 import ImageComments from "@/components/imageDetail/ImageComments.vue";
 import ImageDisplay from "@/components/imageDetail/ImageDisplay.vue";
 import ImageMetadata from "@/components/imageDetail/ImageMetadata.vue";
@@ -83,6 +95,12 @@ const tabs = [
 ];
 
 const currentSection = computed(() => route.meta?.section ?? "dados");
+
+const licenseInfo = computed(() => {
+  const rightsUrl = image.value?.rights?.[0]?.href;
+  if (!rightsUrl) return null;
+  return findLicenseByUrl(rightsUrl);
+});
 
 const loadComments = async (imageId) => {
   loadingComments.value = true;

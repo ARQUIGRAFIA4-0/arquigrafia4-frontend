@@ -15,21 +15,10 @@
           Antes de realizar o download, atente-se às condições de uso da imagem.
         </p>
 
-        <div class="license-info">
-          <div class="license-icon">
-            <i class="bi bi-info-circle" aria-hidden="true"></i>
-          </div>
-          <div class="license-text">
-            <p>
-              Esta imagem pode ser copiada, redistribuída, e adaptada (o que
-              inclui: remixar, transformar, e criar a partir do material), e
-              utilizada para fins comerciais.
-            </p>
-            <p class="credit-warning">
-              No entanto, <strong>você deve dar o crédito apropriado</strong>.
-            </p>
-          </div>
-        </div>
+        <LicenseInfoBlock
+          :license-info="licenseInfo"
+          :show-heading="false"
+        />
       </div>
 
       <div class="modal-footer footer-grid">
@@ -62,6 +51,7 @@
 </template>
 
 <script setup>
+import LicenseInfoBlock from "@/components/imageDetail/LicenseInfoBlock.vue";
 import { ref, watch } from "vue";
 
 defineOptions({
@@ -69,6 +59,10 @@ defineOptions({
 });
 
 const props = defineProps({
+  licenseInfo: {
+    type: Object,
+    default: null,
+  },
   modelValue: {
     type: Boolean,
     default: false,

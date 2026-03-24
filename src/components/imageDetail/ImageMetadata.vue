@@ -72,23 +72,7 @@
       </div>
     </div>
 
-    <div v-if="licenseInfo" class="metadata-section metadata-license">
-      <h2 class="h5 metadata-title">Permissões de uso da imagem</h2>
-
-      <div class="metadata-license-content">
-        <div class="metadata-license-image">
-          <img
-            :src="licenseImageUrl"
-            :alt="`Licença Creative Commons ${licenseInfo.label}`"
-            class="license-img"
-          />
-        </div>
-
-        <div class="metadata-license-text">
-          <p class="metadata-text" v-html="licenseText"></p>
-        </div>
-      </div>
-    </div>
+    <LicenseInfoBlock v-if="props.licenseInfo" :license-info="props.licenseInfo" />
   </div>
 </template>
 
@@ -96,7 +80,7 @@
 import { computed } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
-import { findLicenseByUrl } from "@/constants/creativeCommonsLicenses";
+import LicenseInfoBlock from "@/components/imageDetail/LicenseInfoBlock.vue";
 import { DEFAULT_VIEW_ROUTE } from "@/constants/viewModes";
 
 const route = useRoute();
@@ -104,6 +88,11 @@ const router = useRouter();
 
 const props = defineProps({
   image: {
+    type: Object,
+    default: null,
+  },
+  /** Resolvido no pai (`ImageDetail`) a partir de `image.rights` */
+  licenseInfo: {
     type: Object,
     default: null,
   },
@@ -143,24 +132,6 @@ const authorsText = computed(() => {
   return authors.join(", ");
 });
 
-const licenseInfo = computed(() => {
-  const rightsUrl = props.image?.rights?.[0]?.href;
-  
-  if (!rightsUrl) return null;
-  
-  return findLicenseByUrl(rightsUrl);
-});
-
-const licenseImageUrl = computed(() => {
-  if (!licenseInfo.value?.image) return null;
-  
-  return new URL(`../../assets/${licenseInfo.value.image}`, import.meta.url).href;
-});
-
-const licenseText = computed(() => {
-  return licenseInfo.value?.text || "Informações sobre a licença não disponíveis.";
-});
-
 const DEFAULT_CENTER = [-46.633309, -23.55052];
 const mapStyleUrl = "https://tiles.openfreemap.org/styles/positron";
 const mapZoom = 14;
@@ -195,15 +166,6 @@ const markerPosition = computed(() => {
 </script>
 
 <style lang="scss" scoped>
-@use "@/scss/variables" as *;
-$breakpoint-md: 768px;
-
-@mixin md {
-  @media (min-width: #{$breakpoint-md}) {
-    @content;
-  }
-}
-
 .metadata-section {
   padding: 1rem 0;
 }
@@ -280,32 +242,5 @@ $breakpoint-md: 768px;
   overflow: hidden;
   background-color: #f1f3f5;
   margin-bottom: 36px;
-}
-
-.metadata-license-content {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.metadata-license-image {
-  display: flex;
-  align-items: flex-start;
-
-  @include md {
-    margin-bottom: 0;
-  }
-}
-
-.license-img {
-  max-height: 120px;
-  width: auto;
-  display: block;
-}
-
-.metadata-license-text {
-  flex: 1 1 220px;
-  min-width: 220px;
 }
 </style>
