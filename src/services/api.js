@@ -35,6 +35,8 @@ const getImageDetails = async (id) => {
     const uploader = image.user;
     const description = image.descriptions?.[0]?.text || null;
 
+    const collective = image.collective ?? null;
+
     const authors = Array.isArray(image.agents)
       ? image.agents
         .map((agent) => agent?.contributor_name?.name)
@@ -109,6 +111,7 @@ const getImageDetails = async (id) => {
       thumbUrl: `${baseURL()}/${image.thumb_url}`,
       fullUrl: `${baseURL()}/${image.full_url}`,
       uploader,
+      collective,
       authors,
       date,
       location: locationLabel,

@@ -2,26 +2,33 @@
   <div>
     <h1 class="h1 mb-4">{{ props.image?.title || "Carregando..." }}</h1>
 
-    <div v-if="uploaderName" class="metadata-section">
+    <div v-if="displayName" class="metadata-section">
       <h2 class="h5 metadata-title">Imagem enviada por</h2>
       <div class="metadata-person">
-        <div v-if="uploaderAvatar" class="metadata-person-avatar">
-          <img :src="uploaderAvatar" :alt="`Foto de ${uploaderName}`" />
+        <div v-if="displayAvatar" class="metadata-person-avatar">
+          <img :src="displayAvatar" :alt="`Foto de ${displayName}`" />
         </div>
         <div
           v-else
           class="metadata-person-avatar metadata-person-avatar--placeholder"
         >
-          <span>{{ uploaderInitial }}</span>
+          <span>{{ displayInitial }}</span>
         </div>
-        <RouterLink 
-          v-if="uploaderUserId"
+        <RouterLink
+          v-if="collectiveId"
+          :to="`/collective/${collectiveId}`"
+          class="metadata-uploader-link"
+        >
+          {{ displayName }}
+        </RouterLink>
+        <RouterLink
+          v-else-if="uploaderUserId"
           :to="`/profile/${uploaderUserId}`"
           class="metadata-uploader-link"
         >
-          {{ uploaderName }}
+          {{ displayName }}
         </RouterLink>
-        <p v-else class="metadata-text">{{ uploaderName }}</p>
+        <p v-else class="metadata-text">{{ displayName }}</p>
       </div>
     </div>
 
@@ -122,24 +129,21 @@ function searchBySubject(subject) {
   });
 }
 
-const uploaderName = computed(() => props.image?.uploader?.name ?? null);
-const uploaderAvatar = computed(() => props.image?.uploader?.avatar ?? null);
+const collectiveId = computed(() => props.image?.collective?.id ?? null);
 const uploaderUserId = computed(() => props.image?.uploader?.id ?? null);
-const uploaderInitial = computed(() => {
-  if (!uploaderName.value) {
-    return "";
-  }
-
-  return uploaderName.value.trim().charAt(0).toUpperCase();
-});
+const displayName = computed(() =>
+  props.image?.collective?.name ?? props.image?.uploader?.name ?? null
+);
+const displayAvatar = computed(() =>
+  props.image?.collective?.avatar_path ?? props.image?.uploader?.avatar ?? null
+);
+const displayInitial = computed(() =>
+  displayName.value?.trim().charAt(0).toUpperCase() ?? ""
+);
 
 const authorsText = computed(() => {
   const authors = props.image?.authors;
-  
-  if (!Array.isArray(authors) || authors.length === 0) {
-    return "Desconhecida";
-  }
-  
+  if (!Array.isArray(authors) || authors.length === 0) return "Desconhecida";
   return authors.join(", ");
 });
 
