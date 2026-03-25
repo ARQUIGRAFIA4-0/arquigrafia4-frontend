@@ -62,9 +62,10 @@
 
               <div>
                 <div
-                  class="d-flex align-items-center justify-content-between cursor-pointer rounded p-2"
-                  @click="toggleIdentityDropdown"
-                  role="button"
+                  class="d-flex align-items-center p-2"
+                  :class="{ 'justify-content-between cursor-pointer rounded': hasCollectives }"
+                  @click="hasCollectives ? toggleIdentityDropdown() : null"
+                  :role="hasCollectives ? 'button' : undefined"
                 >
                   <div
                     class="d-flex align-items-center gap-2"
@@ -93,20 +94,21 @@
                   </div>
                   <div v-else>Carregando...</div>
                   <i
+                    v-if="hasCollectives"
                     class="bi bi-chevron-down transition-transform"
                     :class="{ 'rotate-180': isIdentityDropdownOpen }"
                   />
                 </div>
 
                 <div
-                  v-if="isIdentityDropdownOpen"
+                  v-if="hasCollectives && isIdentityDropdownOpen"
                   class="w-100 bg-off-white rounded mt-1"
                 >
                   <div
                     v-for="identity in availableIdentities"
                     :key="identity.id"
                     class="d-flex align-items-center gap-2 p-2 hover-bg-light cursor-pointer identity-item"
-                    @click="selectIdentity()"
+                    @click="selectIdentity(identity)"
                     role="button"
                   >
                     <div
@@ -673,31 +675,47 @@ const tabs = [
 ];
 
 const isIdentityDropdownOpen = ref(false);
+const selectedIdentityId = ref(null);
 
-// selectedIdentity returns the logged-in user
-const selectedIdentity = computed(() => {
-  if (!loggedUser.value) return null;
-  return {
-    id: loggedUser.value.id,
-    name: loggedUser.value.name || loggedUser.value.username,
-    avatar: loggedUser.value.avatar || null,
-    initials: loggedUser.value.initials || loggedUser.value.name?.charAt(0).toUpperCase() || "?",
-  };
-});
+const getInitials = (name) => name?.charAt(0).toUpperCase() || "?";
 
-// publishingIdentities will contain just the current user for now
-// This structure is kept for future multi-profile support
+// All publishing identities: the user + their collectives
 const publishingIdentities = computed(() => {
   if (!loggedUser.value) return [];
-  return [
+  const user = loggedUser.value;
+  const identities = [
     {
-      id: loggedUser.value.id,
-      name: loggedUser.value.name || loggedUser.value.username,
-      avatar: loggedUser.value.avatar || null,
-      initials: loggedUser.value.initials || loggedUser.value.name?.charAt(0).toUpperCase() || "?",
+      id: user.id,
+      type: "user",
+      name: user.name || user.username,
+      avatar: user.avatar || null,
+      initials: user.initials || getInitials(user.name || user.username),
     },
   ];
+  if (Array.isArray(user.collectives)) {
+    for (const collective of user.collectives) {
+      identities.push({
+        id: collective.id,
+        type: "collective",
+        name: collective.name,
+        avatar: collective.avatar_path || null,
+        initials: getInitials(collective.name),
+      });
+    }
+  }
+  return identities;
 });
+
+// Default to user identity
+const selectedIdentity = computed(() => {
+  if (!publishingIdentities.value.length) return null;
+  if (!selectedIdentityId.value) return publishingIdentities.value[0];
+  return publishingIdentities.value.find((i) => i.id === selectedIdentityId.value) || publishingIdentities.value[0];
+});
+
+const hasCollectives = computed(() =>
+  Array.isArray(loggedUser.value?.collectives) && loggedUser.value.collectives.length > 0
+);
 
 const availableIdentities = computed(() => {
   return publishingIdentities.value.filter(
@@ -709,9 +727,8 @@ const toggleIdentityDropdown = () => {
   isIdentityDropdownOpen.value = !isIdentityDropdownOpen.value;
 };
 
-const selectIdentity = () => {
-  // For now, this doesn't change anything since selectedIdentity is computed from loggedUser
-  // But this structure is ready for future multi-profile support
+const selectIdentity = (identity) => {
+  selectedIdentityId.value = identity.id;
   isIdentityDropdownOpen.value = false;
 };
 
@@ -1272,7 +1289,10 @@ const handleSubmit = async () => {
         // Create FormData for this specific image
         const formData = new FormData();
         formData.append("image", image.file);
-        formData.append("user_id", selectedIdentity.value.id);
+        formData.append("user_id", loggedUser.value.id);
+        if (selectedIdentity.value?.type === "collective") {
+          formData.append("collective_id", selectedIdentity.value.id);
+        }
         formData.append("title", metadata.title || "");
         formData.append("license", metadata.license || "CC BY-NC-SA");
 
