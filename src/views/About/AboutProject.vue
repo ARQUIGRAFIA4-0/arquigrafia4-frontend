@@ -6,11 +6,12 @@
     <div class="col-12 col-md-8">
       <h2 class="about-project__subtitle">Uma experiência de pesquisa baseada na colaboração</h2>
       <div class="d-md-none about-project__mobile-cropped-wrapper">
-        <img src="@/assets/about_project_img_03.jpg" alt="ARQUIGRAFIA" class="about-project__mobile-cropped-image" />
+        <img src="@/assets/about_project_img_04.png" alt="ARQUIGRAFIA" class="about-project__mobile-cropped-image" />
       </div>
       <p class="about-project__paragraph">A internet pode ser um espaço de intenso compartilhamento de experiências,
         de pesquisa, de aprendizagem e de intercâmbio de conhecimentos. Esse potencial estimulou o desenvolvimento
-        do projeto ARQUIGRAFIA: uma plataforma colaborativa de compartilhamento e interpretação de imagens de Arquitetura e Urbanismo na web.
+        do projeto ARQUIGRAFIA: uma plataforma colaborativa de compartilhamento e interpretação de imagens de
+        Arquitetura e Urbanismo na web.
       </p>
       <p class="about-project__paragraph">
         Como um espaço público, aberto e gratuito o ARQUIGRAFIA empreende a construção de uma coleção de imagens
@@ -20,8 +21,18 @@
         institutos públicos e privados.
       </p>
       <div class="about-project__horizontal-image-wrapper">
-        <img src="@/assets/about_project_img_01.jpg" alt="ARQUIGRAFIA" class="about-project__horizontal-image" />
+        <img src="@/assets/about_project_img_01.jpeg" alt="ARQUIGRAFIA" class="about-project__horizontal-image" />
       </div>
+      <div class="d-md-none about-project__mobile-cropped-wrapper">
+        <img src="@/assets/about_project_img_04.png" alt="ARQUIGRAFIA" class="about-project__mobile-cropped-image" />
+      </div>
+    </div>
+    <div class="d-none d-md-block col-md-4">
+      <div class="about-project__vertical-image-wrapper">
+        <img src="@/assets/about_project_img_04.png" alt="ARQUIGRAFIA" class="about-project__vertical-image-wrapper" />
+      </div>
+    </div>
+    <div class="col-12 col-md-8">
       <p class="about-project__paragraph">
         Idealizado em 2008 na Universidade de São Paulo, na Faculdade de Arquitetura e Urbanismo e de Design
         (FAU-USP) como um projeto multidisciplinar em parceria com pesquisadores do Instituto de Matemática e
@@ -36,13 +47,14 @@
         áreas de conhecimento, produzindo conhecimento, desenvolvendo Ciência e Tecnologia, fomentando pesquisas em
         nível de graduação e pós-graduação, e formando dezenas de jovens pesquisadores de diversas áreas.
       </p>
-      <div class="d-md-none about-project__mobile-cropped-wrapper">
-        <img src="@/assets/about_project_img_04.jpg" alt="ARQUIGRAFIA" class="about-project__mobile-cropped-image" />
+      <div class="about-project__horizontal-image-wrapper">
+        <img src="@/assets/about_project_img_02.jpg" alt="ARQUIGRAFIA" class="about-project__horizontal-image" />
       </div>
     </div>
+    <!-- IMAGEM VERTICAL -->
     <div class="d-none d-md-block col-md-4">
       <div class="about-project__vertical-image-wrapper">
-        <img src="@/assets/about_project_img_03.jpg" alt="ARQUIGRAFIA" class="about-project__vertical-image-wrapper" />
+        <img src="@/assets/about_project_img_05.jpg" alt="ARQUIGRAFIA" class="about-project__vertical-image-wrapper" />
       </div>
     </div>
     <div class="col-12 col-md-8">
@@ -51,6 +63,8 @@
         arquiteturas e espaços urbanos, disponibilizadas para livre acesso, com direitos autorais protegidos por
         licenças Creative Commons.
       </h2>
+    </div>
+    <div class="col-12 col-md-8">
       <p class="about-project__paragraph">
         Entre 2012 e 2017, em parceria com a Seção de Material Iconográfico da Biblioteca da FAU-USP, a equipe do
         ARQUIGRAFIA desenvolveu um intenso trabalho de conservação de material fotográfico original, digitalização e
@@ -58,9 +72,6 @@
         de arquitetura e urbanismo. Historicamente, esse acervo fotográfico também se constituiu, desde os anos
         1960, de maneira colaborativa, com doações de estudantes, professores e pesquisadores.
       </p>
-      <div class="about-project__horizontal-image-wrapper">
-        <img src="@/assets/about_project_img_02.jpg" alt="ARQUIGRAFIA" class="about-project__horizontal-image" />
-      </div>
       <p class="about-project__paragraph">
         Como reconhecimento dos esforços realizados, o ARQUIGRAFIA recebeu o primeiro prêmio na categoria
         “Tecnologias Sociais Aplicadas e Humanas” da Agência de Inovação USP em novembro de 2011; recebeu em 2013
@@ -68,10 +79,13 @@
         mapeamento, e foi o projeto selecionado no edital público “Cultura na Copa 2014” (MinC) na área de
         Arquitetura.
       </p>
+      <div class="about-project__horizontal-image-wrapper">
+        <img src="@/assets/about_project_img_03.jpg" alt="ARQUIGRAFIA" class="about-project__horizontal-image" />
+      </div>
     </div>
     <div class="d-none d-md-block col-md-4">
-      <div class="about-project__vertical-image-wrapper">
-        <img src="@/assets/about_project_img_04.jpg" alt="ARQUIGRAFIA" class="about-project__vertical-image-wrapper" />
+      <div class="about-project__hotizontal-image-wrapper">
+        <img src="@/assets/about_project_img_06.jpg" alt="ARQUIGRAFIA" class="about-project__vertical-image-wrapper" />
       </div>
     </div>
     <div class="col-12 col-md-8">
@@ -94,7 +108,7 @@
         cadastrados, permite download de imagens em alta resolução.
       </p>
       <div class="d-md-none about-project__mobile-cropped-wrapper">
-        <img src="@/assets/about_project_img_05.jpg" alt="ARQUIGRAFIA" class="about-project__mobile-cropped-image" />
+        <img src="@/assets/about_project_img_07.jpg" alt="ARQUIGRAFIA" class="about-project__mobile-cropped-image" />
       </div>
       <p class="about-project__paragraph">
         A plataforma é responsiva, o que possibilita colocar o sistema “na palma da mão” de quem circula pelas
@@ -107,7 +121,7 @@
     </div>
     <div class="d-none d-md-block col-md-4">
       <div class="about-project__vertical-image-wrapper">
-        <img src="@/assets/about_project_img_05.jpg" alt="ARQUIGRAFIA" class="about-project__vertical-image-wrapper" />
+        <img src="@/assets/about_project_img_07.jpg" alt="ARQUIGRAFIA" class="about-project__vertical-image-wrapper about-project__vertical-image-wrapper--contain" />
       </div>
     </div>
   </AboutLayout>
@@ -228,7 +242,7 @@ $breakpoint-md: 768px;
     @include md {
       width: 100%;
       height: 100%;
-      max-height: 450px;
+      max-height: 560px;
       overflow: hidden;
     }
   }
@@ -238,6 +252,10 @@ $breakpoint-md: 768px;
     height: 100%;
     object-fit: cover;
     display: block;
+
+    &--contain {
+      object-fit: contain;
+    }
   }
 
   &__horizontal-image-wrapper {

@@ -75,7 +75,7 @@ export const labProjects = [
             {
                 type: "project",
                 label: "Acessar projeto",
-                url: "https://journals-sol.sbc.org.br/index.php/comp-br/article/view/5072",
+                url: "https://www.arquigrafia.org.br/oam",
             },
             {
                 type: "publications",
@@ -108,7 +108,7 @@ export const labProjects = [
             {
                 type: "project",
                 label: "Acessar projeto",
-                url: "https://www.acervosdigitais.fau.usp.br/visao-computacional-aplicada-a-arquivos-de-arquitetura-arte-e-design/",
+                url: "https://acervos-digitais.github.io/arquigrafia-interface/",
             },
             {
                 type: "publications",
