@@ -40,6 +40,10 @@ onMounted(async () => {
         <router-link to="/about/faq" class="app-footer__link">
           faq
         </router-link>
+        <span>•</span>
+        <router-link to="/about/vocabulary" class="app-footer__link">
+          vocabulário
+        </router-link>
       </nav>
 
       <!-- Texto -->

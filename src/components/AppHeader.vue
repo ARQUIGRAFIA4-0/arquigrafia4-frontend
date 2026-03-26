@@ -72,6 +72,9 @@ const handleLogout = async () => {
           <li>
             <router-link class="dropdown-item" to="/about/faq">FAQ</router-link>
           </li>
+          <li>
+            <router-link class="dropdown-item" to="/about/vocabulary">Vocabulário</router-link>
+          </li>
         </ul>
       </div>
     </div>
