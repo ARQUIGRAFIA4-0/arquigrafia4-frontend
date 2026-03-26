@@ -1,4 +1,5 @@
 <template>
+
   <LicenseContentLayout :license-info="licenseInfo">
     <p class="metadata-text">
       Esta obra está em domínio público mundial.
@@ -7,6 +8,7 @@
       A imagem pode ser reutilizada, distribuída, remixada, adaptada e utilizada para criação de obras derivadas.
     </p>
   </LicenseContentLayout>
+  
 </template>
 
 <script setup>

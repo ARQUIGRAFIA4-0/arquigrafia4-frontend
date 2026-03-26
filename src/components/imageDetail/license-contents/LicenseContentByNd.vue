@@ -1,4 +1,5 @@
 <template>
+
   <LicenseContentLayout :license-info="licenseInfo">
     <p class="metadata-text">
       Esta imagem pode ser copiada, redistribuída, e utilizada para fins comerciais,
@@ -11,6 +12,7 @@
       No entanto, <strong>você deve dar o crédito apropriado</strong>.
     </p>
   </LicenseContentLayout>
+  
 </template>
 
 <script setup>

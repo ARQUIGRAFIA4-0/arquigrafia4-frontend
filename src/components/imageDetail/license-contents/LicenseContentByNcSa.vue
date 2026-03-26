@@ -1,4 +1,5 @@
 <template>
+
   <LicenseContentLayout :license-info="licenseInfo">
     <p class="metadata-text">
       Esta imagem pode ser copiada, redistribuida, e adaptada (o que inclui:
@@ -13,6 +14,7 @@
       </span>
     </p>
   </LicenseContentLayout>
+  
 </template>
 
 <script setup>

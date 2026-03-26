@@ -5,7 +5,6 @@ import LicenseContentByNcSa from "./LicenseContentByNcSa.vue";
 import LicenseContentByNd from "./LicenseContentByNd.vue";
 import LicenseContentByNcNd from "./LicenseContentByNcNd.vue";
 import LicenseContentCc0 from "./LicenseContentCc0.vue";
-import LicenseContentUnknown from "./LicenseContentUnknown.vue";
 
 /** Mapeia `licenseInfo.label` (retorno de `findLicenseByUrl`) → componente de conteúdo */
 export const LICENSE_CONTENT_BY_LABEL = {
@@ -24,8 +23,8 @@ export const LICENSE_CONTENT_BY_LABEL = {
  */
 export function getLicenseContentComponent(licenseInfo) {
   if (!licenseInfo?.label) {
-    return LicenseContentUnknown;
+    return null;
   }
 
-  return LICENSE_CONTENT_BY_LABEL[licenseInfo.label] ?? LicenseContentUnknown;
+  return LICENSE_CONTENT_BY_LABEL[licenseInfo.label] ?? null;
 }
