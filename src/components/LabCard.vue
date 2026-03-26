@@ -22,11 +22,15 @@
       
       <div class="lab-card__author">
         <img
-          :src="author.avatar"
-          :alt="author.name"
+          v-if="authors.length === 1"
+          :src="authors[0].avatar"
+          :alt="authors[0].name"
           class="lab-card__author-avatar"
         />
-        <span class="lab-card__author-name">Por {{ author.name }}</span>
+        <div v-else class="lab-card__author-placeholder">
+          <i class="bi bi-people" aria-hidden="true"></i>
+        </div>
+        <span class="lab-card__author-name">Por {{ authors.map(a => a.name).join(', ') }}</span>
       </div>
     </div>
   </div>
@@ -46,12 +50,9 @@ defineProps({
     type: String,
     required: true,
   },
-  author: {
-    type: Object,
+  authors: {
+    type: Array,
     required: true,
-    validator: (value) => {
-      return value.name && value.avatar;
-    },
   },
 });
 
@@ -134,7 +135,6 @@ $breakpoint-md: 768px;
     line-height: 125%;
     letter-spacing: 0%;
     margin: 0 0 16px 0;
-    flex: 1;
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -145,7 +145,6 @@ $breakpoint-md: 768px;
   &__author {
     display: flex;
     gap: 16px;
-    margin-top: auto;
     padding: 0 8px;
     align-items: center;
   }
@@ -164,14 +163,27 @@ $breakpoint-md: 768px;
     flex-shrink: 0;
   }
 
+  &__author-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background-color: var(--Laranja_E, #aa4f28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+
+    .bi {
+      font-size: 1.2rem;
+    }
+  }
+
   &__author-name {
     font-weight: 400;
     font-size: 14px;
     line-height: 125%;
     letter-spacing: 0%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 }
 </style>
