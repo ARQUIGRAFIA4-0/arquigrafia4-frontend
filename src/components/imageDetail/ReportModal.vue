@@ -1,118 +1,149 @@
 <template>
-  <div v-if="modelValue" class="modal-backdrop" @click.self="close">
+  <div v-if="modelValue" class="report-modal__backdrop" @click.self="close">
     <div
-      class="modal-panel"
+      class="report-modal__panel"
       role="dialog"
       aria-modal="true"
       aria-labelledby="report-modal-title"
     >
-      <div class="modal-header">
-        <h5 id="report-modal-title" class="m-0 w-100 h2">
-          Ajude a denunciar o conteúdo inadequado
-        </h5>
-      </div>
-
-      <div class="modal-body">
-        <div class="image-preview-row mb-4">
-          <img
-            v-if="image?.imageUrl"
-            :src="image.imageUrl"
-            :alt="image.title"
-            class="preview-thumbnail"
-          />
-          <div v-else class="preview-thumbnail placeholder-thumbnail"></div>
-          <p class="preview-text">
-            Por favor, informe o motivo pelo qual deseja denunciar esta imagem.
+      <div class="report-modal__column">
+        <div class="report-modal__header">
+          <p id="report-modal-title" class="report-modal__title">
+            Ajude a denunciar o conteúdo inadequado
           </p>
         </div>
 
-        <UiField
-          id="report-type"
-          label="Tipo de denúncia"
-          :invalid="submitted && !reportType"
-          invalid-message="Preenchimento obrigatório"
-        >
-          <select
-            id="report-type"
-            v-model="reportType"
-            class="form-select"
-            :class="{ 'is-invalid': submitted && !reportType }"
-          >
-            <option value="" disabled>Selecione</option>
-            <option value="copyright">Violação de direitos autorais</option>
-            <option value="inappropriate">Conteúdo inapropriado</option>
-            <option value="incorrect">Informações incorretas</option>
-            <option value="spam">Spam ou propaganda</option>
-            <option value="other">Outro</option>
-          </select>
-        </UiField>
+        <div class="report-modal__content">
+          <div class="report-modal__intro">
+            <div class="report-modal__thumb-wrap">
+              <img
+                v-if="image?.imageUrl"
+                :src="image.imageUrl"
+                :alt="image.title"
+                class="report-modal__thumb"
+              />
+              <div v-else class="report-modal__thumb report-modal__thumb--placeholder" />
+            </div>
+            <p class="report-modal__intro-text">
+              Por favor, informe o motivo pelo qual deseja denunciar esta
+              imagem.
+            </p>
+          </div>
 
-        <UiField label="Item problemático" class="mt-3">
-          <div class="d-flex flex-wrap gap-4">
-            <div class="form-check">
-              <input
-                id="item-image"
-                v-model="problematicItem"
-                class="form-check-input"
-                type="radio"
-                name="problematicItem"
-                value="image"
-              />
-              <label class="form-check-label" for="item-image">Imagem</label>
+          <div class="report-modal__field">
+            <div class="report-modal__label-row">
+              <label class="report-modal__label" for="report-type">
+                Tipo de denúncia
+              </label>
+              <span
+                class="report-modal__hint"
+                aria-hidden="true"
+                title="Ajuda"
+              >
+                <i class="bi bi-question-circle-fill" />
+              </span>
             </div>
-            <div class="form-check">
-              <input
-                id="item-data"
-                v-model="problematicItem"
-                class="form-check-input"
-                type="radio"
-                name="problematicItem"
-                value="data"
-              />
-              <label class="form-check-label" for="item-data">Dados</label>
+            <div
+              class="report-modal__input-shell"
+              :class="{
+                'report-modal__input-shell--invalid':
+                  submitted && !reportType,
+              }"
+            >
+              <select
+                id="report-type"
+                v-model="reportType"
+                class="report-modal__select"
+                :class="{ 'report-modal__select--placeholder': !reportType }"
+                :aria-invalid="submitted && !reportType"
+              >
+                <option value="" disabled>Selecione</option>
+                <option value="copyright">Violação de direitos autorais</option>
+                <option value="inappropriate">Conteúdo inapropriado</option>
+                <option value="incorrect">Informações incorretas</option>
+                <option value="spam">Spam ou propaganda</option>
+                <option value="other">Outro</option>
+              </select>
             </div>
-            <div class="form-check">
-              <input
-                id="item-location"
-                v-model="problematicItem"
-                class="form-check-input"
-                type="radio"
-                name="problematicItem"
-                value="location"
-              />
-              <label class="form-check-label" for="item-location">
-                Localização
+          </div>
+
+          <div class="report-modal__field">
+            <div class="report-modal__label-row">
+              <span class="report-modal__label">Item problemático</span>
+              <span
+                class="report-modal__hint"
+                aria-hidden="true"
+                title="Ajuda"
+              >
+                <i class="bi bi-question-circle-fill" />
+              </span>
+            </div>
+            <div class="report-modal__radios" role="radiogroup" aria-label="Item problemático">
+              <label class="report-modal__radio">
+                <input
+                  v-model="problematicItem"
+                  type="radio"
+                  name="problematicItem"
+                  value="image"
+                />
+                <span class="report-modal__radio-label">Imagem</span>
+              </label>
+              <label class="report-modal__radio">
+                <input
+                  v-model="problematicItem"
+                  type="radio"
+                  name="problematicItem"
+                  value="data"
+                />
+                <span class="report-modal__radio-label">Dados</span>
+              </label>
+              <label class="report-modal__radio">
+                <input
+                  v-model="problematicItem"
+                  type="radio"
+                  name="problematicItem"
+                  value="location"
+                />
+                <span class="report-modal__radio-label">Localização</span>
               </label>
             </div>
           </div>
-        </UiField>
 
-        <UiField
-          id="report-reason"
-          label="Explique-nos o motivo de sua denúncia"
-          class="mt-3"
-        >
-          <textarea
-            id="report-reason"
-            v-model="reason"
-            class="form-control"
-            rows="4"
-            placeholder="Deixe seu comentário aqui"
-          ></textarea>
-        </UiField>
+          <div class="report-modal__field">
+            <div class="report-modal__label-row">
+              <label class="report-modal__label" for="report-reason">
+                Explique-nos o motivo de sua denúncia
+              </label>
+              <span
+                class="report-modal__hint"
+                aria-hidden="true"
+                title="Ajuda"
+              >
+                <i class="bi bi-question-circle-fill" />
+              </span>
+            </div>
+            <textarea
+              id="report-reason"
+              v-model="reason"
+              class="report-modal__textarea"
+              rows="5"
+              placeholder="Deixe seu comentário aqui"
+            />
+          </div>
+        </div>
       </div>
 
-      <div class="modal-footer footer-grid">
+      <div class="report-modal__footer">
         <button
           type="button"
-          class="btn btn-outline-secondary btn-sm w-100"
+          class="report-modal__btn report-modal__btn--secondary"
           @click="close"
         >
           Cancelar
         </button>
         <button
           type="button"
-          class="btn btn-secondary btn-sm w-100"
+          class="report-modal__btn report-modal__btn--primary"
           :disabled="submitting"
           @click="submit"
         >
@@ -133,7 +164,6 @@
 
 <script setup>
 import { ref, watch } from "vue";
-import UiField from "@/components/ui/UiField.vue";
 
 defineOptions({
   name: "ReportModal",
@@ -181,10 +211,10 @@ watch(
   (value) => {
     if (value) {
       resetForm();
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
       window.addEventListener("keydown", handleEsc);
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
       window.removeEventListener("keydown", handleEsc);
     }
   }
@@ -212,66 +242,314 @@ function submit() {
 </script>
 
 <style scoped>
-.modal-backdrop {
+.report-modal__backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  z-index: 1100;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1100;
+  background: rgba(0, 0, 0, 0.5);
 }
 
-.modal-panel {
-  width: 100%;
-  max-width: 700px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: var(--shadow-elevation-medium);
-  padding: 0px 15px;
-}
-
-.modal-header {
-  padding: 16px 40px;
-  border-bottom: none;
-}
-
-.modal-body {
-  padding: 20px 40px;
-}
-
-.modal-footer {
-  padding: 12px 0px 15px 0px;
-}
-
-.footer-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.image-preview-row {
+.report-modal__panel {
   display: flex;
+  width: 600px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  padding: 0 16px;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  overflow: clip;
+  border-radius: 16px;
+  background: var(--off_white, #faf9f9);
+  box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.1);
+}
+
+.report-modal__column {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
   align-items: flex-start;
+  padding: 0 32px;
+  box-sizing: border-box;
+}
+
+.report-modal__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 32px;
+  padding-bottom: 16px;
+}
+
+.report-modal__title {
+  flex: 1 0 0;
+  margin: 0;
+  font-family: "DM Sans", sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #2f2f2f;
+}
+
+.report-modal__content {
+  width: 100%;
+  padding: 0 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
-.preview-thumbnail {
-  width: 100px;
-  height: 70px;
-  object-fit: cover;
-  border-radius: 4px;
+.report-modal__intro {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  padding: 8px 12px 8px 0;
+  box-sizing: border-box;
+}
+
+.report-modal__thumb-wrap {
   flex-shrink: 0;
+  width: 100px;
+  height: 75px;
+  overflow: hidden;
 }
 
-.placeholder-thumbnail {
-  background-color: var(--Cinza_C, #e0e0e0);
+.report-modal__thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-.preview-text {
+.report-modal__thumb--placeholder {
+  background: var(--Cinza_C, #e0e0e0);
+}
+
+.report-modal__intro-text {
+  flex: 1 0 0;
   margin: 0;
-  font-size: 0.95rem;
-  color: var(--Cinza_E, #555);
-  line-height: 1.4;
+  min-width: 0;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.25;
+  color: #212529;
+}
+
+.report-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  max-width: 600px;
+  min-width: 200px;
+}
+
+.report-modal__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px 8px 0;
+  box-sizing: border-box;
+}
+
+.report-modal__label {
+  font-family: "DM Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #212529;
+}
+
+.report-modal__hint {
+  display: inline-flex;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: #212529;
+}
+
+.report-modal__hint .bi {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.report-modal__input-shell {
+  width: 100%;
+  height: 30px;
+  box-sizing: border-box;
+  background: var(--off_white, #faf9f9);
+  border: 0.75px solid var(--preto, #1f1f1f);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  overflow: clip;
+  padding: 6px 10px;
+}
+
+.report-modal__input-shell--invalid {
+  border-color: #dc3545;
+}
+
+.report-modal__select {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  background: transparent;
+  padding: 0 20px 0 0;
+  margin: 0;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.5;
+  color: #212529;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%231f1f1f' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 20px 20px;
+}
+
+.report-modal__select--placeholder {
+  font-style: italic;
+  color: #636262;
+}
+
+.report-modal__select:focus {
+  outline: none;
+}
+
+.report-modal__select option:not([value=""]) {
+  font-style: normal;
+  color: #212529;
+}
+
+.report-modal__radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 320px;
+}
+
+.report-modal__radio {
+  display: inline-flex;
+  flex: 1 0 0;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px 4px;
+  margin: 0;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.report-modal__radio input[type="radio"] {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: #1f1f1f;
+}
+
+.report-modal__radio-label {
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: #2f2f2f;
+  white-space: nowrap;
+}
+
+.report-modal__textarea {
+  width: 100%;
+  height: 120px;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 120px;
+  background: var(--off_white, #faf9f9);
+  border: 0.75px solid var(--preto, #1f1f1f);
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #212529;
+}
+
+.report-modal__textarea::placeholder {
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #636262;
+}
+
+.report-modal__textarea:focus {
+  outline: none;
+}
+
+.report-modal__footer {
+  width: 100%;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  align-self: stretch;
+  padding: 16px 0;
+  box-sizing: border-box;
+}
+
+.report-modal__btn {
+  flex: 1 0 0;
+  min-width: 0;
+  margin: 0;
+  padding: 2px 14px;
+  border-radius: 5px;
+  border-style: solid;
+  border-width: 1px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.report-modal__btn--secondary {
+  background: var(--off_white, #faf9f9);
+  border-color: var(--cinza_e, #2f2f2f);
+  color: var(--cinza_e, #2f2f2f);
+}
+
+.report-modal__btn--primary {
+  background: var(--cinza_e, #2f2f2f);
+  border-color: var(--cinza_e, #2f2f2f);
+  color: var(--branco, #ffffff);
+}
+
+.report-modal__btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 </style>
