@@ -6,7 +6,7 @@
     <div class="col-12 col-md-8">
       <h2 class="about-project__subtitle">Uma experiência de pesquisa baseada na colaboração</h2>
       <div class="d-md-none about-project__mobile-cropped-wrapper">
-        <img src="@/assets/about_project_img_04.png" alt="ARQUIGRAFIA" class="about-project__mobile-cropped-image" />
+        <img src="@/assets/about_project_img_01.jpeg" alt="ARQUIGRAFIA" class="about-project__mobile-cropped-image" />
       </div>
       <p class="about-project__paragraph">A internet pode ser um espaço de intenso compartilhamento de experiências,
         de pesquisa, de aprendizagem e de intercâmbio de conhecimentos. Esse potencial estimulou o desenvolvimento
@@ -20,11 +20,11 @@
         tema - e usuários institucionais: bibliotecas, museus, grupos de pesquisa, laboratórios, coletivos,
         institutos públicos e privados.
       </p>
-      <div class="about-project__horizontal-image-wrapper">
+      <div class="d-none d-md-block about-project__horizontal-image-wrapper">
         <img src="@/assets/about_project_img_01.jpeg" alt="ARQUIGRAFIA" class="about-project__horizontal-image" />
       </div>
       <div class="d-md-none about-project__mobile-cropped-wrapper">
-        <img src="@/assets/about_project_img_04.png" alt="ARQUIGRAFIA" class="about-project__mobile-cropped-image" />
+        <img src="@/assets/about_project_img_05.jpg" alt="ARQUIGRAFIA" class="about-project__mobile-cropped-image" />
       </div>
     </div>
     <div class="d-none d-md-block col-md-4">
@@ -72,6 +72,9 @@
         de arquitetura e urbanismo. Historicamente, esse acervo fotográfico também se constituiu, desde os anos
         1960, de maneira colaborativa, com doações de estudantes, professores e pesquisadores.
       </p>
+      <div class="d-md-none about-project__horizontal-image-wrapper">
+        <img src="@/assets/about_project_img_06.jpg" alt="ARQUIGRAFIA" class="about-project__horizontal-image" />
+      </div>
       <p class="about-project__paragraph">
         Como reconhecimento dos esforços realizados, o ARQUIGRAFIA recebeu o primeiro prêmio na categoria
         “Tecnologias Sociais Aplicadas e Humanas” da Agência de Inovação USP em novembro de 2011; recebeu em 2013
@@ -118,10 +121,14 @@
         sensível, crítica e propositiva dos espaços urbanos, promovendo, assim, também uma maior interação entre
         usuários, tanto online, quanto diretamente nos ambientes urbanos.
       </p>
+      <div class="d-md-none about-project__mobile-cropped-wrapper about-project__mobile-cropped-wrapper--natural">
+        <img src="@/assets/about_project_img_04.png" alt="ARQUIGRAFIA" class="about-project__vertical-image-wrapper" />
+      </div>
     </div>
     <div class="d-none d-md-block col-md-4">
       <div class="about-project__vertical-image-wrapper">
-        <img src="@/assets/about_project_img_07.jpg" alt="ARQUIGRAFIA" class="about-project__vertical-image-wrapper about-project__vertical-image-wrapper--contain" />
+        <img src="@/assets/about_project_img_07.jpg" alt="ARQUIGRAFIA"
+          class="about-project__vertical-image-wrapper about-project__vertical-image-wrapper--contain" />
       </div>
     </div>
   </AboutLayout>
@@ -282,6 +289,10 @@ $breakpoint-md: 768px;
     overflow: hidden;
     margin-top: 28px;
     margin-bottom: 28px;
+
+    &--natural {
+      padding-top: 0;
+    }
   }
 
   &__mobile-cropped-image {
