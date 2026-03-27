@@ -48,6 +48,7 @@
       <!-- Left Column: Description -->
       <div class="col-12 col-md-6 lab-project-detail__main">
         <h2 class="lab-project-detail__section-title">Sobre o projeto</h2>
+        <h3 v-if="project.subTitle" class="lab-project-detail__sub-title">{{ project.subTitle }}</h3>
         <div class="lab-project-detail__description" v-html="project.fullDescription"></div>
       </div>
 
@@ -56,12 +57,18 @@
         <div class="row">
           <!-- Researcher Info -->
           <div class="col-12 col-md-8 lab-project-detail__researcher">
-            <h3 class="lab-project-detail__researcher-title">Pesquisador</h3>
-            <div class="lab-project-detail__researcher-info">
-              <img :src="project.researcher.avatar" :alt="project.researcher.name"
+            <h3 class="lab-project-detail__researcher-title">
+              {{ project.researchers.length > 1 ? 'Pesquisadores' : 'Pesquisador' }}
+            </h3>
+            <div
+              v-for="researcher in project.researchers"
+              :key="researcher.name"
+              class="lab-project-detail__researcher-info"
+            >
+              <img :src="researcher.avatar" :alt="researcher.name"
                 class="lab-project-detail__researcher-avatar" />
               <div class="lab-project-detail__researcher-text">
-                <p class="lab-project-detail__researcher-bio" v-html="project.researcher.bio"></p>
+                <p class="lab-project-detail__researcher-bio" v-html="researcher.bio"></p>
               </div>
             </div>
           </div>
@@ -266,9 +273,22 @@ $breakpoint-md: 768px;
     }
   }
 
+  &__sub-title {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 150%;
+    margin-bottom: 16px;
+    width: 70%;
+  }
+
   &__researcher-info {
     display: flex;
     gap: 1rem;
+    margin-bottom: 1.5rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
 
   &__researcher-avatar {

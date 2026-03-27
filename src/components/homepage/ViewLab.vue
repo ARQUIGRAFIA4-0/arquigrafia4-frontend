@@ -14,8 +14,8 @@
           <LabCard
             :image="item.image"
             :title="item.cardTitle"
-            :subtitle="item.cardDescription"
-            :author="item.researcher"
+            :subtitle="item.subTitle"
+            :authors="item.researchers"
             @click="selectProject(item)"
           />
         </div>
