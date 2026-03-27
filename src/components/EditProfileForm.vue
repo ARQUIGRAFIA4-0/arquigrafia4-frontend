@@ -143,6 +143,10 @@ async function createNewSubjectFromNewInterest(term) {
 
 // Refs para modal de alteração de senha
 const showPasswordModal = ref(false);
+const showEmailModal = ref(false);
+const emailPassword = ref("");
+const showEmailPassword = ref(false);
+const newEmail = ref("");
 const currentPassword = ref("");
 const showCurrentPassword = ref(false);
 const newPassword = ref("");
@@ -249,6 +253,17 @@ function openProfileImageDialog() {
   profileImageInputRef.value?.click();
 }
 
+function closeEmailModal() {
+  showEmailModal.value = false;
+  emailPassword.value = "";
+  showEmailPassword.value = false;
+  newEmail.value = "";
+  // Remove o foco do elemento ativo
+  if (document.activeElement) {
+    document.activeElement.blur();
+  }
+}
+
 function closePasswordModal() {
   showPasswordModal.value = false;
   currentPassword.value = "";
@@ -277,6 +292,33 @@ async function updateUserPassword(newPasswordValue) {
   } catch (error) {
     throw new Error("Erro ao atualizar a senha do usuário.");
   }
+}
+
+function handleEmailChange() {
+  // if (!emailPassword.value) {
+  //   alert("Digite sua senha.");
+  //   return;
+  // }
+
+  // if (!newEmail.value) {
+  //   alert("Digite o novo e-mail.");
+  //   return;
+  // }
+
+  // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // if (!emailRegex.test(newEmail.value)) {
+  //   alert("Digite um e-mail válido.");
+  //   return;
+  // }
+
+  // updateUserEmail(newEmail.value)
+  //   .then(() => {
+  //     alert("E-mail alterado com sucesso!");
+  //     closeEmailModal();
+  //   })
+  //   .catch(() => {
+  //     alert("Erro ao alterar e-mail.");
+  //   });
 }
 
 function handlePasswordChange() {
@@ -336,8 +378,23 @@ watch(showPasswordModal, (val) => {
   }
 });
 
+// Desabilita scroll do body ao abrir modal de e-mail
+watch(showEmailModal, (val) => {
+  if (val) {
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscapeKey);
+  } else {
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', handleEscapeKey);
+  }
+});
+
 function handleEscapeKey(event) {
   if (event.key === 'Escape') {
+    if (showEmailModal.value) {
+      closeEmailModal();
+      return;
+    }
     closePasswordModal();
   }
 }
@@ -646,6 +703,126 @@ function handleCancel() {
         </div>
       </UiField>
     </div>
+    <!-- Botão de alterar e-mail -->
+    <div class="profile-form__account-button mb-2">
+      <button type="button" @click="showEmailModal = true">Alterar e-mail</button>
+      <i class="bi bi-arrow-right"></i>
+    </div>
+    <!-- Modal fora do <form> (Teleport) para o browser não tratar como login / autofill agressivo -->
+    <Teleport to="body">
+      <transition name="fade-modal">
+        <div
+          v-if="showEmailModal"
+          class="profile-form__password-modal"
+          @click.self="closeEmailModal"
+        >
+          <div
+            class="profile-form__password-modal-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="email-modal-title"
+            @click.stop
+          >
+            <div class="profile-form__password-modal-column">
+              <div class="profile-form__password-modal-header">
+                <p id="email-modal-title" class="profile-form__password-modal-title">
+                  Alterar e-mail de cadastro
+                </p>
+              </div>
+
+              <div class="profile-form__password-modal-body">
+                <div class="profile-form__pwd-field">
+                  <p class="profile-form__email-copy">
+                    Atualmente seu e-mail de cadastrado em nosso sistema  no Arquigrafia é o <strong class="profile-form__email-copy-highlight">{{ props.userData?.email || "email@email.com" }}</strong>.
+                  </p>
+                </div>
+
+                <div class="profile-form__pwd-field">
+                  <div class="profile-form__pwd-label-row">
+                    <label class="profile-form__pwd-label" for="edit-profile-modal-email-password">
+                      Senha
+                    </label>
+                    <span class="profile-form__pwd-help" aria-hidden="true">
+                      <i class="bi bi-question-circle-fill" />
+                    </span>
+                  </div>
+                  <div class="profile-form__pwd-input-shell profile-form__pwd-input-shell--disabled">
+                    <input
+                      id="edit-profile-modal-email-password"
+                      v-model="emailPassword"
+                      name="edit_profile_email_password"
+                      :type="showEmailPassword ? 'text' : 'password'"
+                      class="profile-form__pwd-input"
+                      disabled
+                      placeholder="********"
+                      autocomplete="off"
+                    />
+                    <button
+                      type="button"
+                      class="profile-form__pwd-toggle"
+                      disabled
+                      :aria-label="showEmailPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                      @click="showEmailPassword = !showEmailPassword"
+                    >
+                      <i
+                        :class="showEmailPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </div>
+                  <p class="profile-form__pwd-hint profile-form__pwd-hint--right">
+                    Preenchimento obrigatório.
+                  </p>
+                </div>
+
+                <div class="profile-form__pwd-field">
+                  <div class="profile-form__pwd-label-row">
+                    <label class="profile-form__pwd-label" for="edit-profile-modal-new-email">
+                      Novo e-mail
+                    </label>
+                    <span class="profile-form__pwd-help" aria-hidden="true">
+                      <i class="bi bi-question-circle-fill" />
+                    </span>
+                  </div>
+                  <div class="profile-form__pwd-input-shell profile-form__pwd-input-shell--disabled">
+                    <input
+                      id="edit-profile-modal-new-email"
+                      v-model="newEmail"
+                      name="edit_profile_new_email"
+                      type="email"
+                      class="profile-form__pwd-input"
+                      disabled
+                      placeholder="exemplo@email.com"
+                      autocomplete="off"
+                    />
+                  </div>
+                  <p class="profile-form__pwd-hint">
+                    Enviaremos um codigo de confirmacao, por isso prefira um e-mail com facil acesso.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-form__password-modal-footer">
+              <button
+                type="button"
+                class="profile-form__pwd-btn profile-form__pwd-btn--secondary"
+                @click="closeEmailModal"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="profile-form__pwd-btn profile-form__pwd-btn--primary"
+                @click="handleEmailChange"
+              >
+                Alterar e-mail
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
     <!-- Botão de alteração de senha -->
     <div class="profile-form__account-button mb-2">
       <button type="button" @click="showPasswordModal = true">Alterar senha</button>
@@ -1166,6 +1343,27 @@ $breakpoint-md: 768px;
     font-weight: 400;
     line-height: 1.15;
     color: var(--cinza_e, #2f2f2f);
+  }
+
+  &__pwd-hint--right {
+    text-align: right;
+  }
+
+  &__email-copy {
+    margin: 0;
+    width: 100%;
+    padding: 8px 12px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.25;
+    color: #212529;
+    padding: 0;
+    width: 98%;
+  }
+
+  &__email-copy-highlight {
+    font-weight: 700;
   }
 
   &__password-modal-footer {
