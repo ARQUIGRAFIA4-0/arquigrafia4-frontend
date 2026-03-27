@@ -249,6 +249,14 @@ const fetchImages = async (page = 1, filters = {}) => {
     if (filters.contributor && typeof filters.contributor === 'string') {
       params.contributor = filters.contributor.trim();
     }
+
+    // Ordenação
+    if (filters.sortBy) {
+      params.sort_by = filters.sortBy;
+    }
+    if (filters.sortOrder) {
+      params.sort_order = filters.sortOrder;
+    }
     
     const { data } = await axios.get("/api/images", { params });
 

@@ -37,7 +37,9 @@ const userId = computed(() => props.userData?.id ?? null);
 
 // Extrai os filtros a partir do userId
 const filters = computed(() => {
-  return userId.value ? { userId: userId.value } : undefined;
+  return userId.value
+    ? { userId: userId.value, sortBy: "created_at", sortOrder: "desc" }
+    : undefined;
 });
 
 // Só permite fetch quando userId estiver disponível (previne fetch sem filtro)
