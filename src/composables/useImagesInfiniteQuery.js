@@ -27,6 +27,8 @@ export const useImagesInfiniteQuery = (options = {}) => {
       if (filtersVal.subjectTerms?.length) filterKey.subjectTerms = [...filtersVal.subjectTerms].sort().join(',');
       if (filtersVal.title) filterKey.title = filtersVal.title;
       if (filtersVal.contributor) filterKey.contributor = filtersVal.contributor;
+      if (filtersVal.sortBy) filterKey.sortBy = filtersVal.sortBy;
+      if (filtersVal.sortOrder) filterKey.sortOrder = filtersVal.sortOrder;
       
       if (Object.keys(filterKey).length > 0) {
         return [...normalizedBaseKey, "filters", filterKey];
