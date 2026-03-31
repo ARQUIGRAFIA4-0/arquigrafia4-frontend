@@ -128,16 +128,30 @@ defineOptions({
 
 // Definindo as propriedades do componente.
 const props = defineProps({
-  modelValue: { // A propriedade modelValue é uma propriedade booleana que controla a exibição do modal.
-    // A propriedade modelValue é uma propriedade booleana que controla a exibição do modal.
+  modelValue: {
     type: Boolean,
     default: false,
   },
-  image: { // A propriedade image é um objeto que contém as informações da imagem.
+  image: {
     type: Object,
     default: null,
   },
 });
+
+// Função para fechar o modal.
+function close() {
+  if (copyToastTimeout) {
+    clearTimeout(copyToastTimeout);
+    copyToastTimeout = null;
+  }
+
+  if (showCopyToast.value) {
+    showCopyToast.value = false;
+  }
+
+  emit("update:modelValue", false);
+
+}
 
 /***************************************************
  * Start: Funcionalidade de cópia da área de transferência.
@@ -178,43 +192,24 @@ async function shareTransferAreaLink() {
 const emit = defineEmits(["update:modelValue", "confirm"]);
 
 const shareText = ref("");
-const showInProfile = ref(true); // Mantido para compatibilidade do payload do emit("confirm")
+const showInProfile = ref(true);
 const shareUrl = ref("");
 
 // Função para resetar o estado do modal.
 function resetState() {
-  // O Figma não mostra campo de texto; usando o título da imagem como base do conteúdo do compartilhamento.
   shareText.value = props.image?.title || "";
   showInProfile.value = true;
   shareUrl.value = getShareUrl();
 }
 
-// Função para fechar o modal.
-function close() {
-  // Se o timeout de cópia estiver sendo exibido, fechá-lo.
-  if (copyToastTimeout) {
-    clearTimeout(copyToastTimeout);
-    copyToastTimeout = null;
-  }
-  // Se o toast de cópia estiver sendo exibido, fechá-lo.
-  if (showCopyToast.value) {
-    showCopyToast.value = false;
-  }
-  emit("update:modelValue", false);
-}
-
 // Função para lidar com a tecla Escape.
-// Se a tecla Escape for pressionada, a função close é chamada.
 function handleEsc(event) {
   if (event.key === "Escape") {
     close();
   }
 }
 
-// Esse watch (seria equivalente ao useEffect do React) observa mudanças na propriedade modelValue do componente, que controla a exibição do modal.
-// Quando modelValue se torna true, ele inicializa o estado do modal (resetState), desabilita o scroll do body
-// e adiciona um listener para a tecla Escape fechar o modal.
-// Quando modelValue se torna false, ele remove o listener da tecla Escape e reabilita o scroll do body.
+// Watch para controlar a exibição do modal.
 watch(
   () => props.modelValue,
   (value) => {
@@ -233,22 +228,25 @@ function getShareUrl() {
   return window.location.href;
 }
 
-// Função para copiar o link da imagem para a área de transferência.
+// Função para copiar o link da imagem.
 async function copyLink() {
   const text = shareUrl.value;
   try {
     await navigator.clipboard.writeText(text);
+
   } catch {
-    // Fallback simples (sem toast).
     const textarea = document.createElement("textarea");
     textarea.value = text;
     document.body.appendChild(textarea);
     textarea.select();
     document.execCommand("copy");
     textarea.remove();
+
   }
+
 }
 
+// Função para compartilhar o link da imagem no Facebook.
 function shareToFacebook() {
   const url = encodeURIComponent(shareUrl.value);
   window.open(
@@ -258,6 +256,7 @@ function shareToFacebook() {
   );
 }
 
+// Função para compartilhar o link da imagem no WhatsApp.
 function shareToWhatsApp() {
   const url = encodeURIComponent(shareUrl.value);
   const text = encodeURIComponent(
@@ -266,6 +265,7 @@ function shareToWhatsApp() {
   window.open(`https://wa.me/?text=${text}%20${url}`, "_blank");
 }
 
+// Função para compartilhar o link da imagem no X.
 function shareToX() {
   const url = encodeURIComponent(shareUrl.value);
   const text = encodeURIComponent(
