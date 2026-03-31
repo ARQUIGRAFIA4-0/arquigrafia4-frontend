@@ -103,29 +103,33 @@
         <button
           type="button"
           class="share-modal__btn share-modal__btn--primary"
-          disabled
+          @click="shareTransferAreaLink"
         >
-          Compartilhar
+          Continuar
         </button>
       </div>
     </div>
   </div>
+  <transition name="copy-toast-fade">
+    <div v-if="showCopyToast" class="share-modal__copy-toast" role="status" aria-live="polite">
+      <i class="bi bi-files" aria-hidden="true" />
+      <span>Link copiado para área de transferência</span>
+    </div>
+  </transition>
 </template>
 
 <script setup>
 import { ref, watch } from "vue";
 
-// O `defineOptions` é uma função da macro <script setup> do Vue 3 que permite definir opções do componente (como `name`, `inheritAttrs`, etc.)
-// de forma semelhante ao objeto de opções convencional do Vue. 
-// No exemplo abaixo, `defineOptions({ name: "ShareModal" })` define o nome do componente, que pode ser útil para depuração,
-// testes, inspeção no Vue DevTools ou em mensagens de erro do Vue, facilitando a identificação desse componente em uma árvore de componentes.
+// Definindo o nome do componente.
 defineOptions({
   name: "ShareModal",
 });
 
-// Passando propriedades
+// Definindo as propriedades do componente.
 const props = defineProps({
   modelValue: { // A propriedade modelValue é uma propriedade booleana que controla a exibição do modal.
+    // A propriedade modelValue é uma propriedade booleana que controla a exibição do modal.
     type: Boolean,
     default: false,
   },
@@ -134,6 +138,42 @@ const props = defineProps({
     default: null,
   },
 });
+
+/***************************************************
+ * Start: Funcionalidade de cópia da área de transferência.
+ ***************************************************/
+
+// Variável de estado para controlar a exibição do toast de cópia.
+const showCopyToast = ref(false);
+// Variável para controlar o timeout da exibição do toast de cópia.
+let copyToastTimeout = null;
+
+// Função para abrir o toast de cópia.
+function openCopyToast() {
+  showCopyToast.value = true;
+
+  if (copyToastTimeout) {
+    clearTimeout(copyToastTimeout);
+  }
+  // Se o toast de cópia não estiver sendo exibido, exibá-lo.
+  copyToastTimeout = setTimeout(() => {
+    showCopyToast.value = false;
+    copyToastTimeout = null;
+  }, 2200); // ajuste fino da duração
+
+}
+
+// Função para compartilhar o link da imagem para a área de transferência.
+async function shareTransferAreaLink() {
+  await copyLink();
+  close();
+  openCopyToast();
+
+}
+
+/***************************************************
+ * End: Funcionalidade de cópia da área de transferência.
+ ***************************************************/
 
 const emit = defineEmits(["update:modelValue", "confirm"]);
 
@@ -151,6 +191,15 @@ function resetState() {
 
 // Função para fechar o modal.
 function close() {
+  // Se o timeout de cópia estiver sendo exibido, fechá-lo.
+  if (copyToastTimeout) {
+    clearTimeout(copyToastTimeout);
+    copyToastTimeout = null;
+  }
+  // Se o toast de cópia estiver sendo exibido, fechá-lo.
+  if (showCopyToast.value) {
+    showCopyToast.value = false;
+  }
   emit("update:modelValue", false);
 }
 
@@ -232,6 +281,47 @@ function shareToX() {
 </script>
 
 <style scoped>
+
+.share-modal__copy-toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 24px;
+  width: 350px;
+  box-sizing: border-box;
+
+  padding: 12px 12px 12px 16px;
+  border-radius: 4px;
+  background: var(--cinza_e, #2f2f2f);
+
+  color: var(--branco, #fff);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.share-modal__copy-toast .bi {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.copy-toast-fade-enter-active,
+.copy-toast-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.copy-toast-fade-enter-from,
+.copy-toast-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-4px);
+}
+
 .share-modal__backdrop {
   position: fixed;
   inset: 0;
