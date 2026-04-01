@@ -43,27 +43,25 @@
                 <i class="bi bi-question-circle-fill" />
               </span>
             </div>
-            <div
-              class="report-modal__input-shell"
-              :class="{
-                'report-modal__input-shell--invalid':
-                  submitted && !reportType,
-              }"
-            >
-              <select
-                id="report-type"
-                v-model="reportType"
-                class="report-modal__select"
-                :class="{ 'report-modal__select--placeholder': !reportType }"
+            <div class="dropdown w-100">
+              <button
+                class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between report-modal__dropdown-btn"
+                :class="{ 'report-modal__dropdown-btn--invalid': submitted && !reportType }"
+                type="button"
+                data-bs-toggle="dropdown"
                 :aria-invalid="submitted && !reportType"
               >
-                <option value="" disabled>Selecione</option>
-                <option value="copyright">Violação de direitos autorais</option>
-                <option value="inappropriate">Conteúdo inapropriado</option>
-                <option value="incorrect">Informações incorretas</option>
-                <option value="spam">Spam ou propaganda</option>
-                <option value="other">Outro</option>
-              </select>
+                <span v-if="!reportType" class="report-modal__dropdown-placeholder">Selecione</span>
+                <span v-else>{{ reportTypeLabel }}</span>
+              </button>
+
+              <ul class="w-100 dropdown-menu menu-light">
+                <li v-for="option in reportTypeOptions" :key="option.value">
+                  <button class="dropdown-item" type="button" @click="reportType = option.value">
+                    {{ option.label }}
+                  </button>
+                </li>
+              </ul>
             </div>
           </div>
 
@@ -144,8 +142,8 @@
         <button
           type="button"
           class="report-modal__btn report-modal__btn--primary"
-          :disabled="submitting"
           @click="submit"
+          disabled
         >
           <span v-if="submitting">
             <span
@@ -163,11 +161,31 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 
 defineOptions({
   name: "ReportModal",
 });
+
+/***************************************************
+* Start: Funcionalidade de reportagem de imagem.
+***************************************************/
+
+const reportTypeOptions = [
+  { value: "copyright", label: "Violação de direitos autorais" },
+  { value: "inappropriate", label: "Conteúdo inapropriado" },
+  { value: "incorrect", label: "Informações incorretas" },
+  { value: "spam", label: "Spam ou propaganda" },
+  { value: "other", label: "Outro" },
+];
+
+const reportTypeLabel = computed(() => {
+  return reportTypeOptions.find((o) => o.value === reportType.value)?.label || "";
+});
+
+/***************************************************
+* End: Funcionalidade de reportagem de imagem.
+***************************************************/
 
 const props = defineProps({
   modelValue: {
@@ -242,6 +260,7 @@ function submit() {
 </script>
 
 <style scoped>
+
 .report-modal__backdrop {
   position: fixed;
   inset: 0;
@@ -250,6 +269,66 @@ function submit() {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.5);
+  padding: 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.report-modal__dropdown-btn {
+  /* altura igual ao combo de /eu/editar */
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 6px 12px !important;
+
+  border-radius: 6px !important;
+  border: 1px solid #1f1f1f !important;
+  background: var(--off_white, #faf9f9) !important;
+
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #212529 !important;
+
+  box-shadow: none !important;
+}
+
+.report-modal__dropdown-placeholder {
+  color: #636262;
+  font-style: italic;
+}
+
+/* estado aberto/ativo igual ao Gênero */
+.report-modal__dropdown-btn.show,
+.report-modal__dropdown-btn:active,
+.report-modal__dropdown-btn:focus {
+  background: #1f1f1f !important;
+  border-color: #1f1f1f !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+/* placeholder quando aberto */
+.report-modal__dropdown-btn.show .report-modal__dropdown-placeholder {
+  color: #8f8f8f !important;
+}
+
+/* seta branca quando aberto */
+.report-modal__dropdown-btn.show::after {
+  border-top-color: #ffffff !important;
+}
+
+/* menu igual */
+.report-modal .dropdown-menu,
+.report-modal__field .dropdown-menu {
+  border-radius: 0 0 6px 6px;
+  margin-top: 0;
+}
+
+/* estado inválido igual ao campo de texto */
+.report-modal__dropdown-btn--invalid,
+.report-modal__dropdown-btn--invalid.show {
+  border-color: #dc3545 !important;
 }
 
 .report-modal__panel {
@@ -549,7 +628,11 @@ function submit() {
 }
 
 .report-modal__btn:disabled {
-  opacity: 0.65;
+  opacity: 0.5;
   cursor: not-allowed;
+}
+
+.report-modal__btn--primary:disabled {
+  opacity: 0.5 !important;
 }
 </style>
