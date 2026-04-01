@@ -327,18 +327,26 @@ function confirmDownload() {
     margin: 0;
     border-radius: 0;
     padding: 0 12px;
-    gap: 12px;
-  }
-
-  .download-modal__panel {
     display: grid;
     grid-template-rows: auto 1fr auto;
-    overflow: hidden;
-  }
+    gap: 12px;
+  }  
 
   .download-modal__column {
-    padding: 0 12px;
+    grid-row: 1 / span 2;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0 12px;
+  }
+
+  .download-modal__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 100px;
   }
 
   .download-modal__header {
@@ -346,25 +354,18 @@ function confirmDownload() {
     padding-bottom: 12px;
   }
 
-  .download-modal__body {
+  .download-modal__intro {
+    margin: 0;
     padding: 0;
-    min-height: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    font-size: 14px;
+    line-height: 1.25;
+    font-weight: 400;
   }  
 
   .download-modal__title {
-    font-size: 32px;
+    font-size: 20px;
     line-height: 1.35;
   }
-
-  .download-modal__intro {
-    padding: 0;
-    font-size: .86rem;
-    line-height: 1.1;
-    font-weight: 600;
-    margin-bottom: 20px;
-  }  
 
   .download-modal__license :deep(.metadata-license-content) {
     display: flex;
@@ -390,34 +391,24 @@ function confirmDownload() {
   }
   
   .download-modal__footer {
+    grid-row: 3;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+    align-self: stretch;
   }
 
   .download-modal__btn {
     width: 100%;
-    min-height: 10px;
+    flex: 0 0 auto;
+    min-height: 32px;
+    height: 32px;
+    padding: 2px 12px;
+    line-height: 1.2;
   }
 
   .download-modal__btn--secondary { order: 1; }
   .download-modal__btn--primary { order: 2; }
-
-  .download-modal__footer .download-modal__btn {
-    flex: 0 0 auto !important;
-  }
-
-  .download-modal__footer .download-modal__btn {
-    min-height: 32px !important;
-    height: 32px !important;
-    padding: 2px 12px !important;
-    line-height: 1.2 !important;
-  }  
-
-  .download-modal__footer .download-modal__btn {
-    width: 100%;
-  }
-  
 }
 </style>
