@@ -664,4 +664,111 @@ function submit() {
 .report-modal__btn--primary:disabled {
   opacity: 0.5 !important;
 }
+
+/* regras mobile */
+@media (max-width: 767px) {
+  .report-modal__backdrop {
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .report-modal__panel {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    padding: 0;           /* importante: sem padding no painel */
+    gap: 0;               /* evita “respiro” extra no topo */
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    overflow: hidden;
+  }
+
+  .report-modal__column {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0 16px;      /* mesmo padrão visual dos outros */
+  }
+
+  .report-modal__header {
+    padding-top: 20px;    /* padrão usado nos outros modais */
+    padding-bottom: 12px;
+  }
+
+  .report-modal__title {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.35;    /* igual ao Share/Download */
+  }
+
+  .report-modal__content {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 14px;
+  }  
+
+  .report-modal__intro {
+    padding: 0;
+    margin: 0;
+  }
+
+  .report-modal__thumb-wrap {
+    width: 88px;
+    height: 66px;
+  }
+
+  .report-modal__label {
+    font-size: 14px;
+  }
+
+  .report-modal__textarea {
+    min-height: 96px;
+    height: 96px;
+  }
+
+  .report-modal__radios {
+    max-width: 100%;
+    gap: 8px;
+  }
+
+  .report-modal__radio {
+    flex: 1 1 calc(50% - 8px);
+    padding: 6px 0;
+  }
+
+  .report-modal__footer {
+    grid-row: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+    align-self: stretch;
+  }
+
+  .report-modal__btn {
+    width: 100%;
+    flex: 0 0 auto;
+    min-height: 32px;
+    height: 32px;
+    padding: 2px 12px;
+    line-height: 1.2;
+  }
+
+  .report-modal__btn--secondary { order: 1; }
+  .report-modal__btn--primary { order: 2; }
+
+  .report-modal__dropdown-btn {
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 4px 10px !important;
+    font-size: 14px !important;
+  }
+  
+}
 </style>
