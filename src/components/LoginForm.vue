@@ -38,6 +38,8 @@ const {
   resendCode,
   sendPasswordResetEmail,
   changePassword,
+  resetForm,
+  resetPasswordFlow,
 } = auth;
 
 // Alert system
@@ -76,7 +78,7 @@ async function handleRegisterWithAlert() {
 async function verifyCodeWithAlert() {
   closeAlert();
   const result = await verifyCode();
-  if (result) {
+  if (result && result.message) {
     displayAlert(result.message, result.success ? "success" : "error");
   }
 }
@@ -188,13 +190,15 @@ onMounted(() => {
         <button
           type="button"
           class="btn btn-outline-secondary btn-sm flex-fill"
-          @click="isVerifying = false; isRegistering = false; isForgotPassword = false; closeAlert();"
+          :disabled="isLoading"
+          @click="resetPasswordFlow(); isRegistering = false; closeAlert();"
         >
           Cancelar
         </button>
         <button
           type="button"
           class="btn btn-outline-secondary btn-sm flex-fill"
+          :disabled="isLoading"
           @click.prevent="resendCodeWithAlert"
         >
           Reenviar
@@ -204,7 +208,7 @@ onMounted(() => {
         <button
           type="submit"
           class="btn btn-primary btn-sm"
-          :disabled="!isCodeComplete"
+          :disabled="!isCodeComplete || isLoading"
         >
           Validar código
         </button>
@@ -234,13 +238,15 @@ onMounted(() => {
         <button
           type="button"
           class="btn btn-outline-secondary btn-sm form-btn-half"
-          @click="isForgotPassword = false"
+          :disabled="isLoading"
+          @click="isForgotPassword = false; resetForm(); closeAlert();"
         >
           Cancelar
         </button>
         <button
           type="button"
           class="btn btn-primary btn-sm form-btn-half"
+          :disabled="isLoading"
           @click="sendPasswordResetEmailWithAlert()"
         >
           Redefinir senha
@@ -295,11 +301,12 @@ onMounted(() => {
         <button
           type="button"
           class="btn btn-outline-secondary btn-sm form-btn-half"
-          @click="isSettingNewPassword = false; isVerifying = false; closeAlert();"
+          :disabled="isLoading"
+          @click="resetPasswordFlow(); closeAlert();"
         >
           Cancelar
         </button>
-        <button type="submit" class="btn btn-primary btn-sm form-btn-half">
+        <button type="submit" class="btn btn-primary btn-sm form-btn-half" :disabled="isLoading">
           Salvar nova senha
         </button>
       </div>
@@ -409,7 +416,7 @@ onMounted(() => {
         <a
             href="#"
             class="forgot-password-btn"
-            @click.prevent="auth.isForgotPassword = true"
+            @click.prevent="resetForm(); auth.isForgotPassword = true; closeAlert();"
           >
             Esqueci minha senha
         </a>
@@ -419,11 +426,12 @@ onMounted(() => {
         <button
           type="button"
           class="btn btn-outline-secondary btn-sm form-btn-half"
+          :disabled="isLoading"
           @click="toggleRegister"
         >
           {{ isRegistering ? "Já tenho conta" : "Criar conta" }}
         </button>
-        <button type="submit" class="btn btn-primary btn-sm form-btn-half">
+        <button type="submit" class="btn btn-primary btn-sm form-btn-half" :disabled="isLoading">
           {{ isRegistering ? "Registrar" : "Entrar" }}
         </button>
       </div>
