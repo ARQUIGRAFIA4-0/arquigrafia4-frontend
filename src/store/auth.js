@@ -64,6 +64,9 @@ export const useAuthStore = defineStore("auth", () => {
       return { success: false, message: "Preencha todos os campos!" };
     }
 
+    isLoading.value = true;
+    loadingMessage.value = "Entrando...";
+
     try {
       const success = await getAccessToken({
         email: formData.value.email,
@@ -89,6 +92,9 @@ export const useAuthStore = defineStore("auth", () => {
     } catch (error) {
       console.error("Login error:", error);
       return { success: false, message: "Erro ao fazer login. Tente novamente." };
+    } finally {
+      isLoading.value = false;
+      loadingMessage.value = "";
     }
   }
   async function handleRegister() {
@@ -117,6 +123,9 @@ export const useAuthStore = defineStore("auth", () => {
     if (formData.value.password !== formData.value.confirmPassword) {
       return { success: false, message: "As senhas não coincidem." };
     }
+    isLoading.value = true;
+    loadingMessage.value = "Registrando...";
+
     try {
       await registerUser({
         name: formData.value.username,
@@ -132,6 +141,9 @@ export const useAuthStore = defineStore("auth", () => {
       } else {
         return { success: false, message: "Erro ao registrar. Tente novamente." };
       }
+    } finally {
+      isLoading.value = false;
+      loadingMessage.value = "";
     }
   }
   async function toggleRegister() {
@@ -358,6 +370,9 @@ export const useAuthStore = defineStore("auth", () => {
   async function verifyCode() {
     const code = verificationDigits.value.join("");
 
+    isLoading.value = true;
+    loadingMessage.value = "Verificando código...";
+
     // Fluxo de recuperação de senha
     if (isPasswordReset.value) {
       try {
@@ -368,15 +383,20 @@ export const useAuthStore = defineStore("auth", () => {
         verifiedResetCode.value = code;
         isVerifying.value = false;
         isSettingNewPassword.value = true;
-        return { success: true };
+        return null;
       } catch (error) {
         console.error("Error verifying password reset code:", error);
         return { success: false, message: "Código inválido. Tente novamente." };
+      } finally {
+        isLoading.value = false;
+        loadingMessage.value = "";
       }
     }
 
     // Fluxo original de verificação de conta
     try {
+      isLoading.value = true;
+      loadingMessage.value = "Verificando código...";
       await verifyAccount(formData.value.email, code);
 
       // Get access token with stored credentials
@@ -397,6 +417,9 @@ export const useAuthStore = defineStore("auth", () => {
     } catch (error) {
       console.error("Error verifying code:", error);
       return { success: false, message: "Código inválido. Tente novamente." };
+    } finally {
+      isLoading.value = false;
+      loadingMessage.value = "";
     }
   }
   async function changePassword() {
@@ -479,5 +502,7 @@ export const useAuthStore = defineStore("auth", () => {
     resendCode,
     verifyCode,
     changePassword,
+    resetForm,
+    resetPasswordFlow,
   };
 });
