@@ -241,6 +241,8 @@ export const useAuthStore = defineStore("auth", () => {
     localStorage.removeItem("tokenType");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+
+    resetForm();
   }
   async function registerUser(userData) {
     try {
