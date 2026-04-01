@@ -415,7 +415,7 @@ function shareToX() {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 38px;
   padding: 8px 0;
 }
 
@@ -588,4 +588,133 @@ function shareToX() {
   border-color: var(--cinza_e, #2f2f2f);
   color: var(--branco, #ffffff);
 }
+
+/* regras mobile */
+@media (max-width: 767px) {
+  .share-modal__backdrop {
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .share-modal__panel {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    padding: 0;
+    gap: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .share-modal__column {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0 16px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .share-modal__header {
+    padding-top: 20px;
+    padding-bottom: 12px;
+  }
+
+  .share-modal__title {
+    font-size: 20px;
+    line-height: 1.35;
+  }
+
+  .share-modal__content {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 14px;
+  }
+
+  .share-modal__image-name {
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1.25;
+    font-weight: 400;
+  }
+
+  .share-modal__image-preview {
+    width: 100%;
+    max-height: 34vh;
+    aspect-ratio: 4 / 3;
+  }
+
+  .share-modal__image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* evita faixa estreita */
+  }
+
+  .share-modal__link-box {
+    height: 34px;
+  }
+
+  .share-modal__social-icons {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .share-modal__social-btn,
+  .share-modal__social-btn img {
+    width: 40px;
+    height: 40px;
+  }
+
+  .share-modal__footer {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    flex: 0 0 auto;
+  }
+
+  .share-modal__btn {
+    width: 100%;
+    min-height: 34px;
+    height: 34px;
+    padding: 4px 12px;
+    line-height: 1.2;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .share-modal__btn--secondary {
+    order: 1;
+  }
+
+  .share-modal__btn--primary {
+    order: 2;
+  }
+
+  .share-modal__copy-toast {
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100vw - 24px);
+    max-width: 350px;
+    gap: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+}
+
 </style>
