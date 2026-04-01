@@ -50,6 +50,15 @@ export const useAuthStore = defineStore("auth", () => {
   function resetForm() {
     formData.value = { ...initialFormState };
   }
+  function resetPasswordFlow() {
+    verificationDigits.value = Array(6).fill("");
+    isPasswordReset.value = false;
+    isVerifying.value = false;
+    isForgotPassword.value = false;
+    isSettingNewPassword.value = false;
+    verifiedResetCode.value = "";
+    resetForm();
+  }
   async function handleLogin() {
     if (!formData.value.email || !formData.value.password) {
       return { success: false, message: "Preencha todos os campos!" };
