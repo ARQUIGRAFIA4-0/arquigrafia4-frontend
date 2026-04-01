@@ -1,163 +1,166 @@
 <template>
-  <div v-if="modelValue" class="report-modal__backdrop" @click.self="close">
-    <div
-      class="report-modal__panel"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="report-modal-title"
-    >
-      <div class="report-modal__column">
-        <div class="report-modal__header">
-          <p id="report-modal-title" class="report-modal__title">
-            Ajude a denunciar o conteúdo inadequado
-          </p>
-        </div>
-
-        <div class="report-modal__content">
-          <div class="report-modal__intro">
-            <div class="report-modal__thumb-wrap">
-              <img
-                v-if="image?.imageUrl"
-                :src="image.imageUrl"
-                :alt="image.title"
-                class="report-modal__thumb"
-              />
-              <div v-else class="report-modal__thumb report-modal__thumb--placeholder" />
-            </div>
-            <p class="report-modal__intro-text">
-              Por favor, informe o motivo pelo qual deseja denunciar esta
-              imagem.
+  <transition name="fade-modal">
+    <div v-if="modelValue" class="report-modal__backdrop" @click.self="close">
+      <div
+        class="report-modal__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="report-modal-title"
+      >
+        <div class="report-modal__column">
+          <div class="report-modal__header">
+            <p id="report-modal-title" class="report-modal__title">
+              Ajude a denunciar o conteúdo inadequado
             </p>
           </div>
 
-          <div class="report-modal__field">
-            <div class="report-modal__label-row">
-              <label class="report-modal__label" for="report-type">
-                Tipo de denúncia
-              </label>
-              <span
-                class="report-modal__hint"
-                aria-hidden="true"
-                title="Ajuda"
-              >
-                <i class="bi bi-question-circle-fill" />
-              </span>
-            </div>
-            <div class="dropdown w-100">
-              <button
-                class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between report-modal__dropdown-btn"
-                :class="{ 'report-modal__dropdown-btn--invalid': submitted && !reportType }"
-                type="button"
-                data-bs-toggle="dropdown"
-                :aria-invalid="submitted && !reportType"
-              >
-                <span v-if="!reportType" class="report-modal__dropdown-placeholder">Selecione</span>
-                <span v-else>{{ reportTypeLabel }}</span>
-              </button>
-
-              <ul class="w-100 dropdown-menu menu-light">
-                <li v-for="option in reportTypeOptions" :key="option.value">
-                  <button class="dropdown-item" type="button" @click="reportType = option.value">
-                    {{ option.label }}
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="report-modal__field">
-            <div class="report-modal__label-row">
-              <span class="report-modal__label">Item problemático</span>
-              <span
-                class="report-modal__hint"
-                aria-hidden="true"
-                title="Ajuda"
-              >
-                <i class="bi bi-question-circle-fill" />
-              </span>
-            </div>
-            <div class="report-modal__radios" role="radiogroup" aria-label="Item problemático">
-              <label class="report-modal__radio">
-                <input
-                  v-model="problematicItem"
-                  type="radio"
-                  name="problematicItem"
-                  value="image"
+          <div class="report-modal__content">
+            <div class="report-modal__intro">
+              <div class="report-modal__thumb-wrap">
+                <img
+                  v-if="image?.imageUrl"
+                  :src="image.imageUrl"
+                  :alt="image.title"
+                  class="report-modal__thumb"
                 />
-                <span class="report-modal__radio-label">Imagem</span>
-              </label>
-              <label class="report-modal__radio">
-                <input
-                  v-model="problematicItem"
-                  type="radio"
-                  name="problematicItem"
-                  value="data"
-                />
-                <span class="report-modal__radio-label">Dados</span>
-              </label>
-              <label class="report-modal__radio">
-                <input
-                  v-model="problematicItem"
-                  type="radio"
-                  name="problematicItem"
-                  value="location"
-                />
-                <span class="report-modal__radio-label">Localização</span>
-              </label>
+                <div v-else class="report-modal__thumb report-modal__thumb--placeholder" />
+              </div>
+              <p class="report-modal__intro-text">
+                Por favor, informe o motivo pelo qual deseja denunciar esta
+                imagem.
+              </p>
             </div>
-          </div>
 
-          <div class="report-modal__field">
-            <div class="report-modal__label-row">
-              <label class="report-modal__label" for="report-reason">
-                Explique-nos o motivo de sua denúncia
-              </label>
-              <span
-                class="report-modal__hint"
-                aria-hidden="true"
-                title="Ajuda"
-              >
-                <i class="bi bi-question-circle-fill" />
-              </span>
+            <div class="report-modal__field">
+              <div class="report-modal__label-row">
+                <label class="report-modal__label" for="report-type">
+                  Tipo de denúncia
+                </label>
+                <span
+                  class="report-modal__hint"
+                  aria-hidden="true"
+                  title="Ajuda"
+                >
+                  <i class="bi bi-question-circle-fill" />
+                </span>
+              </div>
+              <div class="dropdown w-100">
+                <button
+                  class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between report-modal__dropdown-btn"
+                  :class="{ 'report-modal__dropdown-btn--invalid': submitted && !reportType }"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  :aria-invalid="submitted && !reportType"
+                >
+                  <span v-if="!reportType" class="report-modal__dropdown-placeholder">Selecione</span>
+                  <span v-else>{{ reportTypeLabel }}</span>
+                </button>
+
+                <ul class="w-100 dropdown-menu menu-light">
+                  <li v-for="option in reportTypeOptions" :key="option.value">
+                    <button class="dropdown-item" type="button" @click="reportType = option.value">
+                      {{ option.label }}
+                    </button>
+                  </li>
+                </ul>
+              </div>
             </div>
-            <textarea
-              id="report-reason"
-              v-model="reason"
-              class="report-modal__textarea"
-              rows="5"
-              placeholder="Deixe seu comentário aqui"
-            />
+
+            <div class="report-modal__field">
+              <div class="report-modal__label-row">
+                <span class="report-modal__label">Item problemático</span>
+                <span
+                  class="report-modal__hint"
+                  aria-hidden="true"
+                  title="Ajuda"
+                >
+                  <i class="bi bi-question-circle-fill" />
+                </span>
+              </div>
+              <div class="report-modal__radios" role="radiogroup" aria-label="Item problemático">
+                <label class="report-modal__radio">
+                  <input
+                    v-model="problematicItem"
+                    type="radio"
+                    name="problematicItem"
+                    value="image"
+                  />
+                  <span class="report-modal__radio-label">Imagem</span>
+                </label>
+                <label class="report-modal__radio">
+                  <input
+                    v-model="problematicItem"
+                    type="radio"
+                    name="problematicItem"
+                    value="data"
+                  />
+                  <span class="report-modal__radio-label">Dados</span>
+                </label>
+                <label class="report-modal__radio">
+                  <input
+                    v-model="problematicItem"
+                    type="radio"
+                    name="problematicItem"
+                    value="location"
+                  />
+                  <span class="report-modal__radio-label">Localização</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="report-modal__field">
+              <div class="report-modal__label-row">
+                <label class="report-modal__label" for="report-reason">
+                  Explique-nos o motivo de sua denúncia
+                </label>
+                <span
+                  class="report-modal__hint"
+                  aria-hidden="true"
+                  title="Ajuda"
+                >
+                  <i class="bi bi-question-circle-fill" />
+                </span>
+              </div>
+              <textarea
+                id="report-reason"
+                v-model="reason"
+                class="report-modal__textarea"
+                rows="5"
+                placeholder="Deixe seu comentário aqui"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="report-modal__footer">
-        <button
-          type="button"
-          class="report-modal__btn report-modal__btn--secondary"
-          @click="close"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          class="report-modal__btn report-modal__btn--primary"
-          @click="submit"
-          disabled
-        >
-          <span v-if="submitting">
-            <span
-              class="spinner-border spinner-border-sm me-1"
-              role="status"
-              aria-hidden="true"
-            ></span>
-            Enviando...
-          </span>
-          <span v-else>Enviar denúncia</span>
-        </button>
+        <div class="report-modal__footer">
+          <button
+            type="button"
+            class="report-modal__btn report-modal__btn--secondary"
+            @click="close"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="report-modal__btn report-modal__btn--primary"
+            @click="submit"
+            disabled
+          >
+            <span v-if="submitting">
+              <span
+                class="spinner-border spinner-border-sm me-1"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              Enviando...
+            </span>
+            <span v-else>Enviar denúncia</span>
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  </transition>
+
 </template>
 
 <script setup>
@@ -260,6 +263,32 @@ function submit() {
 </script>
 
 <style scoped>
+
+.fade-modal-enter-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-modal-enter-active .report-modal__panel {
+  transition: opacity 0.3s ease 0.2s;
+}
+
+.fade-modal-leave-active {
+  transition: opacity 0.2s ease 0.2s;
+}
+
+.fade-modal-leave-active .report-modal__panel {
+  transition: opacity 0.2s ease;
+}
+
+.fade-modal-enter-from,
+.fade-modal-leave-to {
+  opacity: 0;
+}
+
+.fade-modal-enter-from .report-modal__panel,
+.fade-modal-leave-to .report-modal__panel {
+  opacity: 0;
+}
 
 .report-modal__backdrop {
   position: fixed;

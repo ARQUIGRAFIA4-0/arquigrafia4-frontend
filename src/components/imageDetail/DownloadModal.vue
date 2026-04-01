@@ -1,60 +1,63 @@
 <template>
-  <div v-if="modelValue" class="download-modal__backdrop" @click.self="close">
-    <div
-      class="download-modal__panel"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="download-modal-title"
-    >
-      <div class="download-modal__column">
-        <div class="download-modal__header">
-          <h2 id="download-modal-title" class="download-modal__title">
-            Faça o download
-          </h2>
-        </div>
+  <transition name="fade-modal">
+      <div v-if="modelValue" class="download-modal__backdrop" @click.self="close">
+        <div
+          class="download-modal__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="download-modal-title"
+        >
+          <div class="download-modal__column">
+            <div class="download-modal__header">
+              <h2 id="download-modal-title" class="download-modal__title">
+                Faça o download
+              </h2>
+            </div>
 
-        <div class="download-modal__body">
-          <p class="download-modal__intro">
-            Antes de realizar o download, atente-se às condições de uso da
-            imagem.
-          </p>
+            <div class="download-modal__body">
+              <p class="download-modal__intro">
+                Antes de realizar o download, atente-se às condições de uso da
+                imagem.
+              </p>
 
-          <div class="download-modal__license">
-            <LicenseInfoBlock
-              :license-info="licenseInfo"
-              :show-heading="false"
-            />
+              <div class="download-modal__license">
+                <LicenseInfoBlock
+                  :license-info="licenseInfo"
+                  :show-heading="false"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="download-modal__footer">
+            <button
+              type="button"
+              class="download-modal__btn download-modal__btn--secondary"
+              @click="close"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="download-modal__btn download-modal__btn--primary"
+              :disabled="downloading"
+              @click="confirmDownload"
+            >
+              <span v-if="downloading">
+                <span
+                  class="spinner-border spinner-border-sm me-1"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
+                Baixando...
+              </span>
+              <span v-else>Estou ciente</span>
+            </button>
           </div>
         </div>
-      </div>
+    </div>   
+  </transition>
 
-      <div class="download-modal__footer">
-        <button
-          type="button"
-          class="download-modal__btn download-modal__btn--secondary"
-          @click="close"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          class="download-modal__btn download-modal__btn--primary"
-          :disabled="downloading"
-          @click="confirmDownload"
-        >
-          <span v-if="downloading">
-            <span
-              class="spinner-border spinner-border-sm me-1"
-              role="status"
-              aria-hidden="true"
-            ></span>
-            Baixando...
-          </span>
-          <span v-else>Estou ciente</span>
-        </button>
-      </div>
-    </div>
-  </div>
 </template>
 
 <script setup>
@@ -120,6 +123,33 @@ function confirmDownload() {
 </script>
 
 <style scoped>
+
+.fade-modal-enter-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-modal-enter-active .download-modal__panel {
+  transition: opacity 0.3s ease 0.2s;
+}
+
+.fade-modal-leave-active {
+  transition: opacity 0.2s ease 0.2s;
+}
+
+.fade-modal-leave-active .download-modal__panel {
+  transition: opacity 0.2s ease;
+}
+
+.fade-modal-enter-from,
+.fade-modal-leave-to {
+  opacity: 0;
+}
+
+.fade-modal-enter-from .download-modal__panel,
+.fade-modal-leave-to .download-modal__panel {
+  opacity: 0;
+}
+
 .download-modal__backdrop {
   position: fixed;
   inset: 0;

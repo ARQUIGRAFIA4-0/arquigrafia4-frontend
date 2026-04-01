@@ -1,115 +1,117 @@
 <template>
-  <div
-    v-if="modelValue"
-    class="share-modal__backdrop"
-    @click.self="close"
-  >
+  <transition name="fade-modal">
     <div
-      class="share-modal__panel"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="share-modal-title"
+      v-if="modelValue"
+      class="share-modal__backdrop"
+      @click.self="close"
     >
-      <div class="share-modal__column">
-        <div class="share-modal__header">
-          <p id="share-modal-title" class="share-modal__title">
-            Compartilhe esta imagem
-          </p>
+      <div
+        class="share-modal__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-modal-title"
+      >
+        <div class="share-modal__column">
+          <div class="share-modal__header">
+            <p id="share-modal-title" class="share-modal__title">
+              Compartilhe esta imagem
+            </p>
+          </div>
+
+          <div class="share-modal__content">
+            <div class="share-modal__image-section">
+              <p class="share-modal__image-name">
+                {{ image?.title || "Imagem sem título" }}
+              </p>
+
+              <div class="share-modal__image-preview">
+                <img
+                  v-if="image?.imageUrl"
+                  :src="image.imageUrl"
+                  :alt="image.title"
+                />
+              </div>
+            </div>
+
+            <div class="share-modal__link-section">
+              <p class="share-modal__link-label">
+                Copie o link da imagem
+              </p>
+
+              <div class="share-modal__link-box">
+                <span class="share-modal__link-text" :title="shareUrl">{{
+                  shareUrl
+                }}</span>
+                <button
+                  type="button"
+                  class="share-modal__copy-btn"
+                  aria-label="Copiar link"
+                  @click="copyLink"
+                >
+                  <i class="bi bi-copy" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            <div class="share-modal__share-via">
+              <p class="share-modal__share-via-label">
+                Ou compartilhe via
+              </p>
+              <div class="share-modal__social-icons">
+                <button
+                  type="button"
+                  class="share-modal__social-btn"
+                  aria-label="Compartilhar no Facebook"
+                  @click="shareToFacebook"
+                >
+                  <img
+                    src="@/assets/logo_facebook.svg"
+                    alt="Facebook"
+                  />
+                </button>
+                <button
+                  type="button"
+                  class="share-modal__social-btn"
+                  aria-label="Compartilhar no WhatsApp"
+                  @click="shareToWhatsApp"
+                >
+                  <img
+                    src="@/assets/logo_whatsapp.svg"
+                    alt="WhatsApp"
+                  />
+                </button>
+                <button
+                  type="button"
+                  class="share-modal__social-btn"
+                  aria-label="Compartilhar no X"
+                  @click="shareToX"
+                >
+                  <img src="@/assets/logo_x.svg" alt="X" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="share-modal__content">
-          <div class="share-modal__image-section">
-            <p class="share-modal__image-name">
-              {{ image?.title || "Imagem sem título" }}
-            </p>
-
-            <div class="share-modal__image-preview">
-              <img
-                v-if="image?.imageUrl"
-                :src="image.imageUrl"
-                :alt="image.title"
-              />
-            </div>
-          </div>
-
-          <div class="share-modal__link-section">
-            <p class="share-modal__link-label">
-              Copie o link da imagem
-            </p>
-
-            <div class="share-modal__link-box">
-              <span class="share-modal__link-text" :title="shareUrl">{{
-                shareUrl
-              }}</span>
-              <button
-                type="button"
-                class="share-modal__copy-btn"
-                aria-label="Copiar link"
-                @click="copyLink"
-              >
-                <i class="bi bi-copy" aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-
-          <div class="share-modal__share-via">
-            <p class="share-modal__share-via-label">
-              Ou compartilhe via
-            </p>
-            <div class="share-modal__social-icons">
-              <button
-                type="button"
-                class="share-modal__social-btn"
-                aria-label="Compartilhar no Facebook"
-                @click="shareToFacebook"
-              >
-                <img
-                  src="@/assets/logo_facebook.svg"
-                  alt="Facebook"
-                />
-              </button>
-              <button
-                type="button"
-                class="share-modal__social-btn"
-                aria-label="Compartilhar no WhatsApp"
-                @click="shareToWhatsApp"
-              >
-                <img
-                  src="@/assets/logo_whatsapp.svg"
-                  alt="WhatsApp"
-                />
-              </button>
-              <button
-                type="button"
-                class="share-modal__social-btn"
-                aria-label="Compartilhar no X"
-                @click="shareToX"
-              >
-                <img src="@/assets/logo_x.svg" alt="X" />
-              </button>
-            </div>
-          </div>
+        <div class="share-modal__footer">
+          <button
+            type="button"
+            class="share-modal__btn share-modal__btn--secondary"
+            @click="close"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="share-modal__btn share-modal__btn--primary"
+            @click="shareTransferAreaLink"
+          >
+            Continuar
+          </button>
         </div>
-      </div>
-
-      <div class="share-modal__footer">
-        <button
-          type="button"
-          class="share-modal__btn share-modal__btn--secondary"
-          @click="close"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          class="share-modal__btn share-modal__btn--primary"
-          @click="shareTransferAreaLink"
-        >
-          Continuar
-        </button>
       </div>
     </div>
-  </div>
+  </transition>
   <transition name="copy-toast-fade">
     <div v-if="showCopyToast" class="share-modal__copy-toast" role="status" aria-live="polite">
       <i class="bi bi-files" aria-hidden="true" />
@@ -281,6 +283,32 @@ function shareToX() {
 </script>
 
 <style scoped>
+
+.fade-modal-enter-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-modal-enter-active .share-modal__panel {
+  transition: opacity 0.3s ease 0.2s;
+}
+
+.fade-modal-leave-active {
+  transition: opacity 0.2s ease 0.2s;
+}
+
+.fade-modal-leave-active .share-modal__panel {
+  transition: opacity 0.2s ease;
+}
+
+.fade-modal-enter-from,
+.fade-modal-leave-to {
+  opacity: 0;
+}
+
+.fade-modal-enter-from .share-modal__panel,
+.fade-modal-leave-to .share-modal__panel {
+  opacity: 0;
+}
 
 .share-modal__copy-toast {
   position: fixed;
