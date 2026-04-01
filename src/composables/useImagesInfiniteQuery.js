@@ -29,6 +29,7 @@ export const useImagesInfiniteQuery = (options = {}) => {
       if (filtersVal.contributor) filterKey.contributor = filtersVal.contributor;
       if (filtersVal.sortBy) filterKey.sortBy = filtersVal.sortBy;
       if (filtersVal.sortOrder) filterKey.sortOrder = filtersVal.sortOrder;
+      if (filtersVal.excludeCollectives) filterKey.excludeCollectives = true;
       
       if (Object.keys(filterKey).length > 0) {
         return [...normalizedBaseKey, "filters", filterKey];

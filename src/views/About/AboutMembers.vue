@@ -104,6 +104,7 @@
           <p class="about-members__paragraph">Fernanda Gastal Figueiredo - Graduanda FAUUSP</p>
           <p class="about-members__paragraph">Gabriel Barbosa Barros Lima - Graduando FAUUSP</p>
           <p class="about-members__paragraph">Gabrielle Mendes de Souza Delgado - Graduanda FAUUSP</p>
+          <p class="about-members__paragraph">Giuliana Cristina Gargarella Jorge - Graduanda UFSCar</p>
           <p class="about-members__paragraph">Giuliano Salvatore Fiusa Magnelli - Graduando FAUUSP</p>
         </div>
         <div class="col-12 col-md-6">
@@ -142,6 +143,7 @@
           <p class="about-members__paragraph">Marina Souza Germano de Lemos - Graduanda ECAUSP</p>
           <p class="about-members__paragraph">Martim Passos - Graduando FAUUSP</p>
           <p class="about-members__paragraph">Nita Napoleão Encola - Graduanda ECAUSP</p>
+          <p class="about-members__paragraph">Paula Pinotti Candeloro - Graduanda ECAUSP</p>
           <p class="about-members__paragraph">Priscilla Mitie Wazima - Graduanda FAUUSP</p>
           <p class="about-members__paragraph">Rafael Marinaro Verona - Graduando IMEUSP</p>
           <p class="about-members__paragraph">Raphael Lima Massagardi Conti - Graduando FAUUSP</p>
@@ -153,6 +155,7 @@
           <p class="about-members__paragraph">Rogerio da Silva Conolly - Graduando FAUUSP</p>
           <p class="about-members__paragraph">Ruth Cuiá Troncarelli - Graduada FAUUSP</p>
           <p class="about-members__paragraph">Samuel Carvalho G. Fukumoto - Graduando FAUUSP</p>
+          <p class="about-members__paragraph">Tatiana de Carvalho Gaia - Graduada UFSCar</p>
           <p class="about-members__paragraph">Tatiana Kuchar - Graduanda FAUUSP</p>
           <p class="about-members__paragraph">Thaísa Peres Takeyama Miyahara - Graduanda FAUUSP</p>
           <p class="about-members__paragraph">Valdeci Antônio dos Santos - Graduando ECAUSP</p>

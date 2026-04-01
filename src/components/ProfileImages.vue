@@ -38,7 +38,7 @@ const userId = computed(() => props.userData?.id ?? null);
 // Extrai os filtros a partir do userId
 const filters = computed(() => {
   return userId.value
-    ? { userId: userId.value, sortBy: "created_at", sortOrder: "desc" }
+    ? { userId: userId.value, sortBy: "created_at", sortOrder: "desc", excludeCollectives: true }
     : undefined;
 });
 

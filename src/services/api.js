@@ -260,7 +260,11 @@ const fetchImages = async (page = 1, filters = {}) => {
     
     const { data } = await axios.get("/api/images", { params });
 
-    const items = data.data.map(mapImageListItem);
+    const rawItems = filters.excludeCollectives
+      ? data.data.filter((image) => image.collective_id === null)
+      : data.data;
+
+    const items = rawItems.map(mapImageListItem);
 
     return {
       items,
