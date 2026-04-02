@@ -1517,4 +1517,114 @@ $breakpoint-md: 768px;
     opacity: 0;
   }
 }
+
+/* regras mobile */
+@media (max-width: 767px) {
+  .profile-form {
+    &__password-modal {
+      padding: 0;
+      align-items: stretch;
+      justify-content: stretch;
+    }
+
+    &__password-modal-panel {
+      width: 100vw;
+      max-width: 100vw;
+      height: 100dvh;
+      border-radius: 0;
+      padding: 0 12px;
+      margin: 0;
+
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      overflow: hidden;
+    }
+  }
+
+  .profile-form {
+    &__password-modal-column {
+      grid-row: 1 / span 2;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 0 12px;
+    }
+
+    &__password-modal-header {
+      padding-top: 20px;
+      padding-bottom: 12px;
+    }
+
+    &__password-modal-title {
+      font-size: 20px;
+      line-height: 1.35;
+      margin: 0;
+    }
+
+    &__password-modal-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      gap: 14px;
+    }
+
+    .profile-form {
+      &__pwd-label {
+        font-size: 14px;
+      }
+
+      &__pwd-input-shell {
+        height: 34px;
+        padding: 4px 10px;
+      }
+
+      &__pwd-input {
+        font-size: 14px;
+        line-height: 1.25;
+      }
+
+      &__pwd-hint {
+        font-size: 12px;
+        line-height: 1.2;
+      }
+
+      &__pwd-extra {
+        padding: 2px 0;
+      }
+    }
+
+    .profile-form {
+      &__password-modal-footer {
+        grid-row: 3;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+        align-self: stretch;
+      }
+
+      &__pwd-btn {
+        width: 100%;
+        flex: 0 0 auto;
+        min-height: 32px;
+        height: 32px;
+        padding: 2px 12px;
+        line-height: 1.2;
+      }
+
+      &__pwd-btn--secondary { order: 1; }
+      &__pwd-btn--primary { order: 2; }
+    }
+
+    
+
+  }
+
+
+    
+}
+
 </style>
