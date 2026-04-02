@@ -7,6 +7,7 @@ import { useUsersStore } from '../store/users';
 import { useVracStore } from "@/store/vrac";
 import { useProfilesStore } from '../store/profiles';
 import defaultProfileImage from '@/assets/profile_image.png';
+import axios from 'axios';
 
 const props = defineProps({
   profileData: {
@@ -111,6 +112,23 @@ const filteredSubjects = computed(() =>
   )
 );
 
+// Alert system
+const alertMessage = ref("");
+const alertType = ref("");
+const showAlert = ref(false);
+
+function displayAlert(message, type = "error") {
+  alertMessage.value = message;
+  alertType.value = type;
+  showAlert.value = true;
+}
+
+function closeAlert() {
+  showAlert.value = false;
+  alertMessage.value = "";
+  alertType.value = "";
+}
+
 onMounted(async () => {
   try {
     const response = await vracStore.getVRACSubjects();
@@ -205,13 +223,15 @@ function removeSocial(key) {
 }
 
 function handleProfileImageChange(event) {
-  const uploadedFile = event.target.files[0];
+  closeAlert();
+  const uploadedFile = event.target.files?.[0];
   if (!uploadedFile) return;
 
   // Verifica o tamanho do arquivo (2MB)
   const maxSize = 2 * 1024 * 1024;
   if (uploadedFile.size > maxSize) {
-    alert('Por favor, selecione uma imagem de no máximo 2MB.');
+    displayAlert('Por favor, selecione uma imagem de no máximo 2MB.', "error");
+    // alert('Por favor, selecione uma imagem de no máximo 2MB.');
     return;
   }
 
@@ -236,7 +256,6 @@ function handleProfileImageChange(event) {
       profileImageFile.value = uploadedFile;
       profileImageURLPreview.value = e.target.result;
     };
-
     img.src = e.target.result;
   };
 
@@ -329,20 +348,40 @@ function handleEscapeKey(event) {
   }
 }
 
+
 async function updatePersonalData() {
+
   // Atualiza user somente se o nome foi alterado
-  if (name.value !== props.userData.name) {
+  if (name.value !== props.userData.name || profileImageFile.value) {
     try {
-      const payload = {
-        name: name.value,
-        email: props.userData.email
-      };
-      // Atualiza dados do usuário no banco de dados
-      const response = await usersStore.updateUser(userAuthHeader.value, props.userData.id, payload);
-      // Atualiza o estado reativo do usuário no authStore
-      authStore.loggedUser = response.user;
-      // Atualiza dados do usuário no local storage
-      localStorage.setItem("loggedUser", JSON.stringify(response.user));
+
+      if (profileImageFile.value) {
+        const formData = new FormData();
+        formData.append('name', name.value);
+        formData.append('email', props.userData.email);
+        formData.append('image', profileImageFile.value);
+        formData.append('_method', 'PUT');
+        const response = await axios.post(`/api/users/${props.userData.id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: authStore.authHeader,
+          },
+        });
+
+        authStore.loggedUser = response.data.user;
+        localStorage.setItem("loggedUser", JSON.stringify(response.data.user));
+      } else {
+        const payload = {
+          name: name.value,
+          email: props.userData.email
+        };
+        // Atualiza dados do usuário no banco de dados
+        const response = await usersStore.updateUser(userAuthHeader.value, props.userData.id, payload);
+        // Atualiza o estado reativo do usuário no authStore
+        authStore.loggedUser = response.user;
+        // Atualiza dados do usuário no local storage
+        localStorage.setItem("loggedUser", JSON.stringify(response.user));
+      }
     } catch (error) {
       throw new Error('Erro ao atualizar dados do/a usuário/a.');
     }
@@ -388,6 +427,17 @@ function handleCancel() {
 </script>
 
 <template>
+  <!-- Alerta -->
+  <div v-if="showAlert"
+    :class="['alert', 'fs-6', alertType === 'success' ? 'bg-positivo-e' : 'bg-negativo-e', 'text-white', 'mb-3', 'd-flex', 'align-items-center', 'justify-content-between', 'auth-alert']"
+    role="alert">
+    <div class="d-flex align-items-center gap-2">
+      <i :class="alertType === 'success' ? 'bi bi-check-all' : 'bi bi-exclamation-triangle-fill'"></i>
+      <span>{{ alertMessage }}</span>
+    </div>
+    <button type="button" class="btn-close text-white" @click="closeAlert" aria-label="Close"></button>
+  </div>
+
   <form @submit.prevent="updatePersonalData">
     <!-- Foto de Perfil-->
     <div class="profile-form__profile-image row mb-4">
@@ -615,7 +665,7 @@ function handleCancel() {
         </UiField>
       </div>
       <!-- Lista de interesses selecionados -->
-      <UiField v-if="selectedInterests.length > 0" label="Temas de interesse cadastrados em seu perfil" labelTag="span" 
+      <UiField v-if="selectedInterests.length > 0" label="Temas de interesse cadastrados em seu perfil" labelTag="span"
         explain="Você pode remover temas clicando no ícone de 'x' ao lado do nome do tema.">
         <div class="d-flex flex-wrap gap-2 mt-2">
           <div v-for="(interest, index) in selectedInterests" :key="interest.id"
