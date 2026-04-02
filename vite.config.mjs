@@ -8,6 +8,10 @@ export default defineConfig({
   plugins: [vue(), vueJsx()],
   server: {
     port: 8080,
+    watch: {
+      usePolling: true,
+      interval: 1000,
+    },
   },
   css: {
     preprocessorOptions: {

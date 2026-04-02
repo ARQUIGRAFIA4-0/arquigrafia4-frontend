@@ -143,6 +143,12 @@ async function createNewSubjectFromNewInterest(term) {
 
 // Refs para modal de alteração de senha
 const showPasswordModal = ref(false);
+const showEmailModal = ref(false);
+const emailPassword = ref("");
+const showEmailPassword = ref(false);
+const newEmail = ref("");
+const currentPassword = ref("");
+const showCurrentPassword = ref(false);
 const newPassword = ref("");
 const passwordConfirmation = ref("");
 const showNewPassword = ref(false);
@@ -247,8 +253,21 @@ function openProfileImageDialog() {
   profileImageInputRef.value?.click();
 }
 
+function closeEmailModal() {
+  showEmailModal.value = false;
+  emailPassword.value = "";
+  showEmailPassword.value = false;
+  newEmail.value = "";
+  // Remove o foco do elemento ativo
+  if (document.activeElement) {
+    document.activeElement.blur();
+  }
+}
+
 function closePasswordModal() {
   showPasswordModal.value = false;
+  currentPassword.value = "";
+  showCurrentPassword.value = false;
   newPassword.value = "";
   passwordConfirmation.value = "";
 
@@ -258,13 +277,16 @@ function closePasswordModal() {
   }
 }
 
-async function updateUserPassword(newPassword) {
+async function updateUserPassword(newPasswordValue) {
   try {
     const payload = {
       name: props.userData.name,
       email: props.userData.email,
-      password: newPassword
+      password: newPasswordValue,
     };
+    if (currentPassword.value) {
+      payload.current_password = currentPassword.value;
+    }
     // Atualiza a senha do usuário no banco de dados
     const response = await usersStore.updateUser(userAuthHeader.value, props.userData.id, payload);
   } catch (error) {
@@ -272,7 +294,39 @@ async function updateUserPassword(newPassword) {
   }
 }
 
+function handleEmailChange() {
+  // if (!emailPassword.value) {
+  //   alert("Digite sua senha.");
+  //   return;
+  // }
+
+  // if (!newEmail.value) {
+  //   alert("Digite o novo e-mail.");
+  //   return;
+  // }
+
+  // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // if (!emailRegex.test(newEmail.value)) {
+  //   alert("Digite um e-mail válido.");
+  //   return;
+  // }
+
+  // updateUserEmail(newEmail.value)
+  //   .then(() => {
+  //     alert("E-mail alterado com sucesso!");
+  //     closeEmailModal();
+  //   })
+  //   .catch(() => {
+  //     alert("Erro ao alterar e-mail.");
+  //   });
+}
+
 function handlePasswordChange() {
+  if (!currentPassword.value) {
+    alert('Digite sua senha atual.');
+    return;
+  }
+
   // Verifica se a nova senha foi digitada
   if (!newPassword.value) {
     alert('Digite a nova senha.');
@@ -304,6 +358,7 @@ function handlePasswordChange() {
     .then(() => {
       alert('Senha alterada com sucesso!');
       showPasswordModal.value = false;
+      currentPassword.value = "";
       newPassword.value = "";
       passwordConfirmation.value = "";
     })
@@ -323,10 +378,32 @@ watch(showPasswordModal, (val) => {
   }
 });
 
+// Desabilita scroll do body ao abrir modal de e-mail
+watch(showEmailModal, (val) => {
+  if (val) {
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscapeKey);
+  } else {
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', handleEscapeKey);
+  }
+});
+
 function handleEscapeKey(event) {
   if (event.key === 'Escape') {
+    if (showEmailModal.value) {
+      closeEmailModal();
+      return;
+    }
     closePasswordModal();
   }
+}
+
+// Função para redirecionar para a página de recuperação de senha.
+function goForgotPassword() {
+  closePasswordModal();
+  // router.push({ name: 'login' });
+  console.log('Redirecionando para a página de recuperação de senha.');
 }
 
 async function updatePersonalData() {
@@ -626,53 +703,309 @@ function handleCancel() {
         </div>
       </UiField>
     </div>
+    <!-- Botão de alterar e-mail -->
+    <div class="profile-form__account-button mb-2">
+      <button type="button" @click="showEmailModal = true">Alterar e-mail</button>
+      <i class="bi bi-arrow-right"></i>
+    </div>
+    <!-- Modal fora do <form> (Teleport) para o browser não tratar como login / autofill agressivo -->
+    <Teleport to="body">
+      <transition name="fade-modal">
+        <div
+          v-if="showEmailModal"
+          class="profile-form__password-modal"
+          @click.self="closeEmailModal"
+        >
+          <div
+            class="profile-form__password-modal-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="email-modal-title"
+            @click.stop
+          >
+            <div class="profile-form__password-modal-column">
+              <div class="profile-form__password-modal-header">
+                <p id="email-modal-title" class="profile-form__password-modal-title">
+                  Alterar e-mail de cadastro
+                </p>
+              </div>
+
+              <div class="profile-form__password-modal-body">
+                <div class="profile-form__pwd-field">
+                  <p class="profile-form__email-copy">
+                    Atualmente seu e-mail de cadastrado em nosso sistema  no Arquigrafia é o <strong class="profile-form__email-copy-highlight">{{ props.userData?.email || "email@email.com" }}</strong>.
+                  </p>
+                </div>
+
+                <div class="profile-form__pwd-field">
+                  <div class="profile-form__pwd-label-row">
+                    <label class="profile-form__pwd-label" for="edit-profile-modal-email-password">
+                      Senha
+                    </label>
+                    <span class="profile-form__pwd-help" aria-hidden="true">
+                      <i class="bi bi-question-circle-fill" />
+                    </span>
+                  </div>
+                  <div class="profile-form__pwd-input-shell profile-form__pwd-input-shell--disabled">
+                    <input
+                      id="edit-profile-modal-email-password"
+                      v-model="emailPassword"
+                      name="edit_profile_email_password"
+                      :type="showEmailPassword ? 'text' : 'password'"
+                      class="profile-form__pwd-input"
+                      disabled
+                      placeholder="********"
+                      autocomplete="off"
+                    />
+                    <button
+                      type="button"
+                      class="profile-form__pwd-toggle"
+                      disabled
+                      :aria-label="showEmailPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                      @click="showEmailPassword = !showEmailPassword"
+                    >
+                      <i
+                        :class="showEmailPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </div>
+                  <p class="profile-form__pwd-hint profile-form__pwd-hint--right">
+                    Preenchimento obrigatório.
+                  </p>
+                </div>
+
+                <div class="profile-form__pwd-field">
+                  <div class="profile-form__pwd-label-row">
+                    <label class="profile-form__pwd-label" for="edit-profile-modal-new-email">
+                      Novo e-mail
+                    </label>
+                    <span class="profile-form__pwd-help" aria-hidden="true">
+                      <i class="bi bi-question-circle-fill" />
+                    </span>
+                  </div>
+                  <div class="profile-form__pwd-input-shell profile-form__pwd-input-shell--disabled">
+                    <input
+                      id="edit-profile-modal-new-email"
+                      v-model="newEmail"
+                      name="edit_profile_new_email"
+                      type="email"
+                      class="profile-form__pwd-input"
+                      disabled
+                      placeholder="exemplo@email.com"
+                      autocomplete="off"
+                    />
+                  </div>
+                  <p class="profile-form__pwd-hint">
+                    Enviaremos um codigo de confirmacao, por isso prefira um e-mail com facil acesso.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-form__password-modal-footer">
+              <button
+                type="button"
+                class="profile-form__pwd-btn profile-form__pwd-btn--secondary"
+                @click="closeEmailModal"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="profile-form__pwd-btn profile-form__pwd-btn--primary profile-form__pwd-btn--email"
+                disabled
+                @click="handleEmailChange"
+              >
+                Alterar e-mail
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
     <!-- Botão de alteração de senha -->
     <div class="profile-form__account-button mb-2">
       <button type="button" @click="showPasswordModal = true">Alterar senha</button>
       <i class="bi bi-arrow-right"></i>
     </div>
-    <!-- Modal de alteração de senha -->
+    <!-- Modal fora do <form> (Teleport) para o browser não tratar como login / autofill agressivo -->
+    <Teleport to="body">
     <transition name="fade-modal">
-      <div v-if="showPasswordModal" class="profile-form__password-modal">
-        <div class="profile-form__password-modal-content">
-          <div>
-            <i class="bi bi-x-circle-fill close-modal-mobile" @click="closePasswordModal"></i>
-          </div>
-          <div class="d-flex justify-content-between">
-            <h4>Alterar senha</h4>
-            <i class="bi bi-x-lg close-modal-desktop" @click="closePasswordModal"></i>
-          </div>
-          <div class="mb-4">
-            <label for="newPassword">Nova senha</label>
-            <div class="position-relative">
-              <input :type="showNewPassword ? 'text' : 'password'" id="newPassword" v-model="newPassword"
-                class="form-control" />
-              <i :class="showNewPassword ? 'bi bi-eye-slash' : 'bi bi-eye'" class="password-toggle-icon"
-                @click="showNewPassword = !showNewPassword"></i>
+      <div
+        v-if="showPasswordModal"
+        class="profile-form__password-modal"
+        @click.self="closePasswordModal"
+      >
+        <div
+          class="profile-form__password-modal-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="password-modal-title"
+          @click.stop
+        >
+          <div class="profile-form__password-modal-column">
+            <div class="profile-form__password-modal-header">
+              <p id="password-modal-title" class="profile-form__password-modal-title">
+                Alterar senha
+              </p>
             </div>
-            <small>Sua senha deve conter pelo menos 8 dígitos com letras e números.</small>
-          </div>
-          <div class="mb-5">
-            <label for="passwordConfirmation">Confirmação nova senha</label>
-            <div class="position-relative">
-              <input :type="showPasswordConfirmation ? 'text' : 'password'" id="passwordConfirmation"
-                v-model="passwordConfirmation" class="form-control" />
-              <i :class="showPasswordConfirmation ? 'bi bi-eye-slash' : 'bi bi-eye'" class="password-toggle-icon"
-                @click="showPasswordConfirmation = !showPasswordConfirmation"></i>
+
+            <div class="profile-form__password-modal-body">
+              <!-- Senha atual -->
+              <div class="profile-form__pwd-field">
+                <div class="profile-form__pwd-label-row">
+                  <label class="profile-form__pwd-label" for="edit-profile-modal-current-password">
+                    Senha atual
+                  </label>
+                  <span class="profile-form__pwd-help" aria-hidden="true">
+                    <i class="bi bi-question-circle-fill" />
+                  </span>
+                </div>
+                <div class="profile-form__pwd-input-shell profile-form__pwd-input-shell--disabled">
+                  <input
+                    id="edit-profile-modal-current-password"
+                    v-model="currentPassword"
+                    name="edit_profile_current_password"
+                    :type="showCurrentPassword ? 'text' : 'password'"
+                    class="profile-form__pwd-input"
+                    disabled
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    data-lpignore="true"
+                    data-1p-ignore
+                  />
+                  <button
+                    type="button"
+                    class="profile-form__pwd-toggle"
+                    :aria-label="showCurrentPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                    @click="showCurrentPassword = !showCurrentPassword"
+                  >
+                    <i
+                      :class="showCurrentPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </div>
+                <div class="profile-form__pwd-extra">
+                  <button
+                    type="button"
+                    class="profile-form__pwd-forgot"
+                    @click="goForgotPassword"
+                  >
+                    Esqueci minha senha
+                  </button>
+                </div>
+              </div>
+
+              <!-- Nova senha -->
+              <div class="profile-form__pwd-field-group">
+                <div class="profile-form__pwd-field">
+                  <div class="profile-form__pwd-label-row">
+                    <label class="profile-form__pwd-label" for="edit-profile-modal-new-password">
+                      Nova senha
+                    </label>
+                    <span class="profile-form__pwd-help" aria-hidden="true">
+                      <i class="bi bi-question-circle-fill" />
+                    </span>
+                  </div>
+                  <div class="profile-form__pwd-input-shell">
+                    <input
+                      id="edit-profile-modal-new-password"
+                      v-model="newPassword"
+                      name="edit_profile_new_password"
+                      :type="showNewPassword ? 'text' : 'password'"
+                      class="profile-form__pwd-input"
+                      autocomplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      class="profile-form__pwd-toggle"
+                      :aria-label="showNewPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                      @click="showNewPassword = !showNewPassword"
+                    >
+                      <i
+                        :class="showNewPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </div>
+                  <p class="profile-form__pwd-hint">
+                    Sua senha deve conter pelo menos 8 dígitos com letras e números.
+                  </p>
+                </div>
+
+                <div class="profile-form__pwd-field">
+                  <div class="profile-form__pwd-label-row">
+                    <label
+                      class="profile-form__pwd-label"
+                      for="edit-profile-modal-password-confirmation"
+                    >
+                      Confirmação nova senha
+                    </label>
+                    <span class="profile-form__pwd-help" aria-hidden="true">
+                      <i class="bi bi-question-circle-fill" />
+                    </span>
+                  </div>
+                  <div class="profile-form__pwd-input-shell">
+                    <input
+                      id="edit-profile-modal-password-confirmation"
+                      v-model="passwordConfirmation"
+                      name="edit_profile_new_password_confirm"
+                      :type="showPasswordConfirmation ? 'text' : 'password'"
+                      class="profile-form__pwd-input"
+                      autocomplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      class="profile-form__pwd-toggle"
+                      :aria-label="
+                        showPasswordConfirmation ? 'Ocultar senha' : 'Mostrar senha'
+                      "
+                      @click="
+                        showPasswordConfirmation = !showPasswordConfirmation
+                      "
+                    >
+                      <i
+                        :class="
+                          showPasswordConfirmation
+                            ? 'bi bi-eye-slash'
+                            : 'bi bi-eye'
+                        "
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </div>
+                  <p class="profile-form__pwd-hint">
+                    Este campo deve ser idêntico ao anterior.
+                  </p>
+                </div>
+              </div>
             </div>
-            <small>Este campo deve ser idêntico ao anterior.</small>
           </div>
-          <div class="d-flex gap-2 justify-content-end">
-            <div class="w-100 d-flex flex-row gap-2">
-              <button type="button" @click="closePasswordModal"
-                class="btn btn-outline-secondary btn-sm w-100">Cancelar</button>
-              <button type="button" @click="handlePasswordChange" class="btn btn-secondary btn-sm w-100">Alterar
-                senha</button>
-            </div>
+
+          <div class="profile-form__password-modal-footer">
+            <button
+              type="button"
+              class="profile-form__pwd-btn profile-form__pwd-btn--secondary"
+              @click="closePasswordModal"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="profile-form__pwd-btn profile-form__pwd-btn--primary"
+              @click="handlePasswordChange"
+            >
+              Alterar senha
+            </button>
           </div>
         </div>
       </div>
     </transition>
+    </Teleport>
     <!-- Botão de log out -->
     <div class="profile-form__account-button mb-5">
       <button type="button" @click="handleLogout">Sair do perfil</button>
@@ -793,123 +1126,293 @@ $breakpoint-md: 768px;
 
   &__password-modal {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: #fff;
+    inset: 0;
+    z-index: 1100;
     display: flex;
+    align-items: center;
     justify-content: center;
-    align-items: flex-start;
-    z-index: 1000;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 16px;
+    box-sizing: border-box;
     overflow-y: auto;
-
-    @include md {
-      background-color: rgba(47, 47, 47, 0.2);
-      backdrop-filter: blur(4px);
-      align-items: center;
-    }
   }
 
-  &__password-modal-content {
-    background-color: #fff;
+  &__password-modal-panel {
+    display: flex;
+    width: 600px;
+    max-width: calc(100vw - 32px);
+    box-sizing: border-box;
+    padding: 0 16px;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    overflow: clip;
+    border-radius: 16px;
+    background: var(--off_white, #faf9f9);
+    box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  &__password-modal-column {
     width: 100%;
-    padding: 76px 32px 32px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 32px;
+    box-sizing: border-box;
+  }
 
-    @include md {
-      width: auto;
-      max-width: 580px;
-      border-radius: 16px;
-      gap: 16px;
-      padding: 24px 64px;
-      box-shadow: 4px 4px 8px 0px rgba(0, 0, 0, 0.1);
-    }
+  &__password-modal-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 32px;
+    padding-bottom: 16px;
+  }
 
-    h4 {
-      font-weight: 500;
-      font-style: Medium;
-      font-size: 16px;
-      line-height: 150%;
-      letter-spacing: 0%;
+  &__password-modal-title {
+    flex: 1 0 0;
+    margin: 0;
+    font-family: "DM Sans", sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.5;
+    color: #2f2f2f;
+  }
 
-      @include md {
-        font-size: 20px;
-      }
-    }
+  &__password-modal-body {
+    width: 100%;
+    padding: 0 12px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
 
-    .close-modal-mobile {
-      display: flex;
-      justify-content: end;
-      font-size: 24px;
-      margin-bottom: 32px;
+  &__pwd-field-group {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
 
-      @include md {
-        display: none;
-        margin-bottom: 0;
-      }
-    }
+  &__pwd-field {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    width: 100%;
+    max-width: 600px;
+    min-width: 200px;
+  }
 
-    .close-modal-desktop {
-      cursor: pointer;
-      font-size: 18px;
-      color: #2F2F2F;
-      display: none;
+  &__pwd-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 8px 12px 8px 0;
+    box-sizing: border-box;
+  }
 
-      @include md {
-        font-size: 20px;
-        display: inline-block;
-      }
-    }
+  &__pwd-label {
+    font-family: "DM Sans", sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.5;
+    color: #212529;
+    margin: 0;
+  }
 
-    label {
-      display: block;
-      font-weight: 500;
-      font-style: Medium;
-      line-height: 150%;
-      letter-spacing: 0%;
+  &__pwd-help {
+    display: inline-flex;
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    color: #212529;
+  }
 
-      @include md {
-        font-size: 16px;
-        margin-bottom: 8px;
-      }
-    }
+  &__pwd-help .bi {
+    font-size: 12px;
+    line-height: 1;
+  }
 
-    input {
-      @include md {
-        color: #636262;
-        font-size: 14px;
-        font-weight: 400;
-        font-style: Italic;
-        line-height: 150%;
-        letter-spacing: 0%;
-      }
-    }
+  &__pwd-input-shell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 30px;
+    box-sizing: border-box;
+    padding: 6px 10px;
+    background: var(--off_white, #faf9f9);
+    border: 0.75px solid var(--preto, #1f1f1f);
+    border-radius: 5px;
+    overflow: clip;
+  }
 
-    small {
-      display: block;
-      color: #2F2F2F;
-      margin-top: 5px;
-      font-weight: 400;
-      font-style: 9pt;
-      font-size: 10px;
-      line-height: 16px;
-      letter-spacing: 0%;
+  &__pwd-input-shell--disabled {
+    background: #f1f1f1;
+    border-color: #c8c8c8;
+  }
 
-      @include md {
-        font-size: 14px;
-        line-height: 115%;
-      }
-    }
+  &__pwd-input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    font-family: "DM Sans", sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    font-style: normal;
+    line-height: 1.5;
+    color: #212529;
+  }
 
-    .password-toggle-icon {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      cursor: pointer;
-      color: #2F2F2F;
-      font-size: 18px;
-    }
+  &__pwd-input:disabled {
+    color: #8a8a8a;
+    cursor: not-allowed;
+    opacity: 1;
+    -webkit-text-fill-color: #8a8a8a;
+  }
+
+  &__pwd-input::placeholder {
+    font-style: italic;
+    color: #636262;
+  }
+
+  &__pwd-input:focus {
+    outline: none;
+  }
+
+  &__pwd-toggle {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #1f1f1f;
+  }
+
+  &__pwd-toggle .bi {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  &__pwd-extra {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 4px 0;
+    box-sizing: border-box;
+  }
+
+  &__pwd-forgot {
+    flex: 1 0 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: "DM Sans", sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.15;
+    color: var(--azul_m, #0f89e1);
+    text-decoration: underline;
+    text-decoration-skip-ink: none;
+  }
+
+  &__pwd-hint {
+    margin: 0;
+    padding: 4px 0 0;
+    width: 100%;
+    font-family: "DM Sans", sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.15;
+    color: var(--cinza_e, #2f2f2f);
+  }
+
+  &__pwd-hint--right {
+    text-align: right;
+  }
+
+  &__email-copy {
+    margin: 0;
+    width: 100%;
+    padding: 8px 12px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.25;
+    color: #212529;
+    padding: 0;
+    width: 98%;
+  }
+
+  &__email-copy-highlight {
+    font-weight: 700;
+  }
+
+  &__password-modal-footer {
+    width: 100%;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    align-self: stretch;
+    padding: 16px 0;
+    box-sizing: border-box;
+  }
+
+  &__pwd-btn {
+    flex: 1 0 0;
+    min-width: 0;
+    margin: 0;
+    padding: 2px 14px;
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    font-family: "DM Sans", sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  &__pwd-btn--secondary {
+    background: var(--off_white, #faf9f9);
+    border-color: var(--cinza_e, #2f2f2f);
+    color: var(--cinza_e, #2f2f2f);
+  }
+
+  &__pwd-btn--primary {
+    background: var(--cinza_e, #2f2f2f);
+    border-color: var(--cinza_e, #2f2f2f);
+    color: var(--branco, #ffffff);
+  }
+
+  &__pwd-btn--email:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   &__interest-input {
@@ -997,18 +1500,18 @@ $breakpoint-md: 768px;
 
 // Animação modal de alteração de senha
 .fade-modal-enter-active {
-  transition: opacity 0.2s ease; // fundo
+  transition: opacity 0.2s ease;
 
-  .profile-form__password-modal-content {
-    transition: opacity 0.3s ease 0.2s; // conteúdo
+  .profile-form__password-modal-panel {
+    transition: opacity 0.3s ease 0.2s;
   }
 }
 
 .fade-modal-leave-active {
-  transition: opacity 0.2s ease 0.2s; // fundo
+  transition: opacity 0.2s ease 0.2s;
 
-  .profile-form__password-modal-content {
-    transition: opacity 0.2s ease; // conteúdo
+  .profile-form__password-modal-panel {
+    transition: opacity 0.2s ease;
   }
 }
 
@@ -1016,8 +1519,118 @@ $breakpoint-md: 768px;
 .fade-modal-leave-to {
   opacity: 0;
 
-  .profile-form__password-modal-content {
+  .profile-form__password-modal-panel {
     opacity: 0;
   }
 }
+
+/* regras mobile */
+@media (max-width: 767px) {
+  .profile-form {
+    &__password-modal {
+      padding: 0;
+      align-items: stretch;
+      justify-content: stretch;
+    }
+
+    &__password-modal-panel {
+      width: 100vw;
+      max-width: 100vw;
+      height: 100dvh;
+      border-radius: 0;
+      padding: 0 12px;
+      margin: 0;
+
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      overflow: hidden;
+    }
+  }
+
+  .profile-form {
+    &__password-modal-column {
+      grid-row: 1 / span 2;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 0 12px;
+    }
+
+    &__password-modal-header {
+      padding-top: 20px;
+      padding-bottom: 12px;
+    }
+
+    &__password-modal-title {
+      font-size: 20px;
+      line-height: 1.35;
+      margin: 0;
+    }
+
+    &__password-modal-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      gap: 14px;
+    }
+
+    .profile-form {
+      &__pwd-label {
+        font-size: 14px;
+      }
+
+      &__pwd-input-shell {
+        height: 34px;
+        padding: 4px 10px;
+      }
+
+      &__pwd-input {
+        font-size: 14px;
+        line-height: 1.25;
+      }
+
+      &__pwd-hint {
+        font-size: 12px;
+        line-height: 1.2;
+      }
+
+      &__pwd-extra {
+        padding: 2px 0;
+      }
+    }
+
+    .profile-form {
+      &__password-modal-footer {
+        grid-row: 3;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+        align-self: stretch;
+      }
+
+      &__pwd-btn {
+        width: 100%;
+        flex: 0 0 auto;
+        min-height: 32px;
+        height: 32px;
+        padding: 2px 12px;
+        line-height: 1.2;
+      }
+
+      &__pwd-btn--secondary { order: 1; }
+      &__pwd-btn--primary { order: 2; }
+    }
+
+    
+
+  }
+
+
+    
+}
+
 </style>
