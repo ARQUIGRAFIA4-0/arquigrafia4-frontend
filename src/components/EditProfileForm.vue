@@ -813,7 +813,8 @@ function handleCancel() {
               </button>
               <button
                 type="button"
-                class="profile-form__pwd-btn profile-form__pwd-btn--primary"
+                class="profile-form__pwd-btn profile-form__pwd-btn--primary profile-form__pwd-btn--email"
+                disabled
                 @click="handleEmailChange"
               >
                 Alterar e-mail
@@ -1407,6 +1408,11 @@ $breakpoint-md: 768px;
     background: var(--cinza_e, #2f2f2f);
     border-color: var(--cinza_e, #2f2f2f);
     color: var(--branco, #ffffff);
+  }
+
+  &__pwd-btn--email:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   &__interest-input {
