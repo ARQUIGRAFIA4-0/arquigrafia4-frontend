@@ -5,6 +5,7 @@ import { useProfilesStore } from "../../store/profiles";
 import ProfileCard from "@/components/ProfileCard.vue";
 import ProfileNav from "@/components/ProfileNav.vue";
 import ProfileImages from "@/components/ProfileImages.vue";
+import ProfileCollections from "@/components/ProfileCollections.vue";
 
 const authStore = useAuthStore();
 const profilesStore = useProfilesStore();
@@ -41,6 +42,7 @@ function handleResize() {
     <div class="col-12 col-md-8">
       <div class="profile-container__content">
         <ProfileNav :selected="selectedTab" @select="selectedTab = $event" :isCurrentUser="true" />
+        <ProfileCollections v-if="selectedTab === 'Coleções'" :isCurrentUser="true" :userData="currentUserData" />
         <ProfileImages v-if="selectedTab === 'Imagens'" :isCurrentUser="true" :userData="currentUserData" />
       </div>
     </div>

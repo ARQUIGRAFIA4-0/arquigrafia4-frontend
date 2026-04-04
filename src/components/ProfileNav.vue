@@ -20,6 +20,7 @@ const navItems = computed(() => {
 
   const privateNavItems = [
     { label: 'Minhas imagens', value: 'Imagens' },
+    { label: 'Minhas coleções', value: 'Coleções' },  
     // { label: 'Meus álbuns', value: 'Álbuns' },
     // { label: 'Meus percursos', value: 'Percursos' },
     // { label: 'Obras', value: 'Obras' },
