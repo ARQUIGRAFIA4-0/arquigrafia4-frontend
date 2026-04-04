@@ -59,6 +59,7 @@
       <DownloadModal
         v-model="showDownloadModal"
         :image="props.image"
+        :license-info="licenseInfo"
         @confirm="handleDownloadConfirm"
       />
 
@@ -85,6 +86,11 @@ import ShareModal from "./ShareModal.vue";
 
 const props = defineProps({
   image: {
+    type: Object,
+    default: null,
+  },
+  /** Resolvido no pai (`ImageDetail`) a partir de image.rights */
+  licenseInfo: {
     type: Object,
     default: null,
   },

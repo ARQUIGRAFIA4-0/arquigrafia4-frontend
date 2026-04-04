@@ -659,16 +659,16 @@ export default {
 
 @media (min-width: 768px) {
   .about-vocabulary__title {
-    width: fit-content;
-    font-weight: 600;
-    font-size: 30px;
-    line-height: 150%;
-    letter-spacing: 0%;
-    vertical-align: middle;
-    margin-bottom: 55px;
-    border-bottom: 4px solid #000000;
-    padding-bottom: 20px;
-  }
+      width: fit-content;
+      font-weight: 600;
+      font-size: 30px;
+      line-height: 150%;
+      letter-spacing: 0%;
+      vertical-align: middle;
+      margin-bottom: 55px;
+      border-bottom: 4px solid #000000;
+      padding-bottom: 20px;
+    }
 
   .about-vocabulary__subtitle {
     color: #000;
@@ -751,8 +751,8 @@ export default {
     font-family: "DM Sans";
     font-size: 16px;
     font-style: normal;
-    font-weight: 500;
-    line-height: 150%;
+      font-weight: 500;
+      line-height: 150%;
   }
 
 }

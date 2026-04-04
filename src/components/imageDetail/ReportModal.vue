@@ -1,143 +1,194 @@
 <template>
-  <div v-if="modelValue" class="modal-backdrop" @click.self="close">
-    <div
-      class="modal-panel"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="report-modal-title"
-    >
-      <div class="modal-header">
-        <h5 id="report-modal-title" class="m-0 w-100 h2">
-          Ajude a denunciar o conteúdo inadequado
-        </h5>
-      </div>
+  <transition name="fade-modal">
+    <div v-if="modelValue" class="report-modal__backdrop" @click.self="close">
+      <div
+        class="report-modal__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="report-modal-title"
+      >
+        <div class="report-modal__column">
+          <div class="report-modal__header">
+            <p id="report-modal-title" class="report-modal__title">
+              Ajude a denunciar o conteúdo inadequado
+            </p>
+          </div>
 
-      <div class="modal-body">
-        <div class="image-preview-row mb-4">
-          <img
-            v-if="image?.imageUrl"
-            :src="image.imageUrl"
-            :alt="image.title"
-            class="preview-thumbnail"
-          />
-          <div v-else class="preview-thumbnail placeholder-thumbnail"></div>
-          <p class="preview-text">
-            Por favor, informe o motivo pelo qual deseja denunciar esta imagem.
-          </p>
-        </div>
-
-        <UiField
-          id="report-type"
-          label="Tipo de denúncia"
-          :invalid="submitted && !reportType"
-          invalid-message="Preenchimento obrigatório"
-        >
-          <select
-            id="report-type"
-            v-model="reportType"
-            class="form-select"
-            :class="{ 'is-invalid': submitted && !reportType }"
-          >
-            <option value="" disabled>Selecione</option>
-            <option value="copyright">Violação de direitos autorais</option>
-            <option value="inappropriate">Conteúdo inapropriado</option>
-            <option value="incorrect">Informações incorretas</option>
-            <option value="spam">Spam ou propaganda</option>
-            <option value="other">Outro</option>
-          </select>
-        </UiField>
-
-        <UiField label="Item problemático" class="mt-3">
-          <div class="d-flex flex-wrap gap-4">
-            <div class="form-check">
-              <input
-                id="item-image"
-                v-model="problematicItem"
-                class="form-check-input"
-                type="radio"
-                name="problematicItem"
-                value="image"
-              />
-              <label class="form-check-label" for="item-image">Imagem</label>
+          <div class="report-modal__content">
+            <div class="report-modal__intro">
+              <div class="report-modal__thumb-wrap">
+                <img
+                  v-if="image?.imageUrl"
+                  :src="image.imageUrl"
+                  :alt="image.title"
+                  class="report-modal__thumb"
+                />
+                <div v-else class="report-modal__thumb report-modal__thumb--placeholder" />
+              </div>
+              <p class="report-modal__intro-text">
+                Por favor, informe o motivo pelo qual deseja denunciar esta
+                imagem.
+              </p>
             </div>
-            <div class="form-check">
-              <input
-                id="item-data"
-                v-model="problematicItem"
-                class="form-check-input"
-                type="radio"
-                name="problematicItem"
-                value="data"
-              />
-              <label class="form-check-label" for="item-data">Dados</label>
+
+            <div class="report-modal__field">
+              <div class="report-modal__label-row">
+                <label class="report-modal__label" for="report-type">
+                  Tipo de denúncia
+                </label>
+                <span
+                  class="report-modal__hint"
+                  aria-hidden="true"
+                  title="Ajuda"
+                >
+                  <i class="bi bi-question-circle-fill" />
+                </span>
+              </div>
+              <div class="dropdown w-100">
+                <button
+                  class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between report-modal__dropdown-btn"
+                  :class="{ 'report-modal__dropdown-btn--invalid': submitted && !reportType }"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  :aria-invalid="submitted && !reportType"
+                >
+                  <span v-if="!reportType" class="report-modal__dropdown-placeholder">Selecione</span>
+                  <span v-else>{{ reportTypeLabel }}</span>
+                </button>
+
+                <ul class="w-100 dropdown-menu menu-light">
+                  <li v-for="option in reportTypeOptions" :key="option.value">
+                    <button class="dropdown-item" type="button" @click="reportType = option.value">
+                      {{ option.label }}
+                    </button>
+                  </li>
+                </ul>
+              </div>
             </div>
-            <div class="form-check">
-              <input
-                id="item-location"
-                v-model="problematicItem"
-                class="form-check-input"
-                type="radio"
-                name="problematicItem"
-                value="location"
+
+            <div class="report-modal__field">
+              <div class="report-modal__label-row">
+                <span class="report-modal__label">Item problemático</span>
+                <span
+                  class="report-modal__hint"
+                  aria-hidden="true"
+                  title="Ajuda"
+                >
+                  <i class="bi bi-question-circle-fill" />
+                </span>
+              </div>
+              <div class="report-modal__radios" role="radiogroup" aria-label="Item problemático">
+                <label class="report-modal__radio">
+                  <input
+                    v-model="problematicItem"
+                    type="radio"
+                    name="problematicItem"
+                    value="image"
+                  />
+                  <span class="report-modal__radio-label">Imagem</span>
+                </label>
+                <label class="report-modal__radio">
+                  <input
+                    v-model="problematicItem"
+                    type="radio"
+                    name="problematicItem"
+                    value="data"
+                  />
+                  <span class="report-modal__radio-label">Dados</span>
+                </label>
+                <label class="report-modal__radio">
+                  <input
+                    v-model="problematicItem"
+                    type="radio"
+                    name="problematicItem"
+                    value="location"
+                  />
+                  <span class="report-modal__radio-label">Localização</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="report-modal__field">
+              <div class="report-modal__label-row">
+                <label class="report-modal__label" for="report-reason">
+                  Explique-nos o motivo de sua denúncia
+                </label>
+                <span
+                  class="report-modal__hint"
+                  aria-hidden="true"
+                  title="Ajuda"
+                >
+                  <i class="bi bi-question-circle-fill" />
+                </span>
+              </div>
+              <textarea
+                id="report-reason"
+                v-model="reason"
+                class="report-modal__textarea"
+                rows="5"
+                placeholder="Deixe seu comentário aqui"
               />
-              <label class="form-check-label" for="item-location">
-                Localização
-              </label>
             </div>
           </div>
-        </UiField>
+        </div>
 
-        <UiField
-          id="report-reason"
-          label="Explique-nos o motivo de sua denúncia"
-          class="mt-3"
-        >
-          <textarea
-            id="report-reason"
-            v-model="reason"
-            class="form-control"
-            rows="4"
-            placeholder="Deixe seu comentário aqui"
-          ></textarea>
-        </UiField>
-      </div>
-
-      <div class="modal-footer footer-grid">
-        <button
-          type="button"
-          class="btn btn-outline-secondary btn-sm w-100"
-          @click="close"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          class="btn btn-secondary btn-sm w-100"
-          :disabled="submitting"
-          @click="submit"
-        >
-          <span v-if="submitting">
-            <span
-              class="spinner-border spinner-border-sm me-1"
-              role="status"
-              aria-hidden="true"
-            ></span>
-            Enviando...
-          </span>
-          <span v-else>Enviar denúncia</span>
-        </button>
+        <div class="report-modal__footer">
+          <button
+            type="button"
+            class="report-modal__btn report-modal__btn--secondary"
+            @click="close"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="report-modal__btn report-modal__btn--primary"
+            @click="submit"
+            disabled
+          >
+            <span v-if="submitting">
+              <span
+                class="spinner-border spinner-border-sm me-1"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              Enviando...
+            </span>
+            <span v-else>Enviar denúncia</span>
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  </transition>
+
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
-import UiField from "@/components/ui/UiField.vue";
+import { ref, watch, computed } from "vue";
 
 defineOptions({
   name: "ReportModal",
 });
+
+/***************************************************
+* Start: Funcionalidade de reportagem de imagem.
+***************************************************/
+
+const reportTypeOptions = [
+  { value: "copyright", label: "Violação de direitos autorais" },
+  { value: "inappropriate", label: "Conteúdo inapropriado" },
+  { value: "incorrect", label: "Informações incorretas" },
+  { value: "spam", label: "Spam ou propaganda" },
+  { value: "other", label: "Outro" },
+];
+
+const reportTypeLabel = computed(() => {
+  return reportTypeOptions.find((o) => o.value === reportType.value)?.label || "";
+});
+
+/***************************************************
+* End: Funcionalidade de reportagem de imagem.
+***************************************************/
 
 const props = defineProps({
   modelValue: {
@@ -181,10 +232,10 @@ watch(
   (value) => {
     if (value) {
       resetForm();
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
       window.addEventListener("keydown", handleEsc);
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
       window.removeEventListener("keydown", handleEsc);
     }
   }
@@ -212,66 +263,512 @@ function submit() {
 </script>
 
 <style scoped>
-.modal-backdrop {
+
+.fade-modal-enter-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-modal-enter-active .report-modal__panel {
+  transition: opacity 0.3s ease 0.2s;
+}
+
+.fade-modal-leave-active {
+  transition: opacity 0.2s ease 0.2s;
+}
+
+.fade-modal-leave-active .report-modal__panel {
+  transition: opacity 0.2s ease;
+}
+
+.fade-modal-enter-from,
+.fade-modal-leave-to {
+  opacity: 0;
+}
+
+.fade-modal-enter-from .report-modal__panel,
+.fade-modal-leave-to .report-modal__panel {
+  opacity: 0;
+}
+
+.report-modal__backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  z-index: 1100;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1100;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
-.modal-panel {
-  width: 100%;
-  max-width: 700px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: var(--shadow-elevation-medium);
-  padding: 0px 15px;
+.report-modal__dropdown-btn {
+  /* altura igual ao combo de /eu/editar */
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 6px 12px !important;
+
+  border-radius: 6px !important;
+  border: 1px solid #1f1f1f !important;
+  background: var(--off_white, #faf9f9) !important;
+
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #212529 !important;
+
+  box-shadow: none !important;
 }
 
-.modal-header {
-  padding: 16px 40px;
-  border-bottom: none;
+.report-modal__dropdown-placeholder {
+  color: #636262;
+  font-style: italic;
 }
 
-.modal-body {
-  padding: 20px 40px;
+/* estado aberto/ativo igual ao Gênero */
+.report-modal__dropdown-btn.show,
+.report-modal__dropdown-btn:active,
+.report-modal__dropdown-btn:focus {
+  background: #1f1f1f !important;
+  border-color: #1f1f1f !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
 }
 
-.modal-footer {
-  padding: 12px 0px 15px 0px;
+/* placeholder quando aberto */
+.report-modal__dropdown-btn.show .report-modal__dropdown-placeholder {
+  color: #8f8f8f !important;
 }
 
-.footer-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+/* seta branca quando aberto */
+.report-modal__dropdown-btn.show::after {
+  border-top-color: #ffffff !important;
 }
 
-.image-preview-row {
+/* menu igual */
+.report-modal .dropdown-menu,
+.report-modal__field .dropdown-menu {
+  border-radius: 0 0 6px 6px;
+  margin-top: 0;
+}
+
+/* estado inválido igual ao campo de texto */
+.report-modal__dropdown-btn--invalid,
+.report-modal__dropdown-btn--invalid.show {
+  border-color: #dc3545 !important;
+}
+
+.report-modal__panel {
   display: flex;
+  width: 600px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  padding: 0 16px;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  overflow: clip;
+  border-radius: 16px;
+  background: var(--off_white, #faf9f9);
+  box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.1);
+}
+
+.report-modal__column {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
   align-items: flex-start;
+  padding: 0 32px;
+  box-sizing: border-box;
+}
+
+.report-modal__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 32px;
+  padding-bottom: 16px;
+}
+
+.report-modal__title {
+  flex: 1 0 0;
+  margin: 0;
+  font-family: "DM Sans", sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #2f2f2f;
+}
+
+.report-modal__content {
+  width: 100%;
+  padding: 0 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
-.preview-thumbnail {
-  width: 100px;
-  height: 70px;
-  object-fit: cover;
-  border-radius: 4px;
+.report-modal__intro {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  padding: 8px 12px 8px 0;
+  box-sizing: border-box;
+}
+
+.report-modal__thumb-wrap {
   flex-shrink: 0;
+  width: 100px;
+  height: 75px;
+  overflow: hidden;
 }
 
-.placeholder-thumbnail {
-  background-color: var(--Cinza_C, #e0e0e0);
+.report-modal__thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-.preview-text {
+.report-modal__thumb--placeholder {
+  background: var(--Cinza_C, #e0e0e0);
+}
+
+.report-modal__intro-text {
+  flex: 1 0 0;
   margin: 0;
-  font-size: 0.95rem;
-  color: var(--Cinza_E, #555);
-  line-height: 1.4;
+  min-width: 0;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.25;
+  color: #212529;
+}
+
+.report-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  max-width: 600px;
+  min-width: 200px;
+}
+
+.report-modal__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px 8px 0;
+  box-sizing: border-box;
+}
+
+.report-modal__label {
+  font-family: "DM Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #212529;
+}
+
+.report-modal__hint {
+  display: inline-flex;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: #212529;
+}
+
+.report-modal__hint .bi {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.report-modal__input-shell {
+  width: 100%;
+  height: 30px;
+  box-sizing: border-box;
+  background: var(--off_white, #faf9f9);
+  border: 0.75px solid var(--preto, #1f1f1f);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  overflow: clip;
+  padding: 6px 10px;
+}
+
+.report-modal__input-shell--invalid {
+  border-color: #dc3545;
+}
+
+.report-modal__select {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  background: transparent;
+  padding: 0 20px 0 0;
+  margin: 0;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.5;
+  color: #212529;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%231f1f1f' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 20px 20px;
+}
+
+.report-modal__select--placeholder {
+  font-style: italic;
+  color: #636262;
+}
+
+.report-modal__select:focus {
+  outline: none;
+}
+
+.report-modal__select option:not([value=""]) {
+  font-style: normal;
+  color: #212529;
+}
+
+.report-modal__radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 320px;
+}
+
+.report-modal__radio {
+  display: inline-flex;
+  flex: 1 0 0;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px 4px;
+  margin: 0;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.report-modal__radio input[type="radio"] {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: #1f1f1f;
+}
+
+.report-modal__radio-label {
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: #2f2f2f;
+  white-space: nowrap;
+}
+
+.report-modal__textarea {
+  width: 100%;
+  height: 120px;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 120px;
+  background: var(--off_white, #faf9f9);
+  border: 0.75px solid var(--preto, #1f1f1f);
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #212529;
+}
+
+.report-modal__textarea::placeholder {
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #636262;
+}
+
+.report-modal__textarea:focus {
+  outline: none;
+}
+
+.report-modal__footer {
+  width: 100%;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  align-self: stretch;
+  padding: 16px 0;
+  box-sizing: border-box;
+}
+
+.report-modal__btn {
+  flex: 1 0 0;
+  min-width: 0;
+  margin: 0;
+  padding: 2px 14px;
+  border-radius: 5px;
+  border-style: solid;
+  border-width: 1px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.report-modal__btn--secondary {
+  background: var(--off_white, #faf9f9);
+  border-color: var(--cinza_e, #2f2f2f);
+  color: var(--cinza_e, #2f2f2f);
+}
+
+.report-modal__btn--primary {
+  background: var(--cinza_e, #2f2f2f);
+  border-color: var(--cinza_e, #2f2f2f);
+  color: var(--branco, #ffffff);
+}
+
+.report-modal__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.report-modal__btn--primary:disabled {
+  opacity: 0.5 !important;
+}
+
+/* regras mobile */
+@media (max-width: 767px) {
+  .report-modal__backdrop {
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .report-modal__panel {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    padding: 0;           /* importante: sem padding no painel */
+    gap: 0;               /* evita “respiro” extra no topo */
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    overflow: hidden;
+  }
+
+  .report-modal__column {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0 16px;      /* mesmo padrão visual dos outros */
+  }
+
+  .report-modal__header {
+    padding-top: 20px;    /* padrão usado nos outros modais */
+    padding-bottom: 12px;
+  }
+
+  .report-modal__title {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.35;    /* igual ao Share/Download */
+  }
+
+  .report-modal__content {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 14px;
+  }  
+
+  .report-modal__intro {
+    padding: 0;
+    margin: 0;
+  }
+
+  .report-modal__thumb-wrap {
+    width: 88px;
+    height: 66px;
+  }
+
+  .report-modal__label {
+    font-size: 14px;
+  }
+
+  .report-modal__textarea {
+    min-height: 96px;
+    height: 96px;
+  }
+
+  .report-modal__radios {
+    max-width: 100%;
+    gap: 8px;
+  }
+
+  .report-modal__radio {
+    flex: 1 1 calc(50% - 8px);
+    padding: 6px 0;
+  }
+
+  .report-modal__footer {
+    grid-row: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+    align-self: stretch;
+  }
+
+  .report-modal__btn {
+    width: 100%;
+    flex: 0 0 auto;
+    min-height: 32px;
+    height: 32px;
+    padding: 2px 12px;
+    line-height: 1.2;
+  }
+
+  .report-modal__btn--secondary { order: 1; }
+  .report-modal__btn--primary { order: 2; }
+
+  .report-modal__dropdown-btn {
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 4px 10px !important;
+    font-size: 14px !important;
+  }
+  
 }
 </style>
