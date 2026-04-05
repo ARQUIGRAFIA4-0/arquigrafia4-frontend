@@ -8,6 +8,7 @@ import { useVracStore } from "@/store/vrac";
 import { useProfilesStore } from '../store/profiles';
 import defaultProfileImage from '@/assets/profile_image.png';
 import axios from 'axios';
+import imageCompression from 'browser-image-compression';
 
 const props = defineProps({
   profileData: {
@@ -19,6 +20,8 @@ const props = defineProps({
     default: null
   }
 });
+
+const MAX_DIMENSION = 2000;
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -222,44 +225,139 @@ function removeSocial(key) {
   socials.value[key] = '';
 }
 
-function handleProfileImageChange(event) {
+function validateImage(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+
+    // img.onload = () => {
+    //   if (img.width > MAX_DIMENSION || img.height > MAX_DIMENSION) {
+    //     displayAlert(`Imagem deve ter no máximo ${MAX_DIMENSION}x${MAX_DIMENSION}px`);
+    //     resolve(false);
+    //   } else {
+    //     resolve(true);
+    //   }
+    // };
+
+    img.onerror = () => {
+      displayAlert('Erro ao ler o arquivo. Por favor, selecione uma imagem válida.');
+      profileImageFile.value = null;
+      profileImageURLPreview.value = '';
+      resolve(false);
+    };
+
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+async function updateProfile() {
+  const payload = {
+    user_id: props.userData.id,
+    ...props.profileData.data,
+    address: address.value,
+    bio: bio.value,
+    gender: gender.value,
+    birthdate: birthdate.value,
+    race: race.value,
+    profession: profession.value,
+    scholarity: scholarity.value,
+    socials: socials.value,
+    subjects: [...selectedInterests.value.map(interest => interest.id)],
+    configurations: {
+      address: addressPublic.value,
+      gender: genderPublic.value,
+      birthdate: birthdatePublic.value,
+      race: racePublic.value,
+      profession: professionPublic.value,
+      scholarity: scholarityPublic.value
+    }
+  };
+
+  await profilesStore.updateProfile(
+    userAuthHeader.value,
+    props.profileData.data.id,
+    payload
+  );
+
+}
+
+async function uploadProfileImage() {
+  if (!profileImageFile.value) return null;
+
+  const formData = new FormData();
+  formData.append('image', profileImageFile.value);
+  formData.append('name', props.userData.name);
+  formData.append('email', props.userData.email);
+  formData.append('_method', 'PUT');
+
+  try {
+    const response = await axios.post(
+      `api/users/${props.userData.id}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: authStore.authHeader,
+        },
+      }
+    );
+    return response.data.user;
+  } catch (error) {
+    const apiError = error.response.data?.message || 'Erro ao enviar imagem de perfil.';
+    displayAlert(apiError);
+    throw error;
+  }
+}
+
+async function handleProfileImageChange(event) {
   closeAlert();
+
   const uploadedFile = event.target.files?.[0];
   if (!uploadedFile) return;
 
   // Verifica o tamanho do arquivo (2MB)
   const maxSize = 2 * 1024 * 1024;
   if (uploadedFile.size > maxSize) {
-    displayAlert('Por favor, selecione uma imagem de no máximo 2MB.', "error");
-    // alert('Por favor, selecione uma imagem de no máximo 2MB.');
-    return;
+    return displayAlert('Por favor, selecione uma imagem de no máximo 2MB.', "error");
   }
 
+  // Valida iamgem antes de tentar comprimir para evitar processamento desnecessário
+  const isValid = await validateImage(uploadedFile);
+  if (!isValid) return;
+
+
+  // Resize automático
+  const compressed = await imageCompression(uploadedFile, {
+    maxWidthOrHeight: MAX_DIMENSION,
+  });
+
   // Validação do arquivo de imagem
-  const reader = new FileReader();
+  // const reader = new FileReader();
 
-  reader.onerror = () => {
-    alert('Erro ao ler o arquivo. Por favor, selecione uma imagem válida.');
-  };
+  // reader.onerror = () => {
+  //   alert('Erro ao ler o arquivo. Por favor, selecione uma imagem válida.');
+  // };
 
-  reader.onload = (e) => {
-    const img = new Image();
+  // reader.onload = (e) => {
+  //   const img = new Image();
 
-    img.onerror = () => {
-      alert('O arquivo selecionado não é uma imagem válida.');
-      profileImageFile.value = null;
-      profileImageURLPreview.value = '';
-    };
+  //   img.onerror = () => {
+  //     alert('O arquivo selecionado não é uma imagem válida.');
+  //     profileImageFile.value = null;
+  //     profileImageURLPreview.value = '';
+  //   };
 
-    img.onload = () => {
-      // Imagem válida
-      profileImageFile.value = uploadedFile;
-      profileImageURLPreview.value = e.target.result;
-    };
-    img.src = e.target.result;
-  };
+  //   img.onload = () => {
+  //     // Imagem válida
+  //     profileImageFile.value = uploadedFile;
+  //     profileImageURLPreview.value = e.target.result;
+  //   };
+  //   img.src = e.target.result;
+  // };
 
-  reader.readAsDataURL(uploadedFile);
+  profileImageFile.value = compressed;
+  profileImageURLPreview.value = URL.createObjectURL(compressed);
+
+  // reader.readAsDataURL(uploadedFile);
 }
 
 function openProfileImageDialog() {
@@ -350,69 +448,61 @@ function handleEscapeKey(event) {
 
 
 async function updatePersonalData() {
+  try {
+    const hasNameChanged = name.value !== props.userData.name;
+    const hasImageChanged = !!profileImageFile.value;
 
-  // Atualiza user somente se o nome foi alterado
-  if (name.value !== props.userData.name || profileImageFile.value) {
-    try {
 
-      if (profileImageFile.value) {
-        const formData = new FormData();
-        formData.append('name', name.value);
-        formData.append('email', props.userData.email);
+    //caso 2
+    if (hasNameChanged || hasImageChanged) {
+      const formData = new FormData();
+
+      formData.append('name', name.value || props.userData.name);
+      formData.append('email', props.userData.email);
+
+      if (hasImageChanged) {
+        // FALTA VALIDAR IMAGEM ANTES DE ENVIAR
+
         formData.append('image', profileImageFile.value);
-        formData.append('_method', 'PUT');
-        const response = await axios.post(`/api/users/${props.userData.id}`, formData, {
+      }
+
+      formData.append('_method', 'PUT');
+
+      const response = await axios.post(
+        `/api/users/${props.userData.id}`,
+        formData,
+        {
           headers: {
-            'Content-Type': 'multipart/form-data',
             Authorization: authStore.authHeader,
           },
-        });
+        }
+      );
 
-        authStore.loggedUser = response.data.user;
-        localStorage.setItem("loggedUser", JSON.stringify(response.data.user));
-      } else {
-        const payload = {
-          name: name.value,
-          email: props.userData.email
-        };
-        // Atualiza dados do usuário no banco de dados
-        const response = await usersStore.updateUser(userAuthHeader.value, props.userData.id, payload);
-        // Atualiza o estado reativo do usuário no authStore
-        authStore.loggedUser = response.user;
-        // Atualiza dados do usuário no local storage
-        localStorage.setItem("loggedUser", JSON.stringify(response.user));
-      }
-    } catch (error) {
-      throw new Error('Erro ao atualizar dados do/a usuário/a.');
+      authStore.loggedUser = response.data.user;
+      localStorage.setItem("loggedUser", JSON.stringify(response.data.user));
     }
-  }
 
-  try {
-    const payload = {
-      user_id: props.userData.id,
-      ...props.profileData.data,
-      address: address.value,
-      bio: bio.value,
-      gender: gender.value,
-      birthdate: birthdate.value,
-      race: race.value,
-      profession: profession.value,
-      scholarity: scholarity.value,
-      socials: socials.value,
-      subjects: [...selectedInterests.value.map(interest => interest.id)],
-      configurations: {
-        address: addressPublic.value,
-        gender: genderPublic.value,
-        birthdate: birthdatePublic.value,
-        race: racePublic.value,
-        profession: professionPublic.value,
-        scholarity: scholarityPublic.value
-      }
-    };
-    await profilesStore.updateProfile(userAuthHeader.value, props.profileData.data.id, payload);
+    await updateProfile();
+
     router.push('/eu');
+
+    // 🔹 Atualiza estado se houve mudança
+    // if (updatedUser) {
+    //   authStore.loggedUser = updatedUser;
+    //   localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
+    // }
+
   } catch (error) {
-    console.error("Erro ao atualizar perfil.");
+    const apiError = error.response?.data?.errors;
+
+    if (apiError) {
+      const firstError = Object.values(apiError)[0]?.[0];
+      displayAlert(firstError || 'Erro ao atualizar');
+    } else {
+      displayAlert('Erro inesperado');
+    }
+
+    console.error(error);
   }
 }
 
