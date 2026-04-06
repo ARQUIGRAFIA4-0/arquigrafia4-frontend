@@ -21,6 +21,9 @@ const props = defineProps({
   }
 });
 
+// Constantes de validação de imagem
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
 const MAX_DIMENSION = 2000;
 
 const router = useRouter();
@@ -119,6 +122,7 @@ const filteredSubjects = computed(() =>
 const alertMessage = ref("");
 const alertType = ref("");
 const showAlert = ref(false);
+const isProcessingImage = ref(false);
 
 function displayAlert(message, type = "error") {
   alertMessage.value = message;
@@ -225,27 +229,49 @@ function removeSocial(key) {
   socials.value[key] = '';
 }
 
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// validação do tipo do arquivo de imagem
+function validateMimeType(file) {
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    displayAlert('Formato não suportado. Use JPEG, PNG ou WebP.');
+    scrollToTop();
+    return false;
+  }
+  return true;
+}
+
+function validateFileSize(file) {
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    displayAlert('A imagem deve ter no máximo 2 MB.');
+    return false;
+  }
+  return true;
+}
+
+// Validação de integridade (img.onload reativado + revogação de URL) 
+
 function validateImage(file) {
   return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
     const img = new Image();
 
-    // img.onload = () => {
-    //   if (img.width > MAX_DIMENSION || img.height > MAX_DIMENSION) {
-    //     displayAlert(`Imagem deve ter no máximo ${MAX_DIMENSION}x${MAX_DIMENSION}px`);
-    //     resolve(false);
-    //   } else {
-    //     resolve(true);
-    //   }
-    // };
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(true);
+    };
 
     img.onerror = () => {
-      displayAlert('Erro ao ler o arquivo. Por favor, selecione uma imagem válida.');
+      URL.revokeObjectURL(objectUrl);
+      displayAlert('Arquivo inválido. Selecione uma imagem válida.');
       profileImageFile.value = null;
       profileImageURLPreview.value = '';
       resolve(false);
     };
 
-    img.src = URL.createObjectURL(file);
+    img.src = objectUrl;
   });
 }
 
@@ -280,84 +306,41 @@ async function updateProfile() {
 
 }
 
-async function uploadProfileImage() {
-  if (!profileImageFile.value) return null;
-
-  const formData = new FormData();
-  formData.append('image', profileImageFile.value);
-  formData.append('name', props.userData.name);
-  formData.append('email', props.userData.email);
-  formData.append('_method', 'PUT');
-
-  try {
-    const response = await axios.post(
-      `api/users/${props.userData.id}`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: authStore.authHeader,
-        },
-      }
-    );
-    return response.data.user;
-  } catch (error) {
-    const apiError = error.response.data?.message || 'Erro ao enviar imagem de perfil.';
-    displayAlert(apiError);
-    throw error;
-  }
-}
-
 async function handleProfileImageChange(event) {
   closeAlert();
 
   const uploadedFile = event.target.files?.[0];
   if (!uploadedFile) return;
 
-  // Verifica o tamanho do arquivo (2MB)
-  const maxSize = 2 * 1024 * 1024;
-  if (uploadedFile.size > maxSize) {
-    return displayAlert('Por favor, selecione uma imagem de no máximo 2MB.', "error");
+  // 1. Tipo MIME
+  if (!validateMimeType(uploadedFile)) return;
+
+  // 2. Tamanho bruto (antes de comprimir)
+  if (!validateFileSize(uploadedFile)) return;
+
+  isProcessingImage.value = true;
+
+  try {
+    // 3. Integridade real da imagem
+    const isValid = await validateImage(uploadedFile);
+    if (!isValid) return;
+
+    // 4. Comprimir/redimensionar
+    const compressed = await imageCompression(uploadedFile, {
+      maxWidthOrHeight: MAX_DIMENSION,
+      useWebWorker: true,
+    });
+
+    // 5. Atualizar estado e preview
+    profileImageFile.value = compressed;
+    // Revogar preview anterior para não acumular object URLs
+    if (profileImageURLPreview.value) {
+      URL.revokeObjectURL(profileImageURLPreview.value);
+    }
+    profileImageURLPreview.value = URL.createObjectURL(compressed);
+  } finally {
+    isProcessingImage.value = false;
   }
-
-  // Valida iamgem antes de tentar comprimir para evitar processamento desnecessário
-  const isValid = await validateImage(uploadedFile);
-  if (!isValid) return;
-
-
-  // Resize automático
-  const compressed = await imageCompression(uploadedFile, {
-    maxWidthOrHeight: MAX_DIMENSION,
-  });
-
-  // Validação do arquivo de imagem
-  // const reader = new FileReader();
-
-  // reader.onerror = () => {
-  //   alert('Erro ao ler o arquivo. Por favor, selecione uma imagem válida.');
-  // };
-
-  // reader.onload = (e) => {
-  //   const img = new Image();
-
-  //   img.onerror = () => {
-  //     alert('O arquivo selecionado não é uma imagem válida.');
-  //     profileImageFile.value = null;
-  //     profileImageURLPreview.value = '';
-  //   };
-
-  //   img.onload = () => {
-  //     // Imagem válida
-  //     profileImageFile.value = uploadedFile;
-  //     profileImageURLPreview.value = e.target.result;
-  //   };
-  //   img.src = e.target.result;
-  // };
-
-  profileImageFile.value = compressed;
-  profileImageURLPreview.value = URL.createObjectURL(compressed);
-
-  // reader.readAsDataURL(uploadedFile);
 }
 
 function openProfileImageDialog() {
@@ -452,21 +435,17 @@ async function updatePersonalData() {
     const hasNameChanged = name.value !== props.userData.name;
     const hasImageChanged = !!profileImageFile.value;
 
-
-    //caso 2
     if (hasNameChanged || hasImageChanged) {
       const formData = new FormData();
 
       formData.append('name', name.value || props.userData.name);
       formData.append('email', props.userData.email);
+      formData.append('_method', 'PUT');
 
       if (hasImageChanged) {
-        // FALTA VALIDAR IMAGEM ANTES DE ENVIAR
-
         formData.append('image', profileImageFile.value);
       }
 
-      formData.append('_method', 'PUT');
 
       const response = await axios.post(
         `/api/users/${props.userData.id}`,
@@ -483,20 +462,13 @@ async function updatePersonalData() {
     }
 
     await updateProfile();
-
     router.push('/eu');
-
-    // 🔹 Atualiza estado se houve mudança
-    // if (updatedUser) {
-    //   authStore.loggedUser = updatedUser;
-    //   localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
-    // }
-
   } catch (error) {
     const apiError = error.response?.data?.errors;
 
     if (apiError) {
       const firstError = Object.values(apiError)[0]?.[0];
+      scrollToTop();
       displayAlert(firstError || 'Erro ao atualizar');
     } else {
       displayAlert('Erro inesperado');
@@ -533,11 +505,21 @@ function handleCancel() {
     <div class="profile-form__profile-image row mb-4">
       <h3>Foto de perfil</h3>
       <div class="d-flex flex-row gap-3 align-items-end">
-        <div class="profile-image-preview">
-          <img :src="profileImageURLPreview || defaultProfileImage" alt="Foto de perfil" />
+        <div class="profile-image-preview position-relative">
+          <img :src="profileImageURLPreview || defaultProfileImage" alt="Foto de perfil"
+            :class="{ 'opacity-50': isProcessingImage }" />
+          <div v-if="isProcessingImage" class="position-absolute top-50 start-50 translate-middle">
+            <div class="spinner-border spinner-border-sm text-secondary" role="status">
+              <span class="visually-hidden">Carregando...</span>
+            </div>
+          </div>
         </div>
-        <button type="button" class="btn btn-outline-secondary lh-1" @click="openProfileImageDialog">
-          Alterar imagem
+        <button type="button" class="btn btn-outline-secondary lh-1" @click="openProfileImageDialog"
+          :disabled="isProcessingImage">
+          <span v-if="isProcessingImage">
+            <i class="bi bi-hourglass-split me-1"></i>Processando...
+          </span>
+          <span v-else>Alterar imagem</span>
         </button>
       </div>
       <input type="file" accept="image/*" ref="profileImageInputRef" @change="handleProfileImageChange"
