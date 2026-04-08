@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, computed } from "vue";
+    import { ref, computed, onUnmounted } from "vue";
     import { useAuthStore } from "@/store/auth";
     import { useAlbumsStore } from "@/store/albums";
 
@@ -9,9 +9,31 @@
 
     const showCreateCollectionModal = ref(false);
 
+    // Campos de criação de coleção
     const collectionTitle = ref("");
     const collectionDescription = ref("");
     const isSubmittingCollection = ref(false);
+    // Toast de criação de coleção
+    const showCollectionToast = ref(false);
+    const collectionToastMessage = ref("");
+    const collectionToastType = ref("success");
+    let collectionToastTimeout = null;
+
+    // Função para abrir o toast de criação de coleção
+    function openCollectionToast(message, type = "success") {
+      collectionToastMessage.value = message;
+      collectionToastType.value = type;
+      showCollectionToast.value = true;
+
+      if (collectionToastTimeout) {
+        clearTimeout(collectionToastTimeout);
+      }
+
+      collectionToastTimeout = setTimeout(() => {
+        showCollectionToast.value = false;
+        collectionToastTimeout = null;
+      }, 2200);
+    }
 
     // Props
     const props = defineProps({
@@ -48,15 +70,15 @@
       // Validar se o usuário está autenticado
       const userId = props.userData?.id ?? null;
       if (!userId) {
-        alert("Usuário não identificado.");
+        openCollectionToast("Usuário não identificado.", "error");
         return;
       }
 
-      // Validar se o título e a descrição estão preenchidos
+      // Validar se o título está preenchido
       const title = collectionTitle.value.trim();
       const description = collectionDescription.value.trim();
-      if (!title || !description) {
-        alert("Preencha título e descrição.");
+      if (!title) {
+        openCollectionToast("Preencha o título.", "error");
         return;
       }
 
@@ -67,11 +89,11 @@
         isSubmittingCollection.value = true;
         // envio efetivo ao backend
         const createdAlbum = await albumsStore.createAlbum(userAuthHeader.value, payload);
-        console.log("Coleção criada:", createdAlbum);
         closeCreateCollectionModal();
+        openCollectionToast("Coleção criada com sucesso!");
 
       } catch (error) {
-        alert(error.message || "Erro ao criar coleção.");
+        openCollectionToast(error.message || "Erro ao criar coleção.", "error");
 
       } finally {
         isSubmittingCollection.value = false;
@@ -79,6 +101,12 @@
       }
 
     }
+
+    onUnmounted(() => {
+      if (collectionToastTimeout) {
+        clearTimeout(collectionToastTimeout);
+      }
+    });
 
 </script>
 
@@ -101,13 +129,28 @@
         >
             <div class="collection-modal__panel" role="dialog" aria-modal="true" aria-labelledby="collection-modal-title">
             <div class="collection-modal__column">
+                <div class="collection-modal__close-row">
+                  <button
+                    type="button"
+                    class="collection-modal__close-btn"
+                    aria-label="Fechar modal de criar coleção"
+                    @click="closeCreateCollectionModal"
+                  >
+                    <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
+                  </button>
+                </div>
                 <div class="collection-modal__header">
                 <p id="collection-modal-title" class="collection-modal__title">Criar coleção</p>
                 </div>
 
                 <div class="collection-modal__body">
                 <div class="collection-modal__field">
-                    <label class="collection-modal__label" for="collection-title">Título</label>
+                    <div class="collection-modal__label-row">
+                      <label class="collection-modal__label" for="collection-title">Título</label>
+                      <span class="collection-modal__label-help" aria-hidden="true">
+                        <i class="bi bi-question-circle-fill"></i>
+                      </span>
+                    </div>
                     <input
                     id="collection-title"
                     v-model="collectionTitle"
@@ -115,10 +158,16 @@
                     type="text"
                     placeholder="Crie um título para sua coleção"
                     />
+                    <p class="collection-modal__hint">Preenchimento obrigatório.</p>
                 </div>
 
                 <div class="collection-modal__field">
-                    <label class="collection-modal__label" for="collection-description">Descrição</label>
+                    <div class="collection-modal__label-row">
+                      <label class="collection-modal__label" for="collection-description">Descrição</label>
+                      <span class="collection-modal__label-help" aria-hidden="true">
+                        <i class="bi bi-question-circle-fill"></i>
+                      </span>
+                    </div>
                     <textarea
                     id="collection-description"
                     v-model="collectionDescription"
@@ -132,12 +181,12 @@
 
             <div class="collection-modal__footer">
                 <button type="button" class="collection-modal__btn collection-modal__btn--secondary" @click="closeCreateCollectionModal">
-                Voltar
+                Cancelar
                 </button>
                 <button
                 type="button"
                 class="collection-modal__btn collection-modal__btn--primary"
-                :disabled="!collectionTitle.trim() || !collectionDescription.trim() || isSubmittingCollection"
+                :disabled="!collectionTitle.trim() || isSubmittingCollection"
                 @click="handleProceedWithCollection"
                 >
                 {{ isSubmittingCollection ? "Criando..." : "Prosseguir" }}
@@ -146,6 +195,25 @@
             </div>
         </div>
     </transition>    
+
+    <transition name="copy-toast-fade">
+      <div
+        v-if="showCollectionToast"
+        class="collection-modal__toast"
+        :class="{
+          'collection-modal__toast--error': collectionToastType === 'error',
+        }"
+        role="status"
+        aria-live="polite"
+      >
+        <i
+          class="bi"
+          :class="collectionToastType === 'error' ? 'bi-exclamation-circle' : 'bi-check2-circle'"
+          aria-hidden="true"
+        />
+        <span>{{ collectionToastMessage }}</span>
+      </div>
+    </transition>
 
 </template>
 
@@ -176,6 +244,47 @@
 .fade-modal-enter-from .collection-modal__panel,
 .fade-modal-leave-to .collection-modal__panel {
   opacity: 0;
+}
+
+.collection-modal__toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1300;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  width: 350px;
+  box-sizing: border-box;
+  padding: 12px 12px 12px 16px;
+  border-radius: 4px;
+  background: var(--cinza_e, #2f2f2f);
+  color: var(--branco, #fff);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.collection-modal__toast .bi {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.collection-modal__toast--error {
+  background: #7a1c1c;
+}
+
+.copy-toast-fade-enter-active,
+.copy-toast-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.copy-toast-fade-enter-from,
+.copy-toast-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-4px);
 }
 
 // Caixa de upload inicial
@@ -285,6 +394,31 @@
   box-sizing: border-box;
 }
 
+.collection-modal__close-row {
+  width: 100%;
+  display: none;
+  justify-content: flex-end;
+  padding-top: 20px;
+}
+
+.collection-modal__close-btn {
+  width: 24px;
+  height: 24px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #2f2f2f;
+  padding: 0;
+  cursor: pointer;
+}
+
+.collection-modal__close-btn .bi {
+  font-size: 24px;
+  line-height: 1;
+}
+
 .collection-modal__header {
   width: 100%;
   display: flex;
@@ -320,10 +454,17 @@
   width: 100%;
 }
 
+.collection-modal__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
 .collection-modal__label {
   display: flex;
   align-items: center;
-  width: 100%;
+  width: auto;
   padding: 8px 0;
   margin: 0;
   font-family: "DM Sans", sans-serif;
@@ -331,6 +472,20 @@
   font-weight: 500;
   line-height: 1.5;
   color: #212529;
+}
+
+.collection-modal__label-help {
+  display: inline-flex;
+  width: 12px;
+  height: 12px;
+  align-items: center;
+  justify-content: center;
+  color: #212529;
+}
+
+.collection-modal__label-help .bi {
+  font-size: 10px;
+  line-height: 1;
 }
 
 .collection-modal__input,
@@ -366,6 +521,18 @@
 .collection-modal__input:focus,
 .collection-modal__textarea:focus {
   outline: none;
+}
+
+.collection-modal__hint {
+  margin: 0;
+  padding: 4px 0;
+  width: 100%;
+  text-align: right;
+  font-family: "DM Sans", sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 16px;
+  color: #2f2f2f;
 }
 
 .collection-modal__footer {
@@ -422,6 +589,7 @@
     padding: 0;
     align-items: stretch;
     justify-content: stretch;
+    background: rgba(0, 0, 0, 0.1);
   }
 
   .collection-modal__panel {
@@ -441,62 +609,102 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    padding: 0 16px;
+    padding: 0 32px;
+  }
+
+  .collection-modal__close-row {
+    display: flex;
+    padding-top: 20px;
+  }
+
+  .collection-modal__close-btn {
+    display: inline-flex;
   }
 
   .collection-modal__header {
-    padding-top: 20px;
+    padding-top: 4px;
     padding-bottom: 12px;
   }
 
   .collection-modal__title {
     margin: 0;
-    font-size: 20px;
-    line-height: 1.35;
+    font-size: 16px;
+    line-height: 1.5;
   }
 
   .collection-modal__body {
     flex: 1 1 auto;
     min-height: 0;
-    padding: 0;
+    padding: 0 0 24px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    gap: 14px;
+    gap: 16px;
   }
 
   .collection-modal__label {
     font-size: 14px;
+    padding: 4px 0;
   }
 
   .collection-modal__input {
-    height: 34px;
+    height: 26px;
+    padding: 4px 8px;
+    font-size: 12px;
   }
 
   .collection-modal__textarea {
-    min-height: 96px;
-    height: 96px;
+    min-height: 26px;
+    height: 26px;
+    padding: 6px 10px;
+    font-size: 12px;
+    resize: none;
+  }
+
+  .collection-modal__input::placeholder,
+  .collection-modal__textarea::placeholder {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .collection-modal__hint {
+    font-size: 10px;
+    line-height: 16px;
+    padding-top: 4px;
   }
 
   .collection-modal__footer {
     grid-row: 3;
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    flex-direction: row;
+    gap: 16px;
+    padding: 8px 8px calc(32px + env(safe-area-inset-bottom));
     align-self: stretch;
     box-sizing: border-box;
+    background: var(--off_white, #faf9f9);
   }
 
   .collection-modal__btn {
-    width: 100%;
-    flex: 0 0 auto;
-    min-height: 32px;
-    height: 32px;
-    padding: 2px 12px;
-    line-height: 1.2;
+    width: auto;
+    flex: 1 0 0;
+    min-height: 30px;
+    height: 30px;
+    padding: 2px 14px;
+    line-height: 1.5;
   }
 
   .collection-modal__btn--secondary { order: 1; }
   .collection-modal__btn--primary { order: 2; }
+
+  .collection-modal__toast {
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100vw - 24px);
+    max-width: 350px;
+    gap: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
 }
 </style>
