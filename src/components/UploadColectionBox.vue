@@ -1,10 +1,17 @@
 <script setup>
-    import { ref } from "vue";
+    import { ref, computed } from "vue";
+    import { useAuthStore } from "@/store/auth";
+    import { useAlbumsStore } from "@/store/albums";
+
+    const authStore = useAuthStore();
+    const albumsStore = useAlbumsStore();
+    const userAuthHeader = computed(() => authStore.authHeader);
 
     const showCreateCollectionModal = ref(false);
 
     const collectionTitle = ref("");
     const collectionDescription = ref("");
+    const isSubmittingCollection = ref(false);
 
     // Props
     const props = defineProps({
@@ -35,22 +42,42 @@
     }
 
     // Prosseguir com a criação da coleção
-    function handleProceedWithCollection() {
-        // Extrair o ID do usuário a partir da prop userData
-        const userId = props.userData?.id ?? null;
+    async function handleProceedWithCollection() {
+      if (isSubmittingCollection.value) return;
+      
+      // Validar se o usuário está autenticado
+      const userId = props.userData?.id ?? null;
+      if (!userId) {
+        alert("Usuário não identificado.");
+        return;
+      }
 
-        // Criar payload para criação da coleção
-        const payload = {
-            title: collectionTitle.value,
-            description: collectionDescription.value
-        };
-        
-        // Log payload e userId
-        console.log(payload);
-        console.log(userId);
+      // Validar se o título e a descrição estão preenchidos
+      const title = collectionTitle.value.trim();
+      const description = collectionDescription.value.trim();
+      if (!title || !description) {
+        alert("Preencha título e descrição.");
+        return;
+      }
 
-        // Fechar modal de criação de coleção
+      // Criar o payload para o envio ao backend
+      const payload = { title, description };
+
+      try {
+        isSubmittingCollection.value = true;
+        // envio efetivo ao backend
+        const createdAlbum = await albumsStore.createAlbum(userAuthHeader.value, payload);
+        console.log("Coleção criada:", createdAlbum);
         closeCreateCollectionModal();
+
+      } catch (error) {
+        alert(error.message || "Erro ao criar coleção.");
+
+      } finally {
+        isSubmittingCollection.value = false;
+
+      }
+
     }
 
 </script>
@@ -110,10 +137,10 @@
                 <button
                 type="button"
                 class="collection-modal__btn collection-modal__btn--primary"
-                :disabled="!collectionTitle.trim() || !collectionDescription.trim()"
+                :disabled="!collectionTitle.trim() || !collectionDescription.trim() || isSubmittingCollection"
                 @click="handleProceedWithCollection"
                 >
-                Prosseguir
+                {{ isSubmittingCollection ? "Criando..." : "Prosseguir" }}
                 </button>
             </div>
             </div>
