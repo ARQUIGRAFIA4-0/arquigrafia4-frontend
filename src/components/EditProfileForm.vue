@@ -7,6 +7,8 @@ import { useUsersStore } from '../store/users';
 import { useVracStore } from "@/store/vrac";
 import { useProfilesStore } from '../store/profiles';
 import defaultProfileImage from '@/assets/profile_image.png';
+import axios from 'axios';
+import imageCompression from 'browser-image-compression';
 
 const props = defineProps({
   profileData: {
@@ -18,6 +20,11 @@ const props = defineProps({
     default: null
   }
 });
+
+// Constantes de validação de imagem
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
+const MAX_DIMENSION = 2000;
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -110,6 +117,24 @@ const filteredSubjects = computed(() =>
       !selectedInterests.value.some(selected => selected.id === option.id)
   )
 );
+
+// Alert system
+const alertMessage = ref("");
+const alertType = ref("");
+const showAlert = ref(false);
+const isProcessingImage = ref(false);
+
+function displayAlert(message, type = "error") {
+  alertMessage.value = message;
+  alertType.value = type;
+  showAlert.value = true;
+}
+
+function closeAlert() {
+  showAlert.value = false;
+  alertMessage.value = "";
+  alertType.value = "";
+}
 
 onMounted(async () => {
   try {
@@ -210,43 +235,118 @@ function removeSocial(key) {
   socials.value[key] = '';
 }
 
-function handleProfileImageChange(event) {
-  const uploadedFile = event.target.files[0];
-  if (!uploadedFile) return;
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-  // Verifica o tamanho do arquivo (2MB)
-  const maxSize = 2 * 1024 * 1024;
-  if (uploadedFile.size > maxSize) {
-    alert('Por favor, selecione uma imagem de no máximo 2MB.');
-    return;
+// validação do tipo do arquivo de imagem
+function validateMimeType(file) {
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    displayAlert('Formato não suportado. Use JPEG, PNG ou WebP.');
+    scrollToTop();
+    return false;
   }
+  return true;
+}
 
-  // Validação do arquivo de imagem
-  const reader = new FileReader();
+function validateFileSize(file) {
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    displayAlert('A imagem deve ter no máximo 2 MB.');
+    return false;
+  }
+  return true;
+}
 
-  reader.onerror = () => {
-    alert('Erro ao ler o arquivo. Por favor, selecione uma imagem válida.');
-  };
+// Validação de integridade (img.onload reativado + revogação de URL) 
 
-  reader.onload = (e) => {
+function validateImage(file) {
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
     const img = new Image();
 
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(true);
+    };
+
     img.onerror = () => {
-      alert('O arquivo selecionado não é uma imagem válida.');
+      URL.revokeObjectURL(objectUrl);
+      displayAlert('Arquivo inválido. Selecione uma imagem válida.');
       profileImageFile.value = null;
       profileImageURLPreview.value = '';
+      resolve(false);
     };
 
-    img.onload = () => {
-      // Imagem válida
-      profileImageFile.value = uploadedFile;
-      profileImageURLPreview.value = e.target.result;
-    };
+    img.src = objectUrl;
+  });
+}
 
-    img.src = e.target.result;
+async function updateProfile() {
+  const payload = {
+    user_id: props.userData.id,
+    ...props.profileData.data,
+    address: address.value,
+    bio: bio.value,
+    gender: gender.value,
+    birthdate: birthdate.value,
+    race: race.value,
+    profession: profession.value,
+    scholarity: scholarity.value,
+    socials: socials.value,
+    subjects: [...selectedInterests.value.map(interest => interest.id)],
+    configurations: {
+      address: addressPublic.value,
+      gender: genderPublic.value,
+      birthdate: birthdatePublic.value,
+      race: racePublic.value,
+      profession: professionPublic.value,
+      scholarity: scholarityPublic.value
+    }
   };
 
-  reader.readAsDataURL(uploadedFile);
+  await profilesStore.updateProfile(
+    userAuthHeader.value,
+    props.profileData.data.id,
+    payload
+  );
+
+}
+
+async function handleProfileImageChange(event) {
+  closeAlert();
+
+  const uploadedFile = event.target.files?.[0];
+  if (!uploadedFile) return;
+
+  // 1. Tipo MIME
+  if (!validateMimeType(uploadedFile)) return;
+
+  // 2. Tamanho bruto (antes de comprimir)
+  if (!validateFileSize(uploadedFile)) return;
+
+  isProcessingImage.value = true;
+
+  try {
+    // 3. Integridade real da imagem
+    const isValid = await validateImage(uploadedFile);
+    if (!isValid) return;
+
+    // 4. Comprimir/redimensionar
+    const compressed = await imageCompression(uploadedFile, {
+      maxWidthOrHeight: MAX_DIMENSION,
+      useWebWorker: true,
+    });
+
+    // 5. Atualizar estado e preview
+    profileImageFile.value = compressed;
+    // Revogar preview anterior para não acumular object URLs
+    if (profileImageURLPreview.value) {
+      URL.revokeObjectURL(profileImageURLPreview.value);
+    }
+    profileImageURLPreview.value = URL.createObjectURL(compressed);
+  } finally {
+    isProcessingImage.value = false;
+  }
 }
 
 function openProfileImageDialog() {
@@ -407,50 +507,50 @@ function goForgotPassword() {
 }
 
 async function updatePersonalData() {
-  // Atualiza user somente se o nome foi alterado
-  if (name.value !== props.userData.name) {
-    try {
-      const payload = {
-        name: name.value,
-        email: props.userData.email
-      };
-      // Atualiza dados do usuário no banco de dados
-      const response = await usersStore.updateUser(userAuthHeader.value, props.userData.id, payload);
-      // Atualiza o estado reativo do usuário no authStore
-      authStore.loggedUser = response.user;
-      // Atualiza dados do usuário no local storage
-      localStorage.setItem("loggedUser", JSON.stringify(response.user));
-    } catch (error) {
-      throw new Error('Erro ao atualizar dados do/a usuário/a.');
-    }
-  }
-
   try {
-    const payload = {
-      user_id: props.userData.id,
-      ...props.profileData.data,
-      address: address.value,
-      bio: bio.value,
-      gender: gender.value,
-      birthdate: birthdate.value,
-      race: race.value,
-      profession: profession.value,
-      scholarity: scholarity.value,
-      socials: socials.value,
-      subjects: [...selectedInterests.value.map(interest => interest.id)],
-      configurations: {
-        address: addressPublic.value,
-        gender: genderPublic.value,
-        birthdate: birthdatePublic.value,
-        race: racePublic.value,
-        profession: professionPublic.value,
-        scholarity: scholarityPublic.value
+    const hasNameChanged = name.value !== props.userData.name;
+    const hasImageChanged = !!profileImageFile.value;
+
+    if (hasNameChanged || hasImageChanged) {
+      const formData = new FormData();
+
+      formData.append('name', name.value || props.userData.name);
+      formData.append('email', props.userData.email);
+      formData.append('_method', 'PUT');
+
+      if (hasImageChanged) {
+        formData.append('image', profileImageFile.value);
       }
-    };
-    await profilesStore.updateProfile(userAuthHeader.value, props.profileData.data.id, payload);
+
+
+      const response = await axios.post(
+        `/api/users/${props.userData.id}`,
+        formData,
+        {
+          headers: {
+            Authorization: authStore.authHeader,
+          },
+        }
+      );
+
+      authStore.loggedUser = response.data.user;
+      localStorage.setItem("loggedUser", JSON.stringify(response.data.user));
+    }
+
+    await updateProfile();
     router.push('/eu');
   } catch (error) {
-    console.error("Erro ao atualizar perfil.");
+    const apiError = error.response?.data?.errors;
+
+    if (apiError) {
+      const firstError = Object.values(apiError)[0]?.[0];
+      scrollToTop();
+      displayAlert(firstError || 'Erro ao atualizar');
+    } else {
+      displayAlert('Erro inesperado');
+    }
+
+    console.error(error);
   }
 }
 
@@ -465,16 +565,37 @@ function handleCancel() {
 </script>
 
 <template>
+  <!-- Alerta -->
+  <div v-if="showAlert"
+    :class="['alert', 'fs-6', alertType === 'success' ? 'bg-positivo-e' : 'bg-negativo-e', 'text-white', 'mb-3', 'd-flex', 'align-items-center', 'justify-content-between', 'auth-alert']"
+    role="alert">
+    <div class="d-flex align-items-center gap-2">
+      <i :class="alertType === 'success' ? 'bi bi-check-all' : 'bi bi-exclamation-triangle-fill'"></i>
+      <span>{{ alertMessage }}</span>
+    </div>
+    <button type="button" class="btn-close text-white" @click="closeAlert" aria-label="Close"></button>
+  </div>
+
   <form @submit.prevent="updatePersonalData">
     <!-- Foto de Perfil-->
     <div class="profile-form__profile-image row mb-4">
       <h3>Foto de perfil</h3>
       <div class="d-flex flex-row gap-3 align-items-end">
-        <div class="profile-image-preview">
-          <img :src="profileImageURLPreview || defaultProfileImage" alt="Foto de perfil" />
+        <div class="profile-image-preview position-relative">
+          <img :src="profileImageURLPreview || defaultProfileImage" alt="Foto de perfil"
+            :class="{ 'opacity-50': isProcessingImage }" />
+          <div v-if="isProcessingImage" class="position-absolute top-50 start-50 translate-middle">
+            <div class="spinner-border spinner-border-sm text-secondary" role="status">
+              <span class="visually-hidden">Carregando...</span>
+            </div>
+          </div>
         </div>
-        <button type="button" class="btn btn-outline-secondary lh-1" @click="openProfileImageDialog">
-          Alterar imagem
+        <button type="button" class="btn btn-outline-secondary lh-1" @click="openProfileImageDialog"
+          :disabled="isProcessingImage">
+          <span v-if="isProcessingImage">
+            <i class="bi bi-hourglass-split me-1"></i>Processando...
+          </span>
+          <span v-else>Alterar imagem</span>
         </button>
       </div>
       <input type="file" accept="image/*" ref="profileImageInputRef" @change="handleProfileImageChange"
@@ -692,7 +813,7 @@ function handleCancel() {
         </UiField>
       </div>
       <!-- Lista de interesses selecionados -->
-      <UiField v-if="selectedInterests.length > 0" label="Temas de interesse cadastrados em seu perfil" labelTag="span" 
+      <UiField v-if="selectedInterests.length > 0" label="Temas de interesse cadastrados em seu perfil" labelTag="span"
         explain="Você pode remover temas clicando no ícone de 'x' ao lado do nome do tema.">
         <div class="d-flex flex-wrap gap-2 mt-2">
           <div v-for="(interest, index) in selectedInterests" :key="interest.id"
@@ -711,18 +832,9 @@ function handleCancel() {
     <!-- Modal fora do <form> (Teleport) para o browser não tratar como login / autofill agressivo -->
     <Teleport to="body">
       <transition name="fade-modal">
-        <div
-          v-if="showEmailModal"
-          class="profile-form__password-modal"
-          @click.self="closeEmailModal"
-        >
-          <div
-            class="profile-form__password-modal-panel"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="email-modal-title"
-            @click.stop
-          >
+        <div v-if="showEmailModal" class="profile-form__password-modal" @click.self="closeEmailModal">
+          <div class="profile-form__password-modal-panel" role="dialog" aria-modal="true"
+            aria-labelledby="email-modal-title" @click.stop>
             <div class="profile-form__password-modal-column">
               <div class="profile-form__password-modal-header">
                 <p id="email-modal-title" class="profile-form__password-modal-title">
@@ -733,7 +845,9 @@ function handleCancel() {
               <div class="profile-form__password-modal-body">
                 <div class="profile-form__pwd-field">
                   <p class="profile-form__email-copy">
-                    Atualmente seu e-mail de cadastrado em nosso sistema  no Arquigrafia é o <strong class="profile-form__email-copy-highlight">{{ props.userData?.email || "email@email.com" }}</strong>.
+                    Atualmente seu e-mail de cadastrado em nosso sistema no Arquigrafia é o <strong
+                      class="profile-form__email-copy-highlight">{{ props.userData?.email || "email@email.com"
+                      }}</strong>.
                   </p>
                 </div>
 
@@ -747,27 +861,13 @@ function handleCancel() {
                     </span>
                   </div>
                   <div class="profile-form__pwd-input-shell profile-form__pwd-input-shell--disabled">
-                    <input
-                      id="edit-profile-modal-email-password"
-                      v-model="emailPassword"
-                      name="edit_profile_email_password"
-                      :type="showEmailPassword ? 'text' : 'password'"
-                      class="profile-form__pwd-input"
-                      disabled
-                      placeholder="********"
-                      autocomplete="off"
-                    />
-                    <button
-                      type="button"
-                      class="profile-form__pwd-toggle"
-                      disabled
+                    <input id="edit-profile-modal-email-password" v-model="emailPassword"
+                      name="edit_profile_email_password" :type="showEmailPassword ? 'text' : 'password'"
+                      class="profile-form__pwd-input" disabled placeholder="********" autocomplete="off" />
+                    <button type="button" class="profile-form__pwd-toggle" disabled
                       :aria-label="showEmailPassword ? 'Ocultar senha' : 'Mostrar senha'"
-                      @click="showEmailPassword = !showEmailPassword"
-                    >
-                      <i
-                        :class="showEmailPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"
-                        aria-hidden="true"
-                      />
+                      @click="showEmailPassword = !showEmailPassword">
+                      <i :class="showEmailPassword ? 'bi bi-eye-slash' : 'bi bi-eye'" aria-hidden="true" />
                     </button>
                   </div>
                   <p class="profile-form__pwd-hint profile-form__pwd-hint--right">
@@ -785,16 +885,9 @@ function handleCancel() {
                     </span>
                   </div>
                   <div class="profile-form__pwd-input-shell profile-form__pwd-input-shell--disabled">
-                    <input
-                      id="edit-profile-modal-new-email"
-                      v-model="newEmail"
-                      name="edit_profile_new_email"
-                      type="email"
-                      class="profile-form__pwd-input"
-                      disabled
-                      placeholder="exemplo@email.com"
-                      autocomplete="off"
-                    />
+                    <input id="edit-profile-modal-new-email" v-model="newEmail" name="edit_profile_new_email"
+                      type="email" class="profile-form__pwd-input" disabled placeholder="exemplo@email.com"
+                      autocomplete="off" />
                   </div>
                   <p class="profile-form__pwd-hint">
                     Enviaremos um codigo de confirmacao, por isso prefira um e-mail com facil acesso.
@@ -804,19 +897,13 @@ function handleCancel() {
             </div>
 
             <div class="profile-form__password-modal-footer">
-              <button
-                type="button"
-                class="profile-form__pwd-btn profile-form__pwd-btn--secondary"
-                @click="closeEmailModal"
-              >
+              <button type="button" class="profile-form__pwd-btn profile-form__pwd-btn--secondary"
+                @click="closeEmailModal">
                 Cancelar
               </button>
-              <button
-                type="button"
-                class="profile-form__pwd-btn profile-form__pwd-btn--primary profile-form__pwd-btn--email"
-                disabled
-                @click="handleEmailChange"
-              >
+              <button type="button"
+                class="profile-form__pwd-btn profile-form__pwd-btn--primary profile-form__pwd-btn--email" disabled
+                @click="handleEmailChange">
                 Alterar e-mail
               </button>
             </div>
@@ -831,180 +918,116 @@ function handleCancel() {
     </div>
     <!-- Modal fora do <form> (Teleport) para o browser não tratar como login / autofill agressivo -->
     <Teleport to="body">
-    <transition name="fade-modal">
-      <div
-        v-if="showPasswordModal"
-        class="profile-form__password-modal"
-        @click.self="closePasswordModal"
-      >
-        <div
-          class="profile-form__password-modal-panel"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="password-modal-title"
-          @click.stop
-        >
-          <div class="profile-form__password-modal-column">
-            <div class="profile-form__password-modal-header">
-              <p id="password-modal-title" class="profile-form__password-modal-title">
-                Alterar senha
-              </p>
-            </div>
-
-            <div class="profile-form__password-modal-body">
-              <!-- Senha atual -->
-              <div class="profile-form__pwd-field">
-                <div class="profile-form__pwd-label-row">
-                  <label class="profile-form__pwd-label" for="edit-profile-modal-current-password">
-                    Senha atual
-                  </label>
-                  <span class="profile-form__pwd-help" aria-hidden="true">
-                    <i class="bi bi-question-circle-fill" />
-                  </span>
-                </div>
-                <div class="profile-form__pwd-input-shell profile-form__pwd-input-shell--disabled">
-                  <input
-                    id="edit-profile-modal-current-password"
-                    v-model="currentPassword"
-                    name="edit_profile_current_password"
-                    :type="showCurrentPassword ? 'text' : 'password'"
-                    class="profile-form__pwd-input"
-                    disabled
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    spellcheck="false"
-                    data-lpignore="true"
-                    data-1p-ignore
-                  />
-                  <button
-                    type="button"
-                    class="profile-form__pwd-toggle"
-                    :aria-label="showCurrentPassword ? 'Ocultar senha' : 'Mostrar senha'"
-                    @click="showCurrentPassword = !showCurrentPassword"
-                  >
-                    <i
-                      :class="showCurrentPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"
-                      aria-hidden="true"
-                    />
-                  </button>
-                </div>
-                <div class="profile-form__pwd-extra">
-                  <button
-                    type="button"
-                    class="profile-form__pwd-forgot"
-                    @click="goForgotPassword"
-                  >
-                    Esqueci minha senha
-                  </button>
-                </div>
+      <transition name="fade-modal">
+        <div v-if="showPasswordModal" class="profile-form__password-modal" @click.self="closePasswordModal">
+          <div class="profile-form__password-modal-panel" role="dialog" aria-modal="true"
+            aria-labelledby="password-modal-title" @click.stop>
+            <div class="profile-form__password-modal-column">
+              <div class="profile-form__password-modal-header">
+                <p id="password-modal-title" class="profile-form__password-modal-title">
+                  Alterar senha
+                </p>
               </div>
 
-              <!-- Nova senha -->
-              <div class="profile-form__pwd-field-group">
+              <div class="profile-form__password-modal-body">
+                <!-- Senha atual -->
                 <div class="profile-form__pwd-field">
                   <div class="profile-form__pwd-label-row">
-                    <label class="profile-form__pwd-label" for="edit-profile-modal-new-password">
-                      Nova senha
+                    <label class="profile-form__pwd-label" for="edit-profile-modal-current-password">
+                      Senha atual
                     </label>
                     <span class="profile-form__pwd-help" aria-hidden="true">
                       <i class="bi bi-question-circle-fill" />
                     </span>
                   </div>
-                  <div class="profile-form__pwd-input-shell">
-                    <input
-                      id="edit-profile-modal-new-password"
-                      v-model="newPassword"
-                      name="edit_profile_new_password"
-                      :type="showNewPassword ? 'text' : 'password'"
-                      class="profile-form__pwd-input"
-                      autocomplete="new-password"
-                    />
-                    <button
-                      type="button"
-                      class="profile-form__pwd-toggle"
-                      :aria-label="showNewPassword ? 'Ocultar senha' : 'Mostrar senha'"
-                      @click="showNewPassword = !showNewPassword"
-                    >
-                      <i
-                        :class="showNewPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"
-                        aria-hidden="true"
-                      />
+                  <div class="profile-form__pwd-input-shell profile-form__pwd-input-shell--disabled">
+                    <input id="edit-profile-modal-current-password" v-model="currentPassword"
+                      name="edit_profile_current_password" :type="showCurrentPassword ? 'text' : 'password'"
+                      class="profile-form__pwd-input" disabled autocomplete="off" autocorrect="off" autocapitalize="off"
+                      spellcheck="false" data-lpignore="true" data-1p-ignore />
+                    <button type="button" class="profile-form__pwd-toggle"
+                      :aria-label="showCurrentPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                      @click="showCurrentPassword = !showCurrentPassword">
+                      <i :class="showCurrentPassword ? 'bi bi-eye-slash' : 'bi bi-eye'" aria-hidden="true" />
                     </button>
                   </div>
-                  <p class="profile-form__pwd-hint">
-                    Sua senha deve conter pelo menos 8 dígitos com letras e números.
-                  </p>
+                  <div class="profile-form__pwd-extra">
+                    <button type="button" class="profile-form__pwd-forgot" @click="goForgotPassword">
+                      Esqueci minha senha
+                    </button>
+                  </div>
                 </div>
 
-                <div class="profile-form__pwd-field">
-                  <div class="profile-form__pwd-label-row">
-                    <label
-                      class="profile-form__pwd-label"
-                      for="edit-profile-modal-password-confirmation"
-                    >
-                      Confirmação nova senha
-                    </label>
-                    <span class="profile-form__pwd-help" aria-hidden="true">
-                      <i class="bi bi-question-circle-fill" />
-                    </span>
+                <!-- Nova senha -->
+                <div class="profile-form__pwd-field-group">
+                  <div class="profile-form__pwd-field">
+                    <div class="profile-form__pwd-label-row">
+                      <label class="profile-form__pwd-label" for="edit-profile-modal-new-password">
+                        Nova senha
+                      </label>
+                      <span class="profile-form__pwd-help" aria-hidden="true">
+                        <i class="bi bi-question-circle-fill" />
+                      </span>
+                    </div>
+                    <div class="profile-form__pwd-input-shell">
+                      <input id="edit-profile-modal-new-password" v-model="newPassword" name="edit_profile_new_password"
+                        :type="showNewPassword ? 'text' : 'password'" class="profile-form__pwd-input"
+                        autocomplete="new-password" />
+                      <button type="button" class="profile-form__pwd-toggle"
+                        :aria-label="showNewPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                        @click="showNewPassword = !showNewPassword">
+                        <i :class="showNewPassword ? 'bi bi-eye-slash' : 'bi bi-eye'" aria-hidden="true" />
+                      </button>
+                    </div>
+                    <p class="profile-form__pwd-hint">
+                      Sua senha deve conter pelo menos 8 dígitos com letras e números.
+                    </p>
                   </div>
-                  <div class="profile-form__pwd-input-shell">
-                    <input
-                      id="edit-profile-modal-password-confirmation"
-                      v-model="passwordConfirmation"
-                      name="edit_profile_new_password_confirm"
-                      :type="showPasswordConfirmation ? 'text' : 'password'"
-                      class="profile-form__pwd-input"
-                      autocomplete="new-password"
-                    />
-                    <button
-                      type="button"
-                      class="profile-form__pwd-toggle"
-                      :aria-label="
-                        showPasswordConfirmation ? 'Ocultar senha' : 'Mostrar senha'
-                      "
-                      @click="
+
+                  <div class="profile-form__pwd-field">
+                    <div class="profile-form__pwd-label-row">
+                      <label class="profile-form__pwd-label" for="edit-profile-modal-password-confirmation">
+                        Confirmação nova senha
+                      </label>
+                      <span class="profile-form__pwd-help" aria-hidden="true">
+                        <i class="bi bi-question-circle-fill" />
+                      </span>
+                    </div>
+                    <div class="profile-form__pwd-input-shell">
+                      <input id="edit-profile-modal-password-confirmation" v-model="passwordConfirmation"
+                        name="edit_profile_new_password_confirm" :type="showPasswordConfirmation ? 'text' : 'password'"
+                        class="profile-form__pwd-input" autocomplete="new-password" />
+                      <button type="button" class="profile-form__pwd-toggle" :aria-label="showPasswordConfirmation ? 'Ocultar senha' : 'Mostrar senha'
+                        " @click="
                         showPasswordConfirmation = !showPasswordConfirmation
-                      "
-                    >
-                      <i
-                        :class="
-                          showPasswordConfirmation
+                        ">
+                        <i :class="showPasswordConfirmation
                             ? 'bi bi-eye-slash'
                             : 'bi bi-eye'
-                        "
-                        aria-hidden="true"
-                      />
-                    </button>
+                          " aria-hidden="true" />
+                      </button>
+                    </div>
+                    <p class="profile-form__pwd-hint">
+                      Este campo deve ser idêntico ao anterior.
+                    </p>
                   </div>
-                  <p class="profile-form__pwd-hint">
-                    Este campo deve ser idêntico ao anterior.
-                  </p>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div class="profile-form__password-modal-footer">
-            <button
-              type="button"
-              class="profile-form__pwd-btn profile-form__pwd-btn--secondary"
-              @click="closePasswordModal"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              class="profile-form__pwd-btn profile-form__pwd-btn--primary"
-              @click="handlePasswordChange"
-            >
-              Alterar senha
-            </button>
+            <div class="profile-form__password-modal-footer">
+              <button type="button" class="profile-form__pwd-btn profile-form__pwd-btn--secondary"
+                @click="closePasswordModal">
+                Cancelar
+              </button>
+              <button type="button" class="profile-form__pwd-btn profile-form__pwd-btn--primary"
+                @click="handlePasswordChange">
+                Alterar senha
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </transition>
+      </transition>
     </Teleport>
     <!-- Botão de log out -->
     <div class="profile-form__account-button mb-5">
@@ -1621,16 +1644,20 @@ $breakpoint-md: 768px;
         line-height: 1.2;
       }
 
-      &__pwd-btn--secondary { order: 1; }
-      &__pwd-btn--primary { order: 2; }
+      &__pwd-btn--secondary {
+        order: 1;
+      }
+
+      &__pwd-btn--primary {
+        order: 2;
+      }
     }
 
-    
+
 
   }
 
 
-    
-}
 
+}
 </style>
