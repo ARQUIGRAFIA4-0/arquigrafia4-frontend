@@ -20,7 +20,23 @@ export const useAlbumsStore = defineStore("albums", () => {
             );
         }
     }
-    
 
-    return { createAlbum };
+    async function getUserAlbums(authHeader, userId) {
+        try {
+            const response = await axios.get(`/api/users/${userId}/albums`, {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: authHeader,
+                },
+            });
+            return response.data;
+        }
+        catch (error) {
+            throw new Error(
+                error?.response?.data?.message || "Não foi possível buscar os álbuns."
+            );
+        }
+    }
+
+    return { createAlbum, getUserAlbums };
 })
