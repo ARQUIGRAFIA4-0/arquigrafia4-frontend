@@ -1,7 +1,11 @@
 <template>
-  <AppHeader />
-  <RouterView />
-  <AppFooter v-if="shouldShowFooter" />
+  <div class="default-layout">
+    <AppHeader />
+    <main class="default-layout__main">
+      <RouterView />
+    </main>
+    <AppFooter v-if="shouldShowFooter" />
+  </div>
 </template>
 
 <script setup>
@@ -22,3 +26,15 @@ const shouldShowFooter = computed(() => {
   return resolveViewOptionByRoute(route.params.viewMode).showFooter;
 });
 </script>
+
+<style scoped>
+.default-layout {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.default-layout__main {
+  flex: 1 0 auto;
+}
+</style>
