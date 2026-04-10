@@ -7,6 +7,7 @@ const route = useRoute();
 const router = useRouter();
 const store = useAuthStore();
 const isLoggedIn = computed(() => store.isLoggedIn);
+const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 
 const options = [
   { label: "Explore", path: "/explore", routeName: "explore" },
@@ -30,7 +31,10 @@ const handleLogout = async () => {
       <!-- Profile Dropdown -->
       <div class="dropdown">
         <span class="profile px-1" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-          <i class="bi bi-person-square" :style="{ color: isLoggedIn ? 'var(--Laranja_E)' : 'var(--Cinza_M)' }"></i>
+          <img v-if="store.loggedUser?.avatar_path" :src="`${API_BASE_URL}/storage/${store.loggedUser.avatar_path}`"
+            alt="Foto de perfil" />
+          <i v-else class="bi bi-person-square"
+            :style="{ color: isLoggedIn ? 'var(--Laranja_E)' : 'var(--Cinza_M)' }"></i>
         </span>
         <ul class="dropdown-menu dropdown-menu-end">
           <template v-if="isLoggedIn">
@@ -133,6 +137,12 @@ $breakpoint-md: 768px;
     padding-left: 50px;
     padding-right: 50px;
   }
+}
+
+.profile img {
+  width: 20px;
+  height: 20px;
+  border-radius: 2px;
 }
 
 .icons-column {

@@ -9,6 +9,8 @@ const props = defineProps({
   isOwnProfile: { type: Boolean, default: false }
 });
 
+const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
+
 const showFullProfile = ref(false);
 
 const isLoading = computed(() => {
@@ -69,7 +71,10 @@ function checkSocials(socials) {
     <template v-else>
       <div class="profile-card__header">
         <div class="profile-card__image">
-          <img :src="currentProfileData?.data?.profile_image || profileImageDefault" alt="Foto de perfil" />
+          <!-- <img :src="currentProfileData?.data?.profile_image || profileImageDefault" alt="Foto de perfil" /> -->
+          <img :src="props.userData.avatar_path
+            ? `${API_BASE_URL}/storage/${props.userData.avatar_path}`
+            : profileImageDefault" alt="Foto de perfil" />
         </div>
         <div class="profile-card__title">
           <h2>{{ userData?.name }}</h2>
@@ -79,98 +84,98 @@ function checkSocials(socials) {
           </div>
         </div>
       </div>
-    <div v-if="showFullProfile" class="profile-card__content">
-      <div v-if="currentProfileData?.data?.bio" class="profile-card__bio">
-        <h3>Bio</h3>
-        <p>{{ currentProfileData.data.bio }}</p>
-      </div>
-      <div v-if="getColumns(['gender', 'birthdate', 'race']) > 0"
-        :class="getColumns(['gender', 'birthdate', 'race']) === 3 ? 'row row-cols-3' : 'row row-cols-2'">
-        <div v-if="currentProfileData?.data?.gender" class="col">
-          <h3>Gênero</h3>
-          <p>{{ currentProfileData.data.gender }}</p>
+      <div v-if="showFullProfile" class="profile-card__content">
+        <div v-if="currentProfileData?.data?.bio" class="profile-card__bio">
+          <h3>Bio</h3>
+          <p>{{ currentProfileData.data.bio }}</p>
         </div>
-        <div v-if="currentProfileData?.data?.birthdate" class="col">
-          <h3>Idade</h3>
-          <p>{{ getAge(currentProfileData.data.birthdate) }} anos</p>
-        </div>
-        <div v-if="currentProfileData?.data?.race" class="col">
-          <h3>Raça</h3>
-          <p>{{ currentProfileData.data.race }}</p>
-        </div>
-      </div>
-      <div v-if="getColumns(['profession', 'scholarity']) > 0" class="row row-cols-2">
-        <div v-if="currentProfileData?.data?.profession" class="col">
-          <h3>Profissão</h3>
-          <p>{{ currentProfileData.data.profession }}</p>
-        </div>
-        <div v-if="currentProfileData?.data?.scholarity" class="col">
-          <h3>Escolaridade</h3>
-          <p>{{ currentProfileData.data.scholarity }}</p>
-        </div>
-      </div>
-      <div v-if="checkSocials(currentProfileData?.data?.socials)" class="profile-card__socials">
-        <h3>Redes</h3>
-        <div class="profile-card__socials-icons">
-          <div v-if="currentProfileData?.data?.socials.lattes">
-            <a :href="currentProfileData.data.socials.lattes" target="_blank" rel="noopener noreferrer">
-              <img src="@/assets/logo_lattes.svg" alt="Lattes" />
-            </a>
+        <div v-if="getColumns(['gender', 'birthdate', 'race']) > 0"
+          :class="getColumns(['gender', 'birthdate', 'race']) === 3 ? 'row row-cols-3' : 'row row-cols-2'">
+          <div v-if="currentProfileData?.data?.gender" class="col">
+            <h3>Gênero</h3>
+            <p>{{ currentProfileData.data.gender }}</p>
           </div>
-          <div v-if="currentProfileData?.data?.socials.orcid">
-            <a :href="currentProfileData.data.socials.orcid" target="_blank" rel="noopener noreferrer">
-              <img src="@/assets/logo_orcid.svg" alt="Orcid" />
-            </a>
+          <div v-if="currentProfileData?.data?.birthdate" class="col">
+            <h3>Idade</h3>
+            <p>{{ getAge(currentProfileData.data.birthdate) }} anos</p>
           </div>
-          <div v-if="currentProfileData?.data?.socials.facebook">
-            <a :href="currentProfileData.data.socials.facebook" target="_blank" rel="noopener noreferrer">
-              <img src="@/assets/logo_facebook.svg" alt="Facebook" />
-            </a>
-          </div>
-          <div v-if="currentProfileData?.data?.socials.instagram">
-            <a :href="currentProfileData.data.socials.instagram" target="_blank" rel="noopener noreferrer">
-              <img src="@/assets/logo_instagram.svg" alt="Instagram" />
-            </a>
-          </div>
-          <div v-if="currentProfileData?.data?.socials.linkedin">
-            <a :href="currentProfileData.data.socials.linkedin" target="_blank" rel="noopener noreferrer">
-              <img src="@/assets/logo_linkedin.svg" alt="LinkedIn" />
-            </a>
-          </div>
-          <div v-if="currentProfileData?.data?.socials.whatsapp">
-            <a :href="`https://wa.me/${currentProfileData.data.socials.whatsapp}`" target="_blank"
-              rel="noopener noreferrer">
-              <img src="@/assets/logo_whatsapp.svg" alt="WhatsApp" />
-            </a>
-          </div>
-          <div v-if="currentProfileData?.data?.socials.x">
-            <a :href="currentProfileData.data.socials.x" target="_blank" rel="noopener noreferrer">
-              <img src="@/assets/logo_x.svg" alt="X" />
-            </a>
+          <div v-if="currentProfileData?.data?.race" class="col">
+            <h3>Raça</h3>
+            <p>{{ currentProfileData.data.race }}</p>
           </div>
         </div>
+        <div v-if="getColumns(['profession', 'scholarity']) > 0" class="row row-cols-2">
+          <div v-if="currentProfileData?.data?.profession" class="col">
+            <h3>Profissão</h3>
+            <p>{{ currentProfileData.data.profession }}</p>
+          </div>
+          <div v-if="currentProfileData?.data?.scholarity" class="col">
+            <h3>Escolaridade</h3>
+            <p>{{ currentProfileData.data.scholarity }}</p>
+          </div>
+        </div>
+        <div v-if="checkSocials(currentProfileData?.data?.socials)" class="profile-card__socials">
+          <h3>Redes</h3>
+          <div class="profile-card__socials-icons">
+            <div v-if="currentProfileData?.data?.socials.lattes">
+              <a :href="currentProfileData.data.socials.lattes" target="_blank" rel="noopener noreferrer">
+                <img src="@/assets/logo_lattes.svg" alt="Lattes" />
+              </a>
+            </div>
+            <div v-if="currentProfileData?.data?.socials.orcid">
+              <a :href="currentProfileData.data.socials.orcid" target="_blank" rel="noopener noreferrer">
+                <img src="@/assets/logo_orcid.svg" alt="Orcid" />
+              </a>
+            </div>
+            <div v-if="currentProfileData?.data?.socials.facebook">
+              <a :href="currentProfileData.data.socials.facebook" target="_blank" rel="noopener noreferrer">
+                <img src="@/assets/logo_facebook.svg" alt="Facebook" />
+              </a>
+            </div>
+            <div v-if="currentProfileData?.data?.socials.instagram">
+              <a :href="currentProfileData.data.socials.instagram" target="_blank" rel="noopener noreferrer">
+                <img src="@/assets/logo_instagram.svg" alt="Instagram" />
+              </a>
+            </div>
+            <div v-if="currentProfileData?.data?.socials.linkedin">
+              <a :href="currentProfileData.data.socials.linkedin" target="_blank" rel="noopener noreferrer">
+                <img src="@/assets/logo_linkedin.svg" alt="LinkedIn" />
+              </a>
+            </div>
+            <div v-if="currentProfileData?.data?.socials.whatsapp">
+              <a :href="`https://wa.me/${currentProfileData.data.socials.whatsapp}`" target="_blank"
+                rel="noopener noreferrer">
+                <img src="@/assets/logo_whatsapp.svg" alt="WhatsApp" />
+              </a>
+            </div>
+            <div v-if="currentProfileData?.data?.socials.x">
+              <a :href="currentProfileData.data.socials.x" target="_blank" rel="noopener noreferrer">
+                <img src="@/assets/logo_x.svg" alt="X" />
+              </a>
+            </div>
+          </div>
+        </div>
+        <div v-if="currentProfileData?.data?.subjects.length > 0" class="profile-card__interests">
+          <h3>Interesses</h3>
+          <ul class="profile-card__interests-list">
+            <li v-for="(subject, index) in currentProfileData.data.subjects" :key="subject.id"
+              class="btn btn-outline-secondary btn-sm btn-tag d-inline-flex align-items-center">
+              {{ subject.term }}
+            </li>
+          </ul>
+        </div>
+        <div v-if="props.isOwnProfile" class="profile-card__toggle-profile-visibility">
+          <a :href="`/profile/${userData?.id}`" target="_blank" class="btn btn-secondary btn-sm btn-icon">
+            <i class="bi bi-eye" /> Ver perfil público
+          </a>
+        </div>
       </div>
-      <div v-if="currentProfileData?.data?.subjects.length > 0" class="profile-card__interests">
-        <h3>Interesses</h3>
-        <ul class="profile-card__interests-list">
-          <li v-for="(subject, index) in currentProfileData.data.subjects" :key="subject.id"
-            class="btn btn-outline-secondary btn-sm btn-tag d-inline-flex align-items-center">
-            {{ subject.term }}
-          </li>
-        </ul>
+      <div class="profile-card__chevron-icon" v-if="isMobile">
+        <i :class="[
+          showFullProfile ? 'bi bi-chevron-compact-up' : 'bi bi-chevron-compact-down',
+          'chevron-icon'
+        ]" @click="showFullProfile = !showFullProfile" aria-label="Mostrar mais"></i>
       </div>
-      <div v-if="props.isOwnProfile" class="profile-card__toggle-profile-visibility">
-        <a :href="`/profile/${userData?.id}`" target="_blank" class="btn btn-secondary btn-sm btn-icon">
-          <i class="bi bi-eye" /> Ver perfil público
-        </a>
-      </div>
-    </div>
-    <div class="profile-card__chevron-icon" v-if="isMobile">
-      <i :class="[
-        showFullProfile ? 'bi bi-chevron-compact-up' : 'bi bi-chevron-compact-down',
-        'chevron-icon'
-      ]" @click="showFullProfile = !showFullProfile" aria-label="Mostrar mais"></i>
-    </div>
     </template>
   </div>
 </template>
@@ -387,10 +392,10 @@ $breakpoint-md: 768px;
     height: 100%;
     background: linear-gradient(
       90deg,
-      #f0f0f0 25%,
-      #e0e0e0 50%,
-      #f0f0f0 75%
-    );
+        #f0f0f0 25%,
+        #e0e0e0 50%,
+        #f0f0f0 75%
+      );
     background-size: 200% 100%;
     animation: loading 1.5s infinite;
     border-radius: 10px;
@@ -401,10 +406,10 @@ $breakpoint-md: 768px;
     width: 150px;
     background: linear-gradient(
       90deg,
-      #f0f0f0 25%,
-      #e0e0e0 50%,
-      #f0f0f0 75%
-    );
+        #f0f0f0 25%,
+        #e0e0e0 50%,
+        #f0f0f0 75%
+      );
     background-size: 200% 100%;
     animation: loading 1.5s infinite;
     border-radius: 4px;
@@ -420,10 +425,10 @@ $breakpoint-md: 768px;
     width: 120px;
     background: linear-gradient(
       90deg,
-      #f0f0f0 25%,
-      #e0e0e0 50%,
-      #f0f0f0 75%
-    );
+        #f0f0f0 25%,
+        #e0e0e0 50%,
+        #f0f0f0 75%
+      );
     background-size: 200% 100%;
     animation: loading 1.5s infinite;
     border-radius: 4px;
