@@ -76,11 +76,7 @@
 
 <template>
   <section class="profile-collections">
-    <div v-if="isLoadingAlbums" class="profile-collections__state">
-      Carregando coleções...
-    </div>
-
-    <div v-else-if="albumsError" class="profile-collections__state profile-collections__state--error">
+    <div v-if="albumsError" class="profile-collections__state profile-collections__state--error">
       {{ albumsError }}
     </div>
 
