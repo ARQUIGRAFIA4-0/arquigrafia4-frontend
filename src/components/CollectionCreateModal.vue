@@ -15,12 +15,14 @@
     const showCollectionToast = ref(false);
     const collectionToastMessage = ref("");
     const collectionToastType = ref("success");
+    const createdCollectionName = ref("");
     let collectionToastTimeout = null;
 
     // Função para abrir o toast de criação de coleção
-    function openCollectionToast(message, type = "success") {
+    function openCollectionToast(message, type = "success", collectionName = "") {
       collectionToastMessage.value = message;
       collectionToastType.value = type;
+      createdCollectionName.value = collectionName;
       showCollectionToast.value = true;
 
       if (collectionToastTimeout) {
@@ -74,7 +76,7 @@
         const createdAlbum = await albumsStore.createAlbum(userAuthHeader.value, payload);
         close();
         emit("created", createdAlbum);
-        openCollectionToast("Coleção criada com sucesso!");
+        openCollectionToast("", "success", createdAlbum?.title || title);
 
       } catch (error) {
         openCollectionToast(error.message || "Erro ao criar coleção.", "error");
@@ -194,10 +196,16 @@
       >
         <i
           class="bi"
-          :class="collectionToastType === 'error' ? 'bi-exclamation-circle' : 'bi-check2-circle'"
+          :class="collectionToastType === 'error' ? 'bi-exclamation-circle' : 'bi-check-all'"
           aria-hidden="true"
         />
-        <span>{{ collectionToastMessage }}</span>
+        <span v-if="collectionToastType === 'success'" class="collection-modal__toast-text">
+          Você criou a Coleção
+          <span class="collection-modal__toast-collection-name">
+            {{ createdCollectionName || collectionTitle.trim() }}
+          </span>
+        </span>
+        <span v-else class="collection-modal__toast-text">{{ collectionToastMessage }}</span>
       </div>
     </transition>
 
@@ -241,21 +249,34 @@
   display: inline-flex;
   align-items: center;
   gap: 16px;
-  width: 350px;
+  width: auto;
+  max-width: calc(100vw - 24px);
   box-sizing: border-box;
   padding: 12px 12px 12px 16px;
   border-radius: 4px;
-  background: var(--cinza_e, #2f2f2f);
+  background: #356407;
   color: var(--branco, #fff);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.collection-modal__toast .bi {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.collection-modal__toast-text {
   font-family: "DM Sans", sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 1.5;
 }
 
-.collection-modal__toast .bi {
-  font-size: 16px;
-  line-height: 1;
+.collection-modal__toast-collection-name {
+  font-style: italic;
 }
 
 .collection-modal__toast--error {
@@ -288,7 +309,7 @@
 .collection-modal__panel {
   display: flex;
   width: 600px;
-  max-width: calc(100vw - 32px);
+  max-width: calc(100dvh - 32px);
   box-sizing: border-box;
   padding: 0 16px;
   flex-direction: column;

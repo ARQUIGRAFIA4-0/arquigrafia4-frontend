@@ -22,6 +22,7 @@ export const useAlbumsStore = defineStore("albums", () => {
     }
 
     async function getUserAlbums(authHeader, userId) {
+        console.log("getUserAlbums", authHeader, userId);
         try {
             const response = await axios.get(`/api/users/${userId}/albums`, {
                 headers: {
