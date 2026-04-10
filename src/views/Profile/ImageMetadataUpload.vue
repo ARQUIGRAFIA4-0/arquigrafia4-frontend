@@ -1014,9 +1014,12 @@ const canCreateSubject = computed(() => {
 // Contributor names state
 const allContributorNames = ref([]);
 
-// Fetch subjects and contributor names from API on component mount
+// Fetch fresh user data, subjects, and contributor names on mount
 onMounted(async () => {
   try {
+    // Refresh user data so collectives are up-to-date
+    await authStore.getLoggedUser();
+
     // Fetch subjects
     const subjectsResponse = await vracStore.getVRACSubjects();
     if (subjectsResponse?.data && Array.isArray(subjectsResponse.data)) {
