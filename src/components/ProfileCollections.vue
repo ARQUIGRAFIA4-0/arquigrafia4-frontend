@@ -25,6 +25,7 @@
 
   // Função para buscar as coleções do usuário
   async function fetchAlbums(options = {}) {
+    // options: { silent: true } para buscar as coleções sem atualizar o estado. Evita piscar a tela.
     const { silent = false } = options;
     const userId = props.userData?.id ?? null;
     if (!userId) {
@@ -39,7 +40,6 @@
       albumsError.value = "";
       const response = await albumsStore.getUserAlbums(userAuthHeader.value, userId);
       albums.value = response
-      console.log(albums.value);
     } catch (error) {
       albumsError.value = error?.message || "Não foi possível carregar as coleções.";
       albums.value = [];
@@ -51,6 +51,17 @@
 
     }
 
+  }
+
+  // Função para excluir uma coleção
+  async function handleDeleteAlbum(albumId) {
+    try {
+      const deletedAlbum = await albumsStore.deleteAlbum(userAuthHeader.value, albumId);
+      albums.value = albums.value.filter(album => album.id !== albumId); // remove o álbum deletado da lista, controle de estado.
+      openCollectionToast("Coleção excluída com sucesso!", "success", deletedAlbum?.title);
+    } catch (error) {
+      openCollectionToast(error.message || "Erro ao excluir coleção.", "error");
+    }
   }
 
   // Carrega as coleções quando o componente é montado
@@ -80,6 +91,9 @@
       @open-create="showCreateModal = true"
     />
 
+    <!-- Lista de coleções -->
+    <!-- Se a lista de coleções não estiver vazia, exibe as coleções -->
+    <!-- transition-group é usado para animar a lista de coleções sem reload completo da página e sem controle individual do estado de cada elemento. Simplifica-->
     <transition-group
       v-else
       name="album-card"
@@ -113,14 +127,15 @@
             <button
               type="button"
               class="profile-collections__album-btn profile-collections__album-btn--secondary"
-              @click.stop
+              @click="handleDeleteAlbum(album.id)"
             >
               Excluir
             </button>
             <button
               type="button"
-              class="profile-collections__album-btn profile-collections__album-btn--primary"
+              class="profile-collections__album-btn profile-collections__album-btn--primary profile-collections__album-btn--disabled"
               @click.stop
+              disabled
             >
               Editar
             </button>
@@ -282,6 +297,11 @@
   min-height: 63px;
 }
 
+.profile-collections__album-btn--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 767px) {
 
   .profile-collections__album-actions {
@@ -313,6 +333,7 @@
   }
 }
 
+/* Animação da lista de coleções */
 .album-card-enter-active,
 .album-card-leave-active {
   transition: opacity 0.3s ease, transform 0.3s ease;
