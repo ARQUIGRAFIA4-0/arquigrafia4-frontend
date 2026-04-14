@@ -23,14 +23,6 @@
   const isLoadingAlbums = ref(false);
   const albumsError = ref(null);
 
-  function normalizeAlbumsResponse(raw) {
-    // cobre formatos comuns: [] | { data: [] } | { albums: [] }
-    if (Array.isArray(raw)) return raw;
-    if (Array.isArray(raw?.data)) return raw.data;
-    if (Array.isArray(raw?.albums)) return raw.albums;
-    return [];
-  }
-
   // Função para buscar as coleções do usuário
   async function fetchAlbums(options = {}) {
     const { silent = false } = options;
@@ -46,7 +38,7 @@
       }
       albumsError.value = "";
       const response = await albumsStore.getUserAlbums(userAuthHeader.value, userId);
-      albums.value = normalizeAlbumsResponse(response);
+      albums.value = response
       console.log(albums.value);
     } catch (error) {
       albumsError.value = error?.message || "Não foi possível carregar as coleções.";
@@ -113,9 +105,27 @@
             :alt="album.title || 'Capa da coleção'"
           />
         </div>
-        <h3 class="profile-collections__album-title">
-          {{ album.title || "Sem título" }}
-        </h3>
+        <div class="profile-collections__album-content">
+          <h3 class="profile-collections__album-title">
+            {{ album.title || "Sem título" }}
+          </h3>
+          <div class="profile-collections__album-actions">
+            <button
+              type="button"
+              class="profile-collections__album-btn profile-collections__album-btn--secondary"
+              @click.stop
+            >
+              Excluir
+            </button>
+            <button
+              type="button"
+              class="profile-collections__album-btn profile-collections__album-btn--primary"
+              @click.stop
+            >
+              Editar
+            </button>
+          </div>          
+        </div>
       </article>
     </transition-group>
 
@@ -157,18 +167,91 @@
 .profile-collections__album-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   width: 220px;
+  height: 334px;
+  padding-bottom: 8px;
+  box-sizing: border-box;
+  background: transparent;
+  border-radius: 4px;
+  border: none;
+  transition: background-color 0.25s ease;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.profile-collections__album-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 8px 0;
+  box-sizing: border-box;
+  flex: 1;
+}
+
+.profile-collections__album-card:hover,
+.profile-collections__album-card:focus-within {
+  background: #fff;
+}
+
+.profile-collections__album-card:hover .profile-collections__album-thumb,
+.profile-collections__album-card:focus-within .profile-collections__album-thumb {
+  height: 200px;
+}
+
+.profile-collections__album-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    max-height 0.25s ease;
+}
+
+.profile-collections__album-card:hover .profile-collections__album-actions,
+.profile-collections__album-card:focus-within .profile-collections__album-actions {
+  opacity: 1;
+  max-height: 40px;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.profile-collections__album-btn {
+  flex: 1 0 0;
+  min-height: 30px;
+  padding: 2px 14px;
+  border-radius: 5px;
+  border: 1px solid #2f2f2f;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.profile-collections__album-btn--secondary {
+  background: #faf9f9;
+  color: #2f2f2f;
+}
+.profile-collections__album-btn--primary {
+  background: #2f2f2f;
+  color: #fff;
 }
 
 .profile-collections__album-thumb {
   width: 220px;
   height: 220px;
-  border: 0.3px solid #636262;
   border-radius: 4px;
   overflow: hidden;
   background: #c3de11;
   box-shadow: 1px 1px 3px 0 rgba(0, 0, 0, 0.1);
+  transition: height 0.25s ease;
 }
 
 .profile-collections__album-thumb img {
@@ -185,9 +268,30 @@
   font-weight: 700;
   line-height: 1;
   color: #000;
+  min-height: 63px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  line-clamp: 3;
+  text-overflow: ellipsis;
+}
+
+.profile-collections__album-card:hover .profile-collections__album-title,
+.profile-collections__album-card:focus-within .profile-collections__album-title {
+  min-height: 63px;
 }
 
 @media (max-width: 767px) {
+
+  .profile-collections__album-actions {
+    display: none;
+  }
+  .profile-collections__album-thumb {
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
   .profile-collections__grid {
     grid-template-columns: repeat(2, minmax(150px, 1fr));
     gap: 12px;
