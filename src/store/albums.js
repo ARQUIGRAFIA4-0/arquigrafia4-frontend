@@ -22,7 +22,6 @@ export const useAlbumsStore = defineStore("albums", () => {
     }
 
     async function getUserAlbums(authHeader, userId) {
-        console.log("getUserAlbums", authHeader, userId);
         try {
             const response = await axios.get(`/api/users/${userId}/albums`, {
                 headers: {
@@ -39,5 +38,22 @@ export const useAlbumsStore = defineStore("albums", () => {
         }
     }
 
-    return { createAlbum, getUserAlbums };
+    async function deleteAlbum(authHeader, albumId) {
+        try {
+            const response = await axios.delete(`/api/albums/${albumId}`, {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: authHeader,
+                },
+            });
+            return response.data;
+        }
+        catch (error) {
+            throw new Error(
+                error?.response?.data?.message || "Não foi possível excluir o álbum."
+            );
+        }
+    }
+
+    return { createAlbum, getUserAlbums, deleteAlbum };
 })

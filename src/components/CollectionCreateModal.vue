@@ -1,109 +1,111 @@
 <script setup>
-    import { ref, computed, watch, onUnmounted } from "vue";
-    import { useAuthStore } from "@/store/auth";
-    import { useAlbumsStore } from "@/store/albums";
+  import { ref, computed, watch, onUnmounted } from "vue";
+  import { useAuthStore } from "@/store/auth";
+  import { useAlbumsStore } from "@/store/albums";
 
-    const authStore = useAuthStore();
-    const albumsStore = useAlbumsStore();
-    const userAuthHeader = computed(() => authStore.authHeader);
+  const authStore = useAuthStore();
+  const albumsStore = useAlbumsStore();
+  const userAuthHeader = computed(() => authStore.authHeader);
 
-    // Campos de criação de coleção
-    const collectionTitle = ref("");
-    const collectionDescription = ref("");
-    const isSubmittingCollection = ref(false);
-    // Toast de criação de coleção
-    const showCollectionToast = ref(false);
-    const collectionToastMessage = ref("");
-    const collectionToastType = ref("success");
-    const createdCollectionName = ref("");
-    let collectionToastTimeout = null;
+  // Campos de criação de coleção
+  const collectionTitle = ref("");
+  const collectionDescription = ref("");
+  const isSubmittingCollection = ref(false);
 
-    // Função para abrir o toast de criação de coleção
-    function openCollectionToast(message, type = "success", collectionName = "") {
-      collectionToastMessage.value = message;
-      collectionToastType.value = type;
-      createdCollectionName.value = collectionName;
-      showCollectionToast.value = true;
+  // Toast de criação de coleção
+  const showCollectionToast = ref(false);
+  const collectionToastMessage = ref("");
+  const collectionToastType = ref("success");
+  const createdCollectionName = ref("");
+  let collectionToastTimeout = null;
 
-      if (collectionToastTimeout) {
-        clearTimeout(collectionToastTimeout);
-      }
+  // Função para abrir o toast de criação de coleção
+  function openCollectionToast(message, type = "success", collectionName = "") {
+    collectionToastMessage.value = message;
+    collectionToastType.value = type;
+    createdCollectionName.value = collectionName;
+    showCollectionToast.value = true;
 
-      collectionToastTimeout = setTimeout(() => {
-        showCollectionToast.value = false;
-        collectionToastTimeout = null;
-      }, 2200);
+    if (collectionToastTimeout) {
+      clearTimeout(collectionToastTimeout);
     }
 
-    // Props
-    const props = defineProps({
-        modelValue: { type: Boolean, default: false },
-        userData: { type: Object, default: null },
-    });
+    collectionToastTimeout = setTimeout(() => {
+      showCollectionToast.value = false;
+      collectionToastTimeout = null;
+    }, 2200);
+  }
 
-    const emit = defineEmits(["update:modelValue", "created"]);
+  // Props
+  const props = defineProps({
+      modelValue: { type: Boolean, default: false },
+      userData: { type: Object, default: null },
+  });
 
-    // Fechar modal de criação de coleção
-    function close() {
-        emit("update:modelValue", false);
+  const emit = defineEmits(["update:modelValue"]);
+
+  // Fechar modal de criação de coleção
+  function close() {
+    emit("update:modelValue", false);
+  }
+
+  // Prosseguir com a criação da coleção
+  async function handleProceedWithCollection() {
+    if (isSubmittingCollection.value) return;
+    
+    // Validar se o usuário está autenticado
+    const userId = props.userData?.id ?? null;
+    if (!userId) {
+      openCollectionToast("Usuário não identificado.", "error");
+      return;
     }
 
-    // Prosseguir com a criação da coleção
-    async function handleProceedWithCollection() {
-      if (isSubmittingCollection.value) return;
-      
-      // Validar se o usuário está autenticado
-      const userId = props.userData?.id ?? null;
-      if (!userId) {
-        openCollectionToast("Usuário não identificado.", "error");
-        return;
-      }
+    // Validar se o título está preenchido
+    const title = collectionTitle.value.trim();
+    const description = collectionDescription.value.trim();
+    if (!title) {
+      openCollectionToast("Preencha o título.", "error");
+      return;
+    }
 
-      // Validar se o título está preenchido
-      const title = collectionTitle.value.trim();
-      const description = collectionDescription.value.trim();
-      if (!title) {
-        openCollectionToast("Preencha o título.", "error");
-        return;
-      }
+    // Criar o payload para o envio ao backend
+    const payload = { title, description };
 
-      // Criar o payload para o envio ao backend
-      const payload = { title, description };
+    try {
+      isSubmittingCollection.value = true;
+      // envio efetivo ao backend
+      const createdAlbum = await albumsStore.createAlbum(userAuthHeader.value, payload);
+      close();
+      // Emitir evento de criação de coleção
+      emit("created", createdAlbum);
+      openCollectionToast("", "success", createdAlbum?.title || title);
 
-      try {
-        isSubmittingCollection.value = true;
-        // envio efetivo ao backend
-        const createdAlbum = await albumsStore.createAlbum(userAuthHeader.value, payload);
-        close();
-        emit("created", createdAlbum);
-        openCollectionToast("", "success", createdAlbum?.title || title);
+    } catch (error) {
+      openCollectionToast(error.message || "Erro ao criar coleção.", "error");
 
-      } catch (error) {
-        openCollectionToast(error.message || "Erro ao criar coleção.", "error");
-
-      } finally {
-        isSubmittingCollection.value = false;
-
-      }
+    } finally {
+      isSubmittingCollection.value = false;
 
     }
 
-    onUnmounted(() => {
-      if (collectionToastTimeout) {
-        clearTimeout(collectionToastTimeout);
-      }
-    });
+  }
 
-    // Resetar campos quando o modal abrir
-    watch(
-        () => props.modelValue,
-        (open) => {
-            if (open) {
-                collectionTitle.value = "";
-                collectionDescription.value = "";
-            }
-        }
-    );    
+  onUnmounted(() => {
+    if (collectionToastTimeout) {
+      clearTimeout(collectionToastTimeout);
+    }
+  });
+
+  // Resetar campos quando o modal abrir
+  watch(
+      () => props.modelValue,
+      (open) => {
+          if (open) {
+              collectionTitle.value = "";
+              collectionDescription.value = "";
+          }
+      }
+  );    
 
 </script>
 
