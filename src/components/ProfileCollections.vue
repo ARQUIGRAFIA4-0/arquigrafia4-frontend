@@ -4,6 +4,7 @@
   import { useAlbumsStore } from "@/store/albums";
   import UploadColectionBox from "@/components/UploadColectionBox.vue";
   import albumDefaultImage from "@/assets/album-default.png";
+  import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
 
   import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
 
@@ -22,6 +23,27 @@
   const albums = ref([]);
   const isLoadingAlbums = ref(false);
   const albumsError = ref(null);
+
+  const showTutorialModal = ref(false);
+
+  // Acesso aos dados do álbum selecionado
+  async function fetchAlbumData(albumId) {
+    try {
+      const albumData = await albumsStore.getDataAlbumByAlbumId(
+        userAuthHeader.value,
+        albumId
+      );
+
+      if (albumData.images.length === 0) {
+        showTutorialModal.value = true;
+        return;
+      }
+
+    } catch (e) {
+      console.error(e);
+      albumsError.value = e?.message || "Não foi possível carregar os dados do álbum.";
+    }
+  }
 
   // Função para buscar as coleções do usuário
   async function fetchAlbums(options = {}) {
@@ -112,6 +134,7 @@
         v-for="album in albums"
         :key="album.id"
         class="profile-collections__album-card"
+        @click="fetchAlbumData(album.id)"
       >
         <div class="profile-collections__album-thumb">
           <img
@@ -127,7 +150,7 @@
             <button
               type="button"
               class="profile-collections__album-btn profile-collections__album-btn--secondary"
-              @click="handleDeleteAlbum(album.id)"
+              @click.stop="handleDeleteAlbum(album.id)"
             >
               Excluir
             </button>
@@ -149,6 +172,9 @@
       :user-data="props.userData"
       @created="fetchAlbums({ silent: true })"
     />
+
+    <TutorialModalCollections v-model="showTutorialModal" />
+
   </section>
 </template>
 
