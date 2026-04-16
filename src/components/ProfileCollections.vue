@@ -124,6 +124,7 @@
     >
       <UploadColectionBox
         key="create-album-card"
+        class="profile-collections__create-strip"
         :is-current-user="props.isCurrentUser"
         :user-data="props.userData"
         variant="compact"
@@ -201,7 +202,7 @@
   grid-template-columns: repeat(auto-fill, 220px);
   column-gap: 18px;
   row-gap: 16px;
-  align-items: start;
+  align-items: stretch;
   justify-content: flex-start;
 }
 
@@ -211,6 +212,7 @@
   gap: 0;
   width: 220px;
   height: 334px;
+  min-height: 0;
   padding-bottom: 8px;
   box-sizing: border-box;
   background: transparent;
@@ -328,11 +330,34 @@
   cursor: not-allowed;
 }
 
+@media (hover: none) and (pointer: coarse) {
+  .profile-collections__album-actions {
+    display: flex;
+    opacity: 1;
+    max-height: none;
+    transform: none;
+    pointer-events: auto;
+    overflow: visible;
+    padding-top: 4px;
+  }
+}
+
 @media (max-width: 767px) {
 
   .profile-collections__album-actions {
-    display: none;
+    display: flex;
+    opacity: 1;
+    max-height: none;
+    transform: none;
+    pointer-events: auto;
+    overflow: visible;
+    padding-top: 4px;
   }
+
+  .profile-collections__album-content {
+    justify-content: space-between;
+  }
+
   .profile-collections__album-thumb {
     height: auto;
     aspect-ratio: 1 / 1;
@@ -343,8 +368,17 @@
     gap: 12px;
   }
 
+  /* faixa “Criar coleção” largura total acima do grid de álbuns na versão mobile*/
+  .profile-collections__grid > :deep(.profile-collections__create-strip) {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: 100%;
+  }
+
   .profile-collections__album-card {
     width: 100%;
+    height: 100%;
+    min-height: 0;
   }
 
   .profile-collections__album-thumb {
