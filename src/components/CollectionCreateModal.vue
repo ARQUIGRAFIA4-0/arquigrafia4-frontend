@@ -162,7 +162,7 @@
                     id="collection-description"
                     v-model="collectionDescription"
                     class="collection-modal__textarea"
-                    rows="5"
+                    rows="6"
                     placeholder="Descreva a nova coleção"
                     />
                 </div>
@@ -590,12 +590,14 @@
     font-size: 12px;
   }
 
+  /* Campo de descrição: área de texto confortável no touch (evita height 26px de uma linha) */
   .collection-modal__textarea {
-    min-height: 26px;
-    height: 26px;
-    padding: 6px 10px;
-    font-size: 12px;
-    resize: none;
+    min-height: 200px;
+    height: auto;
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
   }
 
   .collection-modal__input::placeholder,
@@ -619,6 +621,7 @@
     align-self: stretch;
     box-sizing: border-box;
     background: var(--off_white, #faf9f9);
+    padding-inline: 16px;
   }
 
   .collection-modal__btn {

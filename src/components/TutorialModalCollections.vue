@@ -54,6 +54,16 @@ onUnmounted(() => {
         aria-labelledby="tutorial-collections-modal-title"
       >
         <div class="tutorial-collections-modal__column">
+          <div class="tutorial-collections-modal__close-row">
+            <button
+              type="button"
+              class="tutorial-collections-modal__close-btn"
+              aria-label="Fechar tutorial da coleção"
+              @click="close"
+            >
+              <i class="bi bi-x-circle-fill" aria-hidden="true" />
+            </button>
+          </div>
           <div class="tutorial-collections-modal__header">
             <h2 id="tutorial-collections-modal-title" class="tutorial-collections-modal__title">
               Sua coleção não tem imagens!
@@ -192,6 +202,31 @@ onUnmounted(() => {
   width: 100%;
   padding: 0 24px;
   box-sizing: border-box;
+}
+
+.tutorial-collections-modal__close-row {
+  width: 100%;
+  display: none;
+  justify-content: flex-end;
+  padding-top: 20px;
+}
+
+.tutorial-collections-modal__close-btn {
+  width: 24px;
+  height: 24px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #2f2f2f;
+  padding: 0;
+  cursor: pointer;
+}
+
+.tutorial-collections-modal__close-btn .bi {
+  font-size: 24px;
+  line-height: 1;
 }
 
 .tutorial-collections-modal__header {
@@ -368,10 +403,16 @@ onUnmounted(() => {
 }
 
 @media (max-width: 767px) {
+
+  .tutorial-collections-modal__image-actions-menu {
+    width: 80%;
+  }
+
   .tutorial-collections-modal__backdrop {
     padding: 0;
     align-items: stretch;
     justify-content: stretch;
+    background: rgba(0, 0, 0, 0.1);
   }
 
   .tutorial-collections-modal__panel {
@@ -380,10 +421,11 @@ onUnmounted(() => {
     height: 100dvh;
     margin: 0;
     border-radius: 0;
-    padding: 0 12px;
+    padding: 0;
     display: grid;
     grid-template-rows: auto 1fr auto;
-    gap: 12px;
+    gap: 0;
+    overflow: hidden;
   }
 
   .tutorial-collections-modal__column {
@@ -391,20 +433,29 @@ onUnmounted(() => {
     min-height: 0;
     display: flex;
     flex-direction: column;
-    padding: 0 16px;
+    padding: 0 32px;
+  }
+
+  .tutorial-collections-modal__close-row {
+    display: flex;
+    padding-top: 20px;
+  }
+
+  .tutorial-collections-modal__close-btn {
+    display: inline-flex;
   }
 
   .tutorial-collections-modal__body {
     flex: 1 1 auto;
     min-height: 0;
-    padding: 0;
+    padding: 0 0 24px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    gap: 16px;
+    gap: 46px;
   }
 
   .tutorial-collections-modal__header {
-    padding-top: 20px;
+    padding-top: 24px;
     padding-bottom: 12px;
   }
 
@@ -425,19 +476,22 @@ onUnmounted(() => {
   .tutorial-collections-modal__footer {
     grid-row: 3;
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+    flex-direction: row;
+    gap: 16px;
+    padding: 8px 8px calc(32px + env(safe-area-inset-bottom));
     align-self: stretch;
+    box-sizing: border-box;
+    background: var(--Off_white, #faf9f9);
+    padding-inline: 16px;
   }
 
   .tutorial-collections-modal__btn {
-    width: 100%;
-    flex: 0 0 auto;
-    min-height: 32px;
-    height: 32px;
-    padding: 2px 12px;
-    line-height: 1.2;
+    width: auto;
+    flex: 1 0 0;
+    min-height: 30px;
+    height: 30px;
+    padding: 2px 14px;
+    line-height: 1.5;
   }
 
   .tutorial-collections-modal__btn--secondary {
