@@ -1,88 +1,18 @@
-<template>
-  <div class="image-display-wrapper">
-    <div class="image-container">
-      <div
-        v-if="props.loading"
-        class="loading-overlay d-flex align-items-center justify-content-center"
-      >
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-      </div>
-      <img
-        v-if="props.image"
-        :src="props.image.imageUrl"
-        :alt="props.image.title"
-        class="image-display"
-        @load="emit('load')"
-      />
-    </div>
-    <div v-if="props.image" class="image-actions-menu">
-      <button
-        type="button"
-        class="menu-button"
-        aria-label="Baixar imagem"
-        @click="showDownloadModal = true"
-      >
-        <i class="bi bi-cloud-download-fill" aria-hidden="true"></i>
-      </button>
-      <button
-        type="button"
-        class="menu-button"
-        aria-label="Compartilhar"
-        @click="showShareModal = true"
-      >
-        <i class="bi bi-share-fill" aria-hidden="true"></i>
-      </button>
-      <button
-        type="button"
-        class="menu-button"
-        aria-label="Abrir manifesto IIIF"
-        @click="openIiifManifest"
-      >
-        <img src="@/assets/logo_iiif.svg" alt="IIIF logo" class="iiif-svg-icon" width="18" height="16" draggable="false" />
-      </button>
-      <button
-        type="button"
-        class="menu-button"
-        aria-label="Reportar problema"
-        @click="showReportModal = true"
-      >
-        <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
-      </button>
-      <button type="button" class="menu-button" aria-label="Modo tela cheia">
-        <i class="bi bi-arrows-fullscreen"></i>
-      </button>
-    </div>
-
-    <Teleport to="body">
-      <DownloadModal
-        v-model="showDownloadModal"
-        :image="props.image"
-        :license-info="licenseInfo"
-        @confirm="handleDownloadConfirm"
-      />
-
-      <ShareModal
-        v-model="showShareModal"
-        :image="props.image"
-        @confirm="handleShareConfirm"
-      />
-
-      <ReportModal
-        v-model="showReportModal"
-        :image="props.image"
-        @submit="handleReportSubmit"
-      />
-    </Teleport>
-  </div>
-</template>
-
 <script setup>
 import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
+import { useAuthStore } from "@/store/auth";
+import { useAlbumsStore } from "@/store/albums";
 import DownloadModal from "./DownloadModal.vue";
 import ReportModal from "./ReportModal.vue";
 import ShareModal from "./ShareModal.vue";
+import AlbumPickerModal from "./AlbumPickerModal.vue";
+
+const router = useRouter();
+const authStore = useAuthStore();
+const albumsStore = useAlbumsStore();
+const { isLoggedIn, authHeader, loggedUser } = storeToRefs(authStore);
 
 const props = defineProps({
   image: {
@@ -137,7 +67,153 @@ const handleReportSubmit = (payload) => {
 function openIiifManifest() {
   window.open(`https://api-dev.arquigrafia.org.br/iiif/${props.image.id}/manifest`, "_blank");
 }
+
+/**
+ * Start: Adicionar imagem a coleção
+ */
+const showAlbumPicker = ref(false);
+const loadedAlbums = ref([]);
+
+// Função para buscar os álbuns do usuário
+async function loadMyAlbums() {
+  const userId = loggedUser.value?.id;
+  if (!isLoggedIn.value || !userId) {
+    console.warn("Sem usuário logado ou sem id:", { isLoggedIn: isLoggedIn.value, loggedUser: loggedUser.value });
+    return;
+  }
+
+  try {
+    const response = await albumsStore.getUserAlbums(authHeader.value, userId);
+    const list = Array.isArray(response) ? response : response?.data ?? [];
+    console.log("list", list);
+    loadedAlbums.value = list;
+    showAlbumPicker.value = true;
+
+  } catch (e) {
+    console.error("Erro ao buscar álbuns:", e);
+    showAlbumPicker.value = false;
+
+  }
+
+}
+
+function onAlbumPickerAddCollection() {
+  showAlbumPicker.value = false;
+  router.push({ name: "my-profile" });
+}
+
+function onAlbumPickerConfirmAdd() {
+  // TODO: associar imagem à coleção escolhida (API) quando houver seleção no modal
+}
+
+/**
+ * End: Adicionar imagem a coleção
+ */
+
 </script>
+
+<template>
+  <div class="image-display-wrapper">
+    <div class="image-container">
+      <div
+        v-if="props.loading"
+        class="loading-overlay d-flex align-items-center justify-content-center"
+      >
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+      <img
+        v-if="props.image"
+        :src="props.image.imageUrl"
+        :alt="props.image.title"
+        class="image-display"
+        @load="emit('load')"
+      />
+    </div>
+    <div v-if="props.image" class="image-actions-menu">
+      <button
+        type="button"
+        class="menu-button"
+        aria-label="Baixar imagem"
+        @click="showDownloadModal = true"
+      >
+        <i class="bi bi-cloud-download-fill" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
+        class="menu-button"
+        aria-label="Adicionar aos favoritos"
+      >
+        <i class="bi bi-heart" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        class="menu-button"
+        aria-label="Adicionar a coleção"
+        @click="loadMyAlbums"
+      >
+        <i class="bi bi-images" aria-hidden="true" />
+      </button>      
+      <button
+        type="button"
+        class="menu-button"
+        aria-label="Compartilhar"
+        @click="showShareModal = true"
+      >
+        <i class="bi bi-share-fill" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
+        class="menu-button"
+        aria-label="Abrir manifesto IIIF"
+        @click="openIiifManifest"
+      >
+        <img src="@/assets/logo_iiif.svg" alt="IIIF logo" class="iiif-svg-icon" width="18" height="16" draggable="false" />
+      </button>
+      <button
+        type="button"
+        class="menu-button"
+        aria-label="Reportar problema"
+        @click="showReportModal = true"
+      >
+        <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="menu-button" aria-label="Modo tela cheia">
+        <i class="bi bi-arrows-fullscreen"></i>
+      </button>
+    </div>
+
+    <Teleport to="body">
+      <DownloadModal
+        v-model="showDownloadModal"
+        :image="props.image"
+        :license-info="licenseInfo"
+        @confirm="handleDownloadConfirm"
+      />
+
+      <ShareModal
+        v-model="showShareModal"
+        :image="props.image"
+        @confirm="handleShareConfirm"
+      />
+
+      <ReportModal
+        v-model="showReportModal"
+        :image="props.image"
+        @submit="handleReportSubmit"
+      />
+
+      <AlbumPickerModal
+        v-model="showAlbumPicker"
+        :albums="loadedAlbums"
+        @add-collection="onAlbumPickerAddCollection"
+        @confirm-add="onAlbumPickerConfirmAdd"
+      />
+    </Teleport>
+
+  </div>
+</template>
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
