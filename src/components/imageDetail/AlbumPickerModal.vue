@@ -188,28 +188,55 @@ function onConfirmAdd() {
 
 .album-picker__list {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   column-gap: 16px;
   row-gap: 12px;
   width: 100%;
   padding: 12px 0;
+
+  max-height: 290px;   // ajuste se quiser mais/menos área visível
+  overflow-y: auto;
+  overflow-x: hidden;  // remove a barra de baixo
+}
+
+/* Firefox */
+.album-picker__list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 98, 98, 0.45) transparent;
+}
+
+/* Chrome/Edge/Safari */
+.album-picker__list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.album-picker__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.album-picker__list::-webkit-scrollbar-thumb {
+  background: rgba(99, 98, 98, 0.45);
+  border-radius: 999px;
+}
+
+.album-picker__list::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 98, 98, 0.65);
 }
 
 .album-picker__cell {
-
   display: flex;
-  width: 244px;
-  padding: var(--ppp, 4px) var(--ppp, 4px) 4px var(--ppp, 4px);
+  width: 100%;
+  min-width: 0;        // importante para não estourar no grid
+  padding: 4px;
   align-items: center;
-  align-content: center;
   gap: 16px;
-  flex-wrap: wrap;
   border: none;
   background: none;
   cursor: pointer;
   text-align: left;
   font: inherit;
   border-bottom: 0.5px solid #cecece;
+  flex-wrap: nowrap;
 }
 
 .album-picker__cell--action:hover,
@@ -269,6 +296,7 @@ function onConfirmAdd() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
   color: #000;
   font-family: "DM Sans";
   font-size: 14px;
