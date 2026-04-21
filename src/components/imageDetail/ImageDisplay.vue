@@ -8,6 +8,7 @@ import DownloadModal from "./DownloadModal.vue";
 import ReportModal from "./ReportModal.vue";
 import ShareModal from "./ShareModal.vue";
 import AlbumPickerModal from "./AlbumPickerModal.vue";
+import CollectionCreateModal from "../CollectionCreateModal.vue";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -127,6 +128,28 @@ async function onAlbumPickerConfirmAdd({albumId}) {
  * End: Adicionar imagem a coleção
  */
 
+/**
+  * Start: Criar coleção
+  */
+const showCollectionCreateModal = ref(false);
+
+function onCollectionCreateModalOpen() {
+  showCollectionCreateModal.value = true;
+}
+
+// Após criar coleção, buscar os álbuns do usuário
+async function onCollectionCreated(createdAlbum) {
+  // fecha modal de criação (nome correto da ref)
+  showCollectionCreateModal.value = false;
+
+  // recarrega coleções do usuário
+  await loadMyAlbums();
+
+  // mantém/abre o picker de coleção
+  showAlbumPicker.value = true;
+
+}
+
 </script>
 
 <template>
@@ -224,8 +247,14 @@ async function onAlbumPickerConfirmAdd({albumId}) {
       <AlbumPickerModal
         v-model="showAlbumPicker"
         :albums="loadedAlbums"
-        @add-collection="onAlbumPickerAddCollection"
+        @open-create-collection="onCollectionCreateModalOpen"
         @confirm-add="onAlbumPickerConfirmAdd"
+      />
+
+      <CollectionCreateModal
+        v-model="showCollectionCreateModal"
+        :user-data="loggedUser"
+        @created="onCollectionCreated"
       />
     </Teleport>
 

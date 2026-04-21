@@ -15,7 +15,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   "update:modelValue",
-  "add-collection",
+  "open-create-collection",
   "confirm-add",
 ]);
 
@@ -25,7 +25,7 @@ function close() {
 
 // Criar coleção
 function onAddCollection() {
-  console.log("Criar coleção")
+  emit("open-create-collection");
 }
  
 /**
