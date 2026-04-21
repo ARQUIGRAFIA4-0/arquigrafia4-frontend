@@ -1,4 +1,5 @@
 <script setup>
+import { ref, watch } from "vue";
 import defaultCover from "@/assets/album-default.png";
 
 // Options
@@ -26,11 +27,36 @@ function close() {
 function onAddCollection() {
   console.log("Criar coleção")
 }
+ 
+/**
+ * Start: Selecionar álbum para inserir imagem
+ */
+const selectedAlbumId = ref(null);
 
-// Confirmar adicionar
-function onConfirmAdd() {
-  console.log('confirmar adicionar')
+// Selecionar álbum para inserir imagem
+function selectAlbum(albumId) {
+  selectedAlbumId.value = albumId;
 }
+
+// Confirmar adicionar imagem ao álbum
+function onConfirmAdd() {
+  if (!selectedAlbumId.value) return;
+
+  emit("confirm-add", {
+    albumId: selectedAlbumId.value,
+  });
+
+  emit("update:modelValue", false);
+}
+
+// sempre que abrir modal, resetar seleção
+watch(
+  () => props.modelValue,
+  (isOpen) => {
+    if (isOpen) selectedAlbumId.value = null;
+  }
+);
+
 </script>
 
 <template>
@@ -77,11 +103,13 @@ function onConfirmAdd() {
               <span class="album-picker__label">Criar coleção</span>
             </button>
             <button
-              v-for="album in albums"
-              :key="album.id"
-              type="button"
-              class="album-picker__cell album-picker__cell--action"
-            >
+                v-for="album in albums"
+                :key="album.id"
+                type="button"
+                class="album-picker__cell album-picker__cell--action"
+                :class="{ 'album-picker__cell--selected': selectedAlbumId === album.id }"
+                @click="selectAlbum(album.id)"
+              >
               <div class="album-picker__thumb">
                 <img :src="defaultCover" :alt="album.title" />
               </div>
@@ -101,6 +129,7 @@ function onConfirmAdd() {
           <button
             type="button"
             class="album-picker__btn album-picker__btn--add"
+            :disabled="!selectedAlbumId"
             @click="onConfirmAdd"
           >
             Adicionar
@@ -353,5 +382,23 @@ function onConfirmAdd() {
   .album-picker__list {
     grid-template-columns: 1fr;
   }
+}
+
+.album-picker__cell--selected {
+  border-bottom: 0;
+  background: var(--Laranja_M);
+}
+
+.album-picker__cell--selected .album-picker__label {
+  color: var(--Branco, #fff);
+}
+
+.album-picker__cell--selected .album-picker__thumb img {
+  border: 2px solid var(--Branco, #fff);
+}
+
+.album-picker__btn--add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

@@ -102,8 +102,25 @@ function onAlbumPickerAddCollection() {
   router.push({ name: "my-profile" });
 }
 
-function onAlbumPickerConfirmAdd() {
-  // TODO: associar imagem à coleção escolhida (API) quando houver seleção no modal
+// Confirmar adicionar imagem ao álbum
+async function onAlbumPickerConfirmAdd({albumId}) {
+  if (!albumId || !props.image?.id) return;
+
+  try {
+
+    await albumsStore.addImageToAlbum(
+      authHeader.value,
+      albumId,
+      props.image.id
+    );
+
+    // opcional: toast/sucesso
+    console.log("Imagem adicionada com sucesso ao álbum:", albumId);
+
+  } catch (error) {
+    console.error("Erro ao adicionar imagem ao álbum:", error);
+
+  }
 }
 
 /**
