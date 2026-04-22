@@ -2,15 +2,7 @@
   <div class="comment-item">
 
     <!-- Modal de confirmação de exclusão -->
-    <div v-if="showDeleteModal" class="comment-item__modal-overlay" @click.self="cancelDelete">
-      <div class="comment-item__modal">
-        <p class="comment-item__modal-text">Tem certeza que deseja remover este comentário?</p>
-        <div class="comment-item__modal-actions">
-          <button class="btn btn-link btn-sm" @click="cancelDelete">Cancelar</button>
-          <button class="btn btn-danger btn-sm" @click="confirmDelete">Remover</button>
-        </div>
-      </div>
-    </div>
+    <CommentDeleteModal v-if="showDeleteModal" @cancel="cancelDelete" @confirm="confirmDelete" />
 
     <div class="comment-item__layout">
       <img :src="avatarUrl" :alt="`Foto de ${comment.user.name}`" class="comment-item__avatar" />
@@ -28,35 +20,9 @@
             <span v-if="comment.is_edited" class="comment-item__edited">(editado)</span>
           </small>
 
-          <div class="comment-item__actions">
-            <button class="comment-item__action-btn comment-item__action-btn--like"
-              :class="{ 'comment-item__action-btn--liked': localComment.liked_by_me }" @click="handleLike">
-              <i class="bi bi-heart-fill"></i>
-              <span>{{ localComment.likes_count }}</span>
-            </button>
-
-            <!-- Responder — só aparece se não for já uma reply -->
-            <button v-if="!comment.parent_id && isLoggedIn"
-              class="comment-item__action-btn comment-item__action-btn--reply" @click="toggleReplyForm">
-              <i class="bi bi-reply"></i>
-            </button>
-
-            <button v-if="isOwner && !comment.is_deleted"
-              class="comment-item__action-btn comment-item__action-btn--delete" @click="showDeleteModal = true">
-              <i class="bi bi-trash"></i>
-            </button>
-
-            <!-- Botão de edição -->
-            <button v-if="isOwner && !comment.is_deleted"
-              class="comment-item__action-btn comment-item__action-btn--edit" @click="toggleEditForm">
-              <i class="bi bi-pencil"></i>
-            </button>
-
-            <!-- <button class="comment-item__action-btn comment-item__action-btn--report"
-              @click="$emit('report', comment.id)">
-              <i class="bi bi-exclamation-circle"></i>
-            </button> -->
-          </div>
+          <CommentActions :liked="localComment.liked_by_me" :likes-count="localComment.likes_count"
+            :show-reply="!comment.parent_id && isLoggedIn" :show-owner-actions="isOwner && !comment.is_deleted"
+            @like="handleLike" @reply="toggleReplyForm" @edit="toggleEditForm" @delete="showDeleteModal = true" />
         </div>
 
         <!-- Form de resposta inline -->
@@ -92,8 +58,8 @@
         <!-- Replies -->
         <div v-if="visibleReplies.length" class="comment-item__replies">
           <!-- Preview de replies que vieram no index (limit 3) -->
-          <CommentItem v-for="reply in visibleReplies" :key="reply.id" :comment="reply"
-            @delete="$emit('delete', $event)" @report="$emit('report', $event)" />
+          <CommentItem v-for="reply in visibleReplies" :key="reply.id" :comment="reply" @delete="handleReplyDelete"
+            @report="$emit('report', $event)" />
 
           <!-- Carregar mais replies -->
           <button v-if="hasMoreReplies" class="comment-item__load-replies" :disabled="loadingReplies"
@@ -103,8 +69,8 @@
         </div>
 
         <!-- Botão inicial para abrir replies -->
-        <button v-if="comment.replies_count > 0" class="comment-item__load-replies" @click="toggleReplies">
-          {{ visibleReplies.length ? 'Ocultar respostas' : `Ver ${comment.replies_count} respostas` }}
+        <button v-if="localComment.replies_count > 0" class="comment-item__load-replies" @click="toggleReplies">
+          {{ visibleReplies.length ? 'Ocultar respostas' : `Ver ${localComment.replies_count} respostas` }}
         </button>
       </div>
     </div>
@@ -116,6 +82,8 @@ import { ref, computed, watch } from 'vue'
 import { useAuthStore } from '@/store/auth'
 import { useCommentStore } from '@/store/commentStore'
 import profileImageDefault from '@/assets/profile_image.png'
+import CommentActions from './CommentActions.vue'
+import CommentDeleteModal from './CommentDeleteModal.vue'
 
 const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL
 
@@ -150,9 +118,14 @@ function cancelDelete() {
   showDeleteModal.value = false
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   showDeleteModal.value = false
-  emit('delete', props.comment.id)
+  try {
+    await commentStore.deleteComment(authHeader.value, props.comment.id)
+    emit('delete', props.comment.id) // avisa o pai para remover da lista dele
+  } catch (err) {
+    console.error(err)
+  }
 }
 
 // toggle de exibição das replies
@@ -245,6 +218,7 @@ async function submitReply() {
     )
     // adiciona a nova reply na lista local
     visibleReplies.value.unshift(data.data)
+    localComment.value.replies_count = (localComment.value.replies_count || 0) + 1
     cancelReply()
   } catch (err) {
     console.error(err)
@@ -272,6 +246,15 @@ async function loadMoreReplies() {
     console.error(err)
   } finally {
     loadingReplies.value = false
+  }
+}
+
+// tratando o delete das replies
+function handleReplyDelete(replyId) {
+  const index = visibleReplies.value.findIndex(r => r.id === replyId)
+  if (index !== -1) {
+    visibleReplies.value.splice(index, 1)
+    localComment.value.replies_count = Math.max(0, localComment.value.replies_count - 1)
   }
 }
 
@@ -349,84 +332,6 @@ async function handleLike() {
   &__actions {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-  }
-
-  &__action-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    background: none;
-    border: none;
-    padding: 0.25rem;
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: color 0.15s ease;
-    color: var(--Cinza_M);
-
-    &--edit {
-      &:hover {
-        color: var(--Cinza_E);
-      }
-    }
-
-    &--like {
-
-      &:hover,
-      &.comment-item__action-btn--liked {
-        color: var(--Laranja_E, #ff7f00);
-      }
-    }
-
-    &--reply {
-      &:hover {
-        color: var(--Cinza_E);
-      }
-    }
-
-    &--delete {
-      &:hover {
-        color: var(--bs-danger);
-      }
-    }
-
-    &--report {
-      &:hover {
-        color: var(--Cinza_E);
-      }
-    }
-  }
-
-  // ── modal de confirmação de exclusão ──────────────────────────────────────
-  &__modal-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  &__modal {
-    background: #fff;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    width: 90%;
-    max-width: 360px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  }
-
-  &__modal-text {
-    font-size: 0.95rem;
-    color: var(--Cinza_E);
-    margin-bottom: 1.25rem;
-    text-align: center;
-  }
-
-  &__modal-actions {
-    display: flex;
-    justify-content: flex-end;
     gap: 0.5rem;
   }
 

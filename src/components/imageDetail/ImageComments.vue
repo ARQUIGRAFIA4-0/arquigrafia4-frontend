@@ -67,20 +67,13 @@ async function handleSubmit(content) {
 }
 
 async function handleDelete(commentId) {
-  try {
-    await commentStore.deleteComment(authHeader.value, commentId)
-    const index = comments.value.findIndex(c => c.id === commentId)
-    if (index !== -1) {
-      // se tiver replies, marca como removido localmente
-      if (comments.value[index].replies?.length) {
-        comments.value[index].is_deleted = true
-        comments.value[index].content = null
-      } else {
-        comments.value.splice(index, 1)
-      }
+  const index = comments.value.findIndex(c => c.id === commentId)
+  if (index !== -1) {
+    if (comments.value[index].replies_count > 0) {
+      comments.value[index].is_deleted = true
+    } else {
+      comments.value.splice(index, 1)
     }
-  } catch (err) {
-    error.value = err.message
   }
 }
 
