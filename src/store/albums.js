@@ -78,6 +78,7 @@ export const useAlbumsStore = defineStore("albums", () => {
 
     // Adicionar imagem ao álbum
     async function addImageToAlbum(authHeader, albumId, imageIds) {
+        console.log("addImageToAlbum", authHeader, albumId, imageIds);
         try {
             // aceita string única ou array de strings
             const ids = Array.isArray(imageIds) ? imageIds : [imageIds];

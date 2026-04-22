@@ -11,6 +11,7 @@ defineOptions({
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   albums: { type: Array, default: () => [] },
+  preselectedAlbumIds: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits([
@@ -31,19 +32,26 @@ function onAddCollection() {
 /**
  * Start: Selecionar álbum para inserir imagem
  */
-const selectedAlbumId = ref(null);
+const selectedAlbumIds = ref([]);
 
-// Selecionar álbum para inserir imagem
-function selectAlbum(albumId) {
-  selectedAlbumId.value = albumId;
+// Selecionar/desselecionar álbum
+function toggleAlbum(albumId) {
+
+  if (selectedAlbumIds.value.includes(albumId)) {  // se já está selecionado, desseleciona
+    selectedAlbumIds.value = selectedAlbumIds.value.filter((id) => id !== albumId);
+    return;
+  }
+
+  selectedAlbumIds.value = [...selectedAlbumIds.value, albumId]; // se não está selecionado, seleciona
+
 }
 
 // Confirmar adicionar imagem ao álbum
 function onConfirmAdd() {
-  if (!selectedAlbumId.value) return;
+  if (!selectedAlbumIds.value.length) return;
 
   emit("confirm-add", {
-    albumId: selectedAlbumId.value,
+    albumIds: selectedAlbumIds.value,
   });
 
   emit("update:modelValue", false);
@@ -53,8 +61,13 @@ function onConfirmAdd() {
 watch(
   () => props.modelValue,
   (isOpen) => {
-    if (isOpen) selectedAlbumId.value = null;
+    if (!isOpen) return;
+
+    // pré-seleciona álbuns em que a imagem já está
+    selectedAlbumIds.value = [...(props.preselectedAlbumIds || [])];
+
   }
+
 );
 
 </script>
@@ -107,8 +120,8 @@ watch(
                 :key="album.id"
                 type="button"
                 class="album-picker__cell album-picker__cell--action"
-                :class="{ 'album-picker__cell--selected': selectedAlbumId === album.id }"
-                @click="selectAlbum(album.id)"
+                :class="{ 'album-picker__cell--selected': selectedAlbumIds.includes(album.id) }"
+                @click="toggleAlbum(album.id)"
               >
               <div class="album-picker__thumb">
                 <img :src="defaultCover" :alt="album.title" />
@@ -129,7 +142,7 @@ watch(
           <button
             type="button"
             class="album-picker__btn album-picker__btn--add"
-            :disabled="!selectedAlbumId"
+            :disabled="!selectedAlbumIds.length"
             @click="onConfirmAdd"
           >
             Adicionar
@@ -192,21 +205,6 @@ watch(
   line-height: 1;
 }
 
-.album-picker__close .bi {
-  width: 24px;
-  height: 24px;
-}
-
-.album-picker__subtitle {
-  margin: 0;
-  padding: 0 16px 8px;
-  font-family: "DM Sans", sans-serif;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--Cinza_M, #636262);
-  line-height: 1.4;
-}
-
 .album-picker__body {
   display: flex;
   padding: 0 32px;
@@ -222,19 +220,14 @@ watch(
   row-gap: 12px;
   width: 100%;
   padding: 12px 0;
-
-  max-height: 290px;   // ajuste se quiser mais/menos área visível
+  max-height: 300px;
   overflow-y: auto;
-  overflow-x: hidden;  // remove a barra de baixo
-}
-
-/* Firefox */
-.album-picker__list {
+  overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: rgba(99, 98, 98, 0.45) transparent;
 }
 
-/* Chrome/Edge/Safari */
+/* Chrome/Edge/Safari: barra de scroll */
 .album-picker__list::-webkit-scrollbar {
   width: 6px;
 }
@@ -255,7 +248,7 @@ watch(
 .album-picker__cell {
   display: flex;
   width: 100%;
-  min-width: 0;        // importante para não estourar no grid
+  min-width: 0;
   padding: 4px;
   align-items: center;
   gap: 16px;
@@ -310,6 +303,7 @@ watch(
   border-radius: 4px;
   overflow: hidden;
   background: #ddd;
+  border: 2px solid var(--Branco, #fff);
 }
 
 .album-picker__thumb img {
@@ -385,16 +379,15 @@ watch(
 }
 
 .album-picker__cell--selected {
-  border-bottom: 0;
-  background: var(--Laranja_M);
+  background: var(--bs-gray-100);
 }
 
 .album-picker__cell--selected .album-picker__label {
-  color: var(--Branco, #fff);
+  color: var(--Laranja_M, #000);
 }
 
-.album-picker__cell--selected .album-picker__thumb img {
-  border: 2px solid var(--Branco, #fff);
+.album-picker__cell--selected .album-picker__thumb {
+  border-color: var(--Laranja_M, #000);
 }
 
 .album-picker__btn--add:disabled {
