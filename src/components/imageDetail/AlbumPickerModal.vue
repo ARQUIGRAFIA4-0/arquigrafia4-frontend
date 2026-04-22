@@ -1,4 +1,5 @@
 <script setup>
+import { ref, watch } from "vue";
 import defaultCover from "@/assets/album-default.png";
 
 // Options
@@ -10,11 +11,12 @@ defineOptions({
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   albums: { type: Array, default: () => [] },
+  preselectedAlbumIds: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits([
   "update:modelValue",
-  "add-collection",
+  "open-create-collection",
   "confirm-add",
 ]);
 
@@ -24,13 +26,50 @@ function close() {
 
 // Criar coleção
 function onAddCollection() {
-  console.log("Criar coleção")
+  emit("open-create-collection");
+}
+ 
+/**
+ * Start: Selecionar álbum para inserir imagem
+ */
+const selectedAlbumIds = ref([]);
+
+// Selecionar/desselecionar álbum
+function toggleAlbum(albumId) {
+
+  if (selectedAlbumIds.value.includes(albumId)) {  // se já está selecionado, desseleciona
+    selectedAlbumIds.value = selectedAlbumIds.value.filter((id) => id !== albumId);
+    return;
+  }
+
+  selectedAlbumIds.value = [...selectedAlbumIds.value, albumId]; // se não está selecionado, seleciona
+
 }
 
-// Confirmar adicionar
+// Confirmar adicionar imagem ao álbum
 function onConfirmAdd() {
-  console.log('confirmar adicionar')
+  if (!selectedAlbumIds.value.length) return;
+
+  emit("confirm-add", {
+    albumIds: selectedAlbumIds.value,
+  });
+
+  emit("update:modelValue", false);
 }
+
+// sempre que abrir modal, resetar seleção
+watch(
+  () => props.modelValue,
+  (isOpen) => {
+    if (!isOpen) return;
+
+    // pré-seleciona álbuns em que a imagem já está
+    selectedAlbumIds.value = [...(props.preselectedAlbumIds || [])];
+
+  }
+
+);
+
 </script>
 
 <template>
@@ -77,11 +116,13 @@ function onConfirmAdd() {
               <span class="album-picker__label">Criar coleção</span>
             </button>
             <button
-              v-for="album in albums"
-              :key="album.id"
-              type="button"
-              class="album-picker__cell album-picker__cell--action"
-            >
+                v-for="album in albums"
+                :key="album.id"
+                type="button"
+                class="album-picker__cell album-picker__cell--action"
+                :class="{ 'album-picker__cell--selected': selectedAlbumIds.includes(album.id) }"
+                @click="toggleAlbum(album.id)"
+              >
               <div class="album-picker__thumb">
                 <img :src="defaultCover" :alt="album.title" />
               </div>
@@ -101,6 +142,7 @@ function onConfirmAdd() {
           <button
             type="button"
             class="album-picker__btn album-picker__btn--add"
+            :disabled="!selectedAlbumIds.length"
             @click="onConfirmAdd"
           >
             Adicionar
@@ -163,21 +205,6 @@ function onConfirmAdd() {
   line-height: 1;
 }
 
-.album-picker__close .bi {
-  width: 24px;
-  height: 24px;
-}
-
-.album-picker__subtitle {
-  margin: 0;
-  padding: 0 16px 8px;
-  font-family: "DM Sans", sans-serif;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--Cinza_M, #636262);
-  line-height: 1.4;
-}
-
 .album-picker__body {
   display: flex;
   padding: 0 32px;
@@ -188,28 +215,50 @@ function onConfirmAdd() {
 
 .album-picker__list {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   column-gap: 16px;
   row-gap: 12px;
   width: 100%;
   padding: 12px 0;
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 98, 98, 0.45) transparent;
+}
+
+/* Chrome/Edge/Safari: barra de scroll */
+.album-picker__list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.album-picker__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.album-picker__list::-webkit-scrollbar-thumb {
+  background: rgba(99, 98, 98, 0.45);
+  border-radius: 999px;
+}
+
+.album-picker__list::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 98, 98, 0.65);
 }
 
 .album-picker__cell {
-
   display: flex;
-  width: 244px;
-  padding: var(--ppp, 4px) var(--ppp, 4px) 4px var(--ppp, 4px);
+  width: 100%;
+  min-width: 0;
+  padding: 4px;
   align-items: center;
-  align-content: center;
   gap: 16px;
-  flex-wrap: wrap;
   border: none;
   background: none;
   cursor: pointer;
   text-align: left;
   font: inherit;
   border-bottom: 0.5px solid #cecece;
+  flex-wrap: nowrap;
 }
 
 .album-picker__cell--action:hover,
@@ -254,6 +303,7 @@ function onConfirmAdd() {
   border-radius: 4px;
   overflow: hidden;
   background: #ddd;
+  border: 2px solid var(--Branco, #fff);
 }
 
 .album-picker__thumb img {
@@ -269,6 +319,7 @@ function onConfirmAdd() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
   color: #000;
   font-family: "DM Sans";
   font-size: 14px;
@@ -325,5 +376,22 @@ function onConfirmAdd() {
   .album-picker__list {
     grid-template-columns: 1fr;
   }
+}
+
+.album-picker__cell--selected {
+  background: var(--bs-gray-100);
+}
+
+.album-picker__cell--selected .album-picker__label {
+  color: var(--Laranja_M, #000);
+}
+
+.album-picker__cell--selected .album-picker__thumb {
+  border-color: var(--Laranja_M, #000);
+}
+
+.album-picker__btn--add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

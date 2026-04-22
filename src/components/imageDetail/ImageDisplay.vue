@@ -1,6 +1,5 @@
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, nextTick } from "vue";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store/auth";
 import { useAlbumsStore } from "@/store/albums";
@@ -8,8 +7,8 @@ import DownloadModal from "./DownloadModal.vue";
 import ReportModal from "./ReportModal.vue";
 import ShareModal from "./ShareModal.vue";
 import AlbumPickerModal from "./AlbumPickerModal.vue";
+import CollectionCreateModal from "../CollectionCreateModal.vue";
 
-const router = useRouter();
 const authStore = useAuthStore();
 const albumsStore = useAlbumsStore();
 const { isLoggedIn, authHeader, loggedUser } = storeToRefs(authStore);
@@ -85,7 +84,6 @@ async function loadMyAlbums() {
   try {
     const response = await albumsStore.getUserAlbums(authHeader.value, userId);
     const list = Array.isArray(response) ? response : response?.data ?? [];
-    console.log("list", list);
     loadedAlbums.value = list;
     showAlbumPicker.value = true;
 
@@ -97,17 +95,84 @@ async function loadMyAlbums() {
 
 }
 
-function onAlbumPickerAddCollection() {
-  showAlbumPicker.value = false;
-  router.push({ name: "my-profile" });
+// Confirmar adicionar imagem ao álbum
+async function onAlbumPickerConfirmAdd({ albumIds }) {
+  if (!Array.isArray(albumIds) || !albumIds.length || !props.image?.id) return;
+
+  try {
+    // envia para cada coleção selecionada
+    await Promise.all(
+      albumIds.map((albumId) =>
+        albumsStore.addImageToAlbum(
+          authHeader.value,
+          albumId,
+          props.image.id
+        )
+      )
+    );
+
+    // recarrega para refletir estado visual atualizado no modal
+    await loadMyAlbums();
+    // fecha modal de adicionar imagem ao álbum
+    showAlbumPicker.value = false;
+
+  } catch (error) {
+    console.error("Erro ao adicionar imagem em múltiplas coleções:", error);
+
+  }
+
 }
 
-function onAlbumPickerConfirmAdd() {
-  // TODO: associar imagem à coleção escolhida (API) quando houver seleção no modal
-}
+// Álbuns já contendo a imagem, o objetivo é pre-selecionar os álbuns que já contêm a imagem.
+// Irá retorna todos os albuns em que a imagem está contida.
+const preselectedAlbumIds = computed(() => {
+
+  if (!props.image?.id) return [];
+
+  // álbuns que já contêm esta imagem
+  return loadedAlbums.value
+    .filter((album) =>
+      album.images.some( // filtra os álbuns que contêm a imagem
+        (img) => img.id === props.image?.id
+      )
+    )
+    .map((album) => album.id);
+
+});
 
 /**
  * End: Adicionar imagem a coleção
+ */
+
+/**
+  * Start: Criar coleção
+  */
+const showCollectionCreateModal = ref(false);
+
+function onCollectionCreateModalOpen() {
+  // Evita sobreposição de backdrops e garante abertura consistente
+  // do modal de criação acima do picker.
+  showAlbumPicker.value = false;
+  nextTick(() => {
+    showCollectionCreateModal.value = true;
+  });
+}
+
+// Após criar coleção, buscar os álbuns do usuário
+async function onCollectionCreated() {
+  // fecha modal de criação (nome correto da ref)
+  showCollectionCreateModal.value = false;
+
+  // recarrega coleções do usuário
+  await loadMyAlbums();
+
+  // mantém/abre o picker de coleção
+  showAlbumPicker.value = true;
+
+}
+
+/**
+ * End: Criar coleção
  */
 
 </script>
@@ -207,8 +272,15 @@ function onAlbumPickerConfirmAdd() {
       <AlbumPickerModal
         v-model="showAlbumPicker"
         :albums="loadedAlbums"
-        @add-collection="onAlbumPickerAddCollection"
+        :preselected-album-ids="preselectedAlbumIds"
+        @open-create-collection="onCollectionCreateModalOpen"
         @confirm-add="onAlbumPickerConfirmAdd"
+      />
+
+      <CollectionCreateModal
+        v-model="showCollectionCreateModal"
+        :user-data="loggedUser"
+        @created="onCollectionCreated"
       />
     </Teleport>
 

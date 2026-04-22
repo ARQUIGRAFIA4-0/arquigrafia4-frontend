@@ -42,7 +42,7 @@
       userData: { type: Object, default: null },
   });
 
-  const emit = defineEmits(["update:modelValue"]);
+  const emit = defineEmits(["update:modelValue", "created"]);
 
   // Fechar modal de criação de coleção
   function close() {

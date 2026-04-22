@@ -76,5 +76,36 @@ export const useAlbumsStore = defineStore("albums", () => {
         }
     }    
 
-    return { createAlbum, getUserAlbums, deleteAlbum, getDataAlbumByAlbumId };
+    // Adicionar imagem ao álbum
+    async function addImageToAlbum(authHeader, albumId, imageIds) {
+        console.log("addImageToAlbum", authHeader, albumId, imageIds);
+        try {
+            // aceita string única ou array de strings
+            const ids = Array.isArray(imageIds) ? imageIds : [imageIds];
+        
+            const payload = {
+                images: ids.map((id) => ({ image_id: id })),
+            };
+        
+            const response = await axios.post(
+                `/api/albums/${albumId}/images`,
+                payload,
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: authHeader,
+                    },
+                }
+            );
+        
+            return response.data;
+
+        } catch (error) {
+            throw new Error(
+                error?.response?.data?.message || "Não foi possível adicionar a imagem ao álbum."
+            );
+        }
+    }
+
+    return { createAlbum, getUserAlbums, deleteAlbum, getDataAlbumByAlbumId, addImageToAlbum };
 })
