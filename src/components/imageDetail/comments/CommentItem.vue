@@ -1,5 +1,17 @@
 <template>
   <div class="comment-item">
+
+    <!-- Modal de confirmação de exclusão -->
+    <div v-if="showDeleteModal" class="comment-item__modal-overlay" @click.self="cancelDelete">
+      <div class="comment-item__modal">
+        <p class="comment-item__modal-text">Tem certeza que deseja remover este comentário?</p>
+        <div class="comment-item__modal-actions">
+          <button class="btn btn-link btn-sm" @click="cancelDelete">Cancelar</button>
+          <button class="btn btn-danger btn-sm" @click="confirmDelete">Remover</button>
+        </div>
+      </div>
+    </div>
+
     <div class="comment-item__layout">
       <img :src="avatarUrl" :alt="`Foto de ${comment.user.name}`" class="comment-item__avatar" />
       <div class="comment-item__body">
@@ -27,11 +39,10 @@
             <button v-if="!comment.parent_id && isLoggedIn"
               class="comment-item__action-btn comment-item__action-btn--reply" @click="toggleReplyForm">
               <i class="bi bi-reply"></i>
-              <span>Responder</span>
             </button>
 
             <button v-if="isOwner && !comment.is_deleted"
-              class="comment-item__action-btn comment-item__action-btn--delete" @click="$emit('delete', comment.id)">
+              class="comment-item__action-btn comment-item__action-btn--delete" @click="showDeleteModal = true">
               <i class="bi bi-trash"></i>
             </button>
 
@@ -41,10 +52,10 @@
               <i class="bi bi-pencil"></i>
             </button>
 
-            <button class="comment-item__action-btn comment-item__action-btn--report"
+            <!-- <button class="comment-item__action-btn comment-item__action-btn--report"
               @click="$emit('report', comment.id)">
               <i class="bi bi-exclamation-circle"></i>
-            </button>
+            </button> -->
           </div>
         </div>
 
@@ -92,8 +103,8 @@
         </div>
 
         <!-- Botão inicial para abrir replies -->
-        <button v-else-if="comment.replies_count > 0" class="comment-item__load-replies" @click="loadMoreReplies">
-          Ver {{ comment.replies_count }} respostas
+        <button v-if="comment.replies_count > 0" class="comment-item__load-replies" @click="toggleReplies">
+          {{ visibleReplies.length ? 'Ocultar respostas' : `Ver ${comment.replies_count} respostas` }}
         </button>
       </div>
     </div>
@@ -125,12 +136,36 @@ watch(
   { deep: true }
 )
 
-defineEmits(['like', 'delete', 'report'])
+const emit = defineEmits(['like', 'delete', 'report'])
 
 const authStore = useAuthStore()
 const commentStore = useCommentStore()
 const authHeader = computed(() => authStore.authHeader)
 const isLoggedIn = computed(() => authStore.isLoggedIn)
+const showDeleteModal = ref(false)
+
+
+// função para confirmar exclusão
+function cancelDelete() {
+  showDeleteModal.value = false
+}
+
+function confirmDelete() {
+  showDeleteModal.value = false
+  emit('delete', props.comment.id)
+}
+
+// toggle de exibição das replies
+function toggleReplies() {
+  if (visibleReplies.value.length) {
+    visibleReplies.value = []
+    nextCursor.value = null
+    hasMoreReplies.value = false
+    repliesLoaded.value = false
+  } else {
+    loadMoreReplies()
+  }
+}
 
 // ── avatar e data ──────────────────────────────────────────────
 const avatarUrl = computed(() => {
@@ -257,11 +292,6 @@ async function handleLike() {
 <style lang="scss" scoped>
 .comment-item {
   padding: 1rem 0;
-  border-bottom: 1px solid var(--Cinza_C, #a6a6a6);
-
-  &:last-child {
-    border-bottom: none;
-  }
 
   &__layout {
     display: flex;
@@ -367,6 +397,39 @@ async function handleLike() {
     }
   }
 
+  // ── modal de confirmação de exclusão ──────────────────────────────────────
+  &__modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  &__modal {
+    background: #fff;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    width: 90%;
+    max-width: 360px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  &__modal-text {
+    font-size: 0.95rem;
+    color: var(--Cinza_E);
+    margin-bottom: 1.25rem;
+    text-align: center;
+  }
+
+  &__modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
   // ── reply form ───────────────────────────────────────
   &__reply-form {
     margin-top: 0.75rem;
@@ -398,10 +461,55 @@ async function handleLike() {
 
   // ── replies aninhadas ────────────────────────────────
   &__replies {
+    position: relative;
+    // margin-left: 1.25rem;
+    // padding-left: 1.5rem;
     margin-top: 0.75rem;
-    padding-left: 1rem;
-    border-left: 2px solid var(--Cinza_C, #a6a6a6);
+
+
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: -2rem;
+      width: 1px;
+      background: #444;
+    }
+
+    >.comment-item {
+      position: relative;
+
+      &::before {
+        content: "";
+        position: absolute;
+        top: 1.1rem;
+        left: -1.25rem;
+        width: 1rem;
+        height: 1rem;
+        border-left: 1px solid #444;
+        border-bottom: 1px solid #444;
+        border-bottom-left-radius: 12px;
+      }
+
+      & img {
+        width: 1.5rem;
+        height: 1.5rem;
+      }
+
+      &:last-child::after {
+        content: "";
+        position: absolute;
+        left: -1.25rem;
+        top: calc(1.1rem + 1rem);
+        bottom: 0;
+        width: 1px;
+        background: var(--Branco, #fff);
+      }
+    }
   }
+
 
   &__load-replies {
     background: none;
