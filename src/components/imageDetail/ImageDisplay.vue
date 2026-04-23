@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, nextTick } from "vue";
+import { ref, computed, nextTick, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store/auth";
 import { useAlbumsStore } from "@/store/albums";
@@ -76,6 +76,7 @@ const loadedAlbums = ref([]);
 // Função para buscar os álbuns do usuário
 async function loadMyAlbums() {
   const userId = loggedUser.value?.id;
+
   if (!isLoggedIn.value || !userId) {
     console.warn("Sem usuário logado ou sem id:", { isLoggedIn: isLoggedIn.value, loggedUser: loggedUser.value });
     return;
@@ -95,36 +96,90 @@ async function loadMyAlbums() {
 
 }
 
+// Toast após salvar alterações nas coleções da imagem
+const showAddToAlbumToast = ref(false);
+const addToAlbumToastMessage = ref("");
+let addToAlbumToastTimeout = null;
+
+function labelColecao(n) {
+  return n === 1 ? "coleção" : "coleções";
+}
+
+// Mostrar toast após salvar alterações nas coleções da imagem
+function showCollectionsUpdatedToast(addedCount, removedCount) {
+  if (addToAlbumToastTimeout) {
+    clearTimeout(addToAlbumToastTimeout);
+  }
+
+  if (addedCount > 0 && removedCount === 0) {
+    addToAlbumToastMessage.value =
+      "A imagem foi adicionada nas coleções selecionadas.";
+  } else if (removedCount > 0 && addedCount === 0) {
+    addToAlbumToastMessage.value =
+      "A imagem foi removida nas coleções desmarcadas.";
+  } else {
+    addToAlbumToastMessage.value =
+      `A imagem foi adicionada a ${addedCount} ${labelColecao(addedCount)}, ne removida em ${removedCount} ${labelColecao(removedCount)}.`;
+  }
+
+  showAddToAlbumToast.value = true;
+
+  addToAlbumToastTimeout = setTimeout(() => {
+    showAddToAlbumToast.value = false;
+    addToAlbumToastTimeout = null;
+
+  }, 4400);
+
+}
+
+// Limpar timeout do toast
+onUnmounted(() => {
+  if (addToAlbumToastTimeout) {
+    clearTimeout(addToAlbumToastTimeout);
+  }
+});
+
 // Confirmar adicionar imagem ao álbum
 async function onAlbumPickerConfirmAdd({ albumIds }) {
-  if (!Array.isArray(albumIds) || !albumIds.length || !props.image?.id) return;
+  if (!Array.isArray(albumIds) || !props.image?.id) return;
+  const imageId = props.image.id;
+
+  const antes = new Set(preselectedAlbumIds.value);
+  const depois = new Set(albumIds);
+
+  const paraAdicionar = [...depois].filter((id) => !antes.has(id));
+  const paraRemover = [...antes].filter((id) => !depois.has(id));
+
+  if (!paraAdicionar.length && !paraRemover.length) return;
 
   try {
-    // envia para cada coleção selecionada
-    await Promise.all(
-      albumIds.map((albumId) =>
-        albumsStore.addImageToAlbum(
-          authHeader.value,
-          albumId,
-          props.image.id
-        )
-      )
-    );
 
-    // recarrega para refletir estado visual atualizado no modal
+    // adiciona e remove as imagens dos álbuns
+    await Promise.all([
+      ...paraAdicionar.map((albumId) =>
+        albumsStore.addImageToAlbum(authHeader.value, albumId, imageId)
+      ),
+      ...paraRemover.map((albumId) =>
+        albumsStore.removeImagesFromAlbum(authHeader.value, albumId, imageId)
+      ),
+    ]);
+
+    // recarrega coleções do usuário para atualizar a lista de álbuns
     await loadMyAlbums();
-    // fecha modal de adicionar imagem ao álbum
+
+    // fecha o modal de seleção de álbuns
     showAlbumPicker.value = false;
 
-  } catch (error) {
-    console.error("Erro ao adicionar imagem em múltiplas coleções:", error);
+    showCollectionsUpdatedToast(paraAdicionar.length, paraRemover.length);
 
+  } catch (error) {
+    console.error("Erro ao atualizar coleções da imagem:", error);
+    
   }
 
 }
 
-// Álbuns já contendo a imagem, o objetivo é pre-selecionar os álbuns que já contêm a imagem.
-// Irá retorna todos os albuns em que a imagem está contida.
+// Pre-selecionar os álbuns que já contêm a imagem
 const preselectedAlbumIds = computed(() => {
 
   if (!props.image?.id) return [];
@@ -282,6 +337,18 @@ async function onCollectionCreated() {
         :user-data="loggedUser"
         @created="onCollectionCreated"
       />
+
+      <transition name="copy-toast-fade">
+        <div
+          v-if="showAddToAlbumToast"
+          class="image-display__toast"
+          role="status"
+          aria-live="polite"
+        >
+          <i class="bi bi-check-all" aria-hidden="true" />
+          <span class="image-display__toast-text">{{ addToAlbumToastMessage }}</span>
+        </div>
+      </transition>
     </Teleport>
 
   </div>
@@ -393,5 +460,88 @@ $breakpoint-md: 768px;
   width: 1.3rem;
   height: 100%;
   filter: brightness(0) saturate(100%) invert(16%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(100%);
-}   
+}
+
+.image-display__toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1300;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: max-content;
+  max-width: min(520px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 12px 12px 12px 16px;
+  border-radius: 4px;
+  background: #356407;
+  color: var(--branco, #fff);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.image-display__toast .bi {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.image-display__toast-text {
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+  white-space: pre-line;
+  text-align: left;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.copy-toast-fade-enter-active,
+.copy-toast-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.copy-toast-fade-enter-from,
+.copy-toast-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+@media (max-width: 767px) {
+  .image-display__toast {
+    top: max(12px, env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+    gap: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
+  .image-display__toast-text {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 380px) {
+  .image-display__toast {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .image-display__toast-text {
+    font-size: 13px;
+  }
+}
 </style>

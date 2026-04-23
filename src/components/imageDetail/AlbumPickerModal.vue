@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import defaultCover from "@/assets/album-default.png";
 
 // Options
@@ -48,13 +48,12 @@ function toggleAlbum(albumId) {
 
 // Confirmar adicionar imagem ao álbum
 function onConfirmAdd() {
-  if (!selectedAlbumIds.value.length) return;
-
   emit("confirm-add", {
     albumIds: selectedAlbumIds.value,
   });
 
   emit("update:modelValue", false);
+  
 }
 
 // sempre que abrir modal, resetar seleção
@@ -151,10 +150,10 @@ watch(
           <button
             type="button"
             class="album-picker__btn album-picker__btn--add"
-            :disabled="!selectedAlbumIds.length"
+            :aria-label="primaryActionLabel"
             @click="onConfirmAdd"
           >
-            Adicionar
+          {{ props.preselectedAlbumIds.length ? "Atualizar" : "Adicionar" }}
           </button>
         </footer>
       </div>

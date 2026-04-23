@@ -107,5 +107,34 @@ export const useAlbumsStore = defineStore("albums", () => {
         }
     }
 
-    return { createAlbum, getUserAlbums, deleteAlbum, getDataAlbumByAlbumId, addImageToAlbum };
+    // Remover imagem do álbum
+    async function removeImagesFromAlbum(authHeader, albumId, imageIds) {
+
+        const ids = Array.isArray(imageIds) ? imageIds : [imageIds];
+
+        try {
+
+            const response = await axios.delete(`/api/albums/${albumId}/images`, {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: authHeader,
+                },
+                data: {
+                    image_ids: ids,
+                },
+            });
+
+            return response.data;
+
+        } catch (error) {
+          throw new Error(
+            error?.response?.data?.message ||
+              "Não foi possível remover as imagens da coleção."
+          );
+
+        }
+
+    }
+
+    return { createAlbum, getUserAlbums, deleteAlbum, getDataAlbumByAlbumId, addImageToAlbum, removeImagesFromAlbum };
 })
