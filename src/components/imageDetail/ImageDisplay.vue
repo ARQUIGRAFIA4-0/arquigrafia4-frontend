@@ -35,45 +35,6 @@ const showDownloadModal = ref(false);
 const showReportModal = ref(false);
 const showShareModal = ref(false);
 
-// Toast ao adicionar imagem à(s) coleção(ões)
-const showAddToAlbumToast = ref(false);
-const addToAlbumToastMessage = ref("");
-const addToAlbumToastCollectionName = ref("");
-let addToAlbumToastTimeout = null;
-
-function openAddToAlbumToastSuccess(collectionName, count = 1) {
-
-  if (count === 1) {
-    addToAlbumToastCollectionName.value = collectionName || "";
-    addToAlbumToastMessage.value = collectionName
-      ? "Você adicionou a imagem à coleção"
-      : "Você adicionou a imagem à coleção.";
-
-  } else {
-    addToAlbumToastCollectionName.value = "";
-    addToAlbumToastMessage.value = `Você adicionou a imagem a ${count} coleções.`;
-  }
-
-  showAddToAlbumToast.value = true;
-
-  if (addToAlbumToastTimeout) {
-    clearTimeout(addToAlbumToastTimeout);
-    
-  }
-
-  addToAlbumToastTimeout = setTimeout(() => {
-    showAddToAlbumToast.value = false;
-    addToAlbumToastTimeout = null;
-  }, 2200);
-
-}
-
-onUnmounted(() => {
-  if (addToAlbumToastTimeout) {
-    clearTimeout(addToAlbumToastTimeout);
-  }
-});
-
 const handleDownloadConfirm = async (image) => {
   const url = image.fullUrl || `https://api-dev.arquigrafia.org.br/iiif/${image.id}/full/max/0/default.jpg`;
   const filename = `${image.title || image.id}.jpg`;
@@ -115,6 +76,7 @@ const loadedAlbums = ref([]);
 // Função para buscar os álbuns do usuário
 async function loadMyAlbums() {
   const userId = loggedUser.value?.id;
+
   if (!isLoggedIn.value || !userId) {
     console.warn("Sem usuário logado ou sem id:", { isLoggedIn: isLoggedIn.value, loggedUser: loggedUser.value });
     return;
@@ -134,46 +96,90 @@ async function loadMyAlbums() {
 
 }
 
+// Toast após salvar alterações nas coleções da imagem
+const showAddToAlbumToast = ref(false);
+const addToAlbumToastMessage = ref("");
+let addToAlbumToastTimeout = null;
+
+function labelColecao(n) {
+  return n === 1 ? "coleção" : "coleções";
+}
+
+// Mostrar toast após salvar alterações nas coleções da imagem
+function showCollectionsUpdatedToast(addedCount, removedCount) {
+  if (addToAlbumToastTimeout) {
+    clearTimeout(addToAlbumToastTimeout);
+  }
+
+  if (addedCount > 0 && removedCount === 0) {
+    addToAlbumToastMessage.value =
+      "A imagem foi adicionada nas coleções selecionadas.";
+  } else if (removedCount > 0 && addedCount === 0) {
+    addToAlbumToastMessage.value =
+      "A imagem foi removida nas coleções desmarcadas.";
+  } else {
+    addToAlbumToastMessage.value =
+      `A imagem foi adicionada a ${addedCount} ${labelColecao(addedCount)}, ne removida em ${removedCount} ${labelColecao(removedCount)}.`;
+  }
+
+  showAddToAlbumToast.value = true;
+
+  addToAlbumToastTimeout = setTimeout(() => {
+    showAddToAlbumToast.value = false;
+    addToAlbumToastTimeout = null;
+
+  }, 4400);
+
+}
+
+// Limpar timeout do toast
+onUnmounted(() => {
+  if (addToAlbumToastTimeout) {
+    clearTimeout(addToAlbumToastTimeout);
+  }
+});
+
 // Confirmar adicionar imagem ao álbum
 async function onAlbumPickerConfirmAdd({ albumIds }) {
-  if (!Array.isArray(albumIds) || !albumIds.length || !props.image?.id) return;
+  if (!Array.isArray(albumIds) || !props.image?.id) return;
+  const imageId = props.image.id;
+
+  const antes = new Set(preselectedAlbumIds.value);
+  const depois = new Set(albumIds);
+
+  const paraAdicionar = [...depois].filter((id) => !antes.has(id));
+  const paraRemover = [...antes].filter((id) => !depois.has(id));
+
+  if (!paraAdicionar.length && !paraRemover.length) return;
 
   try {
-    const titles = albumIds
-      .map((id) => loadedAlbums.value.find((a) => a.id === id)?.title)
-      .filter(Boolean);
 
-    // envia para cada coleção selecionada
-    await Promise.all(
-      albumIds.map((albumId) =>
-        albumsStore.addImageToAlbum(
-          authHeader.value,
-          albumId,
-          props.image.id
-        )
-      )
-    );
+    // adiciona e remove as imagens dos álbuns
+    await Promise.all([
+      ...paraAdicionar.map((albumId) =>
+        albumsStore.addImageToAlbum(authHeader.value, albumId, imageId)
+      ),
+      ...paraRemover.map((albumId) =>
+        albumsStore.removeImagesFromAlbum(authHeader.value, albumId, imageId)
+      ),
+    ]);
 
-    // recarrega para refletir estado visual atualizado no modal
+    // recarrega coleções do usuário para atualizar a lista de álbuns
     await loadMyAlbums();
-    // fecha modal de adicionar imagem ao álbum
+
+    // fecha o modal de seleção de álbuns
     showAlbumPicker.value = false;
 
-    if (albumIds.length === 1) {
-      openAddToAlbumToastSuccess(titles[0] || "", 1);
-    } else {
-      openAddToAlbumToastSuccess("", albumIds.length);
-    }
+    showCollectionsUpdatedToast(paraAdicionar.length, paraRemover.length);
 
   } catch (error) {
-    console.error("Erro ao adicionar imagem em múltiplas coleções:", error);
-
+    console.error("Erro ao atualizar coleções da imagem:", error);
+    
   }
 
 }
 
-// Álbuns já contendo a imagem, o objetivo é pre-selecionar os álbuns que já contêm a imagem.
-// Irá retorna todos os albuns em que a imagem está contida.
+// Pre-selecionar os álbuns que já contêm a imagem
 const preselectedAlbumIds = computed(() => {
 
   if (!props.image?.id) return [];
@@ -340,15 +346,7 @@ async function onCollectionCreated() {
           aria-live="polite"
         >
           <i class="bi bi-check-all" aria-hidden="true" />
-          <span class="image-display__toast-text">
-            <template v-if="addToAlbumToastCollectionName">
-              {{ addToAlbumToastMessage }}
-              <span class="image-display__toast-name"> {{ addToAlbumToastCollectionName }}</span>
-            </template>
-            <template v-else>
-              {{ addToAlbumToastMessage }}
-            </template>
-          </span>
+          <span class="image-display__toast-text">{{ addToAlbumToastMessage }}</span>
         </div>
       </transition>
     </Teleport>
@@ -471,10 +469,10 @@ $breakpoint-md: 768px;
   transform: translateX(-50%);
   z-index: 1300;
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
-  width: auto;
-  max-width: calc(100vw - 24px);
+  width: max-content;
+  max-width: min(520px, calc(100vw - 32px));
   box-sizing: border-box;
   padding: 12px 12px 12px 16px;
   border-radius: 4px;
@@ -484,23 +482,24 @@ $breakpoint-md: 768px;
   font-size: 14px;
   font-weight: 400;
   line-height: 1.5;
-  white-space: nowrap;
 }
 
 .image-display__toast .bi {
   font-size: 16px;
   line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .image-display__toast-text {
   font-family: "DM Sans", sans-serif;
   font-size: 14px;
   font-weight: 400;
-  line-height: 1.5;
-}
-
-.image-display__toast-name {
-  font-style: italic;
+  line-height: 1.45;
+  white-space: pre-line;
+  text-align: left;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .copy-toast-fade-enter-active,
@@ -516,13 +515,33 @@ $breakpoint-md: 768px;
 
 @media (max-width: 767px) {
   .image-display__toast {
-    top: 16px;
-    width: calc(100vw - 24px);
-    max-width: 350px;
-    gap: 10px;
-    padding: 10px 12px;
-    font-size: 13px;
+    top: max(12px, env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+    gap: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
     box-sizing: border-box;
+  }
+
+  .image-display__toast-text {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 380px) {
+  .image-display__toast {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .image-display__toast-text {
+    font-size: 13px;
   }
 }
 </style>
