@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, nextTick } from "vue";
+import { ref, computed, nextTick, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store/auth";
 import { useAlbumsStore } from "@/store/albums";
@@ -34,6 +34,45 @@ const emit = defineEmits(["load", "download", "share", "report-submit"]);
 const showDownloadModal = ref(false);
 const showReportModal = ref(false);
 const showShareModal = ref(false);
+
+// Toast ao adicionar imagem à(s) coleção(ões)
+const showAddToAlbumToast = ref(false);
+const addToAlbumToastMessage = ref("");
+const addToAlbumToastCollectionName = ref("");
+let addToAlbumToastTimeout = null;
+
+function openAddToAlbumToastSuccess(collectionName, count = 1) {
+
+  if (count === 1) {
+    addToAlbumToastCollectionName.value = collectionName || "";
+    addToAlbumToastMessage.value = collectionName
+      ? "Você adicionou a imagem à coleção"
+      : "Você adicionou a imagem à coleção.";
+
+  } else {
+    addToAlbumToastCollectionName.value = "";
+    addToAlbumToastMessage.value = `Você adicionou a imagem a ${count} coleções.`;
+  }
+
+  showAddToAlbumToast.value = true;
+
+  if (addToAlbumToastTimeout) {
+    clearTimeout(addToAlbumToastTimeout);
+    
+  }
+
+  addToAlbumToastTimeout = setTimeout(() => {
+    showAddToAlbumToast.value = false;
+    addToAlbumToastTimeout = null;
+  }, 2200);
+
+}
+
+onUnmounted(() => {
+  if (addToAlbumToastTimeout) {
+    clearTimeout(addToAlbumToastTimeout);
+  }
+});
 
 const handleDownloadConfirm = async (image) => {
   const url = image.fullUrl || `https://api-dev.arquigrafia.org.br/iiif/${image.id}/full/max/0/default.jpg`;
@@ -100,6 +139,10 @@ async function onAlbumPickerConfirmAdd({ albumIds }) {
   if (!Array.isArray(albumIds) || !albumIds.length || !props.image?.id) return;
 
   try {
+    const titles = albumIds
+      .map((id) => loadedAlbums.value.find((a) => a.id === id)?.title)
+      .filter(Boolean);
+
     // envia para cada coleção selecionada
     await Promise.all(
       albumIds.map((albumId) =>
@@ -115,6 +158,12 @@ async function onAlbumPickerConfirmAdd({ albumIds }) {
     await loadMyAlbums();
     // fecha modal de adicionar imagem ao álbum
     showAlbumPicker.value = false;
+
+    if (albumIds.length === 1) {
+      openAddToAlbumToastSuccess(titles[0] || "", 1);
+    } else {
+      openAddToAlbumToastSuccess("", albumIds.length);
+    }
 
   } catch (error) {
     console.error("Erro ao adicionar imagem em múltiplas coleções:", error);
@@ -282,6 +331,26 @@ async function onCollectionCreated() {
         :user-data="loggedUser"
         @created="onCollectionCreated"
       />
+
+      <transition name="copy-toast-fade">
+        <div
+          v-if="showAddToAlbumToast"
+          class="image-display__toast"
+          role="status"
+          aria-live="polite"
+        >
+          <i class="bi bi-check-all" aria-hidden="true" />
+          <span class="image-display__toast-text">
+            <template v-if="addToAlbumToastCollectionName">
+              {{ addToAlbumToastMessage }}
+              <span class="image-display__toast-name"> {{ addToAlbumToastCollectionName }}</span>
+            </template>
+            <template v-else>
+              {{ addToAlbumToastMessage }}
+            </template>
+          </span>
+        </div>
+      </transition>
     </Teleport>
 
   </div>
@@ -393,5 +462,67 @@ $breakpoint-md: 768px;
   width: 1.3rem;
   height: 100%;
   filter: brightness(0) saturate(100%) invert(16%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(100%);
-}   
+}
+
+.image-display__toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1300;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  width: auto;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+  padding: 12px 12px 12px 16px;
+  border-radius: 4px;
+  background: #356407;
+  color: var(--branco, #fff);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.image-display__toast .bi {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.image-display__toast-text {
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.image-display__toast-name {
+  font-style: italic;
+}
+
+.copy-toast-fade-enter-active,
+.copy-toast-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.copy-toast-fade-enter-from,
+.copy-toast-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+@media (max-width: 767px) {
+  .image-display__toast {
+    top: 16px;
+    width: calc(100vw - 24px);
+    max-width: 350px;
+    gap: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+}
 </style>
