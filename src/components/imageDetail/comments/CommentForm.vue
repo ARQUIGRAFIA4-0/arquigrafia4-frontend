@@ -7,7 +7,10 @@
     <div class="comment-form__field">
       <label class="visually-hidden" for="comment-input">Comentário</label>
       <textarea id="comment-input" v-model="content" class="form-control comment-form__textarea"
-        placeholder="Comentário" rows="4" :disabled="submitting || disabled"></textarea>
+        placeholder="Comentário" rows="4" maxlength="2000" :disabled="submitting || disabled"></textarea>
+      <small class="comment-form__char-count" :class="{ 'comment-form__char-count--limit': content.length >= 1800 }">
+        {{ content.length }}/2000
+      </small>
     </div>
 
     <div class="comment-form__actions">
@@ -54,6 +57,21 @@ function handleSubmit() {
 
 <style lang="scss" scoped>
 .comment-form {
+
+  &__char-count {
+    display: block;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--Cinza_M);
+    margin-top: 0.25rem;
+
+    &--limit {
+      color: var(--bs-danger);
+      font-weight: 600;
+    }
+  }
+
+
   &--disabled {
     .comment-form__title {
       color: var(--Cinza_M);
@@ -95,6 +113,7 @@ function handleSubmit() {
     min-height: 9rem;
     padding: 1rem;
     resize: vertical;
+    resize: none;
   }
 
   &__actions {

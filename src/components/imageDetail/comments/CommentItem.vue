@@ -4,14 +4,23 @@
     <!-- Modal de confirmação de exclusão -->
     <CommentDeleteModal v-if="showDeleteModal" @cancel="cancelDelete" @confirm="confirmDelete" />
 
+    <CommentReportModal v-if="showReportModal" :image-url="imageUrl" @cancel="showReportModal = false"
+      @confirm="handleReport" />
+
     <div class="comment-item__layout">
-      <img :src="avatarUrl" :alt="`Foto de ${comment.user.name}`" class="comment-item__avatar" />
+
+      <div class="comment-item__avatar-section">
+        <img :src="avatarUrl" :alt="`Foto de ${comment.user.name}`" class="comment-item__avatar" />
+        <h3 class="comment-item__author">{{ comment.user.name }}</h3>
+      </div>
+
+
       <div class="comment-item__body">
-        <h6 class="comment-item__author">{{ comment.user.name }}</h6>
 
         <p v-if="comment.is_deleted" class="comment-item__content comment-item__content--removed">
           Comentário removido.
         </p>
+
         <p v-else-if="!showEditForm" class="comment-item__content">{{ localComment.content }}</p>
 
         <div class="comment-item__footer">
@@ -21,14 +30,15 @@
           </small>
 
           <CommentActions :liked="localComment.liked_by_me" :likes-count="localComment.likes_count"
-            :show-reply="!comment.parent_id && isLoggedIn" :show-owner-actions="isOwner && !comment.is_deleted"
-            @like="handleLike" @reply="toggleReplyForm" @edit="toggleEditForm" @delete="showDeleteModal = true" />
+            :show-reply="!isReply && isLoggedIn" :show-owner-actions="isOwner && !comment.is_deleted" @like="handleLike"
+            @reply="toggleReplyForm" @edit="toggleEditForm" @delete="showDeleteModal = true"
+            @report="showReportModal = true" />
         </div>
 
         <!-- Form de resposta inline -->
         <div v-if="showReplyForm" class="comment-item__reply-form">
           <textarea v-model="replyContent" class="form-control comment-item__reply-textarea"
-            placeholder="Escreva uma resposta..." rows="2" :disabled="submittingReply"></textarea>
+            placeholder="Escreva uma resposta..." rows="2" maxlength="2000" :disabled="submittingReply"></textarea>
           <div class="comment-item__reply-actions">
             <button class="btn btn-link btn-sm comment-item__reply-cancel" @click="cancelReply">
               Cancelar
@@ -42,7 +52,7 @@
 
         <!-- Form de edição -->
         <div v-if="showEditForm" class="comment-item__reply-form">
-          <textarea v-model="editContent" class="form-control comment-item__reply-textarea" rows="2"
+          <textarea v-model="editContent" class="form-control comment-item__reply-textarea" rows="2" maxlength="2000"
             :disabled="submittingEdit"></textarea>
           <div class="comment-item__reply-actions">
             <button class="btn btn-link btn-sm comment-item__reply-cancel" @click="cancelEdit">
@@ -58,8 +68,8 @@
         <!-- Replies -->
         <div v-if="visibleReplies.length" class="comment-item__replies">
           <!-- Preview de replies que vieram no index (limit 3) -->
-          <CommentItem v-for="reply in visibleReplies" :key="reply.id" :comment="reply" @delete="handleReplyDelete"
-            @report="$emit('report', $event)" />
+          <CommentItem v-for="reply in visibleReplies" :key="reply.id" :comment="reply" :is-reply="true"
+            :image-url="imageUrl" @delete="handleReplyDelete" @report="$emit('report', $event)" />
 
           <!-- Carregar mais replies -->
           <button v-if="hasMoreReplies" class="comment-item__load-replies" :disabled="loadingReplies"
@@ -84,6 +94,7 @@ import { useCommentStore } from '@/store/commentStore'
 import profileImageDefault from '@/assets/profile_image.png'
 import CommentActions from './CommentActions.vue'
 import CommentDeleteModal from './CommentDeleteModal.vue'
+import CommentReportModal from './CommentReportModal.vue'
 
 const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL
 
@@ -92,6 +103,11 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  isReply: {
+    type: Boolean,
+    default: false,
+  },
+  imageUrl: { type: String, default: '' },
 })
 
 const localComment = ref({ ...props.comment })
@@ -111,7 +127,7 @@ const commentStore = useCommentStore()
 const authHeader = computed(() => authStore.authHeader)
 const isLoggedIn = computed(() => authStore.isLoggedIn)
 const showDeleteModal = ref(false)
-
+const showReportModal = ref(false)
 
 // função para confirmar exclusão
 function cancelDelete() {
@@ -258,6 +274,11 @@ function handleReplyDelete(replyId) {
   }
 }
 
+function handleReport(payload) {
+  showReportModal.value = false
+  emit('report', { commentId: props.comment.id, ...payload })
+}
+
 // toggle like sem depender do pai para atualizar a UI mais rápido
 async function handleLike() {
   if (!isLoggedIn.value) return
@@ -277,9 +298,16 @@ async function handleLike() {
   padding: 1rem 0;
 
   &__layout {
-    display: flex;
+    // display: flex;
     align-items: flex-start;
     gap: 0.75rem;
+  }
+
+  &__avatar-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
   }
 
   &__avatar {
@@ -290,21 +318,21 @@ async function handleLike() {
     flex-shrink: 0;
   }
 
+  &__author {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--Cinza_E);
+    margin-bottom: 0;
+  }
+
   &__body {
     flex: 1;
   }
 
-  &__author {
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-    color: var(--Cinza_E);
-  }
-
   &__content {
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-    color: var(--Cinza_E);
+    font-size: 0.875rem;
+    margin: 0.5rem 0;
+    color: var(--Preto);
     line-height: 1.5;
 
     &--removed {
@@ -366,52 +394,11 @@ async function handleLike() {
 
   // ── replies aninhadas ────────────────────────────────
   &__replies {
-    position: relative;
-    // margin-left: 1.25rem;
-    // padding-left: 1.5rem;
-    margin-top: 0.75rem;
-
-
-
-    &::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: -2rem;
-      width: 1px;
-      background: #444;
-    }
+    padding: 1rem;
+    margin-left: 1.5rem;
 
     >.comment-item {
-      position: relative;
-
-      &::before {
-        content: "";
-        position: absolute;
-        top: 1.1rem;
-        left: -1.25rem;
-        width: 1rem;
-        height: 1rem;
-        border-left: 1px solid #444;
-        border-bottom: 1px solid #444;
-        border-bottom-left-radius: 12px;
-      }
-
-      & img {
-        width: 1.5rem;
-        height: 1.5rem;
-      }
-
-      &:last-child::after {
-        content: "";
-        position: absolute;
-        left: -1.25rem;
-        top: calc(1.1rem + 1rem);
-        bottom: 0;
-        width: 1px;
-        background: var(--Branco, #fff);
-      }
+      border-top: 0.013rem solid #e4e4e4;
     }
   }
 

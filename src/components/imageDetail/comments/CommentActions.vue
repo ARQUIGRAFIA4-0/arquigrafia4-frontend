@@ -10,12 +10,16 @@
       <i class="bi bi-reply"></i>
     </button>
 
-    <button v-if="showOwnerActions" class="comment-actions__btn comment-actions__btn--edit" @click="$emit('edit')">
-      <i class="bi bi-pencil"></i>
-    </button>
+    <!-- <button v-if="showOwnerActions" class="comment-actions__btn comment-actions__btn--edit" @click="$emit('edit')">
+      <i class="bi bi-pencil-fill"></i>
+    </button> -->
 
     <button v-if="showOwnerActions" class="comment-actions__btn comment-actions__btn--delete" @click="$emit('delete')">
-      <i class="bi bi-trash"></i>
+      <i class="bi bi-trash-fill"></i>
+    </button>
+
+    <button class="comment-actions__btn comment-actions__btn--report" @click="$emit('report')">
+      <i class="bi bi-exclamation-circle-fill"></i>
     </button>
   </div>
 </template>
@@ -42,50 +46,71 @@ defineProps({
   },
 })
 
-defineEmits(['like', 'reply', 'edit', 'delete'])
+defineEmits(['like', 'reply', 'edit', 'delete', 'report'])
 </script>
 
 <style lang="scss" scoped>
 .comment-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.7rem;
 
   &__btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
     background: none;
     border: none;
-    padding: 0.25rem;
     cursor: pointer;
     font-size: 0.85rem;
-    color: var(--Cinza_M);
+    color: var(--Cinza_E);
     transition: color 0.15s ease;
 
+    & i {
+      font-size: 1.1rem;
+      line-height: 1;
+      vertical-align: middle;
+      display: inline-flex;
+      align-items: center;
+    }
+
     &--like {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
 
       &:hover,
       &.comment-actions__btn--liked {
         color: var(--Laranja_E, #ff7f00);
       }
+
+      & span {
+        color: var(--Preto);
+      }
     }
 
     &--reply {
+      transform: scaleX(-1);
+
       &:hover {
-        color: var(--Cinza_E);
+        color: var(--Laranja_E, #ff7f00);
       }
     }
 
     &--edit {
       &:hover {
-        color: var(--Cinza_E);
+        color: var(--Laranja_E, #ff7f00);
       }
     }
 
     &--delete {
       &:hover {
         color: var(--bs-danger);
+      }
+    }
+
+    &--report {
+      &:hover {
+        color: var(--Laranja_E, #ff7f00);
       }
     }
   }
