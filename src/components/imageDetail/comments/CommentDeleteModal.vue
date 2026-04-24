@@ -1,15 +1,24 @@
 <template>
   <div class="comment-delete-modal__overlay" @click.self="$emit('cancel')">
     <div class="comment-delete-modal">
-      <p class="comment-delete-modal__text">
-        Tem certeza que deseja remover este comentário?
-      </p>
+      <div class="comment-delete-modal__wrapper">
+        <div class="comment-delete-modal__header">
+          <h3>Excluir Comentário</h3>
+          <button class="comment-delete-modal__close" @click="$emit('cancel')">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        <p class="comment-delete-modal__text">
+          Tem certeza que deseja excluir este comentário?
+        </p>
+      </div>
+
       <div class="comment-delete-modal__actions">
-        <button class="btn btn-link btn-sm" @click="$emit('cancel')">
+        <button class="btn btn-cancel btn-sm" @click="$emit('cancel')">
           Cancelar
         </button>
-        <button class="btn btn-danger btn-sm" @click="$emit('confirm')">
-          Remover
+        <button class="btn btn-delete btn-sm" @click="$emit('confirm')">
+          Excluir
         </button>
       </div>
     </div>
@@ -23,10 +32,10 @@ defineEmits(['cancel', 'confirm'])
 <style lang="scss" scoped>
 .comment-delete-modal {
   background: #fff;
-  border-radius: 0.75rem;
-  padding: 1.5rem;
+  border-radius: 1rem;
+  padding: 1rem;
   width: 90%;
-  max-width: 360px;
+  max-width: 577px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 
   &__overlay {
@@ -39,17 +48,66 @@ defineEmits(['cancel', 'confirm'])
     z-index: 1000;
   }
 
+  &__wrapper {
+    margin: 0 2.1rem;
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+
+    h3 {
+      font-size: 1.25rem;
+      color: var(--Preto);
+      margin: 0;
+    }
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    color: var(--Cinza_M);
+    font-size: 1.25rem;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--Cinza_E);
+    }
+  }
+
   &__text {
     font-size: 0.95rem;
     color: var(--Cinza_E);
-    margin-bottom: 1.25rem;
-    text-align: center;
+    margin-bottom: 0;
   }
 
   &__actions {
     display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
+    margin-top: 2rem;
+    gap: 1rem;
+
+
+    & .btn-delete {
+      flex: 1;
+      background-color: var(--Preto);
+      color: #fff;
+
+      &:hover {
+        background-color: var(--Cinza_E);
+      }
+    }
+
+    & .btn-cancel {
+      border: 1px solid var(--Cinza_M);
+      flex: 1;
+
+      &:hover {
+        background-color: var(--Cinza_M);
+        color: #fff;
+      }
+    }
   }
 }
 </style>

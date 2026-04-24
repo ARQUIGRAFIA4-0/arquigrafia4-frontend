@@ -1,7 +1,7 @@
 <template>
   <div class="comment-list">
-    <CommentItem v-for="comment in comments" :key="comment.id" :comment="comment" @delete="$emit('delete', $event)"
-      @report="$emit('report', $event)" />
+    <CommentItem v-for="comment in comments" :key="comment.id" :comment="comment" :image-url="imageUrl"
+      @delete="$emit('delete', $event)" @report="$emit('report', $event)" />
   </div>
 </template>
 
@@ -13,6 +13,7 @@ defineProps({
     type: Array,
     required: true,
   },
+  imageUrl: { type: String, default: '' },
 })
 
 defineEmits(['like', 'delete', 'report'])
