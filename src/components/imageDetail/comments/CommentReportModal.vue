@@ -3,35 +3,37 @@
     <div class="comment-report-modal">
       <h5 class="comment-report-modal__title">Ajude a denunciar o conteúdo inadequado</h5>
 
-      <div class="comment-report-modal__preview">
-        <img :src="props.imageUrl" alt="Imagem do comentário" class="comment-report-modal__image" />
-        <p class="comment-report-modal__description">
-          Por favor, informe o motivo pelo qual deseja denunciar o comentário desta imagem.
-        </p>
-      </div>
-
-      <div class="comment-report-modal__field">
-        <label class="comment-report-modal__label">
-          Tipo de denúncia
-          <i class="bi bi-question-circle comment-report-modal__hint"></i>
-        </label>
-        <div class="comment-report-modal__options">
-          <label v-for="option in reportOptions" :key="option.value" class="comment-report-modal__option">
-            <input type="radio" :value="option.value" v-model="selectedType" class="comment-report-modal__radio" />
-            {{ option.label }}
-          </label>
+      <div class="comment-report-modal__wrapper">
+        <div class="comment-report-modal__preview">
+          <img :src="props.imageUrl" alt="Imagem do comentário" class="comment-report-modal__image" />
+          <p class="comment-report-modal__description">
+            Por favor, informe o motivo pelo qual deseja denunciar o comentário desta imagem.
+          </p>
         </div>
-      </div>
 
-      <div class="comment-report-modal__field">
-        <label class="comment-report-modal__label">
-          Explique-nos o motivo de sua denúncia
-          <i class="bi bi-question-circle comment-report-modal__hint"></i>
-        </label>
-        <textarea v-model="description" class="form-control comment-report-modal__textarea"
-          placeholder="Deixe seu comentário aqui" rows="4"></textarea>
-      </div>
+        <div class="comment-report-modal__field">
+          <label class="comment-report-modal__label">
+            Tipo de denúncia
+            <i class="bi bi-question-circle comment-report-modal__hint"></i>
+          </label>
+          <div class="comment-report-modal__options">
+            <label v-for="option in reportOptions" :key="option.value" class="comment-report-modal__option">
+              <input type="radio" :value="option.value" v-model="selectedType" class="comment-report-modal__radio" />
+              {{ option.label }}
+            </label>
+          </div>
+        </div>
 
+        <div class="comment-report-modal__field">
+          <label class="comment-report-modal__label">
+            Explique-nos o motivo de sua denúncia
+            <i class="bi bi-question-circle comment-report-modal__hint"></i>
+          </label>
+          <textarea v-model="description" class="form-control comment-report-modal__textarea"
+            placeholder="Deixe seu comentário aqui" rows="4"></textarea>
+        </div>
+
+      </div>
       <div class="comment-report-modal__actions">
         <button class="btn comment-report-modal__cancel" @click="$emit('cancel')">
           Cancelar
@@ -74,12 +76,22 @@ function handleSubmit() {
 </script>
 
 <style lang="scss" scoped>
+$breakpoint-md: 768px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
 .comment-report-modal {
   background: #fff;
-  border-radius: 0.75rem;
-  padding: 2rem;
+  border-radius: 1rem;
+  // padding: 2rem 3rem 0 3rem;
   width: 90%;
-  max-width: 480px;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 
   &__overlay {
@@ -90,20 +102,42 @@ function handleSubmit() {
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    padding: 1rem;
   }
 
   &__title {
     font-size: 1rem;
     font-weight: 600;
     color: var(--Cinza_E);
-    margin-bottom: 1.25rem;
+    text-align: center;
+    // margin: 2rem 3rem 1.25rem 3rem;
+    margin: 1.5rem 1rem 1.25rem 1rem;
+
+    @include md {
+      text-align: left;
+      margin: 2rem 3rem 1.25rem 3rem;
+    }
+  }
+
+  &__wrapper {
+    // margin: 0 3.5rem;
+    margin: 0 1rem;
+
+    @include md {
+      margin: 0 3.5rem;
+    }
   }
 
   &__preview {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: 1.5rem;
     margin-bottom: 1.5rem;
+
+    @include md {
+      flex-direction: row;
+    }
   }
 
   &__image {
@@ -116,9 +150,15 @@ function handleSubmit() {
 
   &__description {
     font-size: 0.875rem;
-    color: var(--Cinza_M);
+    color: var(--Preto);
     margin: 0;
     line-height: 1.5;
+    max-width: 344px;
+    text-align: center;
+
+    @include md {
+      text-align: left;
+    }
   }
 
   &__field {
@@ -142,15 +182,20 @@ function handleSubmit() {
 
   &__options {
     display: flex;
-    gap: 1.25rem;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    @include md {
+      flex-direction: row;
+      gap: 1.25rem;
+    }
   }
 
   &__option {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     color: var(--Cinza_E);
     cursor: pointer;
   }
@@ -163,17 +208,18 @@ function handleSubmit() {
   &__textarea {
     font-size: 0.875rem;
     resize: vertical;
+    resize: none;
   }
 
   &__actions {
     display: flex;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
+    gap: 1rem;
+    margin: 2rem 1rem 1rem 1rem;
   }
 
   &__cancel {
     flex: 1;
-    border: 1px solid var(--Cinza_C);
+    border: 1px solid var(--Preto);
     color: var(--Cinza_E);
     font-size: 0.875rem;
 
