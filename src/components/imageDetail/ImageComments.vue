@@ -1,7 +1,7 @@
 <template>
   <div class="image-comments">
-    <CommentList v-if="comments.length" :comments="comments" class="image-comments__list" @delete="handleDelete"
-      @report="handleReport" />
+    <CommentList v-if="comments.length" :comments="comments" :image-url="props.imageUrl" class="image-comments__list"
+      @delete="handleDelete" @report="handleReport" />
     <p v-else-if="!loading" class="image-comments__empty">
       Ainda não há comentários.
     </p>
@@ -40,6 +40,13 @@ const loading = ref(false)
 const submitting = ref(false)
 const error = ref(null)
 
+const props = defineProps({
+  imageUrl: {
+    type: String,
+    default: '',
+  },
+})
+
 onMounted(async () => {
   loading.value = true
   error.value = null
@@ -63,6 +70,10 @@ async function handleSubmit(content) {
     error.value = err.message
   } finally {
     submitting.value = false
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   }
 }
 
@@ -77,9 +88,9 @@ async function handleDelete(commentId) {
   }
 }
 
-function handleReport(commentId) {
-  // TODO: implementar lógica de denúncia
-  console.log('report', commentId)
+function handleReport({ commentId, type, description }) {
+  // TODO: chamar a API de denúncia
+  console.log('report', commentId, type, description)
 }
 </script>
 

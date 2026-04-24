@@ -36,7 +36,7 @@
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
-          <ImageComments />
+          <ImageComments :image-url="image?.imageUrl" />
         </div>
 
         <div v-else class="text-muted small">
