@@ -157,9 +157,11 @@ function toggleReplies() {
 }
 
 // ── avatar e data ──────────────────────────────────────────────
+console.log(props.comment.user.avatar_url);
+
 const avatarUrl = computed(() => {
-  return props.comment.user.avatar_path
-    ? `${API_BASE_URL}/storage/${props.comment.user.avatar_path}`
+  return props.comment.user.avatar_url
+    ? `${API_BASE_URL}${props.comment.user.avatar_url}`
     : profileImageDefault
 })
 
