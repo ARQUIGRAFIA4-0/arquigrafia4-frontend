@@ -91,7 +91,7 @@ const licenseInfo = computed(() => {
 });
 
 const goBack = () => {
-  router.push("/explore/acervo/mosaic");
+  router.back();
 };
 
 const handleDownload = () => {
