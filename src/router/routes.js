@@ -142,6 +142,12 @@ export default [
     meta: { requiresAuth: true }
   },
   {
+    path: "/eu/colecoes/:collectionId",
+    name: "my-collection-detail",
+    component: () => import("../views/Profile/CollectionDetail.vue"),
+    meta: { requiresAuth: true }
+  },  
+  {
     path: "/profile",
     redirect: "/",
   },
