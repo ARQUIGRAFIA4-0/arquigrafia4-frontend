@@ -2,6 +2,21 @@ import { defineStore } from "pinia";
 import axios from "../axios";
 
 export const useUsersStore = defineStore("users", () => {
+
+  async function getUserById(userId) {
+    try {
+      const response = await axios.get(`/api/users/${userId}`, {
+        headers: {
+          "Content-Type": "application/json"
+        },
+      });
+
+      return response.data.data;
+    } catch (error) {
+      throw new Error("Não foi possível buscar o usuário.");
+    }
+  }
+
   async function getUser(userId) {
     try {
       const response = await axios.get(`/api/users/${userId}`, {
@@ -9,6 +24,7 @@ export const useUsersStore = defineStore("users", () => {
           "Content-Type": "application/json"
         },
       });
+      console.log(response.data);
       return response.data.user;
     } catch (error) {
       throw new Error("Não foi possível buscar o usuário.");
@@ -29,5 +45,5 @@ export const useUsersStore = defineStore("users", () => {
     }
   }
 
-  return { getUser, updateUser };
+  return { getUser, getUserById, updateUser };
 });

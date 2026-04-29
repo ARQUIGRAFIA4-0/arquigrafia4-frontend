@@ -3,8 +3,14 @@ import { computed, ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import { useAlbumsStore } from "@/store/albums";
+import { useUsersStore } from "@/store/users";
+import defaultProfileImage from "@/assets/profile_image.png";
 
 defineOptions({ name: "CollectionDetail" });
+
+const usersStore = useUsersStore();
+
+const ownerUser = ref(null);
 
 const route = useRoute();
 const router = useRouter();
@@ -25,6 +31,30 @@ const collectionDescription = computed(() => {
   return albumData.value?.description?.trim() || "Sem descrição.";
 });
 
+// avatar do proprietário da coleção
+const ownerAvatarSrc = computed(() => {
+  const avatarUrl = ownerUser.value?.avatar_url;
+  const avatarPath = ownerUser.value?.avatar_path;
+
+  // Caso já venha URL completa da API/CDN
+  if (avatarUrl && /^https?:\/\//.test(avatarUrl)) {
+    return avatarUrl;
+  }
+
+  // Caso venha caminho relativo em avatar_url
+  if (avatarUrl) {
+    return `${API_BASE_URL}${avatarUrl.startsWith("/") ? "" : "/"}${avatarUrl}`;
+  }
+
+  // Caso backend retorne avatar_path (mesmo padrão do ProfileCard)
+  if (avatarPath) {
+    return `${API_BASE_URL}/storage/${avatarPath}`;
+  }
+
+  return defaultProfileImage;
+
+});
+
 // busca os dados da coleção
 async function fetchCollectionData() {
   if (!collectionId.value) return;
@@ -38,6 +68,19 @@ async function fetchCollectionData() {
     );
 
     albumData.value = data;
+
+    if (data.user_id) {
+      try {
+        ownerUser.value = await usersStore.getUserById(data.user_id);
+        console.log(ownerUser.value);
+      } catch (e) {
+        ownerUser.value = null;
+      }
+
+    } else {
+      ownerUser.value = null;
+
+    }
 
   } catch (error) {
     collectionError.value =
@@ -84,8 +127,7 @@ watch(
     <main class="collection-detail__main container-fluid px-0">
       <div class="row g-0 collection-detail__row">
         <div class="col-12 col-md-9">
-          <section class="collection-detail__gallery">
-         
+          <section class="collection-detail__gallery">         
           </section>
         </div>
         <div class="col-12 col-md-3">
@@ -93,6 +135,23 @@ watch(
             <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
             <p class="collection-detail__description">{{ collectionDescription }}</p>
           </aside>
+          <section class="collection-detail__actors">
+            <div class="collection-detail__actors-title-area">
+              <h2 class="collection-detail__actors-title">Coleção criada por</h2>
+            </div>
+            <div class="collection-detail__actors-list">
+              <div class="collection-detail__actor-image-area">
+                <img
+                  :src="ownerAvatarSrc"
+                  :alt="`Avatar de ${ownerUser?.name?.trim() || 'usuário'}`"
+                  class="collection-detail__actor-image"
+                />
+              </div>
+              <div class="collection-detail__actor-name-wrapper">
+                <p class="collection-detail__actor-name">{{ ownerUser?.name?.trim() || "Usuário desconhecido" }}</p>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </main>
@@ -100,6 +159,71 @@ watch(
 </template>
 
 <style scoped>
+
+.collection-detail__actors {
+  display: flex;
+  height: 103px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  align-self: stretch;
+  padding: 0 12px;
+}
+
+.collection-detail__actors-title-area {
+  display: flex;
+  padding: var(--g, 24px) var(--p, 12px) 8px 0;
+  align-items: center;
+  gap: var(--p, 12px);
+  align-self: stretch;
+}
+
+.collection-detail__actors-title {
+  flex: 1 0 0;
+  color: var(--Preto, #1F1F1F);
+  font-family: "DM Sans";
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 150%;
+}
+
+.collection-detail__actors-list {
+  display: flex;
+  align-items: center;
+  gap: var(--m, 16px);
+  align-self: stretch;
+}
+
+.collection-detail__actor-image-area {
+  display: flex;
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+  align-items: center;
+  aspect-ratio: 1/1;  
+  background-color: var(--Cinza_C, #A6A6A6);
+  border-radius: 50%;
+}
+
+.collection-detail__actor-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.collection-detail__actor-name {
+  color: var(--Preto, #1F1F1F);
+  font-family: "DM Sans";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 150%;
+  margin: 0;
+}
+
 .collection-detail__container {
   width: 100%;
   min-height: calc(100dvh - var(--main-header-height, 272px));
@@ -190,6 +314,7 @@ watch(
   font-style: normal;
   font-weight: 400;
   line-height: 125%; /* 17.5px */  
+  padding-block: 8px;
 }
 
 @media (max-width: 767px) {
