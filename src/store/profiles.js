@@ -9,7 +9,7 @@ export const useProfilesStore = defineStore("profiles", () => {
           "Content-Type": "application/json"
         },
       });
-      return response.data;
+      return response.data.data;
     }
     catch (error) {
       throw Error("Não foi possível buscar o perfil.");
@@ -24,7 +24,7 @@ export const useProfilesStore = defineStore("profiles", () => {
           "Authorization": authHeader,
         },
       });
-      return response.data;
+      return response.data.data;
     }
     catch (error) {
       throw Error("Não foi possível buscar o perfil.");

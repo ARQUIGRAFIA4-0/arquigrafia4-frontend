@@ -4,7 +4,7 @@ import axios from "../axios";
 export const useVracStore = defineStore("vrac", () => {
   async function getVRACSubjects() {
     try {
-      const response = await axios.get("/api/vrac-subjects", {
+      const response = await axios.get("/api/vrac-subjects?per_page=-1", {
         headers: {
           "Content-Type": "application/json"
         },
@@ -38,7 +38,7 @@ export const useVracStore = defineStore("vrac", () => {
 
   async function getVRACContributorNames() {
     try {
-      const response = await axios.get("/api/vrac-contributor-names", {
+      const response = await axios.get("/api/vrac-contributor-names?per_page=-1", {
         headers: {
           "Content-Type": "application/json"
         },
