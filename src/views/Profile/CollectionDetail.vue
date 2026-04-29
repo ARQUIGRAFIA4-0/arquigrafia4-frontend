@@ -9,6 +9,7 @@ import defaultProfileImage from "@/assets/profile_image.png";
 defineOptions({ name: "CollectionDetail" });
 
 const usersStore = useUsersStore();
+const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 
 const ownerUser = ref(null);
 
@@ -16,6 +17,8 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const albumsStore = useAlbumsStore();
+
+const isLoadingOwner = ref(false);
 
 const collectionId = computed(() => route.params.collectionId);
 
@@ -70,16 +73,20 @@ async function fetchCollectionData() {
     albumData.value = data;
 
     if (data.user_id) {
+      isLoadingOwner.value = true;
+
       try {
-        ownerUser.value = await usersStore.getUserById(data.user_id);
-        console.log(ownerUser.value);
+        ownerUser.value = await usersStore.getUser(data.user_id);
       } catch (e) {
         ownerUser.value = null;
+      } finally {
+        isLoadingOwner.value = false;
       }
 
     } else {
       ownerUser.value = null;
-
+      isLoadingOwner.value = false;
+      
     }
 
   } catch (error) {
@@ -141,15 +148,28 @@ watch(
             </div>
             <div class="collection-detail__actors-list">
               <div class="collection-detail__actor-image-area">
+                <div
+                  v-if="isLoadingOwner"
+                  class="collection-detail__actor-image-skeleton"
+                  aria-hidden="true"
+                />
                 <img
+                  v-else
                   :src="ownerAvatarSrc"
                   :alt="`Avatar de ${ownerUser?.name?.trim() || 'usuário'}`"
                   class="collection-detail__actor-image"
                 />
               </div>
               <div class="collection-detail__actor-name-wrapper">
-                <p class="collection-detail__actor-name">{{ ownerUser?.name?.trim() || "Usuário desconhecido" }}</p>
-              </div>
+                <div v-if="isLoadingOwner" class="collection-detail__actor-name-skeleton" />
+                <p
+                  v-else
+                  class="collection-detail__actor-name"
+                  :class="{ 'collection-detail__actor-name--visible': !isLoadingOwner }"
+                >
+                  {{ ownerUser?.name?.trim() || "Usuário desconhecido" }}
+                </p>
+                </div>
             </div>
           </section>
         </div>
@@ -214,6 +234,14 @@ watch(
   display: block;
 }
 
+.collection-detail__actor-image-skeleton {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #e8e8e8;
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+}
+
 .collection-detail__actor-name {
   color: var(--Preto, #1F1F1F);
   font-family: "DM Sans";
@@ -222,6 +250,14 @@ watch(
   font-weight: 500;
   line-height: 150%;
   margin: 0;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 220ms ease, transform 220ms ease;  
+}
+
+.collection-detail__actor-name--visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .collection-detail__container {
@@ -315,6 +351,23 @@ watch(
   font-weight: 400;
   line-height: 125%; /* 17.5px */  
   padding-block: 8px;
+}
+
+.collection-detail__actor-name-skeleton {
+  width: 140px;
+  height: 22px;
+  border-radius: 6px;
+  background: #ececec;
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  0% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 @media (max-width: 767px) {
