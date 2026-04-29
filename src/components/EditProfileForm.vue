@@ -192,26 +192,26 @@ defineExpose({
 });
 
 watch(() => props.profileData, (newValue) => {
-  address.value = newValue?.data?.address || '';
-  bio.value = newValue?.data?.bio || '';
-  gender.value = newValue?.data?.gender || '';
-  const rawBirthdate = newValue?.data?.birthdate || '';
+  address.value = newValue?.address || '';
+  bio.value = newValue?.bio || '';
+  gender.value = newValue?.gender || '';
+  const rawBirthdate = newValue?.birthdate || '';
   birthdate.value = rawBirthdate ? rawBirthdate.slice(0, 10) : '';
-  race.value = newValue?.data?.race || '';
-  profession.value = newValue?.data?.profession || '';
-  scholarity.value = newValue?.data?.scholarity || '';
+  race.value = newValue?.race || '';
+  profession.value = newValue?.profession || '';
+  scholarity.value = newValue?.scholarity || '';
   socials.value = {
-    lattes: newValue?.data?.socials?.lattes || '',
-    orcid: newValue?.data?.socials?.orcid || '',
-    facebook: newValue?.data?.socials?.facebook || '',
-    instagram: newValue?.data?.socials?.instagram || '',
-    linkedin: newValue?.data?.socials?.linkedin || '',
-    whatsapp: newValue?.data?.socials?.whatsapp || '',
-    x: newValue?.data?.socials?.x || ''
+    lattes: newValue?.socials?.lattes || '',
+    orcid: newValue?.socials?.orcid || '',
+    facebook: newValue?.socials?.facebook || '',
+    instagram: newValue?.socials?.instagram || '',
+    linkedin: newValue?.socials?.linkedin || '',
+    whatsapp: newValue?.socials?.whatsapp || '',
+    x: newValue?.socials?.x || ''
   };
-  selectedInterests.value = newValue?.data?.subjects || [];
+  selectedInterests.value = newValue?.subjects || [];
 
-  const config = newValue?.data?.configurations || {};
+  const config = newValue?.configurations || {};
   addressPublic.value = 'address' in config ? config.address : true;
   genderPublic.value = 'gender' in config ? config.gender : true;
   birthdatePublic.value = 'birthdate' in config ? config.birthdate : true;
@@ -284,7 +284,7 @@ function validateImage(file) {
 async function updateProfile() {
   const payload = {
     user_id: props.userData.id,
-    ...props.profileData.data,
+    ...props.profileData,
     address: address.value,
     bio: bio.value,
     gender: gender.value,
@@ -306,7 +306,7 @@ async function updateProfile() {
 
   await profilesStore.updateProfile(
     userAuthHeader.value,
-    props.profileData.data.id,
+    props.profileData.id,
     payload
   );
 
@@ -508,34 +508,34 @@ function goForgotPassword() {
 
 async function updatePersonalData() {
   try {
-    const hasNameChanged = name.value !== props.userData.name;
-    const hasImageChanged = !!profileImageFile.value;
+    // const hasNameChanged = name.value !== props.userData.name;
+    // const hasImageChanged = !!profileImageFile.value;
 
-    if (hasNameChanged || hasImageChanged) {
-      const formData = new FormData();
+    // if (hasNameChanged || hasImageChanged) {
+    //   const formData = new FormData();
 
-      formData.append('name', name.value || props.userData.name);
-      formData.append('email', props.userData.email);
-      formData.append('_method', 'PUT');
+    //   formData.append('name', name.value || props.userData.name);
+    //   formData.append('email', props.userData.email);
+    //   formData.append('_method', 'PUT');
 
-      if (hasImageChanged) {
-        formData.append('image', profileImageFile.value);
-      }
+    //   if (hasImageChanged) {
+    //     formData.append('image', profileImageFile.value);
+    //   }
 
 
-      const response = await axios.post(
-        `/api/users/${props.userData.id}`,
-        formData,
-        {
-          headers: {
-            Authorization: authStore.authHeader,
-          },
-        }
-      );
+    //   const response = await axios.post(
+    //     `/api/users/${props.userData.id}`,
+    //     formData,
+    //     {
+    //       headers: {
+    //         Authorization: authStore.authHeader,
+    //       },
+    //     }
+    //   );
 
-      authStore.loggedUser = response.data.user;
-      localStorage.setItem("loggedUser", JSON.stringify(response.data.user));
-    }
+    //   authStore.loggedUser = response.data.user;
+    //   localStorage.setItem("loggedUser", JSON.stringify(response.data.user));
+    // }
 
     await updateProfile();
     router.push('/eu');
@@ -999,11 +999,11 @@ function handleCancel() {
                         class="profile-form__pwd-input" autocomplete="new-password" />
                       <button type="button" class="profile-form__pwd-toggle" :aria-label="showPasswordConfirmation ? 'Ocultar senha' : 'Mostrar senha'
                         " @click="
-                        showPasswordConfirmation = !showPasswordConfirmation
-                        ">
+                          showPasswordConfirmation = !showPasswordConfirmation
+                          ">
                         <i :class="showPasswordConfirmation
-                            ? 'bi bi-eye-slash'
-                            : 'bi bi-eye'
+                          ? 'bi bi-eye-slash'
+                          : 'bi bi-eye'
                           " aria-hidden="true" />
                       </button>
                     </div>
