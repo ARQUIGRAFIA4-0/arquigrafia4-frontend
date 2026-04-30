@@ -31,7 +31,11 @@ const handleLogout = async () => {
       <!-- Profile Dropdown -->
       <div class="dropdown">
         <span class="profile px-1" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-          <img v-if="store.loggedUser?.avatar_path" :src="`${API_BASE_URL}/storage/${store.loggedUser.avatar_path}`"
+          <img v-if="store.loggedUser?.avatar_url || store.loggedUser?.avatar_path"
+            :src="store.loggedUser.avatar_url
+            // TODO investigar formação da URL no backend
+              ? (store.loggedUser.avatar_url.startsWith('http') ? store.loggedUser.avatar_url : `${API_BASE_URL}${store.loggedUser.avatar_url}`)
+              : `${API_BASE_URL}/storage/${store.loggedUser.avatar_path}`"
             alt="Foto de perfil" />
           <i v-else class="bi bi-person-square"
             :style="{ color: isLoggedIn ? 'var(--Laranja_E)' : 'var(--Cinza_M)' }"></i>

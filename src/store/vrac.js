@@ -4,12 +4,12 @@ import axios from "../axios";
 export const useVracStore = defineStore("vrac", () => {
   async function getVRACSubjects() {
     try {
-      const response = await axios.get("/api/vrac-subjects", {
+      const response = await axios.get("/api/vrac-subjects?per_page=-1", {
         headers: {
           "Content-Type": "application/json"
         },
       });
-      return response.data;
+      return response.data.data;
     } catch (error) {
       throw Error("Não foi possível obter os termos.");
     }
@@ -30,7 +30,7 @@ export const useVracStore = defineStore("vrac", () => {
           },
         }
       );
-      return response.data;
+      return response.data.data;
     } catch (error) {
       throw new Error("Não foi possível adicionar o termo. Tente novamente.");
     }
@@ -38,12 +38,12 @@ export const useVracStore = defineStore("vrac", () => {
 
   async function getVRACContributorNames() {
     try {
-      const response = await axios.get("/api/vrac-contributor-names", {
+      const response = await axios.get("/api/vrac-contributor-names?per_page=-1", {
         headers: {
           "Content-Type": "application/json"
         },
       });
-      return response.data;
+      return response.data.data;
     } catch (error) {
       throw Error("Não foi possível obter os nomes de contribuidores.");
     }
@@ -64,7 +64,7 @@ export const useVracStore = defineStore("vrac", () => {
           },
         }
       );
-      return response.data;
+      return response.data.name;
     } catch (error) {
       throw new Error("Não foi possível adicionar o nome. Tente novamente.");
     }

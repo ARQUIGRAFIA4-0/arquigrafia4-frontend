@@ -281,12 +281,12 @@ const fetchImages = async (page = 1, filters = {}) => {
 
 /**
  * Busca o total de imagens cadastradas no sistema
- * Faz uma chamada mínima à API (per_page=1) para obter apenas o total
+ * Faz uma chamada mínima à API (per_page=-1) para obter apenas o total
  * @returns {Promise<number>} Total de imagens cadastradas
  */
 const getTotalImages = async () => {
   const apiBaseUrl = "https://api-dev.arquigrafia.org.br";
-  const apiUrl = `${apiBaseUrl}/api/images?per_page=1`;
+  const apiUrl = `${apiBaseUrl}/api/images?per_page=-1`;
 
   try {
     const response = await fetch(apiUrl);

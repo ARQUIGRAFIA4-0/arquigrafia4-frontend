@@ -103,11 +103,10 @@ const displayName = computed(() =>
   props.image?.collective?.name ?? props.image?.uploader?.name ?? null
 );
 const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
-const displayAvatar = computed(() =>
-  props.image?.uploader?.avatar_path
-    ? `${API_BASE_URL}/storage/${props.image.uploader.avatar_path}`
-    : null
-);
+const displayAvatar = computed(() => {
+  const path = props.image?.collective?.avatar_path ?? props.image?.uploader?.avatar_path;
+  return path ? `${API_BASE_URL}/storage/${path}` : null;
+});
 
 const displayInitial = computed(() =>
   displayName.value?.trim().charAt(0).toUpperCase() ?? ""

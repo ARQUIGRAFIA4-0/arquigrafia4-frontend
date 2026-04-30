@@ -4,6 +4,7 @@
   import { useAlbumsStore } from "@/store/albums";
   import UploadColectionBox from "@/components/UploadColectionBox.vue";
   import albumDefaultImage from "@/assets/album-default.png";
+  import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
 
   import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
 
@@ -22,6 +23,27 @@
   const albums = ref([]);
   const isLoadingAlbums = ref(false);
   const albumsError = ref(null);
+
+  const showTutorialModal = ref(false);
+
+  // Acesso aos dados do álbum selecionado
+  async function fetchAlbumData(albumId) {
+    try {
+      const albumData = await albumsStore.getDataAlbumByAlbumId(
+        userAuthHeader.value,
+        albumId
+      );
+
+      if (albumData.images.length === 0) {
+        showTutorialModal.value = true;
+        return;
+      }
+
+    } catch (e) {
+      console.error(e);
+      albumsError.value = e?.message || "Não foi possível carregar os dados do álbum.";
+    }
+  }
 
   // Função para buscar as coleções do usuário
   async function fetchAlbums(options = {}) {
@@ -102,6 +124,7 @@
     >
       <UploadColectionBox
         key="create-album-card"
+        class="profile-collections__create-strip"
         :is-current-user="props.isCurrentUser"
         :user-data="props.userData"
         variant="compact"
@@ -112,6 +135,7 @@
         v-for="album in albums"
         :key="album.id"
         class="profile-collections__album-card"
+        @click="fetchAlbumData(album.id)"
       >
         <div class="profile-collections__album-thumb">
           <img
@@ -127,7 +151,7 @@
             <button
               type="button"
               class="profile-collections__album-btn profile-collections__album-btn--secondary"
-              @click="handleDeleteAlbum(album.id)"
+              @click.stop="handleDeleteAlbum(album.id)"
             >
               Excluir
             </button>
@@ -149,6 +173,9 @@
       :user-data="props.userData"
       @created="fetchAlbums({ silent: true })"
     />
+
+    <TutorialModalCollections v-model="showTutorialModal" />
+
   </section>
 </template>
 
@@ -175,7 +202,7 @@
   grid-template-columns: repeat(auto-fill, 220px);
   column-gap: 18px;
   row-gap: 16px;
-  align-items: start;
+  align-items: stretch;
   justify-content: flex-start;
 }
 
@@ -185,6 +212,7 @@
   gap: 0;
   width: 220px;
   height: 334px;
+  min-height: 0;
   padding-bottom: 8px;
   box-sizing: border-box;
   background: transparent;
@@ -302,11 +330,34 @@
   cursor: not-allowed;
 }
 
+@media (hover: none) and (pointer: coarse) {
+  .profile-collections__album-actions {
+    display: flex;
+    opacity: 1;
+    max-height: none;
+    transform: none;
+    pointer-events: auto;
+    overflow: visible;
+    padding-top: 4px;
+  }
+}
+
 @media (max-width: 767px) {
 
   .profile-collections__album-actions {
-    display: none;
+    display: flex;
+    opacity: 1;
+    max-height: none;
+    transform: none;
+    pointer-events: auto;
+    overflow: visible;
+    padding-top: 4px;
   }
+
+  .profile-collections__album-content {
+    justify-content: space-between;
+  }
+
   .profile-collections__album-thumb {
     height: auto;
     aspect-ratio: 1 / 1;
@@ -317,8 +368,17 @@
     gap: 12px;
   }
 
+  /* faixa “Criar coleção” largura total acima do grid de álbuns na versão mobile*/
+  .profile-collections__grid > :deep(.profile-collections__create-strip) {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: 100%;
+  }
+
   .profile-collections__album-card {
     width: 100%;
+    height: 100%;
+    min-height: 0;
   }
 
   .profile-collections__album-thumb {
