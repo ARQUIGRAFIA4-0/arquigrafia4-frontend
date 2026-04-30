@@ -23,7 +23,7 @@ export const useUsersStore = defineStore("users", () => {
           "Authorization": authHeader,
         },
       });
-      return response.data;
+      return response.data.data;
     } catch (error) {
       throw new Error("Não foi possível atualizar o usuário.");
     }

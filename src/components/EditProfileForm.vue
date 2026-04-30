@@ -138,8 +138,7 @@ function closeAlert() {
 
 onMounted(async () => {
   try {
-    const response = await vracStore.getVRACSubjects();
-    subjects.value = response.data;
+    subjects.value = await vracStore.getVRACSubjects();
   } catch (error) {
     console.error("Error fetching VRAC subjects:", error);
   }
@@ -160,7 +159,7 @@ async function createNewSubjectFromNewInterest(term) {
   try {
     const result = await vracStore.addVRACSubject(term);
     interestInput.value = '';
-    addInterest(result.data);
+    addInterest(result);
   } catch (error) {
     console.error("Erro ao adicionar novo termo:", error);
   }
@@ -388,7 +387,7 @@ async function updateUserPassword(newPasswordValue) {
       payload.current_password = currentPassword.value;
     }
     // Atualiza a senha do usuário no banco de dados
-    const response = await usersStore.updateUser(userAuthHeader.value, props.userData.id, payload);
+    await usersStore.updateUser(userAuthHeader.value, props.userData.id, payload);
   } catch (error) {
     throw new Error("Erro ao atualizar a senha do usuário.");
   }
@@ -508,34 +507,34 @@ function goForgotPassword() {
 
 async function updatePersonalData() {
   try {
-    // const hasNameChanged = name.value !== props.userData.name;
-    // const hasImageChanged = !!profileImageFile.value;
+    const hasNameChanged = name.value !== props.userData.name;
+    const hasImageChanged = !!profileImageFile.value;
 
-    // if (hasNameChanged || hasImageChanged) {
-    //   const formData = new FormData();
+    if (hasNameChanged || hasImageChanged) {
+      const formData = new FormData();
 
-    //   formData.append('name', name.value || props.userData.name);
-    //   formData.append('email', props.userData.email);
-    //   formData.append('_method', 'PUT');
+      formData.append('name', name.value || props.userData.name);
+      formData.append('email', props.userData.email);
+      formData.append('_method', 'PUT');
 
-    //   if (hasImageChanged) {
-    //     formData.append('image', profileImageFile.value);
-    //   }
+      if (hasImageChanged) {
+        formData.append('avatar', profileImageFile.value);
+      }
 
+      const response = await axios.post(
+        `/api/users/${props.userData.id}`,
+        formData,
+        {
+          headers: {
+            Authorization: authStore.authHeader,
+          },
+        }
+      );
 
-    //   const response = await axios.post(
-    //     `/api/users/${props.userData.id}`,
-    //     formData,
-    //     {
-    //       headers: {
-    //         Authorization: authStore.authHeader,
-    //       },
-    //     }
-    //   );
-
-    //   authStore.loggedUser = response.data.user;
-    //   localStorage.setItem("loggedUser", JSON.stringify(response.data.user));
-    // }
+      const updatedUser = { ...authStore.loggedUser, ...response.data.data };
+      authStore.loggedUser = updatedUser;
+      localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
+    }
 
     await updateProfile();
     router.push('/eu');
@@ -767,7 +766,7 @@ function handleCancel() {
         </div>
       </UiField>
       <ul>
-        <UiField class="mb-3" v-for="([key, value], idx) in Object.entries(socials).filter(([_, v]) => v)" :key="key">
+        <UiField class="mb-3" v-for="[key, value] in Object.entries(socials).filter(([_, v]) => v)" :key="key">
           <div class="input-group input-group-sm">
             <button class="btn btn-primary bg-preto border-preto fw-normal" aria-expanded="false" disabled="true">
               {{ socialOptions[key]?.label }}
@@ -797,7 +796,7 @@ function handleCancel() {
             </div>
             <!-- Lista de temas -->
             <ul v-if="interestInput" class="profile-form__interest-list">
-              <li v-for="(option, index) in filteredSubjects.slice(0, 20)" :key="option.id" @click="addInterest(option)"
+              <li v-for="option in filteredSubjects.slice(0, 20)" :key="option.id" @click="addInterest(option)"
                 class="profile-form__interest-list-item">
                 <span class="profile-form__interest-list-item-term">{{ option.term }}</span>
               </li>
@@ -816,7 +815,7 @@ function handleCancel() {
       <UiField v-if="selectedInterests.length > 0" label="Temas de interesse cadastrados em seu perfil" labelTag="span"
         explain="Você pode remover temas clicando no ícone de 'x' ao lado do nome do tema.">
         <div class="d-flex flex-wrap gap-2 mt-2">
-          <div v-for="(interest, index) in selectedInterests" :key="interest.id"
+          <div v-for="interest in selectedInterests" :key="interest.id"
             class="btn btn-primary btn-sm btn-tag d-inline-flex align-items-center">
             {{ interest.term }}
             <button type="button" class="btn-close ms-2" aria-label="Remover" @click="removeInterest(interest)" />
