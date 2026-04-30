@@ -1,122 +1,136 @@
 <template>
-  <div>
-    <div v-if="props.comments.length" class="comments-list">
-      <div
-        v-for="comment in props.comments"
-        :key="comment.id"
-        class="comment mb-4"
-      >
-        <div class="d-flex align-items-start">
-          <img
-            :src="comment.avatarUrl"
-            class="rounded-circle me-3"
-            alt="Avatar"
-          />
-          <div>
-            <h6 class="mb-1">{{ comment.author }}</h6>
-            <p class="mb-1">{{ comment.content }}</p>
-            <small class="text-muted">
-              {{ new Date(comment.date).toLocaleDateString() }}
-            </small>
-          </div>
-        </div>
-      </div>
-    </div>
-    <p v-else class="text-muted">Ainda não há comentários.</p>
-
-    <div class="comment-form__header">
-      <h5 class="comment-form__title mb-0">Deixe seu comentário</h5>
-    </div>
-
-    <div class="mb-3">
-      <label class="visually-hidden" for="comment-input">Comentário</label>
-      <textarea
-        id="comment-input"
-        class="form-control comment-form__textarea"
-        placeholder="Comentário"
-        rows="4"
-      ></textarea>
-    </div>
-
-    <div class="d-flex justify-content-end">
-      <button type="button" class="btn btn-secondary btn-sm">Comentar</button>
-    </div>
-
-    <p class="comment-form__disclaimer mt-3">
-      <strong>**</strong>
-      Cada usuário é responsável por seus próprios comentários. O ARQUIGRAFIA
-      não se responsabiliza pelos comentários postados, mas apenas por tornar
-      indisponível no site o conteúdo considerado infringente ou danoso por
-      determinação judicial (art.19 da Lei 12.965/14).
+  <div class="image-comments">
+    <CommentList v-if="comments.length" :comments="comments" :image-url="props.imageUrl" class="image-comments__list"
+      @delete="handleDelete" @report="handleReport" />
+    <p v-else-if="!loading" class="image-comments__empty">
+      Ainda não há comentários.
     </p>
+
+    <p v-if="loading" class="image-comments__loading">Carregando...</p>
+    <p v-if="error" class="image-comments__error">{{ error }}</p>
+
+    <div v-if="!isLoggedIn" class="image-comments__auth-banner">
+      Você ainda não acessou sua conta. Faça seu
+      <RouterLink :to="{ name: 'login' }">login</RouterLink>
+      e participe da conversa.
+    </div>
+
+    <CommentForm :submitting="submitting" :disabled="!isLoggedIn" class="image-comments__form" @submit="handleSubmit" />
   </div>
 </template>
 
 <script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useCommentStore } from '@/store/commentStore'
+import { useAuthStore } from '@/store/auth'
+import CommentList from './comments/CommentList.vue'
+import CommentForm from './comments/CommentForm.vue'
+
+const route = useRoute()
+const imageId = route.params.id
+
+const authStore = useAuthStore()
+const authHeader = computed(() => authStore.authHeader)
+const commentStore = useCommentStore()
+const isLoggedIn = computed(() => authStore.isLoggedIn)
+
+const comments = ref([])
+const loading = ref(false)
+const submitting = ref(false)
+const error = ref(null)
+
 const props = defineProps({
-  comments: {
-    type: Array,
-    default: () => [],
+  imageUrl: {
+    type: String,
+    default: '',
   },
-});
+})
+
+onMounted(async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const data = await commentStore.fetchComments(imageId)
+    comments.value = data.data
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    loading.value = false
+  }
+})
+
+async function handleSubmit(content) {
+  submitting.value = true
+  error.value = null
+  try {
+    const data = await commentStore.postComment(authHeader.value, imageId, content)
+    comments.value.unshift(data.data)
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    submitting.value = false
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }
+}
+
+async function handleDelete(commentId) {
+  const index = comments.value.findIndex(c => c.id === commentId)
+  if (index !== -1) {
+    if (comments.value[index].replies_count > 0) {
+      comments.value[index].is_deleted = true
+    } else {
+      comments.value.splice(index, 1)
+    }
+  }
+}
+
+function handleReport({ commentId, type, description }) {
+  // TODO: chamar a API de denúncia
+  console.log('report', commentId, type, description)
+}
 </script>
 
-<style scoped>
-.comment {
-  background-color: #fff;
-  transition: all 0.2s ease;
-}
+<style lang="scss" scoped>
+.image-comments {
+  &__list {
+    margin-bottom: 2rem;
+  }
 
-.comment-form {
-  background-color: var(--Branco);
-  border: 1px solid var(--Cinza_C);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-}
+  &__empty,
+  &__loading {
+    color: var(--Cinza_M);
+    font-size: 0.9rem;
+    padding: 1rem 0;
+  }
 
-.comment-form__header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-}
+  &__error {
+    color: var(--bs-danger);
+    font-size: 0.9rem;
+  }
 
-.comment-form__title {
-  color: var(--Cinza_E);
-  font-size: 1.125rem;
-  font-weight: 600;
-}
+  &__form {
+    margin-top: 1.5rem;
+  }
 
-.comment-form__hint {
-  align-items: center;
-  border: 1px solid var(--Cinza_C);
-  border-radius: 50%;
-  color: var(--Cinza_E);
-  display: inline-flex;
-  font-size: 0.85rem;
-  font-weight: 700;
-  height: 1.75rem;
-  justify-content: center;
-  width: 1.75rem;
-}
+  &__auth-banner {
+    background-color: #fff3e0;
+    border: 1px solid var(--Laranja_E, #ff7f00);
+    border-radius: 0.5rem;
+    color: var(--Laranja_E, #ff7f00);
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    text-align: center;
 
-.comment-form__textarea {
-  min-height: 9rem;
-  padding: 1rem;
-  resize: vertical;
-}
-
-.comment-form__submit {
-  min-width: 9rem;
-}
-
-.comment-form__disclaimer {
-  color: var(--Cinza_M);
-  font-size: 0.875rem;
-  line-height: 1.4;
-}
-
-.comment-form__disclaimer strong {
-  font-weight: 600;
+    a {
+      color: var(--Laranja_E, #ff7f00);
+      font-weight: 700;
+    }
+  }
 }
 </style>

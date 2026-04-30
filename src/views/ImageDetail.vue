@@ -8,15 +8,8 @@
           <i class="bi bi-arrow-left-square back-link__icon" aria-hidden="true"></i>
           <span class="back-link__label">Voltar</span>
         </button>
-        <ImageDisplay
-          :image="image"
-          :license-info="licenseInfo"
-          :loading="loading"
-          @load="loading = false"
-          @download="handleDownload"
-          @share="handleShare"
-          @report-submit="handleReportSubmit"
-        />
+        <ImageDisplay :image="image" :license-info="licenseInfo" :loading="loading" @load="loading = false"
+          @download="handleDownload" @share="handleShare" @report-submit="handleReportSubmit" />
       </div>
 
       <!-- Metadata -->
@@ -35,11 +28,7 @@
           </div>
         </div>
 
-        <ImageMetadata
-          v-if="currentSection === 'dados'"
-          :image="image"
-          :license-info="licenseInfo"
-        />
+        <ImageMetadata v-if="currentSection === 'dados'" :image="image" :license-info="licenseInfo" />
 
         <div v-else-if="currentSection === 'comentarios'">
           <div v-if="loadingComments" class="text-center py-4">
@@ -47,7 +36,7 @@
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
-          <ImageComments v-else :comments="comments" />
+          <ImageComments :image-url="image?.imageUrl" />
         </div>
 
         <div v-else class="text-muted small">
@@ -73,8 +62,7 @@ const router = useRouter();
 const route = useRoute();
 const image = ref(null);
 const loading = ref(true);
-const comments = ref([]);
-const loadingComments = ref(false);
+
 
 const tabs = [
   {
@@ -82,11 +70,11 @@ const tabs = [
     section: "dados",
     routeName: "image-detail-dados",
   },
-  // {
-  //   label: "Comentários",
-  //   section: "comentarios",
-  //   routeName: "image-detail-comentarios",
-  // },
+  {
+    label: "Comentários",
+    section: "comentarios",
+    routeName: "image-detail-comentarios",
+  },
   // {
   //   label: "Imagens relacionadas",
   //   section: "relacionadas",
@@ -101,17 +89,6 @@ const licenseInfo = computed(() => {
   if (!rightsUrl) return null;
   return findLicenseByUrl(rightsUrl);
 });
-
-const loadComments = async (imageId) => {
-  loadingComments.value = true;
-  try {
-    comments.value = await api.getImageComments(imageId);
-  } catch (error) {
-    console.error("Error loading comments:", error);
-  } finally {
-    loadingComments.value = false;
-  }
-};
 
 const goBack = () => {
   router.back();
@@ -136,7 +113,6 @@ onMounted(async () => {
   try {
     const imageId = route.params.id;
     image.value = await api.getImageDetails(imageId);
-    await loadComments(imageId);
   } catch (error) {
     console.error("Error fetching data:", error);
   } finally {
