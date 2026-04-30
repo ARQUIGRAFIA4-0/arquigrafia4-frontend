@@ -124,7 +124,7 @@ const displayName = computed(() =>
   props.image?.collective?.name ?? props.image?.uploader?.name ?? null
 );
 const displayAvatar = computed(() =>
-  props.image?.collective?.avatar_path ?? props.image?.uploader?.avatar ?? null
+  props.image?.collective?.avatar_path ?? props.image?.uploader?.avatar_path ?? null
 );
 const displayInitial = computed(() =>
   displayName.value?.trim().charAt(0).toUpperCase() ?? ""

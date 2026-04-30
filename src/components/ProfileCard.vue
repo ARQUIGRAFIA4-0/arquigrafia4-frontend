@@ -28,7 +28,7 @@ watch(() => props.isMobile, (newValue) => {
 }, { immediate: true });
 
 function getColumns(keys) {
-  const data = currentProfileData.value?.data || {};
+  const data = currentProfileData.value || {};
   return keys.filter(key => Boolean(data[key])).length;
 }
 
@@ -71,94 +71,95 @@ function checkSocials(socials) {
     <template v-else>
       <div class="profile-card__header">
         <div class="profile-card__image">
-          <!-- <img :src="currentProfileData?.data?.profile_image || profileImageDefault" alt="Foto de perfil" /> -->
-          <img :src="props.userData.avatar_path
-            ? `${API_BASE_URL}/storage/${props.userData.avatar_path}`
-            : profileImageDefault" alt="Foto de perfil" />
+          <!-- <img :src="currentProfileData?.profile_image || profileImageDefault" alt="Foto de perfil" /> -->
+          <img :src="props.userData.avatar_url
+            ? (props.userData.avatar_url.startsWith('http') ? props.userData.avatar_url : `${API_BASE_URL}${props.userData.avatar_url}`)
+            : (props.userData.avatar_path ? `${API_BASE_URL}/storage/${props.userData.avatar_path}` : profileImageDefault)"
+            alt="Foto de perfil" />
         </div>
         <div class="profile-card__title">
           <h2>{{ userData?.name }}</h2>
           <div class="profile-card__address">
             <i class="bi bi-geo-alt"></i>
-            <p>{{ currentProfileData?.data?.address || "Não informado" }}</p>
+            <p>{{ currentProfileData?.address || "Não informado" }}</p>
           </div>
         </div>
       </div>
       <div v-if="showFullProfile" class="profile-card__content">
-        <div v-if="currentProfileData?.data?.bio" class="profile-card__bio">
+        <div v-if="currentProfileData?.bio" class="profile-card__bio">
           <h3>Bio</h3>
-          <p>{{ currentProfileData.data.bio }}</p>
+          <p>{{ currentProfileData.bio }}</p>
         </div>
         <div v-if="getColumns(['gender', 'birthdate', 'race']) > 0"
           :class="getColumns(['gender', 'birthdate', 'race']) === 3 ? 'row row-cols-3' : 'row row-cols-2'">
-          <div v-if="currentProfileData?.data?.gender" class="col">
+          <div v-if="currentProfileData?.gender" class="col">
             <h3>Gênero</h3>
-            <p>{{ currentProfileData.data.gender }}</p>
+            <p>{{ currentProfileData.gender }}</p>
           </div>
-          <div v-if="currentProfileData?.data?.birthdate" class="col">
+          <div v-if="currentProfileData?.birthdate" class="col">
             <h3>Idade</h3>
-            <p>{{ getAge(currentProfileData.data.birthdate) }} anos</p>
+            <p>{{ getAge(currentProfileData.birthdate) }} anos</p>
           </div>
-          <div v-if="currentProfileData?.data?.race" class="col">
+          <div v-if="currentProfileData?.race" class="col">
             <h3>Raça</h3>
-            <p>{{ currentProfileData.data.race }}</p>
+            <p>{{ currentProfileData.race }}</p>
           </div>
         </div>
         <div v-if="getColumns(['profession', 'scholarity']) > 0" class="row row-cols-2">
-          <div v-if="currentProfileData?.data?.profession" class="col">
+          <div v-if="currentProfileData?.profession" class="col">
             <h3>Profissão</h3>
-            <p>{{ currentProfileData.data.profession }}</p>
+            <p>{{ currentProfileData.profession }}</p>
           </div>
-          <div v-if="currentProfileData?.data?.scholarity" class="col">
+          <div v-if="currentProfileData?.scholarity" class="col">
             <h3>Escolaridade</h3>
-            <p>{{ currentProfileData.data.scholarity }}</p>
+            <p>{{ currentProfileData.scholarity }}</p>
           </div>
         </div>
-        <div v-if="checkSocials(currentProfileData?.data?.socials)" class="profile-card__socials">
+        <div v-if="checkSocials(currentProfileData?.socials)" class="profile-card__socials">
           <h3>Redes</h3>
           <div class="profile-card__socials-icons">
-            <div v-if="currentProfileData?.data?.socials.lattes">
-              <a :href="currentProfileData.data.socials.lattes" target="_blank" rel="noopener noreferrer">
+            <div v-if="currentProfileData?.socials.lattes">
+              <a :href="currentProfileData.socials.lattes" target="_blank" rel="noopener noreferrer">
                 <img src="@/assets/logo_lattes.svg" alt="Lattes" />
               </a>
             </div>
-            <div v-if="currentProfileData?.data?.socials.orcid">
-              <a :href="currentProfileData.data.socials.orcid" target="_blank" rel="noopener noreferrer">
+            <div v-if="currentProfileData?.socials.orcid">
+              <a :href="currentProfileData.socials.orcid" target="_blank" rel="noopener noreferrer">
                 <img src="@/assets/logo_orcid.svg" alt="Orcid" />
               </a>
             </div>
-            <div v-if="currentProfileData?.data?.socials.facebook">
-              <a :href="currentProfileData.data.socials.facebook" target="_blank" rel="noopener noreferrer">
+            <div v-if="currentProfileData?.socials.facebook">
+              <a :href="currentProfileData.socials.facebook" target="_blank" rel="noopener noreferrer">
                 <img src="@/assets/logo_facebook.svg" alt="Facebook" />
               </a>
             </div>
-            <div v-if="currentProfileData?.data?.socials.instagram">
-              <a :href="currentProfileData.data.socials.instagram" target="_blank" rel="noopener noreferrer">
+            <div v-if="currentProfileData?.socials.instagram">
+              <a :href="currentProfileData.socials.instagram" target="_blank" rel="noopener noreferrer">
                 <img src="@/assets/logo_instagram.svg" alt="Instagram" />
               </a>
             </div>
-            <div v-if="currentProfileData?.data?.socials.linkedin">
-              <a :href="currentProfileData.data.socials.linkedin" target="_blank" rel="noopener noreferrer">
+            <div v-if="currentProfileData?.socials.linkedin">
+              <a :href="currentProfileData.socials.linkedin" target="_blank" rel="noopener noreferrer">
                 <img src="@/assets/logo_linkedin.svg" alt="LinkedIn" />
               </a>
             </div>
-            <div v-if="currentProfileData?.data?.socials.whatsapp">
-              <a :href="`https://wa.me/${currentProfileData.data.socials.whatsapp}`" target="_blank"
+            <div v-if="currentProfileData?.socials.whatsapp">
+              <a :href="`https://wa.me/${currentProfileData.socials.whatsapp}`" target="_blank"
                 rel="noopener noreferrer">
                 <img src="@/assets/logo_whatsapp.svg" alt="WhatsApp" />
               </a>
             </div>
-            <div v-if="currentProfileData?.data?.socials.x">
-              <a :href="currentProfileData.data.socials.x" target="_blank" rel="noopener noreferrer">
+            <div v-if="currentProfileData?.socials.x">
+              <a :href="currentProfileData.socials.x" target="_blank" rel="noopener noreferrer">
                 <img src="@/assets/logo_x.svg" alt="X" />
               </a>
             </div>
           </div>
         </div>
-        <div v-if="currentProfileData?.data?.subjects.length > 0" class="profile-card__interests">
+        <div v-if="currentProfileData?.subjects?.length > 0" class="profile-card__interests">
           <h3>Interesses</h3>
           <ul class="profile-card__interests-list">
-            <li v-for="(subject, index) in currentProfileData.data.subjects" :key="subject.id"
+            <li v-for="(subject, index) in currentProfileData.subjects" :key="subject.id"
               class="btn btn-outline-secondary btn-sm btn-tag d-inline-flex align-items-center">
               {{ subject.term }}
             </li>
