@@ -138,8 +138,7 @@ function closeAlert() {
 
 onMounted(async () => {
   try {
-    const response = await vracStore.getVRACSubjects();
-    subjects.value = response.data;
+    subjects.value = await vracStore.getVRACSubjects();
   } catch (error) {
     console.error("Error fetching VRAC subjects:", error);
   }
@@ -160,7 +159,7 @@ async function createNewSubjectFromNewInterest(term) {
   try {
     const result = await vracStore.addVRACSubject(term);
     interestInput.value = '';
-    addInterest(result.data);
+    addInterest(result);
   } catch (error) {
     console.error("Erro ao adicionar novo termo:", error);
   }
@@ -192,26 +191,26 @@ defineExpose({
 });
 
 watch(() => props.profileData, (newValue) => {
-  address.value = newValue?.data?.address || '';
-  bio.value = newValue?.data?.bio || '';
-  gender.value = newValue?.data?.gender || '';
-  const rawBirthdate = newValue?.data?.birthdate || '';
+  address.value = newValue?.address || '';
+  bio.value = newValue?.bio || '';
+  gender.value = newValue?.gender || '';
+  const rawBirthdate = newValue?.birthdate || '';
   birthdate.value = rawBirthdate ? rawBirthdate.slice(0, 10) : '';
-  race.value = newValue?.data?.race || '';
-  profession.value = newValue?.data?.profession || '';
-  scholarity.value = newValue?.data?.scholarity || '';
+  race.value = newValue?.race || '';
+  profession.value = newValue?.profession || '';
+  scholarity.value = newValue?.scholarity || '';
   socials.value = {
-    lattes: newValue?.data?.socials?.lattes || '',
-    orcid: newValue?.data?.socials?.orcid || '',
-    facebook: newValue?.data?.socials?.facebook || '',
-    instagram: newValue?.data?.socials?.instagram || '',
-    linkedin: newValue?.data?.socials?.linkedin || '',
-    whatsapp: newValue?.data?.socials?.whatsapp || '',
-    x: newValue?.data?.socials?.x || ''
+    lattes: newValue?.socials?.lattes || '',
+    orcid: newValue?.socials?.orcid || '',
+    facebook: newValue?.socials?.facebook || '',
+    instagram: newValue?.socials?.instagram || '',
+    linkedin: newValue?.socials?.linkedin || '',
+    whatsapp: newValue?.socials?.whatsapp || '',
+    x: newValue?.socials?.x || ''
   };
-  selectedInterests.value = newValue?.data?.subjects || [];
+  selectedInterests.value = newValue?.subjects || [];
 
-  const config = newValue?.data?.configurations || {};
+  const config = newValue?.configurations || {};
   addressPublic.value = 'address' in config ? config.address : true;
   genderPublic.value = 'gender' in config ? config.gender : true;
   birthdatePublic.value = 'birthdate' in config ? config.birthdate : true;
@@ -284,7 +283,7 @@ function validateImage(file) {
 async function updateProfile() {
   const payload = {
     user_id: props.userData.id,
-    ...props.profileData.data,
+    ...props.profileData,
     address: address.value,
     bio: bio.value,
     gender: gender.value,
@@ -306,7 +305,7 @@ async function updateProfile() {
 
   await profilesStore.updateProfile(
     userAuthHeader.value,
-    props.profileData.data.id,
+    props.profileData.id,
     payload
   );
 
@@ -388,7 +387,7 @@ async function updateUserPassword(newPasswordValue) {
       payload.current_password = currentPassword.value;
     }
     // Atualiza a senha do usuário no banco de dados
-    const response = await usersStore.updateUser(userAuthHeader.value, props.userData.id, payload);
+    await usersStore.updateUser(userAuthHeader.value, props.userData.id, payload);
   } catch (error) {
     throw new Error("Erro ao atualizar a senha do usuário.");
   }
@@ -519,9 +518,8 @@ async function updatePersonalData() {
       formData.append('_method', 'PUT');
 
       if (hasImageChanged) {
-        formData.append('image', profileImageFile.value);
+        formData.append('avatar', profileImageFile.value);
       }
-
 
       const response = await axios.post(
         `/api/users/${props.userData.id}`,
@@ -533,8 +531,9 @@ async function updatePersonalData() {
         }
       );
 
-      authStore.loggedUser = response.data.user;
-      localStorage.setItem("loggedUser", JSON.stringify(response.data.user));
+      const updatedUser = { ...authStore.loggedUser, ...response.data.data };
+      authStore.loggedUser = updatedUser;
+      localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
     }
 
     await updateProfile();
@@ -767,7 +766,7 @@ function handleCancel() {
         </div>
       </UiField>
       <ul>
-        <UiField class="mb-3" v-for="([key, value], idx) in Object.entries(socials).filter(([_, v]) => v)" :key="key">
+        <UiField class="mb-3" v-for="[key, value] in Object.entries(socials).filter(([_, v]) => v)" :key="key">
           <div class="input-group input-group-sm">
             <button class="btn btn-primary bg-preto border-preto fw-normal" aria-expanded="false" disabled="true">
               {{ socialOptions[key]?.label }}
@@ -797,7 +796,7 @@ function handleCancel() {
             </div>
             <!-- Lista de temas -->
             <ul v-if="interestInput" class="profile-form__interest-list">
-              <li v-for="(option, index) in filteredSubjects.slice(0, 20)" :key="option.id" @click="addInterest(option)"
+              <li v-for="option in filteredSubjects.slice(0, 20)" :key="option.id" @click="addInterest(option)"
                 class="profile-form__interest-list-item">
                 <span class="profile-form__interest-list-item-term">{{ option.term }}</span>
               </li>
@@ -816,7 +815,7 @@ function handleCancel() {
       <UiField v-if="selectedInterests.length > 0" label="Temas de interesse cadastrados em seu perfil" labelTag="span"
         explain="Você pode remover temas clicando no ícone de 'x' ao lado do nome do tema.">
         <div class="d-flex flex-wrap gap-2 mt-2">
-          <div v-for="(interest, index) in selectedInterests" :key="interest.id"
+          <div v-for="interest in selectedInterests" :key="interest.id"
             class="btn btn-primary btn-sm btn-tag d-inline-flex align-items-center">
             {{ interest.term }}
             <button type="button" class="btn-close ms-2" aria-label="Remover" @click="removeInterest(interest)" />
@@ -999,11 +998,11 @@ function handleCancel() {
                         class="profile-form__pwd-input" autocomplete="new-password" />
                       <button type="button" class="profile-form__pwd-toggle" :aria-label="showPasswordConfirmation ? 'Ocultar senha' : 'Mostrar senha'
                         " @click="
-                        showPasswordConfirmation = !showPasswordConfirmation
-                        ">
+                          showPasswordConfirmation = !showPasswordConfirmation
+                          ">
                         <i :class="showPasswordConfirmation
-                            ? 'bi bi-eye-slash'
-                            : 'bi bi-eye'
+                          ? 'bi bi-eye-slash'
+                          : 'bi bi-eye'
                           " aria-hidden="true" />
                       </button>
                     </div>

@@ -8,24 +8,13 @@
         <div v-if="displayAvatar" class="metadata-person-avatar">
           <img :src="displayAvatar" :alt="`Foto de ${displayName}`" />
         </div>
-        <div
-          v-else
-          class="metadata-person-avatar metadata-person-avatar--placeholder"
-        >
+        <div v-else class="metadata-person-avatar metadata-person-avatar--placeholder">
           <span>{{ displayInitial }}</span>
         </div>
-        <RouterLink
-          v-if="collectiveId"
-          :to="`/collective/${collectiveId}`"
-          class="metadata-uploader-link"
-        >
+        <RouterLink v-if="collectiveId" :to="`/collective/${collectiveId}`" class="metadata-uploader-link">
           {{ displayName }}
         </RouterLink>
-        <RouterLink
-          v-else-if="uploaderUserId"
-          :to="`/profile/${uploaderUserId}`"
-          class="metadata-uploader-link"
-        >
+        <RouterLink v-else-if="uploaderUserId" :to="`/profile/${uploaderUserId}`" class="metadata-uploader-link">
           {{ displayName }}
         </RouterLink>
         <p v-else class="metadata-text">{{ displayName }}</p>
@@ -54,13 +43,8 @@
     <div v-if="props.image?.subjects?.length" class="metadata-section">
       <h2 class="h5 metadata-title">Tags da imagem</h2>
       <div class="metadata-tags">
-        <button
-          v-for="subject in props.image.subjects"
-          :key="subject.id"
-          type="button"
-          class="btn btn-outline-primary btn-sm btn-tag"
-          @click="searchBySubject(subject)"
-        >
+        <button v-for="subject in props.image.subjects" :key="subject.id" type="button"
+          class="btn btn-outline-primary btn-sm btn-tag" @click="searchBySubject(subject)">
           {{ subject.term }}
         </button>
       </div>
@@ -69,13 +53,8 @@
     <div class="metadata-section" v-if="showMap">
       <h2 class="h5 metadata-title">Localização</h2>
       <div class="metadata-map">
-        <MapLibreMap
-          :style-url="mapStyleUrl"
-          :center="resolvedMapCenter"
-          :zoom="mapZoom"
-          :marker-position="markerPosition"
-          marker-color="#0F89E1"
-        />
+        <MapLibreMap :style-url="mapStyleUrl" :center="resolvedMapCenter" :zoom="mapZoom"
+          :marker-position="markerPosition" marker-color="#0F89E1" />
       </div>
     </div>
 
@@ -123,9 +102,12 @@ const uploaderUserId = computed(() => props.image?.uploader?.id ?? null);
 const displayName = computed(() =>
   props.image?.collective?.name ?? props.image?.uploader?.name ?? null
 );
-const displayAvatar = computed(() =>
-  props.image?.collective?.avatar_path ?? props.image?.uploader?.avatar ?? null
-);
+const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
+const displayAvatar = computed(() => {
+  const path = props.image?.collective?.avatar_path ?? props.image?.uploader?.avatar_path;
+  return path ? `${API_BASE_URL}/storage/${path}` : null;
+});
+
 const displayInitial = computed(() =>
   displayName.value?.trim().charAt(0).toUpperCase() ?? ""
 );
