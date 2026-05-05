@@ -8,7 +8,7 @@ const baseURL = () => axios.defaults.baseURL;
 /**
  * Mapeia um item da API de listagem para o formato usado pela aplicação
  */
-const mapImageListItem = (image) => ({
+export const mapImageListItem = (image) => ({
   id: image.id,
   title: image.titles?.[0]?.label || `Imagem ${image.legacy_id || image.id.substring(0, 8)}`,
   imageUrl: `${baseURL()}/${image.mid_url}`,

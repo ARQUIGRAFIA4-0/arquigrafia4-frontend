@@ -7,6 +7,7 @@ import { useUsersStore } from "@/store/users";
 import defaultProfileImage from "@/assets/profile_image.png";
 import CollectionPeriodsChart from "@/components/CollectionPeriodsChart.vue";
 import UiField from "../../components/ui/UiField.vue";
+import { api } from "@/services/api";
 
 defineOptions({ name: "CollectionDetail" });
 
@@ -26,6 +27,8 @@ const collectionId = computed(() => route.params.collectionId);
 
 const albumData = ref(null);
 const collectionError = ref("");
+const collectionImages = ref([]);
+const isLoadingCollectionImages = ref(false);
 
 // título e descrição reais vindos da API
 const collectionTitle = computed(() => {
@@ -71,8 +74,8 @@ async function fetchCollectionData() {
       authStore.authHeader,
       collectionId.value
     );
-    console.log(data.description);
     albumData.value = data;
+    await loadCollectionImageDetails(data.images || []);
 
     if (data.user_id) {
       isLoadingOwner.value = true;
@@ -95,6 +98,7 @@ async function fetchCollectionData() {
     collectionError.value =
       error?.message || "Não foi possível carregar os dados da coleção.";
     albumData.value = null;
+    collectionImages.value = [];
 
   }
 
@@ -105,6 +109,42 @@ const collectionTags = computed(() =>
   ["Fruição urbana", "Modernismo", "Paisagem", "Coletivo", "Espaço público"]
   //collectionTagsFromDescription(albumData.value?.description ?? "")
 );
+
+// Carrega as imagens da coleção
+async function loadCollectionImageDetails(imagesFromAlbum = []) {
+  
+  // Ordena as imagens pela position do pivot
+  const ordered = [...imagesFromAlbum].sort((a, b) => {
+    const pa = a?.pivot?.position ?? Number.MAX_SAFE_INTEGER;
+    const pb = b?.pivot?.position ?? Number.MAX_SAFE_INTEGER;
+    return pa - pb;
+  });
+
+  // Se não houver imagens, retorna um array vazio
+  if (!ordered.length) {
+    collectionImages.value = [];
+    return;
+  }
+
+  // Carrega as imagens detalhadas
+  isLoadingCollectionImages.value = true;
+
+  try {
+    // Carrega as imagens detalhadas
+    collectionImages.value = await Promise.all(
+      ordered.map((img) => api.getImageDetails(img.id))
+    );
+
+  } catch (err) {
+    console.error("Erro ao carregar imagens da coleção:", err);
+    collectionImages.value = [];
+
+  } finally {
+    isLoadingCollectionImages.value = false;
+
+  }
+
+}
 
 onMounted(fetchCollectionData);
 
@@ -142,7 +182,55 @@ watch(
     <main class="collection-detail__main container-fluid px-0">
       <div class="row g-0 collection-detail__row">
         <div class="collection-detail__image-wrapper">
-          <section class="collection-detail__gallery">         
+          <section class="collection-detail__gallery">
+            <div v-if="isLoadingCollectionImages" class="text-center py-4">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando imagens...</span>
+              </div>
+            </div>
+
+            <template v-else-if="collectionImages.length">
+              <div class="collection-grid">
+                <RouterLink
+                  v-for="item in collectionImages"
+                  :key="item.id"
+                  :to="`/explore/dados/image/${item.id}`"
+                  class="collection-grid__link"
+                >
+                  <article class="collection-grid__card">
+                    <div class="collection-grid__image-wrapper">
+                      <img
+                        :src="item.imageUrl"
+                        class="collection-grid__image"
+                        :alt="item.title"
+                      />
+                    </div>
+
+                    <div class="collection-grid__content">
+                      <h3 class="collection-grid__title">{{ item.title }}</h3>
+                      <p v-if="item.date" class="collection-grid__date">{{ item.date }}</p>
+
+                      <div v-if="item.subjects?.length" class="collection-grid__tags">
+                        <span
+                          v-for="subject in item.subjects.slice(0, 2)"
+                          :key="subject.id"
+                          class="collection-grid__tag"
+                        >
+                          {{ subject.term }}
+                        </span>
+                        <span v-if="item.subjects.length > 2" class="collection-grid__tag">
+                          +{{ item.subjects.length - 2 }}
+                        </span>
+                      </div>
+                    </div>
+                  </article>
+                </RouterLink>
+              </div>
+            </template>
+
+            <div v-else class="collection-detail__gallery-empty">
+              Esta coleção ainda não possui imagens.
+            </div>
           </section>
         </div>
         <div class="collection-detail__info-wrapper">
@@ -235,11 +323,6 @@ watch(
 .collection-detail__image-wrapper {
   flex: 1 1 0;
   min-width: 0;
-}
-
-.collection-detail__info-wrapper {
-  max-width: 338px;
-  height: 100%;
 }
 
 .collection-detail__actors {
@@ -389,8 +472,9 @@ watch(
   display: flex;
   flex: 0 0 338px;
   width: 338px;
+  max-width: 338px;
   min-width: 280px;
-  max-width: 100%;
+  height: 100%;
   align-self: stretch;
   box-sizing: border-box;
   flex-direction: column;
@@ -455,6 +539,7 @@ watch(
   .collection-detail__image-wrapper,
   .collection-detail__info-wrapper {
     width: 100%;
+    max-width: 100%;
     min-width: 0;
     flex: 1 1 auto;
   }
@@ -492,15 +577,6 @@ watch(
   line-height: 150%;
 }
 
-.collection-detail__tags-help {
-  width: 12px;
-  aspect-ratio: 1/1;
-}
-
-.collection-detail__tags-help:hover {
-  color: var(--Preto, #1f1f1f);
-}
-
 .collection-detail__help-field {
   width: auto;
 }
@@ -524,7 +600,6 @@ watch(
   height: 12px;
 }
 
-/* Igual ao bloco de tags em ImageMetadata.vue (scoped lá — repetir aqui) */
 .metadata-tags {
   display: flex;
   flex-wrap: wrap;
@@ -574,13 +649,108 @@ watch(
   line-height: 150%;
 }
 
-.collection-detail__periods-help {
-  width: 12px;
-  aspect-ratio: 1/1;
+.collection-grid {
+  --collection-card-w: 220px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--collection-card-w)), var(--collection-card-w)));
+  gap: var(--pp, 12px);
+  align-items: start;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
 }
 
-.collection-detail__periods-help:hover {
-  color: var(--Preto, #1f1f1f);
+.collection-grid__link {
+  display: flex;
+  width: min(var(--collection-card-w), 100%);
+  max-width: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
+.collection-grid__card {
+  display: flex;
+  width: min(var(--collection-card-w), 100%);
+  max-width: 100%;
+  min-height: 346px;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--pp, 8px);
+  padding-bottom: var(--pp, 8px);
+  border-radius: 5px;
+  border: 0.25px solid var(--Cinza_C, #a6a6a6);
+  background: var(--Off_white, #faf9f9);
+  box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.collection-grid__image-wrapper {
+  position: relative;
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: var(--collection-card-w);
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background-color: #f8f9fa;
+}
+
+.collection-grid__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.collection-grid__content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  padding: 8px 10px 4px;
+}
+
+.collection-grid__title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 125%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collection-grid__date {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--Cinza_E, #2f2f2f);
+}
+
+.collection-grid__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.collection-grid__tag {
+  border-radius: 2px;
+  border: 1px solid var(--Cinza_C, #a6a6a6);
+  padding: 2px 6px;
+  font-size: 12px;
+  line-height: 115%;
+  color: var(--Cinza_E, #2f2f2f);
+  background: #f2f2f2;
+}
+
+.collection-detail__gallery-empty {
+  color: #666;
+  font-size: 14px;
+  padding: 12px 0;
 }
 
 </style>
