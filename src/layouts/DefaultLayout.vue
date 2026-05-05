@@ -34,8 +34,7 @@ const shouldShowFooter = computed(() => {
   flex-direction: column;
 }
 
-/* flex-grow: 0 evita faixa vazia gigante entre o conteúdo e o footer em páginas curtas */
 .default-layout__main {
-  flex: 0 0 auto;
+  flex: 1 0 auto;
 }
 </style>
