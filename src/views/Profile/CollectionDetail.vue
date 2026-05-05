@@ -5,7 +5,7 @@ import { useAuthStore } from "@/store/auth";
 import { useAlbumsStore } from "@/store/albums";
 import { useUsersStore } from "@/store/users";
 import defaultProfileImage from "@/assets/profile_image.png";
-import { collectionTagsFromDescription } from "@/helpers/collectionTagsFromDescription";
+import CollectionPeriodsChart from "@/components/CollectionPeriodsChart.vue";
 
 defineOptions({ name: "CollectionDetail" });
 
@@ -217,6 +217,34 @@ watch(
               </button>
             </div>
           </section>
+          <section
+            class="collection-detail__periods-block"
+            aria-labelledby="collection-periods-heading"
+          >
+            <div class="collection-detail__periods-heading-row">
+              <h2 id="collection-periods-heading" class="collection-detail__periods-title">
+                Períodos da coleção
+              </h2>
+              <button
+                type="button"
+                class="collection-detail__periods-help btn btn-link p-0"
+                aria-label="Sobre os períodos da coleção"
+                title="Distribuição temporal das obras desta coleção (em construção)."
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <g clip-path="url(#clip_collection_periods_help)">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 6C12 7.5913 11.3679 9.11742 10.2426 10.2426C9.11742 11.3679 7.5913 12 6 12C4.4087 12 2.88258 11.3679 1.75736 10.2426C0.632141 9.11742 0 7.5913 0 6C0 4.4087 0.632141 2.88258 1.75736 1.75736C2.88258 0.632141 4.4087 0 6 0C7.5913 0 9.11742 0.632141 10.2426 1.75736C11.3679 2.88258 12 4.4087 12 6ZM4.122 4.52475C4.09782 4.52508 4.07384 4.52047 4.0515 4.51121C4.02917 4.50195 4.00896 4.48823 3.99211 4.47089C3.97526 4.45354 3.96213 4.43295 3.95351 4.41036C3.94489 4.38777 3.94098 4.36366 3.942 4.3395C4.0125 3.06825 5.05275 2.625 6.00375 2.625C7.05075 2.625 8.00775 3.1725 8.00775 4.305C8.00775 5.115 7.5315 5.5005 7.07475 5.84775C6.522 6.267 6.31725 6.42375 6.31725 6.96225V7.041C6.31725 7.09073 6.2975 7.13842 6.26233 7.17358C6.22717 7.20875 6.17948 7.2285 6.12975 7.2285H5.52225C5.47304 7.22851 5.4258 7.20916 5.39072 7.17465C5.35564 7.14013 5.33554 7.09321 5.33475 7.044L5.33175 6.88125C5.30325 6.186 5.703 5.75775 6.20775 5.391C6.65025 5.058 6.9315 4.839 6.9315 4.36275C6.9315 3.744 6.4605 3.48675 5.946 3.48675C5.34375 3.48675 5.00625 3.84525 4.9395 4.33725C4.926 4.44 4.8435 4.52475 4.74 4.52475H4.12125H4.122ZM5.86575 9.357C5.42775 9.357 5.109 9.0615 5.109 8.66175C5.109 8.24775 5.42775 7.95675 5.8665 7.95675C6.32325 7.95675 6.6375 8.24775 6.6375 8.66175C6.6375 9.0615 6.3225 9.357 5.86575 9.357Z" fill="#2F2F2F"/>
+                  </g>
+                  <defs>
+                    <clipPath id="clip_collection_periods_help">
+                      <rect width="12" height="12" fill="white"/>
+                    </clipPath>
+                  </defs>
+                </svg>
+              </button>
+            </div>
+            <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
+          </section>          
         </div>
       </div>
     </main>
@@ -237,7 +265,7 @@ watch(
 
 .collection-detail__actors-title-area {
   display: flex;
-  padding: var(--g, 24px) var(--p, 12px) 8px 0;
+  padding: var(--g, 12px) var(--p, 12px) 8px 0;
   align-items: center;
   gap: var(--p, 12px);
   align-self: stretch;
@@ -307,15 +335,16 @@ watch(
 
 .collection-detail__container {
   width: 100%;
-  min-height: calc(100dvh - var(--main-header-height, 272px));
+  min-height: 0;
   padding: 26px 24px;
   display: flex;
   flex-direction: column;
 }
+
 .collection-detail__main {
   width: 100%;
   margin-top: 16px;
-  flex: 1 1 auto; /* empurra o final da página para baixo quando tiver pouco conteúdo */
+  flex: 0 0 auto;
 }
 
 .collection-detail__header {
@@ -326,7 +355,7 @@ watch(
 
 .collection-detail__back-btn {
   display: inline-flex;
-  padding: 2px 14px;
+  padding: 4px 14px;
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
@@ -349,11 +378,6 @@ watch(
   font-style: normal;
   font-weight: 400;
   line-height: 150%;
-}
-
-.collection-detail__main {
-  width: 100%;
-  margin-top: 16px;
 }
 
 .collection-detail__row {
@@ -438,7 +462,7 @@ watch(
 
 .collection-detail__tags-heading-row {
   display: flex;
-  padding: var(--g, 44px) var(--p, 12px) 8px 0;
+  padding: var(--g, 22px) var(--p, 12px) 8px 0;
   align-items: center;
   gap: var(--p, 12px);
   align-self: stretch;
@@ -456,7 +480,6 @@ watch(
 
 .collection-detail__tags-help {
   width: 12px;
-  height: 12px;
   aspect-ratio: 1/1;
 }
 
@@ -476,4 +499,41 @@ watch(
   min-height: 36px;
   cursor: pointer;
 }
+
+.collection-detail__periods-block {
+  display: flex;
+  max-width: 600px;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: stretch;
+  padding: 0 12px;
+}
+
+.collection-detail__periods-heading-row {
+  display: flex;
+  padding: var(--g, 24px) var(--p, 12px) 8px 0;
+  align-items: center;
+  gap: var(--p, 12px);
+  align-self: stretch;
+}
+
+.collection-detail__periods-title {
+  flex: 1 0 0;
+  color: var(--Preto, #1F1F1F);
+  font-family: "DM Sans";
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 150%;
+}
+
+.collection-detail__periods-help {
+  width: 12px;
+  aspect-ratio: 1/1;
+}
+
+.collection-detail__periods-help:hover {
+  color: var(--Preto, #1f1f1f);
+}
+
 </style>
