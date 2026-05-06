@@ -141,6 +141,27 @@
         </div>
       </div>
 
+      <div class="mb-3 pt-2">
+        <div class="p">Licença de uso</div>
+        <div class="text-muted small mb-2">
+          (selecione uma ou mais licenças; a busca retorna imagens com qualquer uma das selecionadas)
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <button
+            v-for="license in CC_LICENSES"
+            :key="license.label"
+            type="button"
+            :class="[
+              'btn btn-sm',
+              selectedLicenses.includes(license.label) ? 'btn-primary' : 'btn-outline-secondary',
+            ]"
+            @click="toggleLicense(license.label)"
+          >
+            {{ license.label }}
+          </button>
+        </div>
+      </div>
+
       <!-- <div class="mb-4">
         <div class="p pb-2">Uso permitido</div>
         <div class="d-flex flex-wrap gap-2">
@@ -187,6 +208,7 @@ import UiMobileDrawer from "@/components/ui/UiMobileDrawer.vue";
 import toggleArrayItem from "@/helpers/toggleArrayItem";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
+import { CC_LICENSES } from "@/constants/creativeCommonsLicenses";
 
 defineOptions({ name: "MobileDrawerSearchText" });
 
@@ -235,6 +257,7 @@ const searchTerms = ref([]); // { field, value, label }
 const selectedLocations = ref([]);
 const selectedTags = ref([]);
 const selectedUse = ref(null);
+const selectedLicenses = ref([]);
 
 watch(
   () => props.filters,
@@ -247,6 +270,7 @@ watch(
     selectedLocations.value = [...(filters?.locations || [])];
     selectedTags.value = [...(filters?.tags || [])];
     selectedUse.value = filters?.use || null;
+    selectedLicenses.value = [...(filters?.licenses || [])];
     // Load labels for extra tags (IDs not in hardcoded suggestions)
     const extras = selectedTags.value.filter((id) => !knownTagIds.has(id));
     if (extras.length > 0) loadSubjectTerms(extras);
@@ -260,6 +284,7 @@ const emitFiltersUpdate = () => {
     locations: selectedLocations.value,
     tags: selectedTags.value,
     use: selectedUse.value,
+    licenses: selectedLicenses.value,
   });
 };
 
@@ -290,6 +315,11 @@ function removeSearchTerm(index) {
 
 function toggleTagId(id) {
   toggleArrayItem(selectedTags.value, id);
+  emitFiltersUpdate();
+}
+
+function toggleLicense(label) {
+  toggleArrayItem(selectedLicenses.value, label);
   emitFiltersUpdate();
 }
 
@@ -340,6 +370,7 @@ function confirm() {
     locations: selectedLocations.value,
     tags: selectedTags.value,
     use: selectedUse.value,
+    licenses: selectedLicenses.value,
   };
   emit("confirm", { mode: "avancada", value: payload });
   open.value = false;
