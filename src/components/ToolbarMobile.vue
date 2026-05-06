@@ -76,7 +76,8 @@ const hasActiveTextFilter = computed(() => Boolean(
   route.query.title ||
   route.query.contributor ||
   route.query['subject_term[]'] ||
-  route.query['subject[]']
+  route.query['subject[]'] ||
+  route.query['license[]']
 ));
 
 const props = defineProps({
