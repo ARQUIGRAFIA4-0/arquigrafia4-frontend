@@ -9,6 +9,7 @@ import CollectionPeriodsChart from "@/components/CollectionPeriodsChart.vue";
 import UiField from "../../components/ui/UiField.vue";
 import FitTags from "@/views/Profile/FitTags.vue";
 import { api } from "@/services/api";
+import { RouterLink } from "vue-router";
 
 defineOptions({ name: "CollectionDetail" });
 
@@ -147,6 +148,66 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
 
 }
 
+/**
+* Start: Remover imagem
+**/
+
+const selectedImageId = ref(null);
+const removingImageId = ref(null);
+
+// Verifica se a imagem está selecionada
+function isCardSelected(item) {
+  return selectedImageId.value === item.id;
+}
+
+// Ativa a imagem (seleciona ou desseleciona)
+function onCardActivate(item, event) {
+  // evita que clique em botão interno dispare toggle duas vezes
+  const target = event?.target;
+  if (target?.closest?.("button,a")) return;
+
+  selectedImageId.value = selectedImageId.value === item.id ? null : item.id; // Toggle seleção
+}
+
+// Remove a imagem da coleção
+async function removeImageFromCollection(imageId) {
+  if (!collectionId.value || !imageId) return; // Verifica se a coleção e a imagem existem. Para evitar bugs;
+
+  removingImageId.value = imageId; // Define o ID da imagem que está sendo removida
+  
+  try {
+    await albumsStore.removeImagesFromAlbum(
+      authStore.authHeader,
+      collectionId.value,
+      imageId
+    );
+
+    // Controle de estado: Remove a imagem da lista de imagens da coleção
+    collectionImages.value = collectionImages.value.filter((img) => img.id !== imageId);
+
+    if (selectedImageId.value === imageId) {
+      selectedImageId.value = null;
+    }
+
+    if (albumData.value?.images?.length) {
+      albumData.value.images = albumData.value.images.filter(
+        (img) => img.id !== imageId
+      );
+    }
+  } catch (err) {
+    console.error(err);
+    // opcional: toast de erro
+  } finally {
+    removingImageId.value = null;
+  }
+}
+
+
+/**
+* End: Remover imagem
+*/
+
+
 onMounted(fetchCollectionData);
 
 watch(
@@ -192,31 +253,63 @@ watch(
 
             <template v-else-if="collectionImages.length">
               <div class="collection-grid">
-                <RouterLink
-                  v-for="item in collectionImages"
-                  :key="item.id"
-                  :to="`/explore/dados/image/${item.id}`"
-                  class="collection-grid__link"
-                >
-                  <article class="collection-grid__card">
-                    <div class="collection-grid__image-wrapper">
-                      <img
-                        :src="item.imageUrl"
-                        class="collection-grid__image"
-                        :alt="item.title"
-                      />
-                    </div>
-
-                    <div class="collection-grid__content">
-                      <h3 class="collection-grid__title">{{ item.title }}</h3>
-                      <p v-if="item.date" class="collection-grid__date">{{ item.date }}</p>
-
-                      <div v-if="item.subjects?.length" class="collection-grid__tags">
-                        <FitTags :subjects="item.subjects" :gap="4" />
+                <div
+                    v-for="item in collectionImages"
+                    :key="item.id"
+                    class="collection-grid__link"
+                    role="button"
+                    tabindex="0"
+                    @click="onCardActivate(item, $event)"
+                    @keydown.enter.prevent="onCardActivate(item, $event)"
+                    @keydown.space.prevent="onCardActivate(item, $event)"
+                  >
+                    <article
+                      class="collection-grid__card"
+                      :class="{ 'collection-grid__card--selected': isCardSelected(item) }"
+                    >
+                      <div class="collection-grid__image-wrapper">
+                        <img
+                          :src="item.imageUrl"
+                          class="collection-grid__image"
+                          :alt="item.title"
+                        />
                       </div>
-                    </div>
-                  </article>
-                </RouterLink>
+
+                      <div class="collection-grid__content">
+                        <RouterLink
+                          class="collection-grid__title-link"
+                          :to="`/explore/dados/image/${item.id}`"
+                          @click.stop
+                        >
+                          <h3 class="collection-grid__title">{{ item.title }}</h3>
+                        </RouterLink>
+
+                        <p v-if="item.date" class="collection-grid__date">{{ item.date }}</p>
+
+                        <div class="collection-grid__footer">
+                          <div
+                            v-if="!isCardSelected(item) && item.subjects?.length"
+                            class="collection-grid__tags"
+                          >
+                            <FitTags :subjects="item.subjects" :gap="4" />
+                          </div>
+                          <div v-else-if="isCardSelected(item)" class="collection-grid__actions">
+                            <button
+                              type="button"
+                              class="collection-grid__remove-btn"
+                              :disabled="removingImageId === item.id"
+                              @click.stop="removeImageFromCollection(item.id)"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                <path d="M6 2h4a1 1 0 0 1 1 1v1h3v1H2V4h3V3a1 1 0 0 1 1-1Zm-3 3h10l-1 9a1 1 0 0 1-1 .9H5a1 1 0 0 1-1-.9L3 5Zm3 2v5h1V7H6Zm3 0v5h1V7H9Z" fill="currentColor"/>
+                              </svg>
+                              <span>Remover da coleção</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  </div>
               </div>
             </template>
 
@@ -705,8 +798,14 @@ watch(
   padding: 8px 10px 0;
 }
 
-.collection-grid__tags {
+.collection-grid__footer {
   margin-top: auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.collection-grid__tags {
+  width: 100%;
 }
 
 .collection-grid__title {
@@ -729,6 +828,43 @@ watch(
   color: #666;
   font-size: 14px;
   padding: 12px 0;
+}
+
+.collection-grid__title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.collection-grid__title-link:hover .collection-grid__title {
+  text-decoration: underline;
+}
+
+.collection-grid__card--selected {
+  background: var(--Laranja_C, #f3e7dc);
+}
+
+.collection-grid__actions {
+  width: 100%;
+}
+
+.collection-grid__remove-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 2px 14px;
+  border-radius: 5px;
+  border: 1px solid var(--Laranja_E, #AA4F28);
+  background: var(--Off_white, #FAF9F9);
+  color: var(--Laranja_E, #AA4F28);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.collection-grid__remove-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 </style>
