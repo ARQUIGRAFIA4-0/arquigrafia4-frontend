@@ -67,7 +67,7 @@ onMounted(async () => {
 
   @include md {
     padding: 24px 50px;
-    margin-top: 100px;
+    margin-top: 32px;
   }
 
   &__content {

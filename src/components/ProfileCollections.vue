@@ -10,6 +10,9 @@
 
   const showCreateModal = ref(false);
 
+  import { useRouter } from "vue-router";
+  const router = useRouter();
+
   // Props
   const props = defineProps({
     isCurrentUser: { type: Boolean, default: false },
@@ -37,6 +40,13 @@
       if (albumData.images.length === 0) {
         showTutorialModal.value = true;
         return;
+
+      } else {
+        router.push({
+          name: "my-collection-detail",
+          params: { collectionId: albumId },
+        });
+
       }
 
     } catch (e) {
