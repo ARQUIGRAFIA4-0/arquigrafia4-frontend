@@ -7,6 +7,7 @@ import { useUsersStore } from "@/store/users";
 import defaultProfileImage from "@/assets/profile_image.png";
 import CollectionPeriodsChart from "@/components/CollectionPeriodsChart.vue";
 import UiField from "../../components/ui/UiField.vue";
+import FitTags from "@/views/Profile/FitTags.vue";
 import { api } from "@/services/api";
 
 defineOptions({ name: "CollectionDetail" });
@@ -211,16 +212,7 @@ watch(
                       <p v-if="item.date" class="collection-grid__date">{{ item.date }}</p>
 
                       <div v-if="item.subjects?.length" class="collection-grid__tags">
-                        <span
-                          v-for="subject in item.subjects.slice(0, 2)"
-                          :key="subject.id"
-                          class="collection-grid__tag"
-                        >
-                          {{ subject.term }}
-                        </span>
-                        <span v-if="item.subjects.length > 2" class="collection-grid__tag">
-                          +{{ item.subjects.length - 2 }}
-                        </span>
+                        <FitTags :subjects="item.subjects" :gap="4" />
                       </div>
                     </div>
                   </article>
@@ -710,7 +702,11 @@ watch(
   flex-direction: column;
   min-height: 0;
   width: 100%;
-  padding: 8px 10px 4px;
+  padding: 8px 10px 0;
+}
+
+.collection-grid__tags {
+  margin-top: auto;
 }
 
 .collection-grid__title {
@@ -727,24 +723,6 @@ watch(
   margin: 2px 0 0;
   font-size: 14px;
   color: var(--Cinza_E, #2f2f2f);
-}
-
-.collection-grid__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: auto;
-  padding-top: 8px;
-}
-
-.collection-grid__tag {
-  border-radius: 2px;
-  border: 1px solid var(--Cinza_C, #a6a6a6);
-  padding: 2px 6px;
-  font-size: 12px;
-  line-height: 115%;
-  color: var(--Cinza_E, #2f2f2f);
-  background: #f2f2f2;
 }
 
 .collection-detail__gallery-empty {
