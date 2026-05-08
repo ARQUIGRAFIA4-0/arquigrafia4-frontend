@@ -131,6 +131,10 @@ const filters = computed(() => {
   if (route.query.contributor) {
     f.contributor = route.query.contributor;
   }
+  const rawLicenses = route.query['license[]'];
+  if (rawLicenses) {
+    f.licenses = Array.isArray(rawLicenses) ? rawLicenses : [rawLicenses];
+  }
   return f;
 });
 
@@ -176,7 +180,9 @@ watch(
     const subjectsKey = rawSubjects ? (Array.isArray(rawSubjects) ? [...rawSubjects].sort().join(',') : rawSubjects) : null;
     const rawSubjectTerms = route.query['subject_term[]'];
     const subjectTermsKey = rawSubjectTerms ? (Array.isArray(rawSubjectTerms) ? [...rawSubjectTerms].sort().join(',') : rawSubjectTerms) : null;
-    const searchKey = JSON.stringify({ search: props.search, q: route.query.q || null, date_from: route.query.date_from || null, date_to: route.query.date_to || null, subjects: subjectsKey, subjectTerms: subjectTermsKey, title: route.query.title || null, contributor: route.query.contributor || null });
+    const rawLicenses = route.query['license[]'];
+    const licensesKey = rawLicenses ? (Array.isArray(rawLicenses) ? [...rawLicenses].sort().join(',') : rawLicenses) : null;
+    const searchKey = JSON.stringify({ search: props.search, q: route.query.q || null, date_from: route.query.date_from || null, date_to: route.query.date_to || null, subjects: subjectsKey, subjectTerms: subjectTermsKey, title: route.query.title || null, contributor: route.query.contributor || null, licenses: licensesKey });
     if (searchKey !== lastSearchKey) {
       // Reset when search params change (including going from search to browse)
       mosaicItems.value = [];

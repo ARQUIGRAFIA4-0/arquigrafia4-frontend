@@ -206,7 +206,8 @@ const hasActiveUrlFilter = computed(() => Boolean(
   route.query['subject[]'] ||
   route.query['subject_term[]'] ||
   route.query.title ||
-  route.query.contributor
+  route.query.contributor ||
+  route.query['license[]']
 ));
 
 // Conta tipos de filtro distintos na URL (date_from + date_to = 1 tipo; arrays acumuláveis contam individualmente)
@@ -223,6 +224,10 @@ const activeFilterTypeCount = computed(() => {
   const rawSubjectTerms = route.query['subject_term[]'];
   if (rawSubjectTerms) {
     count += Array.isArray(rawSubjectTerms) ? rawSubjectTerms.length : 1;
+  }
+  const rawLicenses = route.query['license[]'];
+  if (rawLicenses) {
+    count += Array.isArray(rawLicenses) ? rawLicenses.length : 1;
   }
   return count;
 });
@@ -410,6 +415,20 @@ const urlChips = computed(() => {
       label: `Autor: ${route.query.contributor}`,
     });
   }
+
+  // Chips para ?license[]= (licenças CC, label direta)
+  const rawLicenses = route.query['license[]'];
+  const activeLicenses = rawLicenses
+    ? (Array.isArray(rawLicenses) ? rawLicenses : [rawLicenses])
+    : [];
+  activeLicenses.forEach((licenseValue) => {
+    chips.push({
+      uid: `license-${licenseValue}`,
+      type: 'license',
+      licenseValue,
+      label: `Licença: ${licenseValue}`,
+    });
+  });
 
   return chips;
 });

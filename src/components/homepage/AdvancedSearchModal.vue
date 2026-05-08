@@ -139,6 +139,31 @@
           </div>
         </div>
 
+        <div class="row g-4 mt-0">
+          <div class="col-12">
+            <div class="p">Licença de uso</div>
+            <div class="text-muted small mb-2">
+              (selecione uma ou mais licenças; a busca retorna imagens com qualquer uma das selecionadas)
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <button
+                v-for="license in CC_LICENSES"
+                :key="license.label"
+                type="button"
+                :class="[
+                  'btn btn-sm',
+                  selectedLicenses.includes(license.label)
+                    ? 'btn-primary'
+                    : 'btn-outline-secondary',
+                ]"
+                @click="toggleLicense(license.label)"
+              >
+                {{ license.label }}
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- <div class="mb-1 mt-2" style="opacity: 0.4; pointer-events: none;">
           <div class="p pb-2">Uso permitido</div>
           <div class="d-flex flex-wrap gap-2">
@@ -195,6 +220,7 @@ import { computed, onUnmounted, ref, watch } from "vue";
 import toggleArrayItem from "@/helpers/toggleArrayItem";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
+import { CC_LICENSES } from "@/constants/creativeCommonsLicenses";
 
 defineOptions({
   name: "AdvancedSearchModal",
@@ -253,6 +279,7 @@ const tagSuggestions = [
 const knownTagIds = new Set(tagSuggestions.map((t) => t.id));
 const selectedTags = ref([]);
 const selectedUse = ref(null);
+const selectedLicenses = ref([]);
 
 // Tags selecionadas que não estão nas sugestões hardcoded (vindas do ViewGrid, etc.)
 const extraSelectedTags = computed(() =>
@@ -278,6 +305,7 @@ function syncFromFilters(filters) {
   selectedLocations.value = [...(safeFilters.locations || [])];
   selectedTags.value = [...(safeFilters.tags || [])];
   selectedUse.value = safeFilters.use || null;
+  selectedLicenses.value = [...(safeFilters.licenses || [])];
 }
 
 syncFromFilters(props.filters);
@@ -342,6 +370,10 @@ function toggleTag(tag) {
   toggleArrayItem(selectedTags.value, tag);
 }
 
+function toggleLicense(label) {
+  toggleArrayItem(selectedLicenses.value, label);
+}
+
 function setUse(use) {
   selectedUse.value = selectedUse.value === use ? null : use;
 }
@@ -352,6 +384,7 @@ function confirm() {
     locations: selectedLocations.value,
     tags: selectedTags.value,
     use: selectedUse.value,
+    licenses: selectedLicenses.value,
   };
   emit("confirm", payload);
   emit("update:modelValue", false);
