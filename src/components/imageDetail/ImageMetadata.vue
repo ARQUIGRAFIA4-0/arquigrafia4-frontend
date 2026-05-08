@@ -1,6 +1,12 @@
 <template>
   <div>
-    <h1 class="h1 mb-4">{{ props.image?.title || "Carregando..." }}</h1>
+    <div class="d-flex align-items-start justify-content-between mb-4">
+      <h1 class="h1 mb-4">{{ props.image?.title || "Carregando..." }}</h1>
+      <button v-if="canEdit" type="button" class="btn edit-btn" title="Editar informações"
+        aria-label="Editar informações da imagem" @click="enterEditMode">
+        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+      </button>
+    </div>
 
     <div v-if="displayName" class="metadata-section">
       <h2 class="h5 metadata-title">Imagem enviada por</h2>
@@ -8,24 +14,13 @@
         <div v-if="displayAvatar" class="metadata-person-avatar">
           <img :src="displayAvatar" :alt="`Foto de ${displayName}`" />
         </div>
-        <div
-          v-else
-          class="metadata-person-avatar metadata-person-avatar--placeholder"
-        >
+        <div v-else class="metadata-person-avatar metadata-person-avatar--placeholder">
           <span>{{ displayInitial }}</span>
         </div>
-        <RouterLink
-          v-if="collectiveId"
-          :to="`/collective/${collectiveId}`"
-          class="metadata-uploader-link"
-        >
+        <RouterLink v-if="collectiveId" :to="`/collective/${collectiveId}`" class="metadata-uploader-link">
           {{ displayName }}
         </RouterLink>
-        <RouterLink
-          v-else-if="uploaderUserId"
-          :to="`/profile/${uploaderUserId}`"
-          class="metadata-uploader-link"
-        >
+        <RouterLink v-else-if="uploaderUserId" :to="`/profile/${uploaderUserId}`" class="metadata-uploader-link">
           {{ displayName }}
         </RouterLink>
         <p v-else class="metadata-text">{{ displayName }}</p>
@@ -54,13 +49,8 @@
     <div v-if="props.image?.subjects?.length" class="metadata-section">
       <h2 class="h5 metadata-title">Tags da imagem</h2>
       <div class="metadata-tags">
-        <button
-          v-for="subject in props.image.subjects"
-          :key="subject.id"
-          type="button"
-          class="btn btn-outline-primary btn-sm btn-tag"
-          @click="searchBySubject(subject)"
-        >
+        <button v-for="subject in props.image.subjects" :key="subject.id" type="button"
+          class="btn btn-outline-primary btn-sm btn-tag" @click="searchBySubject(subject)">
           {{ subject.term }}
         </button>
       </div>
@@ -69,13 +59,8 @@
     <div class="metadata-section" v-if="showMap">
       <h2 class="h5 metadata-title">Localização</h2>
       <div class="metadata-map">
-        <MapLibreMap
-          :style-url="mapStyleUrl"
-          :center="resolvedMapCenter"
-          :zoom="mapZoom"
-          :marker-position="markerPosition"
-          marker-color="#0F89E1"
-        />
+        <MapLibreMap :style-url="mapStyleUrl" :center="resolvedMapCenter" :zoom="mapZoom"
+          :marker-position="markerPosition" marker-color="#0F89E1" />
       </div>
     </div>
 
@@ -89,6 +74,12 @@ import { RouterLink, useRoute, useRouter } from "vue-router";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import LicenseInfoBlock from "@/components/imageDetail/LicenseInfoBlock.vue";
 import { DEFAULT_VIEW_ROUTE } from "@/constants/viewModes";
+import { useAuthStore } from "@/store/auth";
+import { storeToRefs } from "pinia";
+
+
+const authStore = useAuthStore();
+const { loggedUser } = storeToRefs(authStore);
 
 const route = useRoute();
 const router = useRouter();
@@ -104,6 +95,25 @@ const props = defineProps({
     default: null,
   },
 });
+
+const isOwner = computed(() => {
+  return loggedUser.value?.id === props.image?.uploader?.id;
+});
+
+const isEditing = computed(() => route.query.edit === "true");
+
+const canEdit = computed(() => {
+  return isOwner.value && !isEditing.value;
+});
+
+function enterEditMode() {
+  router.push({
+    query: {
+      ...route.query,
+      edit: "true",
+    },
+  });
+}
 
 function searchBySubject(subject) {
   const rawSubjects = route.query['subject[]'];
@@ -148,6 +158,9 @@ const mapCenter = computed(() => {
 
   const [lat, lng] = coordinates;
   if (typeof lat !== "number" || typeof lng !== "number") {
+    return null;
+  }
+  if (isNaN(lat) || isNaN(lng)) {
     return null;
   }
 
@@ -246,5 +259,33 @@ const markerPosition = computed(() => {
   overflow: hidden;
   background-color: #f1f3f5;
   margin-bottom: 36px;
+}
+
+.edit-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: var(--Laranja_E);
+  color: #fff;
+  border: none;
+  transition: background-color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+
+  .bi {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--Laranja_M, #e05f2f) 85%, #000);
+    color: #fff;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
 }
 </style>
