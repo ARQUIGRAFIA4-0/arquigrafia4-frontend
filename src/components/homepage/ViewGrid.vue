@@ -105,6 +105,10 @@ const filters = computed(() => {
   if (route.query.contributor) {
     f.contributor = route.query.contributor;
   }
+  const rawLicenses = route.query['license[]'];
+  if (rawLicenses) {
+    f.licenses = Array.isArray(rawLicenses) ? rawLicenses : [rawLicenses];
+  }
   return f;
 });
 

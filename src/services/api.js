@@ -250,6 +250,11 @@ const fetchImages = async (page = 1, filters = {}) => {
       params.contributor = filters.contributor.trim();
     }
 
+    // Filtro por licença CC (OR semântico: uma imagem só pode ter uma licença)
+    if (filters.licenses?.length) {
+      params['license[]'] = filters.licenses.length === 1 ? filters.licenses[0] : filters.licenses;
+    }
+
     // Ordenação
     if (filters.sortBy) {
       params.sort_by = filters.sortBy;
