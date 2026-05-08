@@ -158,7 +158,6 @@ watch(
   font-size: 12px;
   line-height: 115%;
   color: var(--Cinza_E, #2f2f2f);
-  background: #f2f2f2;
 }
 
 .fit-tags__tag--overflow {
