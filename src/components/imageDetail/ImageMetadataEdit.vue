@@ -1,5 +1,5 @@
 <template>
-  <div class="container py-4 position-relative">
+  <div class="container px-0 py-4 position-relative">
     <transition name="fade">
       <div class="upload-box__alert" v-if="showAlert">
         <div class="alert h-auto fs-6 border border-start-3" :class="alertType === 'success'
@@ -98,12 +98,14 @@
             </div>
 
             <div class="mb-4 px-3">
-              <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="term-text-wrapper ">
+                <!-- <div class="d-flex justify-content-between align-items-center mb-2 md:flex-row flex-column gap-2"> -->
                 <h3 class="form-label text-cinza-e h3 mb-0">
                   Autorizações para publicação
                 </h3>
-                <a href="#" class="text-decoration-none d-flex align-items-center gap-1 text-muted small">
-                  <i class="bi bi-book" /> Revisar Termos e Condições
+                <!-- <a href="#" class="text-decoration-none d-flex align-items-center gap-1 text-muted text-xs"> -->
+                <a href="#" class="term-text-link text-decoration-none d-flex align-items-center gap-1 text-muted">
+                  <i class="bi bi-book" />Revisar Termos e Condições
                 </a>
               </div>
 
@@ -124,7 +126,7 @@
                       v-model="form.isPublicDomain" />
                   </div>
                 </div>
-                <div v-if="form.isPublicDomain" class="alert alert-info py-2 px-3 small mt-2">
+                <div v-if="form.isPublicDomain" class="alert alert-info py-2 px-3 small mt-2 h-auto">
                   <i class="bi bi-info-circle me-1" />
                   Mesmo em domínio público, informe o nome do autor original se souber.
                 </div>
@@ -382,7 +384,7 @@ const buildPayload = async () => {
     title: form.value.title || null,
     description: form.value.description || null,
     photographer: photographerUuid || null,
-    subjects: subjectUuids.length ? subjectUuids : null,
+    subjects: subjectUuids.length ? subjectUuids : [],
     latitude: form.value.coordinates?.lat
       ? parseFloat(form.value.coordinates.lat.toFixed(8))
       : null,
@@ -534,6 +536,29 @@ $breakpoint-md: 768px;
   }
 }
 
+.term-text-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .term-text-link {
+    font-size: 0.75rem;
+    margin-bottom: 20px;
+
+    .bi {
+      font-size: 14px;
+    }
+  }
+
+
+}
+
 .upload-box__alert {
   position: fixed;
   top: 20px;
@@ -561,6 +586,18 @@ $breakpoint-md: 768px;
 .fade-enter-to,
 .fade-leave-from {
   opacity: 1;
+}
+
+@media (max-width: 768px) {
+  label.form-check-label {
+    font-size: 0.75rem;
+  }
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .form-check-input[role="switch"]:checked {
@@ -604,7 +641,6 @@ $breakpoint-md: 768px;
 
   .d-flex.gap-3 {
     width: 100%;
-    justify-content: flex-end;
 
     .btn {
       flex: 1;
