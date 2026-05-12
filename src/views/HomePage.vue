@@ -430,10 +430,17 @@ function buildAdvancedFiltersFromUrl() {
     ? (Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects])
     : [];
 
+  // Licenças CC vindas de license[] na URL
+  const rawLicenses = query['license[]'];
+  const licenses = rawLicenses
+    ? (Array.isArray(rawLicenses) ? rawLicenses : [rawLicenses])
+    : [];
+
   return {
     ...createDefaultAdvancedFilters(),
     terms,
     tags,
+    licenses,
   };
 }
 
@@ -472,7 +479,7 @@ function confirmAdvancedSearch(payload) {
     'searchMode', 'author', 'subject_term', 'subject', 'dateStart',
     'dateEnd', 'color', 'location', 'use',
   ];
-  const bypassKeys = ['q', 'title', 'contributor', 'subject_term[]', 'date_from', 'date_to', 'subject[]'];
+  const bypassKeys = ['q', 'title', 'contributor', 'subject_term[]', 'date_from', 'date_to', 'subject[]', 'license[]'];
   const newQuery = { ...route.query };
   [...legacyKeys, ...bypassKeys].forEach((k) => { delete newQuery[k]; });
 
@@ -492,6 +499,14 @@ function confirmAdvancedSearch(payload) {
     newQuery['subject[]'] = subjectIds[0];
   } else if (subjectIds.length > 1) {
     newQuery['subject[]'] = subjectIds;
+  }
+
+  // Licenças CC
+  const licenseValues = Array.isArray(payload.licenses) ? payload.licenses.filter((l) => typeof l === 'string' && l.length > 0) : [];
+  if (licenseValues.length === 1) {
+    newQuery['license[]'] = licenseValues[0];
+  } else if (licenseValues.length > 1) {
+    newQuery['license[]'] = licenseValues;
   }
 
   router.push({ query: newQuery });
@@ -574,7 +589,7 @@ function confirmAdvancedDrawer({ value }) {
     'searchMode', 'author', 'subject_term', 'subject', 'dateStart',
     'dateEnd', 'color', 'location', 'use',
   ];
-  const bypassKeys = ['q', 'title', 'contributor', 'subject_term[]', 'subject[]'];
+  const bypassKeys = ['q', 'title', 'contributor', 'subject_term[]', 'subject[]', 'license[]'];
   const newQuery = { ...route.query };
   [...legacyKeys, ...bypassKeys].forEach((k) => { delete newQuery[k]; });
 
@@ -593,6 +608,11 @@ function confirmAdvancedDrawer({ value }) {
   if (subjectIds.length === 1) newQuery['subject[]'] = subjectIds[0];
   else if (subjectIds.length > 1) newQuery['subject[]'] = subjectIds;
 
+  // Licenças CC
+  const licenseValues = Array.isArray(value.licenses) ? value.licenses.filter((l) => typeof l === 'string' && l.length > 0) : [];
+  if (licenseValues.length === 1) newQuery['license[]'] = licenseValues[0];
+  else if (licenseValues.length > 1) newQuery['license[]'] = licenseValues;
+
   drawerSearchText.value = false;
   router.push({ query: newQuery });
 }
@@ -604,6 +624,7 @@ function handleClearTextFilters() {
   delete query.contributor;
   delete query['subject_term[]'];
   delete query['subject[]'];
+  delete query['license[]'];
   advancedFilters.value = createDefaultAdvancedFilters();
   drawerSearchText.value = false;
   router.push({ query });
@@ -642,6 +663,7 @@ function handleAdvancedFiltersUpdate(filters) {
     tags: filters?.tags || [],
     subjects: filters?.subjects || [],
     use: filters?.use || null,
+    licenses: filters?.licenses || [],
   };
 }
 
@@ -710,6 +732,17 @@ function handleRemoveUrlChip(chip) {
     delete query.title;
   } else if (chip.type === "contributor") {
     delete query.contributor;
+  } else if (chip.type === "license") {
+    const rawLicenses = query['license[]'];
+    const existing = rawLicenses
+      ? (Array.isArray(rawLicenses) ? rawLicenses : [rawLicenses])
+      : [];
+    const updated = existing.filter((l) => l !== chip.licenseValue);
+    if (updated.length === 0) {
+      delete query['license[]'];
+    } else {
+      query['license[]'] = updated.length === 1 ? updated[0] : updated;
+    }
   }
   
   router.push({ query });
@@ -724,6 +757,7 @@ function handleClearAllFilters() {
   delete query['subject_term[]'];
   delete query.title;
   delete query.contributor;
+  delete query['license[]'];
   router.push({ query });
 }
 

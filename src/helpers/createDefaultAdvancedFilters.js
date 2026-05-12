@@ -8,5 +8,6 @@ export default function createDefaultAdvancedFilters() {
     locations: [],
     tags: [],
     use: null,
+    licenses: [],
   };
 }

@@ -1021,9 +1021,9 @@ onMounted(async () => {
     await authStore.getLoggedUser();
 
     // Fetch subjects
-    const subjectsResponse = await vracStore.getVRACSubjects();
-    if (subjectsResponse?.data && Array.isArray(subjectsResponse.data)) {
-      allSubjects.value = subjectsResponse.data;
+    const subjects = await vracStore.getVRACSubjects();
+    if (Array.isArray(subjects)) {
+      allSubjects.value = subjects;
       // Initialize Fuse.js with fetched subjects
       fuseInstance = new Fuse(allSubjects.value, {
         keys: ["term"],
@@ -1033,9 +1033,9 @@ onMounted(async () => {
     }
 
     // Fetch contributor names
-    const contributorsResponse = await vracStore.getVRACContributorNames();
-    if (contributorsResponse?.names && Array.isArray(contributorsResponse.names)) {
-      allContributorNames.value = contributorsResponse.names;
+    const contributors = await vracStore.getVRACContributorNames();
+    if (Array.isArray(contributors)) {
+      allContributorNames.value = contributors;
     }
   } catch (error) {
     console.error("Error fetching data:", error);
@@ -1083,8 +1083,7 @@ const createAndAddSubject = async (term) => {
   if (!term || form.value.tags.includes(term) || isCreatingSubject.value) return;
   isCreatingSubject.value = true;
   try {
-    const response = await vracStore.addVRACSubject(term);
-    const subjectData = response?.data || response;
+    const subjectData = await vracStore.addVRACSubject(term);
     if (subjectData?.id && subjectData?.term) {
       allSubjects.value.push(subjectData);
       fuseInstance = new Fuse(allSubjects.value, {
@@ -1280,8 +1279,8 @@ const handleSubmit = async () => {
             const newContributor = await vracStore.addVRACContributorName(
               photographerName
             );
-            if (newContributor?.name) {
-              contributor = newContributor.name;
+            if (newContributor?.id) {
+              contributor = newContributor;
               allContributorNames.value.push(contributor);
             }
           }

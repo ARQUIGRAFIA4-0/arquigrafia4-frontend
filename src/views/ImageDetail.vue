@@ -8,15 +8,8 @@
           <i class="bi bi-arrow-left-square back-link__icon" aria-hidden="true"></i>
           <span class="back-link__label">Voltar</span>
         </button>
-        <ImageDisplay
-          :image="image"
-          :license-info="licenseInfo"
-          :loading="loading"
-          @load="loading = false"
-          @download="handleDownload"
-          @share="handleShare"
-          @report-submit="handleReportSubmit"
-        />
+        <ImageDisplay :image="image" :license-info="licenseInfo" :loading="loading" @load="loading = false"
+          @download="handleDownload" @share="handleShare" @report-submit="handleReportSubmit" />
       </div>
 
       <!-- Metadata -->
@@ -46,7 +39,7 @@
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
-          <ImageComments v-else :comments="comments" />
+          <ImageComments :image-url="image?.imageUrl" />
         </div>
 
         <div v-else class="text-muted small">
@@ -85,11 +78,11 @@ const tabs = [
     section: "dados",
     routeName: "image-detail-dados",
   },
-  // {
-  //   label: "Comentários",
-  //   section: "comentarios",
-  //   routeName: "image-detail-comentarios",
-  // },
+  {
+    label: "Comentários",
+    section: "comentarios",
+    routeName: "image-detail-comentarios",
+  },
   // {
   //   label: "Imagens relacionadas",
   //   section: "relacionadas",
@@ -153,7 +146,6 @@ onMounted(async () => {
   try {
     const imageId = route.params.id;
     image.value = await api.getImageDetails(imageId);
-    await loadComments(imageId);
   } catch (error) {
     console.error("Error fetching data:", error);
   } finally {
