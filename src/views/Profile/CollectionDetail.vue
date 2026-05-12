@@ -10,6 +10,7 @@ import UiField from "../../components/ui/UiField.vue";
 import FitTags from "@/views/Profile/FitTags.vue";
 import { api } from "@/services/api";
 import { RouterLink } from "vue-router";
+import CollectionToolbar from "@/components/CollectionToolbar.vue";
 
 defineOptions({ name: "CollectionDetail" });
 
@@ -207,6 +208,29 @@ async function removeImageFromCollection(imageId) {
 * End: Remover imagem
 */
 
+/**
+ * Start: Toolbar
+*/
+
+const viewSelection = ref("grid");
+const isInfoActive = ref(true);
+
+function handleCollectionViewChange({ selection }) {
+  viewSelection.value = selection;
+}
+
+function handleToggleCollectionInfo() {
+  isInfoActive.value = !isInfoActive.value;
+}
+
+function handleDownloadCollection() {
+  console.log("TODO: implementar download da coleção");
+}
+
+/*
+ * End: Toolbar
+*/
+
 
 onMounted(fetchCollectionData);
 
@@ -221,6 +245,14 @@ watch(
 
 <template>
   <section class="collection-detail__container">
+    <CollectionToolbar
+      class="collection-detail__floating-toolbar"
+      :view-selection="viewSelection"
+      :is-info-active="isInfoActive"
+      @view-change="handleCollectionViewChange"
+      @toggle-info="handleToggleCollectionInfo"
+      @download="handleDownloadCollection"
+    />    
     <header class="collection-detail__header">
         <button
             type="button"
@@ -239,7 +271,7 @@ watch(
                 </svg>
                 <span class="collection-detail__back-text">voltar</span>
             </span>
-        </button>
+        </button>      
     </header>
     <main class="collection-detail__main container-fluid px-0">
       <div class="row g-0 collection-detail__row">
@@ -496,6 +528,7 @@ watch(
   padding: 26px 24px;
   display: flex;
   flex-direction: column;
+  padding-bottom: 0px;
 }
 
 .collection-detail__main {
@@ -508,6 +541,7 @@ watch(
   display: flex;
   align-items: center;
   gap: 10px;
+  justify-content: space-between;
 }
 
 .collection-detail__back-btn {
@@ -865,6 +899,23 @@ watch(
 .collection-grid__remove-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.collection-detail__floating-toolbar {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 100;
+}
+
+@media (max-width: 767px) {
+  .collection-detail__floating-toolbar {
+    bottom: 16px;
+  }
+  .collection-detail__container {
+    padding-bottom: 88px;
+  }
 }
 
 </style>
