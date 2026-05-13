@@ -9,7 +9,6 @@ import CollectionPeriodsChart from "@/components/CollectionPeriodsChart.vue";
 import UiField from "../../components/ui/UiField.vue";
 import FitTags from "@/views/Profile/FitTags.vue";
 import { api } from "@/services/api";
-import { RouterLink } from "vue-router";
 import CollectionToolbar from "@/components/CollectionToolbar.vue";
 
 defineOptions({ name: "CollectionDetail" });
@@ -24,13 +23,13 @@ const router = useRouter();
 const authStore = useAuthStore();
 const albumsStore = useAlbumsStore();
 
-const isLoadingOwner = ref(false);
+const isLoadingOwner = ref(true);
 
 const collectionId = computed(() => route.params.collectionId);
 
 const albumData = ref(null);
-const collectionError = ref("");
 const collectionImages = ref([]);
+const isLoadingCollection = ref(true);
 const isLoadingCollectionImages = ref(false);
 
 // título e descrição reais vindos da API
@@ -57,7 +56,7 @@ const ownerAvatarSrc = computed(() => {
     return `${API_BASE_URL}${avatarUrl.startsWith("/") ? "" : "/"}${avatarUrl}`;
   }
 
-  // Caso backend retorne avatar_path (mesmo padrão do ProfileCard)
+  // Caso backend retorne avatar_path (apenas pra eu lembra: mesmo padrão do ProfileCard)
   if (avatarPath) {
     return `${API_BASE_URL}/storage/${avatarPath}`;
   }
@@ -70,19 +69,23 @@ const ownerAvatarSrc = computed(() => {
 async function fetchCollectionData() {
   if (!collectionId.value) return;
 
-  try {
-    collectionError.value = "";
+  isLoadingCollection.value = true;
+  isLoadingCollectionImages.value = true;  
+  isLoadingOwner.value = true;
 
+  try {
+    // busca os dados da coleção
     const data = await albumsStore.getDataAlbumByAlbumId(
       authStore.authHeader,
       collectionId.value
     );
+
     albumData.value = data;
+
+    // carrega as imagens da coleção
     await loadCollectionImageDetails(data.images || []);
 
     if (data.user_id) {
-      isLoadingOwner.value = true;
-
       try {
         ownerUser.value = await usersStore.getUser(data.user_id);
       } catch (e) {
@@ -90,24 +93,25 @@ async function fetchCollectionData() {
       } finally {
         isLoadingOwner.value = false;
       }
-
     } else {
       ownerUser.value = null;
       isLoadingOwner.value = false;
-      
     }
 
   } catch (error) {
-    collectionError.value =
-      error?.message || "Não foi possível carregar os dados da coleção.";
     albumData.value = null;
     collectionImages.value = [];
+    ownerUser.value = null;
+    isLoadingOwner.value = false;
+
+  } finally {
+    isLoadingCollection.value = false;
+    isLoadingCollectionImages.value = false;
 
   }
 
 }
 
-/** Tags inferidas só a partir do texto da API (não usar o fallback "Sem descrição.") */
 const collectionTags = computed(() =>
   ["Fruição urbana", "Modernismo", "Paisagem", "Coletivo", "Espaço público"]
   //collectionTagsFromDescription(albumData.value?.description ?? "")
@@ -142,9 +146,6 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
     console.error("Erro ao carregar imagens da coleção:", err);
     collectionImages.value = [];
 
-  } finally {
-    isLoadingCollectionImages.value = false;
-
   }
 
 }
@@ -152,7 +153,6 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
 /**
 * Start: Remover imagem
 **/
-
 const selectedImageId = ref(null);
 const removingImageId = ref(null);
 
@@ -197,13 +197,10 @@ async function removeImageFromCollection(imageId) {
     }
   } catch (err) {
     console.error(err);
-    // opcional: toast de erro
   } finally {
     removingImageId.value = null;
   }
 }
-
-
 /**
 * End: Remover imagem
 */
@@ -211,26 +208,34 @@ async function removeImageFromCollection(imageId) {
 /**
  * Start: Toolbar
 */
-
 const viewSelection = ref("grid");
 const isInfoActive = ref(true);
+const isGridReflowing = ref(false);
 
 function handleCollectionViewChange({ selection }) {
   viewSelection.value = selection;
 }
 
 function handleToggleCollectionInfo() {
-  isInfoActive.value = !isInfoActive.value;
+  isGridReflowing.value = true;
+
+  window.setTimeout(() => {
+    isInfoActive.value = !isInfoActive.value;
+    window.setTimeout(() => {
+      isGridReflowing.value = false;
+
+    }, 220);
+
+  }, 120);
+
 }
 
 function handleDownloadCollection() {
   console.log("TODO: implementar download da coleção");
 }
-
 /*
  * End: Toolbar
 */
-
 
 onMounted(fetchCollectionData);
 
@@ -244,7 +249,10 @@ watch(
 </script>
 
 <template>
-  <section class="collection-detail__container">
+  <section
+    class="collection-detail__container"
+    :class="{ 'collection-detail__container--info-open': isInfoActive }"
+  >
     <CollectionToolbar
       class="collection-detail__floating-toolbar"
       :view-selection="viewSelection"
@@ -277,14 +285,28 @@ watch(
       <div class="row g-0 collection-detail__row">
         <div class="collection-detail__image-wrapper">
           <section class="collection-detail__gallery">
-            <div v-if="isLoadingCollectionImages" class="text-center py-4">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Carregando imagens...</span>
+            <div
+              v-if="isLoadingCollection"
+              class="collection-grid collection-grid--skeleton"
+              role="status"
+              aria-label="Carregando coleção"
+            >
+              <div
+                v-for="n in 12"
+                :key="`collection-skeleton-${n}`"
+                class="collection-grid__card-skeleton"
+                aria-hidden="true"
+              >
+                <div class="collection-grid__card-skeleton-image" />
+                <div class="collection-grid__card-skeleton-body">
+                  <div class="collection-grid__card-skeleton-title" />
+                  <div class="collection-grid__card-skeleton-subtitle" />
+                </div>
               </div>
+              <span class="visually-hidden">Carregando coleção...</span>
             </div>
-
             <template v-else-if="collectionImages.length">
-              <div class="collection-grid">
+              <div class="collection-grid" :class="{ 'collection-grid--reflowing': isGridReflowing }">
                 <div
                     v-for="item in collectionImages"
                     :key="item.id"
@@ -350,85 +372,99 @@ watch(
             </div>
           </section>
         </div>
-        <div class="collection-detail__info-wrapper">
-          <aside class="collection-detail__info-summary">
-            <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
-            <p class="collection-detail__description">{{ collectionDescription }}</p>
-          </aside>
-          <section class="collection-detail__actors">
-            <div class="collection-detail__actors-title-area">
-              <h2 class="collection-detail__actors-title">Coleção criada por</h2>
-            </div>
-            <div class="collection-detail__actors-list">
-              <div class="collection-detail__actor-image-area">
-                <div
-                  v-if="isLoadingOwner"
-                  class="collection-detail__actor-image-skeleton"
-                  aria-hidden="true"
-                />
-                <img
-                  v-else
-                  :src="ownerAvatarSrc"
-                  :alt="`Avatar de ${ownerUser?.name?.trim() || 'usuário'}`"
-                  class="collection-detail__actor-image"
+        <div
+          class="collection-detail__info-wrapper"
+          :class="{ 'collection-detail__info-wrapper--closed': !isInfoActive }"
+          :aria-hidden="!isInfoActive"
+          aria-label="Informações da coleção"
+        >
+          <div class="collection-detail__info-inner">
+            <aside v-if="isLoadingCollection" class="collection-detail__info-summary">
+              <div class="collection-detail__title-skeleton" />
+              <div class="collection-detail__description-skeleton" />
+            </aside>
+            <aside v-else class="collection-detail__info-summary">
+              <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
+              <p class="collection-detail__description">{{ collectionDescription }}</p>
+            </aside>
+
+            <section class="collection-detail__actors">
+              <div class="collection-detail__actors-title-area">
+                <h2 class="collection-detail__actors-title">Coleção criada por</h2>
+              </div>
+              <div class="collection-detail__actors-list">
+                <div class="collection-detail__actor-image-area">
+                  <div
+                    v-if="isLoadingOwner"
+                    class="collection-detail__actor-image-skeleton"
+                    aria-hidden="true"
+                  />
+                  <img
+                    v-else
+                    :src="ownerAvatarSrc"
+                    :alt="`Avatar de ${ownerUser?.name?.trim() || 'usuário'}`"
+                    class="collection-detail__actor-image"
+                  />
+                </div>
+                <div class="collection-detail__actor-name-wrapper">
+                  <div v-if="isLoadingOwner" class="collection-detail__actor-name-skeleton" />
+                  <p
+                    v-else
+                    class="collection-detail__actor-name"
+                    :class="{ 'collection-detail__actor-name--visible': !isLoadingOwner }"
+                  >
+                    {{ ownerUser?.name?.trim() || "Usuário desconhecido" }}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section
+              v-if="collectionTags.length"
+              class="collection-detail__tags-block"
+              aria-labelledby="collection-tags-heading"
+            >
+              <div class="collection-detail__tags-heading-row">
+                <h2 id="collection-tags-heading" class="collection-detail__tags-title">
+                  Tags na coleção
+                </h2>
+                <UiField
+                  id="collection-tags-help"
+                  class="collection-detail__help-field"
+                  label="Ajuda"
+                  explain="Estas etiquetas são geradas automaticamente a partir do texto da descrição da coleção."
                 />
               </div>
-              <div class="collection-detail__actor-name-wrapper">
-                <div v-if="isLoadingOwner" class="collection-detail__actor-name-skeleton" />
-                <p
-                  v-else
-                  class="collection-detail__actor-name"
-                  :class="{ 'collection-detail__actor-name--visible': !isLoadingOwner }"
+              <div class="metadata-tags">
+                <button
+                  v-for="(tag, index) in collectionTags"
+                  :key="`${tag}-${index}`"
+                  type="button"
+                  class="btn btn-outline-primary btn-sm btn-tag"
                 >
-                  {{ ownerUser?.name?.trim() || "Usuário desconhecido" }}
-                </p>
-                </div>
-            </div>
-          </section>
-          <section
-            v-if="collectionTags.length"
-            class="collection-detail__tags-block"
-            aria-labelledby="collection-tags-heading"
-          >
-            <div class="collection-detail__tags-heading-row">
-              <h2 id="collection-tags-heading" class="collection-detail__tags-title">
-                Tags na coleção
-              </h2>
-              <UiField
-                id="collection-tags-help"
-                class="collection-detail__help-field"
-                label="Ajuda"
-                explain="Estas etiquetas são geradas automaticamente a partir do texto da descrição da coleção."
-              />
-            </div>
-            <div class="metadata-tags">
-              <button
-                v-for="(tag, index) in collectionTags"
-                :key="`${tag}-${index}`"
-                type="button"
-                class="btn btn-outline-primary btn-sm btn-tag"
-              >
-                {{ tag }}
-              </button>
-            </div>
-          </section>
-          <section
-            class="collection-detail__periods-block"
-            aria-labelledby="collection-periods-heading"
-          >
-            <div class="collection-detail__periods-heading-row">
-              <h2 id="collection-periods-heading" class="collection-detail__periods-title">
-                Períodos da coleção
-              </h2>
-              <UiField
-                id="collection-periods-help"
-                class="collection-detail__help-field"
-                label="Ajuda"
-                explain="Distribuição temporal das obras desta coleção (em construção)."
-              />
-            </div>
-            <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
-          </section>          
+                  {{ tag }}
+                </button>
+              </div>
+            </section>
+
+            <section
+              class="collection-detail__periods-block"
+              aria-labelledby="collection-periods-heading"
+            >
+              <div class="collection-detail__periods-heading-row">
+                <h2 id="collection-periods-heading" class="collection-detail__periods-title">
+                  Períodos da coleção
+                </h2>
+                <UiField
+                  id="collection-periods-help"
+                  class="collection-detail__help-field"
+                  label="Ajuda"
+                  explain="Distribuição temporal das obras desta coleção (em construção)."
+                />
+              </div>
+              <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
+            </section>
+          </div>
         </div>
       </div>
     </main>
@@ -440,6 +476,7 @@ watch(
 .collection-detail__image-wrapper {
   flex: 1 1 0;
   min-width: 0;
+  transition: flex-basis 350ms ease;
 }
 
 .collection-detail__actors {
@@ -494,6 +531,14 @@ watch(
   border-radius: 50%;
   object-fit: cover;
   display: block;
+  opacity: 0;
+  animation: actorFadeIn 220ms ease forwards;
+}
+
+@keyframes actorFadeIn {
+  to {
+    opacity: 1;
+  }
 }
 
 .collection-detail__actor-image-skeleton {
@@ -525,10 +570,9 @@ watch(
 .collection-detail__container {
   width: 100%;
   min-height: 0;
-  padding: 26px 24px;
+  padding: 26px 24px 0;
   display: flex;
   flex-direction: column;
-  padding-bottom: 0px;
 }
 
 .collection-detail__main {
@@ -596,7 +640,41 @@ watch(
   height: 100%;
   align-self: stretch;
   box-sizing: border-box;
+  overflow: hidden;
+  transition:
+    flex-basis 350ms ease,
+    width 350ms ease,
+    max-width 350ms ease,
+    min-width 350ms ease;
+}
+
+.collection-detail__info-wrapper--closed {
+  flex: 0 0 0 !important;
+  width: 0 !important;
+  max-width: 0 !important;
+  min-width: 0 !important;
+  pointer-events: none;
+}
+
+.collection-detail__info-inner {
+  display: flex;
   flex-direction: column;
+  width: 338px;
+  flex-shrink: 0;
+  opacity: 1;
+  transform: translateX(0);
+  will-change: transform, opacity;
+  transition:
+    transform 350ms ease,
+    opacity 1ms linear 350ms;
+}
+
+.collection-detail__info-wrapper--closed .collection-detail__info-inner {
+  opacity: 0;
+  transform: translateX(100%);
+  transition:
+    transform 350ms ease,
+    opacity 100ms ease;
 }
 
 .collection-detail__info-summary {
@@ -774,9 +852,13 @@ watch(
   grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--collection-card-w)), var(--collection-card-w)));
   gap: var(--pp, 12px);
   align-items: start;
-  justify-content: center;
+  justify-content: start;
   width: 100%;
   min-width: 0;
+}
+
+.collection-detail__container--info-open .collection-grid {
+  justify-content: center;
 }
 
 .collection-grid__link {
@@ -802,6 +884,14 @@ watch(
   background: var(--Off_white, #faf9f9);
   box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  transition:
+    opacity 180ms ease,
+    transform 220ms ease;
+}
+
+.collection-grid--reflowing .collection-grid__card {
+  opacity: 0;
+  transform: translateY(6px);
 }
 
 .collection-grid__image-wrapper {
@@ -916,6 +1006,82 @@ watch(
   .collection-detail__container {
     padding-bottom: 88px;
   }
+}
+
+.collection-detail__title-skeleton {
+  width: 80%;
+  height: 34px;
+  border-radius: 6px;
+  background: #ececec;
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+}
+
+.collection-detail__description-skeleton {
+  width: 100%;
+  height: 72px;
+  margin-top: 12px;
+  border-radius: 6px;
+  background: #ececec;
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes collectionSkeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.collection-grid__card-skeleton {
+  display: flex;
+  width: min(var(--collection-card-w), 100%);
+  max-width: 100%;
+  min-height: 346px;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--pp, 8px);
+  padding-bottom: var(--pp, 8px);
+  border-radius: 5px;
+  border: 0.25px solid var(--Cinza_C, #a6a6a6);
+  background: var(--Off_white, #faf9f9);
+  box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.collection-grid__card-skeleton-image {
+  width: 100%;
+  max-width: var(--collection-card-w);
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: collectionSkeletonShimmer 1.5s infinite;
+}
+
+.collection-grid__card-skeleton-body {
+  padding: 8px 10px 0;
+}
+
+.collection-grid__card-skeleton-title {
+  height: 14px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  width: 80%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: collectionSkeletonShimmer 1.5s infinite;
+}
+
+.collection-grid__card-skeleton-subtitle {
+  height: 12px;
+  border-radius: 4px;
+  width: 50%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: collectionSkeletonShimmer 1.5s infinite;
 }
 
 </style>
