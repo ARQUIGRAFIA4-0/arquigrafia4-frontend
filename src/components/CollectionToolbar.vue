@@ -13,17 +13,27 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    allowedViews: {
+        type: Array,
+        default: null,
+    },
 });
 
 const emit = defineEmits(["view-change", "toggle-info", "download"]);
 
-const viewOptionsList = computed(() => viewOptions());
+const viewOptionsList = computed(() => {
+    const options = viewOptions();
+
+    if (!props.allowedViews?.length) {
+        return options;
+    }
+
+    return options.filter((option) => props.allowedViews.includes(option.route));
+});
 
 const viewIconClass = computed(() => selectionToViewIcon(props.viewSelection));
 
-// TODO: Implementar a lógica de seleção do modo de visualização
 function onSelectView(option) {
-    console.log("onSelectView", option);
     if (option.selection === props.viewSelection) return;
 
     emit("view-change", {

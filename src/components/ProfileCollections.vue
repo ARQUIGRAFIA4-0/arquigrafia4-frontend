@@ -44,7 +44,10 @@
       } else {
         router.push({
           name: "my-collection-detail",
-          params: { collectionId: albumId },
+          params: {
+            collectionId: albumId,
+            viewMode: "grid", //Padrão de visualização da coleção
+          },
         });
 
       }
@@ -123,9 +126,6 @@
       @open-create="showCreateModal = true"
     />
 
-    <!-- Lista de coleções -->
-    <!-- Se a lista de coleções não estiver vazia, exibe as coleções -->
-    <!-- transition-group é usado para animar a lista de coleções sem reload completo da página e sem controle individual do estado de cada elemento. Simplifica-->
     <transition-group
       v-else
       name="album-card"
