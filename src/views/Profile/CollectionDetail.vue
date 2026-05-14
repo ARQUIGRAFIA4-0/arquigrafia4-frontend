@@ -318,6 +318,9 @@ watch(
 
             <CollectionImagesMosaic
               v-else-if="collectionViewMode === 'mosaic'"
+              :images="collectionImages"
+              :is-loading="isLoadingCollection"
+              :is-info-active="isInfoActive"
             />
           </section>
         </div>
@@ -519,7 +522,7 @@ watch(
 .collection-detail__container {
   width: 100%;
   min-height: 0;
-  padding: 26px 24px 0;
+  padding: 26px 52px 0;
   display: flex;
   flex-direction: column;
 }
