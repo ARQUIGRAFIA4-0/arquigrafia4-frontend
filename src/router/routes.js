@@ -87,6 +87,12 @@ export default [
       return true;
     },
   },
+  // Rota de redes
+  {
+    path: "/explore/rede",
+    name: "rede",
+    component: () => import("../views/RedePage.vue")
+  },
   // About routes
   {
     path: "/about",
@@ -146,7 +152,7 @@ export default [
     name: "my-collection-detail",
     component: () => import("../views/Profile/CollectionDetail.vue"),
     meta: { requiresAuth: true }
-  },  
+  },
   {
     path: "/profile",
     redirect: "/",
