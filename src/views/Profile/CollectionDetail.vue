@@ -91,6 +91,9 @@ async function fetchCollectionData() {
     // carrega as imagens da coleção
     await loadCollectionImageDetails(data.images || []);
 
+    // carrega as tags da coleção
+    await loadCollectionTags();
+
     if (data.user_id) {
       try {
         ownerUser.value = await usersStore.getUser(data.user_id);
@@ -107,6 +110,8 @@ async function fetchCollectionData() {
   } catch (error) {
     albumData.value = null;
     collectionImages.value = [];
+    collectionTags.value = [];
+    isLoadingCollectionTags.value = false;
     ownerUser.value = null;
     isLoadingOwner.value = false;
 
@@ -117,11 +122,6 @@ async function fetchCollectionData() {
   }
 
 }
-
-const collectionTags = computed(() =>
-  ["Fruição urbana", "Modernismo", "Paisagem", "Coletivo", "Espaço público"]
-  //collectionTagsFromDescription(albumData.value?.description ?? "")
-);
 
 // Carrega as imagens da coleção
 async function loadCollectionImageDetails(imagesFromAlbum = []) {
@@ -255,6 +255,49 @@ function handleDownloadCollection() {
  * End: Toolbar
 */
 
+/**
+ * Start: Tags
+ */
+const collectionTags = ref([]);
+const isLoadingCollectionTags = ref(true);
+
+// Normaliza as tags da coleção
+function normalizeCollectionTags(tags = []) {
+  return tags.map((tag) => tag.term).slice(0, 8);
+}
+
+// Carrega as tags da coleção
+async function loadCollectionTags() {
+  if (!collectionId.value) {
+    collectionTags.value = [];
+    isLoadingCollectionTags.value = false;
+    return;
+  }
+
+  isLoadingCollectionTags.value = true;
+
+  try {
+    const data = await albumsStore.getTagsByAlbumId(
+      authStore.authHeader,
+      collectionId.value
+    );
+
+    collectionTags.value = normalizeCollectionTags(data.tags ?? data);
+
+  } catch (error) {
+    console.error("Erro ao carregar tags da coleção:", error);
+    collectionTags.value = [];
+
+  } finally {
+    isLoadingCollectionTags.value = false;
+
+  }
+}
+
+/**
+ * End: Tags
+ */
+
 onMounted(fetchCollectionData);
 
 watch(
@@ -387,7 +430,6 @@ watch(
             </section>
 
             <section
-              v-if="collectionTags.length"
               class="collection-detail__tags-block"
               aria-labelledby="collection-tags-heading"
             >
@@ -402,7 +444,15 @@ watch(
                   explain="Estas etiquetas são geradas automaticamente a partir do texto da descrição da coleção."
                 />
               </div>
-              <div class="metadata-tags">
+              <div v-if="isLoadingCollectionTags" class="metadata-tags metadata-tags--skeleton">
+                <span
+                  v-for="n in 5"
+                  :key="`tag-skeleton-${n}`"
+                  class="metadata-tags__skeleton"
+                  aria-hidden="true"
+                />
+              </div>
+              <div v-else-if="collectionTags.length" class="metadata-tags">
                 <button
                   v-for="(tag, index) in collectionTags"
                   :key="`${tag}-${index}`"
@@ -809,6 +859,46 @@ watch(
   flex-wrap: wrap;
   gap: 0.5rem;
   max-width: 395px;
+}
+
+.metadata-tags--skeleton {
+  width: 100%;
+}
+
+.metadata-tags__skeleton {
+  display: inline-flex;
+  width: 72px;
+  height: 34px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: collectionTagsSkeletonShimmer 1.5s infinite;
+}
+
+.metadata-tags__skeleton:nth-child(2) {
+  width: 96px;
+}
+
+.metadata-tags__skeleton:nth-child(3) {
+  width: 82px;
+}
+
+.metadata-tags__skeleton:nth-child(4) {
+  width: 110px;
+}
+
+.metadata-tags__skeleton:nth-child(5) {
+  width: 68px;
+}
+
+@keyframes collectionTagsSkeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .metadata-tags .btn-tag {
