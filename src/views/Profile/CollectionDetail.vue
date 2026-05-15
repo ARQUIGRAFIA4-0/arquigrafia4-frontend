@@ -7,9 +7,15 @@ import { useUsersStore } from "@/store/users";
 import defaultProfileImage from "@/assets/profile_image.png";
 import CollectionPeriodsChart from "@/components/CollectionPeriodsChart.vue";
 import UiField from "../../components/ui/UiField.vue";
-import FitTags from "@/views/Profile/FitTags.vue";
+import CollectionImagesGrid from "@/components/collection/CollectionImagesGrid.vue";
+import CollectionImagesMosaic from "@/components/collection/CollectionImagesMosaic.vue";
+import {
+  viewRouteToSelection,
+  selectionToViewRoute,
+  selectionToViewMode,
+} from "@/constants/viewModes";
 import { api } from "@/services/api";
-import { RouterLink } from "vue-router";
+import CollectionToolbar from "@/components/CollectionToolbar.vue";
 
 defineOptions({ name: "CollectionDetail" });
 
@@ -23,13 +29,13 @@ const router = useRouter();
 const authStore = useAuthStore();
 const albumsStore = useAlbumsStore();
 
-const isLoadingOwner = ref(false);
+const isLoadingOwner = ref(true);
 
 const collectionId = computed(() => route.params.collectionId);
 
 const albumData = ref(null);
-const collectionError = ref("");
 const collectionImages = ref([]);
+const isLoadingCollection = ref(true);
 const isLoadingCollectionImages = ref(false);
 
 // título e descrição reais vindos da API
@@ -56,7 +62,7 @@ const ownerAvatarSrc = computed(() => {
     return `${API_BASE_URL}${avatarUrl.startsWith("/") ? "" : "/"}${avatarUrl}`;
   }
 
-  // Caso backend retorne avatar_path (mesmo padrão do ProfileCard)
+  // Caso backend retorne avatar_path (apenas pra eu lembra: mesmo padrão do ProfileCard)
   if (avatarPath) {
     return `${API_BASE_URL}/storage/${avatarPath}`;
   }
@@ -69,19 +75,26 @@ const ownerAvatarSrc = computed(() => {
 async function fetchCollectionData() {
   if (!collectionId.value) return;
 
-  try {
-    collectionError.value = "";
+  isLoadingCollection.value = true;
+  isLoadingCollectionImages.value = true;  
+  isLoadingOwner.value = true;
 
+  try {
+    // busca os dados da coleção
     const data = await albumsStore.getDataAlbumByAlbumId(
       authStore.authHeader,
       collectionId.value
     );
+
     albumData.value = data;
+
+    // carrega as imagens da coleção
     await loadCollectionImageDetails(data.images || []);
 
-    if (data.user_id) {
-      isLoadingOwner.value = true;
+    // carrega as tags da coleção
+    await loadCollectionTags();
 
+    if (data.user_id) {
       try {
         ownerUser.value = await usersStore.getUser(data.user_id);
       } catch (e) {
@@ -89,28 +102,26 @@ async function fetchCollectionData() {
       } finally {
         isLoadingOwner.value = false;
       }
-
     } else {
       ownerUser.value = null;
       isLoadingOwner.value = false;
-      
     }
 
   } catch (error) {
-    collectionError.value =
-      error?.message || "Não foi possível carregar os dados da coleção.";
     albumData.value = null;
     collectionImages.value = [];
+    collectionTags.value = [];
+    isLoadingCollectionTags.value = false;
+    ownerUser.value = null;
+    isLoadingOwner.value = false;
+
+  } finally {
+    isLoadingCollection.value = false;
+    isLoadingCollectionImages.value = false;
 
   }
 
 }
-
-/** Tags inferidas só a partir do texto da API (não usar o fallback "Sem descrição.") */
-const collectionTags = computed(() =>
-  ["Fruição urbana", "Modernismo", "Paisagem", "Coletivo", "Espaço público"]
-  //collectionTagsFromDescription(albumData.value?.description ?? "")
-);
 
 // Carrega as imagens da coleção
 async function loadCollectionImageDetails(imagesFromAlbum = []) {
@@ -141,9 +152,6 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
     console.error("Erro ao carregar imagens da coleção:", err);
     collectionImages.value = [];
 
-  } finally {
-    isLoadingCollectionImages.value = false;
-
   }
 
 }
@@ -151,14 +159,8 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
 /**
 * Start: Remover imagem
 **/
-
 const selectedImageId = ref(null);
 const removingImageId = ref(null);
-
-// Verifica se a imagem está selecionada
-function isCardSelected(item) {
-  return selectedImageId.value === item.id;
-}
 
 // Ativa a imagem (seleciona ou desseleciona)
 function onCardActivate(item, event) {
@@ -196,17 +198,105 @@ async function removeImageFromCollection(imageId) {
     }
   } catch (err) {
     console.error(err);
-    // opcional: toast de erro
   } finally {
     removingImageId.value = null;
   }
 }
-
-
 /**
 * End: Remover imagem
 */
 
+/**
+ * Start: Toolbar
+*/
+const viewSelection = computed(() =>
+  viewRouteToSelection(route.params.viewMode)
+);
+const collectionViewMode = computed(() =>
+  selectionToViewMode(viewSelection.value)
+);
+const isInfoActive = ref(true);
+const isGridReflowing = ref(false);
+
+// Muda o modo de visualização da coleção
+function handleCollectionViewChange({ selection }) {
+  const viewMode = selectionToViewRoute(selection);
+
+  if (viewMode === route.params.viewMode) return;
+
+  router.push({
+    name: "my-collection-detail",
+    params: {
+      collectionId: collectionId.value,
+      viewMode,
+    },
+  });
+
+}
+
+function handleToggleCollectionInfo() {
+  isGridReflowing.value = true;
+
+  window.setTimeout(() => {
+    isInfoActive.value = !isInfoActive.value;
+    window.setTimeout(() => {
+      isGridReflowing.value = false;
+
+    }, 220);
+
+  }, 120);
+
+}
+
+function handleDownloadCollection() {
+  console.log("TODO: implementar download da coleção");
+}
+/*
+ * End: Toolbar
+*/
+
+/**
+ * Start: Tags
+ */
+const collectionTags = ref([]);
+const isLoadingCollectionTags = ref(true);
+
+// Normaliza as tags da coleção
+function normalizeCollectionTags(tags = []) {
+  return tags.map((tag) => tag.term).slice(0, 8);
+}
+
+// Carrega as tags da coleção
+async function loadCollectionTags() {
+  if (!collectionId.value) {
+    collectionTags.value = [];
+    isLoadingCollectionTags.value = false;
+    return;
+  }
+
+  isLoadingCollectionTags.value = true;
+
+  try {
+    const data = await albumsStore.getTagsByAlbumId(
+      authStore.authHeader,
+      collectionId.value
+    );
+
+    collectionTags.value = normalizeCollectionTags(data.tags ?? data);
+
+  } catch (error) {
+    console.error("Erro ao carregar tags da coleção:", error);
+    collectionTags.value = [];
+
+  } finally {
+    isLoadingCollectionTags.value = false;
+
+  }
+}
+
+/**
+ * End: Tags
+ */
 
 onMounted(fetchCollectionData);
 
@@ -220,13 +310,25 @@ watch(
 </script>
 
 <template>
-  <section class="collection-detail__container">
+  <section
+    class="collection-detail__container"
+    :class="{ 'collection-detail__container--info-open': isInfoActive }"
+  >
+    <CollectionToolbar
+      class="collection-detail__floating-toolbar"
+      :view-selection="viewSelection"
+      :is-info-active="isInfoActive"
+      :allowed-views="['grid', 'mosaic']"
+      @view-change="handleCollectionViewChange"
+      @toggle-info="handleToggleCollectionInfo"
+      @download="handleDownloadCollection"
+    />
     <header class="collection-detail__header">
         <button
             type="button"
             class="collection-detail__back-btn"
             aria-label="Voltar"
-            @click="router.back()"
+            @click="router.push({ name: 'my-profile' })"
         >
             <span class="collection-detail__back-content">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -239,164 +341,147 @@ watch(
                 </svg>
                 <span class="collection-detail__back-text">voltar</span>
             </span>
-        </button>
+        </button>      
     </header>
     <main class="collection-detail__main container-fluid px-0">
       <div class="row g-0 collection-detail__row">
         <div class="collection-detail__image-wrapper">
-          <section class="collection-detail__gallery">
-            <div v-if="isLoadingCollectionImages" class="text-center py-4">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Carregando imagens...</span>
-              </div>
-            </div>
+          <header
+            class="collection-detail__main-title-area"
+            :class="{
+              'collection-detail__main-title-area--visible': !isInfoActive && !isLoadingCollection,
+            }"
+            :aria-hidden="isInfoActive || isLoadingCollection"
+          >
+            <h1 class="collection-detail__main-title">
+              {{ collectionTitle }}
+            </h1>
+          </header>
 
-            <template v-else-if="collectionImages.length">
-              <div class="collection-grid">
-                <div
-                    v-for="item in collectionImages"
-                    :key="item.id"
-                    class="collection-grid__link"
-                    role="button"
-                    tabindex="0"
-                    @click="onCardActivate(item, $event)"
-                    @keydown.enter.prevent="onCardActivate(item, $event)"
-                    @keydown.space.prevent="onCardActivate(item, $event)"
-                  >
-                    <article
-                      class="collection-grid__card"
-                      :class="{ 'collection-grid__card--selected': isCardSelected(item) }"
-                    >
-                      <div class="collection-grid__image-wrapper">
-                        <img
-                          :src="item.imageUrl"
-                          class="collection-grid__image"
-                          :alt="item.title"
-                        />
-                      </div>
+          <section
+            class="collection-detail__gallery"
+            :class="{ 'collection-detail__gallery--with-title': !isInfoActive && !isLoadingCollection }"
+          >
+            <CollectionImagesGrid
+              v-if="collectionViewMode === 'grid'"
+              :images="collectionImages"
+              :is-loading="isLoadingCollection"
+              :is-grid-reflowing="isGridReflowing"
+              :selected-image-id="selectedImageId"
+              :removing-image-id="removingImageId"
+              :is-info-active="isInfoActive"
+              @activate="onCardActivate"
+              @remove="removeImageFromCollection"
+            />
 
-                      <div class="collection-grid__content">
-                        <RouterLink
-                          class="collection-grid__title-link"
-                          :to="`/explore/dados/image/${item.id}`"
-                          @click.stop
-                        >
-                          <h3 class="collection-grid__title">{{ item.title }}</h3>
-                        </RouterLink>
-
-                        <p v-if="item.date" class="collection-grid__date">{{ item.date }}</p>
-
-                        <div class="collection-grid__footer">
-                          <div
-                            v-if="!isCardSelected(item) && item.subjects?.length"
-                            class="collection-grid__tags"
-                          >
-                            <FitTags :subjects="item.subjects" :gap="4" />
-                          </div>
-                          <div v-else-if="isCardSelected(item)" class="collection-grid__actions">
-                            <button
-                              type="button"
-                              class="collection-grid__remove-btn"
-                              :disabled="removingImageId === item.id"
-                              @click.stop="removeImageFromCollection(item.id)"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                                <path d="M6 2h4a1 1 0 0 1 1 1v1h3v1H2V4h3V3a1 1 0 0 1 1-1Zm-3 3h10l-1 9a1 1 0 0 1-1 .9H5a1 1 0 0 1-1-.9L3 5Zm3 2v5h1V7H6Zm3 0v5h1V7H9Z" fill="currentColor"/>
-                              </svg>
-                              <span>Remover da coleção</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </article>
-                  </div>
-              </div>
-            </template>
-
-            <div v-else class="collection-detail__gallery-empty">
-              Esta coleção ainda não possui imagens.
-            </div>
+            <CollectionImagesMosaic
+              v-else-if="collectionViewMode === 'mosaic'"
+              :images="collectionImages"
+              :is-loading="isLoadingCollection"
+              :is-info-active="isInfoActive"
+            />
           </section>
         </div>
-        <div class="collection-detail__info-wrapper">
-          <aside class="collection-detail__info-summary">
-            <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
-            <p class="collection-detail__description">{{ collectionDescription }}</p>
-          </aside>
-          <section class="collection-detail__actors">
-            <div class="collection-detail__actors-title-area">
-              <h2 class="collection-detail__actors-title">Coleção criada por</h2>
-            </div>
-            <div class="collection-detail__actors-list">
-              <div class="collection-detail__actor-image-area">
-                <div
-                  v-if="isLoadingOwner"
-                  class="collection-detail__actor-image-skeleton"
-                  aria-hidden="true"
-                />
-                <img
-                  v-else
-                  :src="ownerAvatarSrc"
-                  :alt="`Avatar de ${ownerUser?.name?.trim() || 'usuário'}`"
-                  class="collection-detail__actor-image"
+        <div
+          class="collection-detail__info-wrapper"
+          :class="{ 'collection-detail__info-wrapper--closed': !isInfoActive }"
+          :aria-hidden="!isInfoActive"
+          aria-label="Informações da coleção"
+        >
+          <div class="collection-detail__info-inner">
+            <aside v-if="isLoadingCollection" class="collection-detail__info-summary">
+              <div class="collection-detail__title-skeleton" />
+              <div class="collection-detail__description-skeleton" />
+            </aside>
+            <aside v-else class="collection-detail__info-summary">
+              <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
+              <p class="collection-detail__description">{{ collectionDescription }}</p>
+            </aside>
+
+            <section class="collection-detail__actors">
+              <div class="collection-detail__actors-title-area">
+                <h2 class="collection-detail__actors-title">Coleção criada por</h2>
+              </div>
+              <div class="collection-detail__actors-list">
+                <div class="collection-detail__actor-image-area">
+                  <div
+                    v-if="isLoadingOwner"
+                    class="collection-detail__actor-image-skeleton"
+                    aria-hidden="true"
+                  />
+                  <img
+                    v-else
+                    :src="ownerAvatarSrc"
+                    :alt="`Avatar de ${ownerUser?.name?.trim() || 'usuário'}`"
+                    class="collection-detail__actor-image"
+                  />
+                </div>
+                <div class="collection-detail__actor-name-wrapper">
+                  <div v-if="isLoadingOwner" class="collection-detail__actor-name-skeleton" />
+                  <p
+                    v-else
+                    class="collection-detail__actor-name"
+                    :class="{ 'collection-detail__actor-name--visible': !isLoadingOwner }"
+                  >
+                    {{ ownerUser?.name?.trim() || "Usuário desconhecido" }}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section
+              class="collection-detail__tags-block"
+              aria-labelledby="collection-tags-heading"
+            >
+              <div class="collection-detail__tags-heading-row">
+                <h2 id="collection-tags-heading" class="collection-detail__tags-title">
+                  Tags na coleção
+                </h2>
+                <UiField
+                  id="collection-tags-help"
+                  class="collection-detail__help-field"
+                  label="Ajuda"
+                  explain="Estas etiquetas são geradas automaticamente a partir do texto da descrição da coleção."
                 />
               </div>
-              <div class="collection-detail__actor-name-wrapper">
-                <div v-if="isLoadingOwner" class="collection-detail__actor-name-skeleton" />
-                <p
-                  v-else
-                  class="collection-detail__actor-name"
-                  :class="{ 'collection-detail__actor-name--visible': !isLoadingOwner }"
+              <div v-if="isLoadingCollectionTags" class="metadata-tags metadata-tags--skeleton">
+                <span
+                  v-for="n in 5"
+                  :key="`tag-skeleton-${n}`"
+                  class="metadata-tags__skeleton"
+                  aria-hidden="true"
+                />
+              </div>
+              <div v-else-if="collectionTags.length" class="metadata-tags">
+                <button
+                  v-for="(tag, index) in collectionTags"
+                  :key="`${tag}-${index}`"
+                  type="button"
+                  class="btn btn-outline-primary btn-sm btn-tag"
                 >
-                  {{ ownerUser?.name?.trim() || "Usuário desconhecido" }}
-                </p>
-                </div>
-            </div>
-          </section>
-          <section
-            v-if="collectionTags.length"
-            class="collection-detail__tags-block"
-            aria-labelledby="collection-tags-heading"
-          >
-            <div class="collection-detail__tags-heading-row">
-              <h2 id="collection-tags-heading" class="collection-detail__tags-title">
-                Tags na coleção
-              </h2>
-              <UiField
-                id="collection-tags-help"
-                class="collection-detail__help-field"
-                label="Ajuda"
-                explain="Estas etiquetas são geradas automaticamente a partir do texto da descrição da coleção."
-              />
-            </div>
-            <div class="metadata-tags">
-              <button
-                v-for="(tag, index) in collectionTags"
-                :key="`${tag}-${index}`"
-                type="button"
-                class="btn btn-outline-primary btn-sm btn-tag"
-              >
-                {{ tag }}
-              </button>
-            </div>
-          </section>
-          <section
-            class="collection-detail__periods-block"
-            aria-labelledby="collection-periods-heading"
-          >
-            <div class="collection-detail__periods-heading-row">
-              <h2 id="collection-periods-heading" class="collection-detail__periods-title">
-                Períodos da coleção
-              </h2>
-              <UiField
-                id="collection-periods-help"
-                class="collection-detail__help-field"
-                label="Ajuda"
-                explain="Distribuição temporal das obras desta coleção (em construção)."
-              />
-            </div>
-            <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
-          </section>          
+                  {{ tag }}
+                </button>
+              </div>
+            </section>
+
+            <section
+              class="collection-detail__periods-block"
+              aria-labelledby="collection-periods-heading"
+            >
+              <div class="collection-detail__periods-heading-row">
+                <h2 id="collection-periods-heading" class="collection-detail__periods-title">
+                  Períodos da coleção
+                </h2>
+                <UiField
+                  id="collection-periods-help"
+                  class="collection-detail__help-field"
+                  label="Ajuda"
+                  explain="Distribuição temporal das obras desta coleção (em construção)."
+                />
+              </div>
+              <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
+            </section>
+          </div>
         </div>
       </div>
     </main>
@@ -408,6 +493,7 @@ watch(
 .collection-detail__image-wrapper {
   flex: 1 1 0;
   min-width: 0;
+  transition: flex-basis 350ms ease;
 }
 
 .collection-detail__actors {
@@ -462,6 +548,14 @@ watch(
   border-radius: 50%;
   object-fit: cover;
   display: block;
+  opacity: 0;
+  animation: actorFadeIn 220ms ease forwards;
+}
+
+@keyframes actorFadeIn {
+  to {
+    opacity: 1;
+  }
 }
 
 .collection-detail__actor-image-skeleton {
@@ -493,7 +587,7 @@ watch(
 .collection-detail__container {
   width: 100%;
   min-height: 0;
-  padding: 26px 24px;
+  padding: 26px 52px 0;
   display: flex;
   flex-direction: column;
 }
@@ -508,6 +602,7 @@ watch(
   display: flex;
   align-items: center;
   gap: 10px;
+  justify-content: space-between;
 }
 
 .collection-detail__back-btn {
@@ -551,6 +646,46 @@ watch(
   min-height: 320px;
   border-radius: 8px;
   background: #fff;
+  transition:
+    transform 320ms ease,
+    opacity 260ms ease;
+}
+
+.collection-detail__gallery--with-title {
+  transform: translateY(0);
+}
+
+.collection-detail__main-title-area {
+  width: 100%;
+  max-height: 0;
+  padding: 0;
+  opacity: 0;
+  transform: translateY(-8px);
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    max-height 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: max-height, padding, opacity, transform;
+}
+
+.collection-detail__main-title-area--visible {
+  max-height: 96px;
+  padding: 24px 0 16px;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.collection-detail__main-title {
+  margin: 0;
+  color: var(--Cinza_E, #2f2f2f);
+  font-family: "DM Sans", sans-serif;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 115%;
 }
 
 .collection-detail__info-wrapper {
@@ -562,7 +697,41 @@ watch(
   height: 100%;
   align-self: stretch;
   box-sizing: border-box;
+  overflow: hidden;
+  transition:
+    flex-basis 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    max-width 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    min-width 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.collection-detail__info-wrapper--closed {
+  flex: 0 0 0 !important;
+  width: 0 !important;
+  max-width: 0 !important;
+  min-width: 0 !important;
+  pointer-events: none;
+}
+
+.collection-detail__info-inner {
+  display: flex;
   flex-direction: column;
+  width: 338px;
+  flex-shrink: 0;
+  opacity: 1;
+  transform: translateX(0);
+  will-change: transform, opacity;
+  transition:
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 160ms ease 260ms;
+}
+
+.collection-detail__info-wrapper--closed .collection-detail__info-inner {
+  opacity: 0;
+  transform: translateX(100%);
+  transition:
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 100ms ease;
 }
 
 .collection-detail__info-summary {
@@ -692,6 +861,46 @@ watch(
   max-width: 395px;
 }
 
+.metadata-tags--skeleton {
+  width: 100%;
+}
+
+.metadata-tags__skeleton {
+  display: inline-flex;
+  width: 72px;
+  height: 34px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: collectionTagsSkeletonShimmer 1.5s infinite;
+}
+
+.metadata-tags__skeleton:nth-child(2) {
+  width: 96px;
+}
+
+.metadata-tags__skeleton:nth-child(3) {
+  width: 82px;
+}
+
+.metadata-tags__skeleton:nth-child(4) {
+  width: 110px;
+}
+
+.metadata-tags__skeleton:nth-child(5) {
+  width: 68px;
+}
+
+@keyframes collectionTagsSkeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .metadata-tags .btn-tag {
   height: 34px;
   padding: 4px 8px;
@@ -734,137 +943,38 @@ watch(
   line-height: 150%;
 }
 
-.collection-grid {
-  --collection-card-w: 220px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--collection-card-w)), var(--collection-card-w)));
-  gap: var(--pp, 12px);
-  align-items: start;
-  justify-content: center;
+.collection-detail__floating-toolbar {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 100;
+}
+
+@media (max-width: 767px) {
+  .collection-detail__floating-toolbar {
+    bottom: 16px;
+  }
+  .collection-detail__container {
+    padding-bottom: 88px;
+  }
+}
+
+.collection-detail__title-skeleton {
+  width: 80%;
+  height: 34px;
+  border-radius: 6px;
+  background: #ececec;
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+}
+
+.collection-detail__description-skeleton {
   width: 100%;
-  min-width: 0;
-}
-
-.collection-grid__link {
-  display: flex;
-  width: min(var(--collection-card-w), 100%);
-  max-width: 100%;
-  text-decoration: none;
-  color: inherit;
-}
-
-.collection-grid__card {
-  display: flex;
-  width: min(var(--collection-card-w), 100%);
-  max-width: 100%;
-  min-height: 346px;
-  box-sizing: border-box;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--pp, 8px);
-  padding-bottom: var(--pp, 8px);
-  border-radius: 5px;
-  border: 0.25px solid var(--Cinza_C, #a6a6a6);
-  background: var(--Off_white, #faf9f9);
-  box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.collection-grid__image-wrapper {
-  position: relative;
-  flex: 0 0 auto;
-  width: 100%;
-  max-width: var(--collection-card-w);
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-  background-color: #f8f9fa;
-}
-
-.collection-grid__image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.collection-grid__content {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  width: 100%;
-  padding: 8px 10px 0;
-}
-
-.collection-grid__footer {
-  margin-top: auto;
-  min-height: 0;
-  width: 100%;
-}
-
-.collection-grid__tags {
-  width: 100%;
-}
-
-.collection-grid__title {
-  margin: 0;
-  font-weight: 700;
-  font-size: 14px;
-  line-height: 125%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.collection-grid__date {
-  margin: 2px 0 0;
-  font-size: 14px;
-  color: var(--Cinza_E, #2f2f2f);
-}
-
-.collection-detail__gallery-empty {
-  color: #666;
-  font-size: 14px;
-  padding: 12px 0;
-}
-
-.collection-grid__title-link {
-  color: inherit;
-  text-decoration: none;
-}
-
-.collection-grid__title-link:hover .collection-grid__title {
-  text-decoration: underline;
-}
-
-.collection-grid__card--selected {
-  background: var(--Laranja_C, #f3e7dc);
-}
-
-.collection-grid__actions {
-  width: 100%;
-}
-
-.collection-grid__remove-btn {
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 2px 14px;
-  border-radius: 5px;
-  border: 1px solid var(--Laranja_E, #AA4F28);
-  background: var(--Off_white, #FAF9F9);
-  color: var(--Laranja_E, #AA4F28);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.collection-grid__remove-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  height: 72px;
+  margin-top: 12px;
+  border-radius: 6px;
+  background: #ececec;
+  animation: skeletonPulse 1.8s ease-in-out infinite;
 }
 
 </style>

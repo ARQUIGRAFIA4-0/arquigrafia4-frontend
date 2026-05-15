@@ -136,5 +136,23 @@ export const useAlbumsStore = defineStore("albums", () => {
 
     }
 
-    return { createAlbum, getUserAlbums, deleteAlbum, getDataAlbumByAlbumId, addImageToAlbum, removeImagesFromAlbum };
+    // Obter tags dos álbuns
+    async function getTagsByAlbumId(authHeader, albumId) {
+        try {
+            const response = await axios.get(`/api/albums/${albumId}/tags`, {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: authHeader,
+                },
+            });
+            return response.data;
+        }
+        catch (error) {
+            throw new Error(
+                error?.response?.data?.message || "Não foi possível buscar as tags do álbum."
+            );
+        }
+    }   
+
+    return { createAlbum, getUserAlbums, deleteAlbum, getDataAlbumByAlbumId, addImageToAlbum, removeImagesFromAlbum, getTagsByAlbumId };
 })
