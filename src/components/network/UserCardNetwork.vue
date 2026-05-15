@@ -1,22 +1,57 @@
 <template>
   <div class="user-card">
     <div class="user-card__media">
-      <img class="user-card__image"
-        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTLrxyOq7aJoitKoEtD5jHqb3JEjkD0g5w9Pg&s"
-        alt="foto do usuário" />
+      <img class="user-card__image" :src="userImage" :alt="`foto de ${user.name}`" />
     </div>
     <div class="user-card__body">
-      <h3 class="user-card__name">Yumi Tanaka</h3>
+      <h3 class="user-card__name">{{ user.name }}</h3>
+      <!-- <ul class="user-card__tags">
+        <li v-for="tag in visibleTags" :key="tag" class="user-card__tag">{{ tag }}</li>
+        <li v-if="overflowCount > 0" class="user-card__tag user-card__tag--overflow">+{{ overflowCount }}</li>
+      </ul> -->
       <ul class="user-card__tags">
-        <li class="user-card__tag">Termo</li>
-        <li class="user-card__tag user-card__tag--overflow">+4</li>
+        <li class="user-card__tag">Design</li>
+        <li class="user-card__tag">Arquitetura</li>
+        <li class="user-card__tag">Urbanismo</li>
+        <li class="user-card__tag user-card__tag--overflow">+2</li>
       </ul>
     </div>
   </div>
 </template>
 
-<script>
-export default {}
+<script setup>
+import { computed } from 'vue';
+import networkImageDefault1 from '@/assets/networkImageDefault-1.png';
+import networkImageDefault2 from '@/assets/networkImageDefault-2.png';
+import networkImageDefault3 from '@/assets/networkImageDefault-3.png';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+const props = defineProps({
+  user: {
+    type: Object,
+    required: true,
+  },
+});
+
+const defaultImages = [
+  networkImageDefault1,
+  networkImageDefault2,
+  networkImageDefault3,
+];
+
+const randomDefaultImage =
+  defaultImages[Math.floor(Math.random() * defaultImages.length)];
+
+const userImage = computed(() => {
+  return props.user.avatar_url
+    ? `${API_BASE_URL}${props.user.avatar_url}`
+    : randomDefaultImage;
+});
+
+
+const MAX_TAGS = 4;
+const visibleTags = computed(() => props.user.tags?.slice(0, MAX_TAGS) ?? []);
+const overflowCount = computed(() => Math.max(0, (props.user.tags?.length ?? 0) - MAX_TAGS));
 </script>
 
 <style lang="scss" scoped>
