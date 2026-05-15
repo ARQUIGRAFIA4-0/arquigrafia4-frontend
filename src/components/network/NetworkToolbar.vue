@@ -6,7 +6,6 @@
         <button class="btn btn-icon dropdown-toggle caret-right network-toolbar__filter-btn" type="button"
           data-bs-toggle="dropdown" data-bs-offset="0,16" aria-expanded="false">
           <i :class="['bi', currentFilterOption.icon]" />
-          <!-- <span class="network-toolbar__filter-label">{{ currentFilterOption.label }}</span> -->
         </button>
         <ul class="dropdown-menu menu-dark">
           <li v-for="option in filterOptions" :key="option.value">
@@ -109,7 +108,7 @@ function onConfirm() {
 .network-toolbar__filter {
   box-shadow: var(--shadow-elevation-medium);
   background-color: var(--Branco, #fff);
-  border-radius: 0.75rem;
+  border-radius: 0.375rem;
   padding: 12px;
 }
 
@@ -120,18 +119,13 @@ function onConfirm() {
   white-space: nowrap;
 }
 
-.network-toolbar__filter-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
 /* --- Busca --- */
 .network-toolbar__search {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   background-color: var(--Branco, #fff);
-  border-radius: 0.75rem;
+  border-radius: 0.375rem;
   padding: 12px 16px;
   box-shadow: var(--shadow-elevation-medium);
   flex: 1;
@@ -202,7 +196,7 @@ function onConfirm() {
 .network-toolbar__sort {
   box-shadow: var(--shadow-elevation-medium);
   background-color: var(--Branco, #fff);
-  border-radius: 0.75rem;
+  border-radius: 0.375rem;
   padding: 12px;
 }
 
