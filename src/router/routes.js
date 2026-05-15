@@ -91,7 +91,7 @@ export default [
   {
     path: "/explore/rede",
     name: "rede",
-    component: () => import("../views/RedePage.vue")
+    component: () => import("../views/NetworkPage.vue")
   },
   // About routes
   {
