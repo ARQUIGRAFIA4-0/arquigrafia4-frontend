@@ -303,7 +303,22 @@ watch(
     <main class="collection-detail__main container-fluid px-0">
       <div class="row g-0 collection-detail__row">
         <div class="collection-detail__image-wrapper">
-          <section class="collection-detail__gallery">
+          <header
+            class="collection-detail__main-title-area"
+            :class="{
+              'collection-detail__main-title-area--visible': !isInfoActive && !isLoadingCollection,
+            }"
+            :aria-hidden="isInfoActive || isLoadingCollection"
+          >
+            <h1 class="collection-detail__main-title">
+              {{ collectionTitle }}
+            </h1>
+          </header>
+
+          <section
+            class="collection-detail__gallery"
+            :class="{ 'collection-detail__gallery--with-title': !isInfoActive && !isLoadingCollection }"
+          >
             <CollectionImagesGrid
               v-if="collectionViewMode === 'grid'"
               :images="collectionImages"
@@ -581,6 +596,46 @@ watch(
   min-height: 320px;
   border-radius: 8px;
   background: #fff;
+  transition:
+    transform 320ms ease,
+    opacity 260ms ease;
+}
+
+.collection-detail__gallery--with-title {
+  transform: translateY(0);
+}
+
+.collection-detail__main-title-area {
+  width: 100%;
+  max-height: 0;
+  padding: 0;
+  opacity: 0;
+  transform: translateY(-8px);
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    max-height 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: max-height, padding, opacity, transform;
+}
+
+.collection-detail__main-title-area--visible {
+  max-height: 96px;
+  padding: 24px 0 16px;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.collection-detail__main-title {
+  margin: 0;
+  color: var(--Cinza_E, #2f2f2f);
+  font-family: "DM Sans", sans-serif;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 115%;
 }
 
 .collection-detail__info-wrapper {
@@ -594,10 +649,10 @@ watch(
   box-sizing: border-box;
   overflow: hidden;
   transition:
-    flex-basis 350ms ease,
-    width 350ms ease,
-    max-width 350ms ease,
-    min-width 350ms ease;
+    flex-basis 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    max-width 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    min-width 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .collection-detail__info-wrapper--closed {
@@ -617,15 +672,15 @@ watch(
   transform: translateX(0);
   will-change: transform, opacity;
   transition:
-    transform 350ms ease,
-    opacity 1ms linear 350ms;
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 160ms ease 260ms;
 }
 
 .collection-detail__info-wrapper--closed .collection-detail__info-inner {
   opacity: 0;
   transform: translateX(100%);
   transition:
-    transform 350ms ease,
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 100ms ease;
 }
 

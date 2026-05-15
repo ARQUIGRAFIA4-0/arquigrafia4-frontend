@@ -27,7 +27,10 @@ function isCardSelected(item) {
   <div
     v-if="isLoading"
     class="collection-grid collection-grid--skeleton"
-    :class="{ 'collection-grid--info-open': isInfoActive }"
+    :class="{
+      'collection-grid--info-open': isInfoActive,
+      'collection-grid--info-closed': !isInfoActive,
+    }"
     role="status"
     aria-label="Carregando coleção"
   >
@@ -52,6 +55,7 @@ function isCardSelected(item) {
       :class="{
         'collection-grid--reflowing': isGridReflowing,
         'collection-grid--info-open': isInfoActive,
+        'collection-grid--info-closed': !isInfoActive,
       }"
     >
       <div
@@ -128,9 +132,14 @@ function isCardSelected(item) {
   justify-content: center;
 }
 
+.collection-grid--info-closed {
+  grid-template-columns: repeat(auto-fill, minmax(var(--collection-card-w), 1fr));
+  justify-content: stretch;
+}
+
 .collection-grid__link {
   display: flex;
-  width: min(var(--collection-card-w), 100%);
+  width: 100%;
   max-width: 100%;
   text-decoration: none;
   color: inherit;
@@ -138,7 +147,7 @@ function isCardSelected(item) {
 
 .collection-grid__card {
   display: flex;
-  width: min(var(--collection-card-w), 100%);
+  width: 100%;
   max-width: 100%;
   min-height: 346px;
   box-sizing: border-box;
@@ -165,7 +174,7 @@ function isCardSelected(item) {
   position: relative;
   flex: 0 0 auto;
   width: 100%;
-  max-width: var(--collection-card-w);
+  max-width: none;
   aspect-ratio: 1 / 1;
   overflow: hidden;
   background-color: #f8f9fa;
