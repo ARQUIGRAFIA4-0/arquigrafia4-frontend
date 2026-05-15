@@ -1,13 +1,13 @@
 <template>
   <div class="collective-card">
     <div class="collective-card__media">
-      <img class="collective-card__image" :src="collectiveImageDefault" alt="foto do usuário" />
+      <img class="collective-card__image" :src="collectiveImageDefault" :alt="`foto de ${collective.name}`" />
     </div>
     <div class="collective-card__body">
-      <h3 class="collective-card__name">Lero Lero FAU</h3>
+      <h3 class="collective-card__name">{{ collective.name }}</h3>
       <div class="collective-card__location">
         <i class="bi bi-geo-alt"></i>
-        <span>São Paulo, SP</span>
+        <span>{{ collective.location ?? '-' }}</span>
       </div>
     </div>
   </div>
@@ -15,12 +15,20 @@
 
 <script setup>
 import collectiveImageDefault from '@/assets/perfil_coletivo.png';
+defineProps({
+  collective: {
+    type: Object,
+    required: true,
+  },
+});
 </script>
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
+$breakpoint-lg: 1024px;
 $breakpoint-md: 768px;
 $breakpoint-sm: 425px;
+
 
 .collective-card {
   max-width: 220px;
@@ -57,12 +65,8 @@ $breakpoint-sm: 425px;
     padding: 0.75rem 0.5rem 0.5rem;
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 0.75rem;
-
-    // @media (max-width: $breakpoint-sm) {
-    //   padding: 0.5rem;
-    //   gap: 0.5rem;
-    // }
   }
 
   &__name {
@@ -70,18 +74,32 @@ $breakpoint-sm: 425px;
     font-weight: 500;
     color: var(--Preto, #1a1a1a);
     margin: 0;
+
+    width: 100%;
+    max-width: 170px;
+
+    text-align: center;
+
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 
-    // @media (max-width: $breakpoint-sm) {
-    //   font-size: 0.75rem;
-    // }
+    @media (max-width: $breakpoint-sm) {
+      width: 100%;
+      max-width: 95px;
+    }
+
+    @media (max-width: $breakpoint-md) {
+      width: 100%;
+      max-width: 95px;
+    }
   }
 
   &__location {
     color: var(--Cinza_M);
     font-size: 0.489rem;
+    display: flex;
+    justify-content: center;
 
     .bi {
       font-size: 0.489rem;
@@ -93,6 +111,15 @@ $breakpoint-sm: 425px;
   @media (max-width: $breakpoint-sm) {
     max-width: 142px;
     height: 211px;
+  }
+
+  @media (max-width: $breakpoint-md) {
+    width: 142px;
+    height: 211px;
+  }
+
+  @media (min-width: $breakpoint-lg) {
+    height: 148px;
   }
 }
 </style>
