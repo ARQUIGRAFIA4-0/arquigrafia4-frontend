@@ -13,6 +13,16 @@ const redirectToDefaultView = (to) => ({
   hash: to.hash,
 });
 
+const redirectToDefaultCollectionView = (to) => ({
+  name: "my-collection-detail",
+  params: {
+    collectionId: to.params.collectionId,
+    viewMode: "grid",
+  },
+  query: to.query,
+  hash: to.hash,
+});
+
 export default [
   {
     path: "/",
@@ -143,8 +153,37 @@ export default [
   },
   {
     path: "/eu/colecoes/:collectionId",
+    name: "my-collection-detail-redirect",
+    redirect: redirectToDefaultCollectionView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: "/eu/colecoes/:collectionId/:viewMode",
     name: "my-collection-detail",
     component: () => import("../views/Profile/CollectionDetail.vue"),
+    beforeEnter: (to) => {
+      const allowed = ["grid", "mosaic"];
+      const option = resolveViewOptionByRoute(to.params.viewMode);
+
+      if (!allowed.includes(option.route)) {
+        return redirectToDefaultCollectionView(to);
+      }
+
+      if (option.route !== to.params.viewMode) {
+        return {
+          name: "my-collection-detail",
+          params: {
+            collectionId: to.params.collectionId,
+            viewMode: option.route,
+          },
+          query: to.query,
+          hash: to.hash,
+          replace: true,
+        };
+      }
+
+      return true;
+    },
     meta: { requiresAuth: true }
   },  
   {
