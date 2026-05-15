@@ -144,7 +144,13 @@ export default [
     name: "about-vocabulary",
     component: () => import("../views/About/AboutVocabulary.vue"),
   },
-  // Profile routes
+  // Collective routes
+  {
+    path: "/coletivos/criar",
+    name: "collective-create",
+    component: () => import("../views/Collective/CreateCollective.vue"),
+    meta: { requiresAuth: true },
+  },
   {
     path: "/eu",
     redirect: { name: "my-profile-images" },

@@ -370,6 +370,30 @@ const deleteImage = async (authHeader, imageId) => {
   }
 };
 
+/**
+ * Cria um novo coletivo
+ * @param {string} authHeader - Header de autorização (Bearer token)
+ * @param {FormData} formData - Dados do coletivo (name, description)
+ * @returns {Promise<object>} Dados do coletivo criado
+ */
+const createCollective = async (authHeader, formData) => {
+  try {
+    const response = await axios.post("/api/collectives", formData, {
+      headers: {
+        "Authorization": authHeader,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.errors?.name?.[0] ||
+      "Não foi possível criar o coletivo.";
+    throw new Error(message);
+  }
+};
+
 export const api = {
   getImages: fetchImages,
   getGeoJSON,
@@ -379,4 +403,5 @@ export const api = {
   getTotalImages,
   getSubjectById,
   deleteImage,
+  createCollective,
 };
