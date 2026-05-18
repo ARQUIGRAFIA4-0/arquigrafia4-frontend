@@ -25,6 +25,8 @@ const props = defineProps({
 
 const containerRef = ref(null);
 const visibleCount = ref(0);
+let resizeObserver = null;
+let recomputeFrame = null;
 
 // Estima a largura de uma tag
 function estimateTagWidth(label) {
@@ -51,9 +53,11 @@ function recompute() {
 
   // Container ref é o elemento que contém as tags
   const container = containerRef.value;
+  if (!container) return;
 
   // Largura máxima do container
   const maxWidth = container.clientWidth;
+  if (!maxWidth) return;
   const maxLines = 2; // Quantidade máxima de linhas
 
   let line = 1;
@@ -99,28 +103,58 @@ function recompute() {
   visibleCount.value = Math.max(1, count);
 }
 
+function scheduleRecompute() {
+  if (recomputeFrame) {
+    cancelAnimationFrame(recomputeFrame);
+  }
+
+  recomputeFrame = requestAnimationFrame(() => {
+    recomputeFrame = null;
+    recompute();
+  });
+}
+
 const visibleSubjects = computed(() => props.subjects.slice(0, visibleCount.value)); // Pega as tags visíveis
 const overflowCount = computed(() => Math.max(0, props.subjects.length - visibleCount.value)); // Calcula a quantidade de tags que não cabem
 
 function onResize() {
-  recompute();
+  scheduleRecompute();
 }
 
 onMounted(async () => {
   await nextTick();
-  recompute();
+  scheduleRecompute();
+
+  if (containerRef.value && "ResizeObserver" in window) {
+    resizeObserver = new ResizeObserver(() => {
+      scheduleRecompute();
+    });
+
+    resizeObserver.observe(containerRef.value);
+  }
+
   window.addEventListener("resize", onResize);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", onResize);
+
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+
+  if (recomputeFrame) {
+    cancelAnimationFrame(recomputeFrame);
+    recomputeFrame = null;
+  }
 });
 
 watch(
   () => props.subjects,
   async () => {
     await nextTick();
-    recompute();
+    scheduleRecompute();
   },
   { deep: true }
 );
@@ -153,11 +187,11 @@ watch(
 
 .fit-tags__tag {
   border-radius: 2px;
-  border: 1px solid var(--Cinza_C, #a6a6a6);
-  padding: 2px 6px;
+  border: 1px solid var(--Laranja_E, #AA4F28);
+  padding: 6px 8px;
   font-size: 12px;
   line-height: 115%;
-  color: var(--Cinza_E, #2f2f2f);
+  color: var(--Laranja_E, #AA4F28);
 }
 
 .fit-tags__tag--overflow {

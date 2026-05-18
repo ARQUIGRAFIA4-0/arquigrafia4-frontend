@@ -21,6 +21,34 @@ function isCardSelected(item) {
   return props.selectedImageId === item.id;
 }
 
+// Formata a data da imagem
+function formatDate(dates) {
+  if (!dates || dates.length === 0) return null;
+
+  const dateInfo = dates.find((d) => d.type === "creation") || dates[0];
+  if (!dateInfo) return null;
+
+  const earliest = dateInfo.earliest_date
+    ? new Date(dateInfo.earliest_date).getFullYear()
+    : null;
+
+  const latest = dateInfo.latest_date
+    ? new Date(dateInfo.latest_date).getFullYear()
+    : null;
+
+  const circa = dateInfo.circa_earliest_date || dateInfo.circa_latest_date;
+
+  if (!earliest) return null;
+
+  const prefix = circa ? "c." : "";
+
+  if (!latest || earliest === latest) {
+    return `${prefix}${earliest}`;
+  }
+
+  return `${prefix}${earliest}-${latest}`;
+}
+
 </script>
 
 <template>
@@ -85,7 +113,9 @@ function isCardSelected(item) {
               <h3 class="collection-grid__title">{{ item.title }}</h3>
             </RouterLink>
 
-            <p v-if="item.date" class="collection-grid__date">{{ item.date }}</p>
+            <p v-if="formatDate(item.dates)" class="collection-grid__date">
+              {{ formatDate(item.dates) }}
+            </p>
 
             <div class="collection-grid__footer">
               <div
@@ -118,22 +148,24 @@ function isCardSelected(item) {
 </template>
 <style scoped>
 .collection-grid {
-  --collection-card-w: 220px;
+  --collection-card-w: 274px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--collection-card-w)), var(--collection-card-w)));
-  gap: var(--pp, 12px);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--collection-card-w)), 1fr));
+  gap: var(--pp, 18px);
   align-items: start;
-  justify-content: start;
+  justify-content: stretch;
   width: 100%;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .collection-grid--info-open {
-  justify-content: center;
+  justify-content: stretch;
+  padding-inline: 62px;
 }
 
 .collection-grid--info-closed {
-  grid-template-columns: repeat(auto-fill, minmax(var(--collection-card-w), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--collection-card-w)), 1fr));
   justify-content: stretch;
 }
 
@@ -149,7 +181,6 @@ function isCardSelected(item) {
   display: flex;
   width: 100%;
   max-width: 100%;
-  min-height: 346px;
   box-sizing: border-box;
   flex-direction: column;
   align-items: stretch;
@@ -160,6 +191,7 @@ function isCardSelected(item) {
   background: var(--Off_white, #faf9f9);
   box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  min-height: 458px;
   transition:
     opacity 180ms ease,
     transform 220ms ease;
@@ -195,7 +227,7 @@ function isCardSelected(item) {
   flex-direction: column;
   min-height: 0;
   width: 100%;
-  padding: 8px 10px 0;
+  padding: 14px 14px 4px;
 }
 
 .collection-grid__footer {
@@ -263,7 +295,7 @@ function isCardSelected(item) {
 
 .collection-grid__card-skeleton {
   display: flex;
-  width: min(var(--collection-card-w), 100%);
+  width: 100%;
   max-width: 100%;
   min-height: 346px;
   box-sizing: border-box;
@@ -281,7 +313,7 @@ function isCardSelected(item) {
 
 .collection-grid__card-skeleton-image {
   width: 100%;
-  max-width: var(--collection-card-w);
+  max-width: none;
   aspect-ratio: 1 / 1;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
