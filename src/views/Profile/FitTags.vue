@@ -187,11 +187,11 @@ watch(
 
 .fit-tags__tag {
   border-radius: 2px;
-  border: 1px solid var(--Laranja_E, #AA4F28);
+  border: 1px solid var(--Cinza_C, #a6a6a6);
   padding: 6px 8px;
   font-size: 12px;
   line-height: 115%;
-  color: var(--Laranja_E, #AA4F28);
+  color: var(--Cinza_E, #2f2f2f);
 }
 
 .fit-tags__tag--overflow {
