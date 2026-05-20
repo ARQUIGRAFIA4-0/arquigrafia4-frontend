@@ -135,7 +135,18 @@ export default [
   // Profile routes
   {
     path: "/eu",
-    name: "my-profile",
+    redirect: { name: "my-profile-images" },
+    meta: { requiresAuth: true }
+  },
+  {
+    path: "/eu/imagens",
+    name: "my-profile-images",
+    component: () => import("../views/Profile/ViewPrivateProfile.vue"),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: "/eu/colecoes",
+    name: "my-profile-collections",
     component: () => import("../views/Profile/ViewPrivateProfile.vue"),
     meta: { requiresAuth: true }
   },

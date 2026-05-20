@@ -19,8 +19,8 @@ const navItems = computed(() => {
   ];
 
   const privateNavItems = [
-    { label: 'Minhas imagens', value: 'Imagens' },
-    { label: 'Minhas coleções', value: 'Coleções' },  
+    { label: "Minhas imagens", value: "Imagens", routeName: "my-profile-images" },
+    { label: "Minhas coleções", value: "Coleções", routeName: "my-profile-collections" }
     // { label: 'Meus álbuns', value: 'Álbuns' },
     // { label: 'Meus percursos', value: 'Percursos' },
     // { label: 'Obras', value: 'Obras' },
@@ -36,9 +36,27 @@ const navItems = computed(() => {
 
 <template>
   <ul class="profile-nav">
-    <li v-for="item in navItems" :key="item.value" @click="$emit('select', item.value)"
-      :class="{ 'profile-nav--selected': props.selected === item.value }">
-      {{ item.label }}
+    <li
+      v-for="item in navItems"
+      :key="item.value"
+      :class="{ 'profile-nav--selected': props.selected === item.value }"
+    >
+      <RouterLink
+        v-if="item.routeName"
+        class="profile-nav__link"
+        :to="{ name: item.routeName }"
+      >
+        {{ item.label }}
+      </RouterLink>
+
+      <button
+        v-else
+        type="button"
+        class="profile-nav__button"
+        @click="$emit('select', item.value)"
+      >
+        {{ item.label }}
+      </button>
     </li>
   </ul>
 </template>
@@ -51,6 +69,17 @@ $breakpoint-md: 768px;
   @media (min-width: #{$breakpoint-md}) {
     @content;
   }
+}
+
+.profile-nav__link,
+.profile-nav__button {
+  color: inherit;
+  text-decoration: none;
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
 }
 
 .profile-nav {

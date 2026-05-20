@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onMounted, watch } from "vue";
+import { computed, ref, onMounted, onUnmounted, watch, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import { useAlbumsStore } from "@/store/albums";
@@ -36,7 +36,6 @@ const collectionId = computed(() => route.params.collectionId);
 const albumData = ref(null);
 const collectionImages = ref([]);
 const isLoadingCollection = ref(true);
-const isLoadingCollectionImages = ref(false);
 
 // título e descrição reais vindos da API
 const collectionTitle = computed(() => {
@@ -76,7 +75,6 @@ async function fetchCollectionData() {
   if (!collectionId.value) return;
 
   isLoadingCollection.value = true;
-  isLoadingCollectionImages.value = true;  
   isLoadingOwner.value = true;
 
   try {
@@ -117,7 +115,6 @@ async function fetchCollectionData() {
 
   } finally {
     isLoadingCollection.value = false;
-    isLoadingCollectionImages.value = false;
 
   }
 
@@ -138,9 +135,6 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
     collectionImages.value = [];
     return;
   }
-
-  // Carrega as imagens detalhadas
-  isLoadingCollectionImages.value = true;
 
   try {
     // Carrega as imagens detalhadas
@@ -217,9 +211,36 @@ const collectionViewMode = computed(() =>
 );
 const isInfoActive = ref(true);
 const isGridReflowing = ref(false);
+const isMobileGridExpanded = ref(false);
+const galleryRef = ref(null);
+
+const MOBILE_BREAKPOINT = 768;
+const isMobile = ref(
+  typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT
+);
+
+function updateIsMobile() {
+  isMobile.value = window.innerWidth < MOBILE_BREAKPOINT;
+}
+
+async function handleToggleMobileGrid() {
+  const willExpand = !isMobileGridExpanded.value;
+  isMobileGridExpanded.value = willExpand;
+
+  if (!willExpand || !isMobile.value) return;
+
+  await nextTick();
+
+  galleryRef.value?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}
 
 // Muda o modo de visualização da coleção
 function handleCollectionViewChange({ selection }) {
+  if (isMobile.value && selection === "mosaic") return;
+
   const viewMode = selectionToViewRoute(selection);
 
   if (viewMode === route.params.viewMode) return;
@@ -235,6 +256,8 @@ function handleCollectionViewChange({ selection }) {
 }
 
 function handleToggleCollectionInfo() {
+  if (isMobile.value) return;
+
   isGridReflowing.value = true;
 
   window.setTimeout(() => {
@@ -298,7 +321,15 @@ async function loadCollectionTags() {
  * End: Tags
  */
 
-onMounted(fetchCollectionData);
+onMounted(() => {
+  fetchCollectionData();
+  updateIsMobile();
+  window.addEventListener("resize", updateIsMobile);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", updateIsMobile);
+});
 
 watch(
   () => route.params.collectionId,
@@ -307,14 +338,33 @@ watch(
   }
 );
 
+watch(
+  [isMobile, () => route.params.viewMode],
+  ([mobile, viewMode]) => {
+    if (!mobile || viewMode !== "mosaic" || !collectionId.value) return;
+
+    router.replace({
+      name: "my-collection-detail",
+      params: {
+        collectionId: collectionId.value,
+        viewMode: "grid",
+      },
+    });
+  },
+  { immediate: true }
+);
+
 </script>
 
 <template>
   <section
     class="collection-detail__container"
-    :class="{ 'collection-detail__container--info-open': isInfoActive }"
+    :class="{
+      'collection-detail__container--mobile': isMobile,
+    }"
   >
     <CollectionToolbar
+      v-if="!isMobile"
       class="collection-detail__floating-toolbar"
       :view-selection="viewSelection"
       :is-info-active="isInfoActive"
@@ -325,10 +375,10 @@ watch(
     />
     <header class="collection-detail__header">
         <button
-            type="button"
-            class="collection-detail__back-btn"
-            aria-label="Voltar"
-            @click="router.push({ name: 'my-profile' })"
+          type="button"
+          class="collection-detail__back-btn"
+          aria-label="Voltar"
+          @click="router.push({ name: 'my-profile-collections' })"
         >
             <span class="collection-detail__back-content">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -344,61 +394,137 @@ watch(
         </button>      
     </header>
     <main class="collection-detail__main container-fluid px-0">
-      <div class="row g-0 collection-detail__row">
-        <div class="collection-detail__image-wrapper">
-          <header
-            class="collection-detail__main-title-area"
-            :class="{
-              'collection-detail__main-title-area--visible': !isInfoActive && !isLoadingCollection,
-            }"
-            :aria-hidden="isInfoActive || isLoadingCollection"
-          >
-            <h1 class="collection-detail__main-title">
-              {{ collectionTitle }}
-            </h1>
-          </header>
+      <div
+        class="row g-0 collection-detail__row"
+        :class="{
+          'collection-detail__row--mobile': isMobile,
+          'collection-detail__row--grid-expanded': isMobile && isMobileGridExpanded,
+        }"
+      >
+        <template v-if="!isMobile">
+          <div class="collection-detail__image-wrapper">
+            <header
+              class="collection-detail__main-title-area"
+              :class="{
+                'collection-detail__main-title-area--visible':
+                  !isInfoActive && !isLoadingCollection,
+              }"
+              :aria-hidden="isInfoActive || isLoadingCollection"
+            >
+              <h1 class="collection-detail__main-title">
+                {{ collectionTitle }}
+              </h1>
+            </header>
 
-          <section
-            class="collection-detail__gallery"
-            :class="{ 'collection-detail__gallery--with-title': !isInfoActive && !isLoadingCollection }"
-          >
-            <CollectionImagesGrid
-              v-if="collectionViewMode === 'grid'"
-              :images="collectionImages"
-              :is-loading="isLoadingCollection"
-              :is-grid-reflowing="isGridReflowing"
-              :selected-image-id="selectedImageId"
-              :removing-image-id="removingImageId"
-              :is-info-active="isInfoActive"
-              @activate="onCardActivate"
-              @remove="removeImageFromCollection"
-            />
+            <section
+              class="collection-detail__gallery"
+              :class="{
+                'collection-detail__gallery--with-title':
+                  !isInfoActive && !isLoadingCollection,
+              }"
+            >
+              <CollectionImagesGrid
+                v-if="collectionViewMode === 'grid'"
+                :images="collectionImages"
+                :is-loading="isLoadingCollection"
+                :is-grid-reflowing="isGridReflowing"
+                :selected-image-id="selectedImageId"
+                :removing-image-id="removingImageId"
+                :is-info-active="isInfoActive"
+                @activate="onCardActivate"
+                @remove="removeImageFromCollection"
+              />
 
-            <CollectionImagesMosaic
-              v-else-if="collectionViewMode === 'mosaic'"
-              :images="collectionImages"
-              :is-loading="isLoadingCollection"
-              :is-info-active="isInfoActive"
-            />
-          </section>
-        </div>
+              <CollectionImagesMosaic
+                v-else-if="collectionViewMode === 'mosaic'"
+                :images="collectionImages"
+                :is-loading="isLoadingCollection"
+                :is-info-active="isInfoActive"
+              />
+            </section>
+          </div>
+        </template>
+
         <div
-          class="collection-detail__info-wrapper"
-          :class="{ 'collection-detail__info-wrapper--closed': !isInfoActive }"
-          :aria-hidden="!isInfoActive"
-          aria-label="Informações da coleção"
+          v-if="isMobile"
+          class="collection-detail__mobile-stage"
         >
-          <div class="collection-detail__info-inner">
-            <aside v-if="isLoadingCollection" class="collection-detail__info-summary">
-              <div class="collection-detail__title-skeleton" />
-              <div class="collection-detail__description-skeleton" />
-            </aside>
-            <aside v-else class="collection-detail__info-summary">
-              <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
-              <p class="collection-detail__description">{{ collectionDescription }}</p>
-            </aside>
+          <div
+            id="collection-detail-mobile-gallery"
+            ref="galleryRef"
+            class="collection-detail__image-wrapper collection-detail__image-wrapper--mobile"
+            :class="{
+              'collection-detail__image-wrapper--grid-collapsed': !isMobileGridExpanded,
+              'collection-detail__image-wrapper--grid-expanded': isMobileGridExpanded,
+            }"
+          >
+            <section class="collection-detail__gallery">
+              <CollectionImagesGrid
+                :images="collectionImages"
+                :is-loading="isLoadingCollection"
+                :selected-image-id="selectedImageId"
+                :removing-image-id="removingImageId"
+                :is-info-active="false"
+                @activate="onCardActivate"
+                @remove="removeImageFromCollection"
+              />
+            </section>
+          </div>
 
-            <section class="collection-detail__actors">
+          <button
+            type="button"
+            class="collection-detail__mobile-handle"
+            :aria-expanded="isMobileGridExpanded"
+            aria-controls="collection-detail-mobile-gallery"
+            :aria-label="
+              isMobileGridExpanded
+                ? 'Recolher grade de imagens'
+                : 'Expandir grade de imagens'
+            "
+            @click="handleToggleMobileGrid"
+          >
+            <svg
+              class="collection-detail__mobile-handle-icon"
+              :class="{
+                'collection-detail__mobile-handle-icon--expanded': isMobileGridExpanded,
+              }"
+              width="40"
+              height="40"
+              viewBox="0 0 40 40"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M3.88145 16.941C4.02998 16.6453 4.28972 16.4205 4.60371 16.316C4.91771 16.2115 5.26033 16.2358 5.55645 16.3835L19.999 23.601L34.439 16.381C34.5859 16.3059 34.7462 16.2607 34.9106 16.2479C35.0751 16.2351 35.2405 16.255 35.3972 16.3064C35.554 16.3578 35.699 16.4398 35.8239 16.5475C35.9489 16.6552 36.0512 16.7866 36.1251 16.9341C36.199 17.0816 36.243 17.2423 36.2546 17.4068C36.2661 17.5714 36.2449 17.7366 36.1923 17.893C36.1396 18.0493 36.0566 18.1937 35.9479 18.3178C35.8392 18.4419 35.707 18.5432 35.559 18.616L20.559 26.116C20.3851 26.2031 20.1934 26.2484 19.999 26.2484C19.8045 26.2484 19.6128 26.2031 19.439 26.116L4.43895 18.616C4.14323 18.4674 3.91848 18.2077 3.81397 17.8937C3.70946 17.5797 3.73373 17.2371 3.88145 16.941V16.941Z"
+                fill="#636262"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div
+          v-if="isMobile"
+          class="collection-detail__info-slot collection-detail__info-slot--mobile"
+        >
+          <div
+            id="collection-detail-mobile-info"
+            class="collection-detail__info-wrapper collection-detail__info-wrapper--mobile"
+            aria-label="Informações da coleção"
+          >
+            <div class="collection-detail__info-inner">
+              <aside v-if="isLoadingCollection" class="collection-detail__info-summary">
+                <div class="collection-detail__title-skeleton" />
+                <div class="collection-detail__description-skeleton" />
+              </aside>
+              <aside v-else class="collection-detail__info-summary">
+                <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
+                <p class="collection-detail__description">{{ collectionDescription }}</p>
+              </aside>
+
+              <section class="collection-detail__actors">
               <div class="collection-detail__actors-title-area">
                 <h2 class="collection-detail__actors-title">Coleção criada por</h2>
               </div>
@@ -481,6 +607,111 @@ watch(
               </div>
               <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
             </section>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="!isMobile" class="collection-detail__info-slot">
+          <div
+            class="collection-detail__info-wrapper"
+            :class="{ 'collection-detail__info-wrapper--closed': !isInfoActive }"
+            :aria-hidden="!isInfoActive"
+            aria-label="Informações da coleção"
+          >
+            <div class="collection-detail__info-inner">
+              <aside v-if="isLoadingCollection" class="collection-detail__info-summary">
+                <div class="collection-detail__title-skeleton" />
+                <div class="collection-detail__description-skeleton" />
+              </aside>
+              <aside v-else class="collection-detail__info-summary">
+                <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
+                <p class="collection-detail__description">{{ collectionDescription }}</p>
+              </aside>
+
+              <section class="collection-detail__actors">
+                <div class="collection-detail__actors-title-area">
+                  <h2 class="collection-detail__actors-title">Coleção criada por</h2>
+                </div>
+                <div class="collection-detail__actors-list">
+                  <div class="collection-detail__actor-image-area">
+                    <div
+                      v-if="isLoadingOwner"
+                      class="collection-detail__actor-image-skeleton"
+                      aria-hidden="true"
+                    />
+                    <img
+                      v-else
+                      :src="ownerAvatarSrc"
+                      :alt="`Avatar de ${ownerUser?.name?.trim() || 'usuário'}`"
+                      class="collection-detail__actor-image"
+                    />
+                  </div>
+                  <div class="collection-detail__actor-name-wrapper">
+                    <div v-if="isLoadingOwner" class="collection-detail__actor-name-skeleton" />
+                    <p
+                      v-else
+                      class="collection-detail__actor-name"
+                      :class="{ 'collection-detail__actor-name--visible': !isLoadingOwner }"
+                    >
+                      {{ ownerUser?.name?.trim() || "Usuário desconhecido" }}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <section
+                class="collection-detail__tags-block"
+                aria-labelledby="collection-tags-heading-desktop"
+              >
+                <div class="collection-detail__tags-heading-row">
+                  <h2 id="collection-tags-heading-desktop" class="collection-detail__tags-title">
+                    Tags na coleção
+                  </h2>
+                  <UiField
+                    id="collection-tags-help-desktop"
+                    class="collection-detail__help-field"
+                    label="Ajuda"
+                    explain="Estas etiquetas são geradas automaticamente a partir do texto da descrição da coleção."
+                  />
+                </div>
+                <div v-if="isLoadingCollectionTags" class="metadata-tags metadata-tags--skeleton">
+                  <span
+                    v-for="n in 5"
+                    :key="`tag-skeleton-desktop-${n}`"
+                    class="metadata-tags__skeleton"
+                    aria-hidden="true"
+                  />
+                </div>
+                <div v-else-if="collectionTags.length" class="metadata-tags">
+                  <button
+                    v-for="(tag, index) in collectionTags"
+                    :key="`desktop-${tag}-${index}`"
+                    type="button"
+                    class="btn btn-outline-primary btn-sm btn-tag"
+                  >
+                    {{ tag }}
+                  </button>
+                </div>
+              </section>
+
+              <section
+                class="collection-detail__periods-block"
+                aria-labelledby="collection-periods-heading-desktop"
+              >
+                <div class="collection-detail__periods-heading-row">
+                  <h2 id="collection-periods-heading-desktop" class="collection-detail__periods-title">
+                    Períodos da coleção
+                  </h2>
+                  <UiField
+                    id="collection-periods-help-desktop"
+                    class="collection-detail__help-field"
+                    label="Ajuda"
+                    explain="Distribuição temporal das obras desta coleção (em construção)."
+                  />
+                </div>
+                <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
+              </section>
+            </div>
           </div>
         </div>
       </div>
@@ -688,7 +919,7 @@ watch(
   line-height: 115%;
 }
 
-.collection-detail__info-wrapper {
+.collection-detail__info-slot {
   display: flex;
   flex: 0 0 338px;
   width: 338px;
@@ -697,7 +928,6 @@ watch(
   height: 100%;
   align-self: stretch;
   box-sizing: border-box;
-  overflow: hidden;
   transition:
     flex-basis 360ms cubic-bezier(0.22, 1, 0.36, 1),
     width 360ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -705,7 +935,25 @@ watch(
     min-width 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.collection-detail__info-wrapper--closed {
+.collection-detail__info-slot:has(.collection-detail__info-wrapper--closed) {
+  flex: 0 0 0;
+  width: 0;
+  max-width: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.collection-detail__info-wrapper {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  align-self: stretch;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.collection-detail__info-wrapper--closed:not(.collection-detail__info-wrapper--mobile) {
   flex: 0 0 0 !important;
   width: 0 !important;
   max-width: 0 !important;
@@ -726,7 +974,8 @@ watch(
     opacity 160ms ease 260ms;
 }
 
-.collection-detail__info-wrapper--closed .collection-detail__info-inner {
+.collection-detail__info-wrapper--closed:not(.collection-detail__info-wrapper--mobile)
+  .collection-detail__info-inner {
   opacity: 0;
   transform: translateX(100%);
   transition:
@@ -782,24 +1031,172 @@ watch(
 
 @media (max-width: 767px) {
   .collection-detail__container {
+    min-height: auto;
     padding: 16px;
+    display: block;
+    overflow-x: clip;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
-  .collection-detail__row {
+  .collection-detail__container--mobile .collection-detail__main {
+    margin-top: 12px;
+    overflow-x: clip;
+    height: auto;
+    max-width: 100%;
+  }
+
+  .collection-detail__row--mobile {
     flex-direction: column;
-    gap: 12px;
+    gap: 0;
+    margin-left: 0;
+    margin-right: 0;
+    overflow-x: clip;
+    max-width: 100%;
+    min-height: 100dvh;
   }
 
-  .collection-detail__image-wrapper,
-  .collection-detail__info-wrapper {
+  .collection-detail__row--mobile:not(.collection-detail__row--grid-expanded) {
+    min-height: 100dvh;
+  }
+
+  .collection-detail__info-slot--mobile {
+    position: relative;
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 100%;
+    background: var(--Off_white, #faf9f9);
+  }
+
+  .collection-detail__mobile-stage {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+  }
+
+  .collection-detail__row--mobile:not(.collection-detail__row--grid-expanded)
+    .collection-detail__mobile-stage {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 48dvh;
+  }
+
+  .collection-detail__row--grid-expanded {
+    min-height: auto;
+  }
+
+  .collection-detail__row--grid-expanded .collection-detail__mobile-stage {
+    flex: none;
+    justify-content: flex-start;
+    min-height: 0;
+  }
+
+  .collection-detail__row--grid-expanded .collection-detail__info-slot--mobile {
+    flex: none;
+  }
+
+  .collection-detail__mobile-handle {
+    flex: 0 0 auto;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    gap: 8px;
+    padding: 12px 0;
+    margin: 0;
+    border: none;
+    background: #fff;
+    cursor: pointer;
+  }
+
+  .collection-detail__mobile-handle-icon {
+    display: flex;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    transform: rotate(180deg);
+    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .collection-detail__mobile-handle-icon--expanded {
+    transform: rotate(0deg);
+  }
+
+  .collection-detail__image-wrapper--mobile {
+    flex: 0 1 auto;
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    flex: 1 1 auto;
+    overflow: hidden;
+    box-sizing: border-box;
+    transition: max-height 400ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .collection-detail__gallery {
-    min-height: 240px;
+  .collection-detail__image-wrapper--mobile .collection-detail__gallery {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: visible;
+    height: auto;
+  }
+
+  .collection-detail__image-wrapper--grid-collapsed {
+    max-height: 38dvh;
+  }
+
+  .collection-detail__image-wrapper--grid-expanded {
+    max-height: none;
+    overflow: visible;
+    flex: none;
+  }
+
+  .collection-detail__info-wrapper--mobile {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible;
+    background: #fff;
+  }
+
+  .collection-detail__info-wrapper--mobile .collection-detail__info-inner {
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    opacity: 1;
+    transform: none;
+    overflow: visible;
+  }
+
+  .collection-detail__container--mobile .collection-detail__title {
+    font-size: 24px;
+  }
+
+  .collection-detail__info-slot--mobile,
+  .collection-detail__info-wrapper--mobile,
+  .collection-detail__info-summary,
+  .collection-detail__tags-block,
+  .collection-detail__periods-block,
+  .collection-detail__actors {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .metadata-tags {
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 768px) {
+  .collection-detail__mobile-handle {
+    display: none;
   }
 }
 
@@ -953,10 +1350,7 @@ watch(
 
 @media (max-width: 767px) {
   .collection-detail__floating-toolbar {
-    bottom: 16px;
-  }
-  .collection-detail__container {
-    padding-bottom: 88px;
+    display: none;
   }
 }
 
