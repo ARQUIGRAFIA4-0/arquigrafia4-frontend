@@ -325,10 +325,10 @@ watch(
     />
     <header class="collection-detail__header">
         <button
-            type="button"
-            class="collection-detail__back-btn"
-            aria-label="Voltar"
-            @click="router.push({ name: 'my-profile' })"
+          type="button"
+          class="collection-detail__back-btn"
+          aria-label="Voltar"
+          @click="router.push({ name: 'my-profile-collections' })"
         >
             <span class="collection-detail__back-content">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 14 14" fill="none" aria-hidden="true">
