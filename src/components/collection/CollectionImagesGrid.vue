@@ -152,7 +152,7 @@ function formatDate(dates) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--collection-card-w)), 1fr));
   gap: var(--pp, 18px);
-  align-items: start;
+  align-items: stretch;
   justify-content: stretch;
   width: 100%;
   min-width: 0;
@@ -172,6 +172,7 @@ function formatDate(dates) {
 .collection-grid__link {
   display: flex;
   width: 100%;
+  height: 100%;
   max-width: 100%;
   text-decoration: none;
   color: inherit;
@@ -180,6 +181,7 @@ function formatDate(dates) {
 .collection-grid__card {
   display: flex;
   width: 100%;
+  height: 100%;
   max-width: 100%;
   box-sizing: border-box;
   flex-direction: column;
@@ -349,12 +351,47 @@ function formatDate(dates) {
   padding: 12px 0;
 }
 
+@media (max-width: 1434px) {
+  .collection-grid--info-open,
+  .collection-grid--info-closed {
+    padding-inline: 0;
+  }
+}
+
 @keyframes collectionSkeletonShimmer {
   0% {
     background-position: 200% 0;
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .collection-grid,
+  .collection-grid--info-open,
+  .collection-grid--info-closed {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 0;
+    overflow-x: clip;
+  }
+
+  .collection-grid__link {
+    min-width: 0;
+  }
+
+  .collection-grid__card,
+  .collection-grid__card-skeleton {
+    min-width: 0;
+    min-height: 0;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .collection-grid__image-wrapper {
+    max-width: 100%;
   }
 }
 
