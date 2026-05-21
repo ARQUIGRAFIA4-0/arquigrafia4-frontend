@@ -8,6 +8,7 @@ import ReportModal from "./ReportModal.vue";
 import ShareModal from "./ShareModal.vue";
 import AlbumPickerModal from "./AlbumPickerModal.vue";
 import CollectionCreateModal from "../CollectionCreateModal.vue";
+import { downloadImageFile } from "@/helpers/downloadImage";
 
 const authStore = useAuthStore();
 const albumsStore = useAlbumsStore();
@@ -36,22 +37,7 @@ const showReportModal = ref(false);
 const showShareModal = ref(false);
 
 const handleDownloadConfirm = async (image) => {
-  const url = image.fullUrl || `https://api-dev.arquigrafia.org.br/iiif/${image.id}/full/max/0/default.jpg`;
-  const filename = `${image.title || image.id}.jpg`;
-
-  try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = objectUrl;
-    anchor.download = filename;
-    anchor.click();
-    URL.revokeObjectURL(objectUrl);
-  } catch {
-    window.open(url, "_blank");
-  }
-
+  await downloadImageFile(image);
   emit("download", image);
 };
 
