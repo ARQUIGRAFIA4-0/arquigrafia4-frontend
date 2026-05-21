@@ -16,6 +16,9 @@ import {
 } from "@/constants/viewModes";
 import { api } from "@/services/api";
 import CollectionToolbar from "@/components/CollectionToolbar.vue";
+import DownloadModal from "@/components/imageDetail/DownloadModal.vue";
+import { downloadCollectionAsZip } from "@/helpers/downloadCollectionZip";
+import { sanitizeDownloadFilename } from "@/helpers/downloadImage";
 
 defineOptions({ name: "CollectionDetail" });
 
@@ -270,10 +273,6 @@ function handleToggleCollectionInfo() {
   }, 120);
 
 }
-
-function handleDownloadCollection() {
-  console.log("TODO: implementar download da coleção");
-}
 /*
  * End: Toolbar
 */
@@ -319,6 +318,42 @@ async function loadCollectionTags() {
 
 /**
  * End: Tags
+ */
+
+/**
+ * Start: Download
+ */
+
+const showDownloadModal = ref(false);
+const downloadingCollection = ref(false);
+
+// Abre o modal de download da coleção.
+function handleDownloadCollection() {
+  if (!collectionImages.value.length) return;
+  showDownloadModal.value = true;
+
+}
+
+// Baixa a coleção como ZIP.
+async function handleCollectionDownloadConfirm() {
+  downloadingCollection.value = true;
+
+  try {
+    const zipName = `${sanitizeDownloadFilename(collectionTitle.value, "coleção")}.zip`;
+    await downloadCollectionAsZip(collectionImages.value, zipName);
+    showDownloadModal.value = false;
+
+  } catch (err) {
+    console.error(err);
+
+  } finally {
+    downloadingCollection.value = false;
+
+  }
+}
+
+/**
+ * End: Download
  */
 
 onMounted(() => {
@@ -372,6 +407,13 @@ watch(
       @view-change="handleCollectionViewChange"
       @toggle-info="handleToggleCollectionInfo"
       @download="handleDownloadCollection"
+    />
+
+    <DownloadModal
+      v-model="showDownloadModal"
+      :collection-count="collectionImages.length"
+      :busy="downloadingCollection"
+      @confirm="handleCollectionDownloadConfirm"
     />
     <header class="collection-detail__header">
         <button
@@ -1119,12 +1161,12 @@ watch(
     align-items: center;
     justify-content: center;
     aspect-ratio: 1 / 1;
-    transform: rotate(180deg);
+    transform: rotate(0deg);
     transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .collection-detail__mobile-handle-icon--expanded {
-    transform: rotate(0deg);
+    transform: rotate(180deg);
   }
 
   .collection-detail__image-wrapper--mobile {
