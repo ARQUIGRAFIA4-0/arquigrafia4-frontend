@@ -5,26 +5,22 @@
     </div>
     <div class="user-card__body">
       <h3 class="user-card__name">{{ user.name }}</h3>
-      <!-- <ul class="user-card__tags">
+      <ul class="user-card__tags">
         <li v-for="tag in visibleTags" :key="tag" class="user-card__tag">{{ tag }}</li>
         <li v-if="overflowCount > 0" class="user-card__tag user-card__tag--overflow">+{{ overflowCount }}</li>
-      </ul> -->
-      <ul class="user-card__tags">
-        <li class="user-card__tag">Design</li>
-        <li class="user-card__tag">Arquitetura</li>
-        <li class="user-card__tag">Urbanismo</li>
-        <li class="user-card__tag user-card__tag--overflow">+2</li>
       </ul>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import networkImageDefault1 from '@/assets/networkImageDefault-1.png';
 import networkImageDefault2 from '@/assets/networkImageDefault-2.png';
 import networkImageDefault3 from '@/assets/networkImageDefault-3.png';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
+
+
 
 const props = defineProps({
   user: {
@@ -48,10 +44,22 @@ const userImage = computed(() => {
     : randomDefaultImage;
 });
 
+// tags logic
+const isMobile = ref(window.innerWidth < 768);
 
-const MAX_TAGS = 4;
-const visibleTags = computed(() => props.user.tags?.slice(0, MAX_TAGS) ?? []);
-const overflowCount = computed(() => Math.max(0, (props.user.tags?.length ?? 0) - MAX_TAGS));
+function onResize() {
+  isMobile.value = window.innerWidth < 768;
+}
+
+onMounted(() => window.addEventListener("resize", onResize));
+onBeforeUnmount(() => window.removeEventListener("resize", onResize));
+
+const MAX_TAGS = computed(() => isMobile.value ? 1 : 3);
+const visibleTagsTeste = ["Arquiteto", "Urbanista", "Curador", "Pesquisador", "Professor", "Designer", "Ilustrador"];
+const visibleTags = computed(() => visibleTagsTeste?.slice(0, MAX_TAGS.value) ?? []);
+const overflowCount = computed(() => Math.max(0, (visibleTagsTeste?.length ?? 0) - MAX_TAGS.value));
+// const visibleTags = computed(() => props.user.tags?.slice(0, MAX_TAGS.value) ?? []);
+// const overflowCount = computed(() => Math.max(0, (props.user.tags?.length ?? 0) - MAX_TAGS.value));
 </script>
 
 <style lang="scss" scoped>
@@ -67,7 +75,7 @@ $breakpoint-sm: 425px;
   width: 100%;
   background-color: var(--Off_white, #f8f8f8);
   // color: var(--branco, #ffffff);
-  border: 0.25px solid var(--Cinza_C, #a6a6a6);
+  border: 0.25px solid var(--Cinza_C, #c2c2c2);
   border-radius: 0.25rem;
   box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
 
@@ -97,8 +105,8 @@ $breakpoint-sm: 425px;
     gap: 0.75rem;
     flex: 1;
 
-    @media (max-width: $breakpoint-sm) {
-      padding: 0.5rem;
+    @media (max-width: $breakpoint-md) {
+      padding: 0.4rem;
       gap: 0.5rem;
     }
   }
