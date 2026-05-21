@@ -5,16 +5,15 @@
     </div>
     <div class="user-card__body">
       <h3 class="user-card__name">{{ user.name }}</h3>
-      <ul class="user-card__tags">
-        <li v-for="tag in visibleTags" :key="tag" class="user-card__tag">{{ tag }}</li>
-        <li v-if="overflowCount > 0" class="user-card__tag user-card__tag--overflow">+{{ overflowCount }}</li>
-      </ul>
+      <!-- <FitTags :subjects="user.tags ?? []" /> -->
+      <FitTags :subjects="visibleTagsTeste ?? []" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed } from 'vue';
+import FitTags from "@/views/Profile/FitTags.vue";
 import networkImageDefault1 from '@/assets/networkImageDefault-1.png';
 import networkImageDefault2 from '@/assets/networkImageDefault-2.png';
 import networkImageDefault3 from '@/assets/networkImageDefault-3.png';
@@ -44,22 +43,26 @@ const userImage = computed(() => {
     : randomDefaultImage;
 });
 
-// tags logic
-const isMobile = ref(window.innerWidth < 768);
 
-function onResize() {
-  isMobile.value = window.innerWidth < 768;
-}
+//tags de exemplo em forma de objeto'
+const visibleTagsTeste = [{
+  id: 1,
+  term: "termo",
+}, {
+  id: 2,
+  term: "Termos",
+}, {
+  id: 3,
+  term: "Termoss",
+}, {
+  id: 4,
+  term: "Design",
+}, {
+  id: 5,
+  term: "Paisagismo",
+}]
 
-onMounted(() => window.addEventListener("resize", onResize));
-onBeforeUnmount(() => window.removeEventListener("resize", onResize));
 
-const MAX_TAGS = computed(() => isMobile.value ? 1 : 3);
-const visibleTagsTeste = ["Arquiteto", "Urbanista", "Curador", "Pesquisador", "Professor", "Designer", "Ilustrador"];
-const visibleTags = computed(() => visibleTagsTeste?.slice(0, MAX_TAGS.value) ?? []);
-const overflowCount = computed(() => Math.max(0, (visibleTagsTeste?.length ?? 0) - MAX_TAGS.value));
-// const visibleTags = computed(() => props.user.tags?.slice(0, MAX_TAGS.value) ?? []);
-// const overflowCount = computed(() => Math.max(0, (props.user.tags?.length ?? 0) - MAX_TAGS.value));
 </script>
 
 <style lang="scss" scoped>
