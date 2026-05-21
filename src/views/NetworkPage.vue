@@ -1,5 +1,29 @@
 <template>
   <section class="network-page">
+    <div class="tabs-container">
+      <ul class="nav nav-underline tabs-nav">
+        <li class="nav-item">
+          <button :class="['nav-link', { active: activeTab === 'acervo' }]"
+            :aria-current="activeTab === 'acervo' ? 'page' : undefined" data-label="Acervo"
+            @click="navigateToCollection">
+            Acervo
+          </button>
+        </li>
+        <li class="nav-item">
+          <button :class="['nav-link', { active: activeTab === 'lab' }]"
+            :aria-current="activeTab === 'lab' ? 'page' : undefined" data-label="Lab" @click="navigateToLab">
+            Lab
+          </button>
+        </li>
+        <li class="nav-item">
+          <button :class="['nav-link', { active: activeTab === 'rede' }]"
+            :aria-current="activeTab === 'rede' ? 'page' : undefined" data-label="Rede" @click="navigateToRede">
+            Rede
+          </button>
+        </li>
+      </ul>
+    </div>
+
     <!-- Grid de resultados -->
     <div class="user-grid">
       <template v-for="item in results" :key="`${item.type}-${item.id}`">
@@ -32,21 +56,44 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import ColletiveCardNetwork from "../components/network/ColletiveCardNetwork.vue";
 import UserCardNetwork from "../components/network/UserCardNetwork.vue";
 import NetworkToolbar from "../components/network/NetworkToolbar.vue";
 import { useNetworksStore } from "@/store/networks";
+import { useRoute, useRouter } from "vue-router";
 
 const store = useNetworksStore();
 
 const PER_PAGE = 20;
 
+const route = useRoute();
+const router = useRouter();
 const results = ref([]);
 const isLoading = ref(false);
 const hasReachedEnd = ref(false);
 const currentPage = ref(1);
 const activeParams = ref({ filter: "todos", sort: "mais-recentes", query: "" });
+
+const activeTab = computed(() => {
+  const path = route.path;
+  if (path.includes("/acervo")) return "acervo";
+  if (path.includes("/lab")) return "lab";
+  if (path.includes("/rede")) return "rede";
+  return "";
+});
+
+function navigateToCollection() {
+  router.push("/explore/acervo/mosaic");
+}
+
+function navigateToLab() {
+  router.push("/explore/lab");
+}
+
+function navigateToRede() {
+  router.push("/explore/rede");
+}
 
 const filterMap = {
   todos: undefined,
@@ -135,22 +182,31 @@ $breakpoint-md: 768px;
 $breakpoint-sm: 425px;
 
 .network-page {
+  padding-left: 50px;
+  padding-right: 50px;
   padding-bottom: 120px; // espaço para a toolbar flutuante
+  position: relative;
+
+  @media (max-width: $breakpoint-sm) {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
 }
 
 .user-grid {
+  padding-top: 5px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(142px, 220px));
+  grid-template-columns: repeat(auto-fill, minmax(142px, 210px));
   gap: 1rem;
 
   @media (max-width: $breakpoint-md) {
     grid-template-columns: repeat(4, 142px);
-    justify-content: center;
+    // justify-content: center;
   }
 
   @media (max-width: $breakpoint-sm) {
     grid-template-columns: repeat(2, 142px);
-    justify-content: center;
+    // justify-content: center;
   }
 }
 
@@ -188,7 +244,14 @@ $breakpoint-sm: 425px;
   position: fixed;
   bottom: 32px;
   left: 50%;
-  transform: translateX(-50%);
+  /* REMOVA o transform e use margin-left */
+  margin-left: calc(-1 * var(--toolbar-width, 300px) / 2);
   z-index: 1000;
+  /* Ou a solução mais simples: */
+  transform: none;
+  width: fit-content;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
 }
 </style>
