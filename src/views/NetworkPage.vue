@@ -184,8 +184,9 @@ $breakpoint-sm: 425px;
 .network-page {
   padding-left: 50px;
   padding-right: 50px;
-  padding-bottom: 120px; // espaço para a toolbar flutuante
+  padding-bottom: 120px;
   position: relative;
+  box-sizing: border-box;
 
   @media (max-width: $breakpoint-sm) {
     padding-left: 12px;
@@ -194,19 +195,16 @@ $breakpoint-sm: 425px;
 }
 
 .user-grid {
+  --network-card-w: 220px;
+  box-sizing: border-box;
+  width: 100%;
   padding-top: 5px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(142px, 210px));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--network-card-w)), 1fr));
   gap: 1rem;
 
-  @media (max-width: $breakpoint-md) {
-    grid-template-columns: repeat(4, 142px);
-    // justify-content: center;
-  }
-
-  @media (max-width: $breakpoint-sm) {
-    grid-template-columns: repeat(2, 142px);
-    // justify-content: center;
+  @media (max-width: 425px) {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -244,10 +242,8 @@ $breakpoint-sm: 425px;
   position: fixed;
   bottom: 32px;
   left: 50%;
-  /* REMOVA o transform e use margin-left */
   margin-left: calc(-1 * var(--toolbar-width, 300px) / 2);
   z-index: 1000;
-  /* Ou a solução mais simples: */
   transform: none;
   width: fit-content;
   left: 0;
