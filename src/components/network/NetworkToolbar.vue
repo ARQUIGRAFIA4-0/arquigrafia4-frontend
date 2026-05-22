@@ -42,13 +42,41 @@
 
     <!-- Busca -->
     <div class="network-toolbar__search">
-      <i class="bi bi-search network-toolbar__search-icon" />
-      <input v-model="searchText" class="network-toolbar__search-input" type="text" placeholder="Busca por nome"
-        @keydown.enter="onConfirm" />
+      <!-- Lupa — abre o modal -->
+      <button class="btn network-toolbar__search-icon-btn" type="button" data-bs-toggle="offcanvas"
+        data-bs-target="#offcanvasSearch">
+        <span class="search-icon-wrapper">
+          <i class="bi bi-search" />
+          <i class="bi bi-chevron-down"></i>
+          <span v-if="modalTerms.length > 0" class="search-active-dot" />
+        </span>
+      </button>
+
+      <!-- Modo: termos do modal ativos -->
+      <template v-if="modalTerms.length > 0">
+        <!-- Primeiro chip -->
+        <span class="network-toolbar__chip">
+          {{ modalTerms[0] }}
+          <button type="button" class="network-toolbar__chip-remove" @click="removeTerm(0)">×</button>
+        </span>
+
+        <button v-if="modalTerms.length > 1" class="btn network-toolbar__chip network-toolbar__chip--overflow"
+          type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSearch">
+          +{{ modalTerms.length - 1 }} mais
+        </button>
+      </template>
+
+      <!-- Modo: sem termos do modal — input simples visível -->
+      <template v-else>
+        <input v-model="searchText" class="network-toolbar__search-input" type="text" placeholder="Busca por nome"
+          @keydown.enter="onConfirm" />
+      </template>
+
       <button class="btn network-toolbar__search-btn" type="button" @click="onConfirm">
         <i class="bi bi-arrow-right" />
       </button>
     </div>
+
   </div>
 
   <!-- MOBILE -->
@@ -56,7 +84,7 @@
     <!-- Botão filtro + ordenação -->
     <div class="network-toolbar__mobile-block">
       <button class="btn network-toolbar__mobile-btn" type="button" data-bs-toggle="offcanvas"
-        data-bs-target="#offcanvasFilters" aria-controls="offcanvasFilters">
+        data-bs-target="#offcanvasFilters">
         <i class="bi bi-person-fill" />
         <i class="bi bi-sort-down" />
       </button>
@@ -65,8 +93,11 @@
     <!-- Botão busca -->
     <div class="network-toolbar__mobile-block">
       <button class="btn network-toolbar__mobile-btn" type="button" data-bs-toggle="offcanvas"
-        data-bs-target="#offcanvasSearch" aria-controls="offcanvasSearch">
-        <i class="bi bi-search" />
+        data-bs-target="#offcanvasSearch">
+        <span class="search-icon-wrapper">
+          <i class="bi bi-search" />
+          <span v-if="modalTerms.length > 0" class="search-active-dot" />
+        </span>
       </button>
     </div>
   </div>
@@ -120,39 +151,13 @@
     </div>
   </div>
 
-  <!-- OFFCANVAS — Busca (mobile) -->
-  <div id="offcanvasSearch" class="offcanvas offcanvas-bottom network-offcanvas network-offcanvas--search" tabindex="-1"
-    aria-labelledby="offcanvasSearchLabel">
-    <div class="offcanvas-body network-offcanvas__body">
-      <button class="network-offcanvas__close btn btn-icon" type="button" data-bs-dismiss="offcanvas"
-        aria-label="Fechar">
-        <i class="bi bi-x-lg" />
-      </button>
-
-      <h2 class="network-offcanvas__title">Busca por nome</h2>
-
-      <div class="network-toolbar__search network-toolbar__search--offcanvas">
-        <i class="bi bi-search network-toolbar__search-icon" />
-        <input v-model="searchText" class="network-toolbar__search-input" type="text" placeholder="Busca por nome"
-          @keydown.enter="onConfirmMobileSearch" />
-      </div>
-
-      <div class="network-offcanvas__actions">
-        <button class="btn network-offcanvas__btn-voltar" type="button" data-bs-dismiss="offcanvas">
-          Voltar
-        </button>
-        <button class="btn network-offcanvas__btn-salvar" type="button" data-bs-dismiss="offcanvas"
-          @click="onConfirmMobileSearch">
-          Buscar
-        </button>
-      </div>
-    </div>
-  </div>
+  <NetworkSearchModal ref="searchModalRef" @search="onSearchTerms" />
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
-import { Offcanvas } from "bootstrap";
+// import { Offcanvas } from "bootstrap";
+import NetworkSearchModal from "./NetworkSearchModal.vue";
 
 const emit = defineEmits(["search"]);
 
@@ -161,6 +166,14 @@ const isMobile = ref(window.innerWidth < 768);
 function onResize() { isMobile.value = window.innerWidth < 768; }
 onMounted(() => window.addEventListener("resize", onResize));
 onBeforeUnmount(() => window.removeEventListener("resize", onResize));
+
+
+// --- Estado desktop ---
+const currentFilter = ref("todos");
+const currentSort = ref("mais-recentes");
+const searchText = ref("");
+const modalTerms = ref([]);
+const searchModalRef = ref(null);
 
 // --- Opções ---
 const filterOptions = [
@@ -175,12 +188,6 @@ const sortOptions = [
   { value: "a-z", label: "A-Z" },
   { value: "z-a", label: "Z-A" },
 ];
-
-// --- Estado desktop ---
-const currentFilter = ref("todos");
-const currentSort = ref("mais-recentes");
-const searchText = ref("");
-
 const currentFilterOption = computed(() => filterOptions.find(o => o.value === currentFilter.value) ?? filterOptions[0]);
 const currentSortOption = computed(() => sortOptions.find(o => o.value === currentSort.value) ?? sortOptions[0]);
 
@@ -201,21 +208,35 @@ function saveMobileFilters() {
   currentSort.value = mobileSort.value;
   onConfirm();
 }
-
-function onConfirmMobileSearch() {
-  const el = document.getElementById("offcanvasSearch");
-  if (el) Offcanvas.getInstance(el)?.hide();
-  scrollToTop();
+// --- Busca ---
+function onSearchTerms(terms) {
+  // terms é um array: ["mari", "maria"]
+  // passa como query separada por vírgula ou ajuste conforme a API esperar
+  modalTerms.value = terms;
+  onConfirm();
+}
+function removeTerm(index) {
+  modalTerms.value.splice(index, 1);
+  // sincroniza com o modal
+  if (searchModalRef.value) {
+    searchModalRef.value.terms.splice(index, 1);
+  }
   onConfirm();
 }
 
 
 // --- Confirm ---
 function onConfirm() {
+  const allTerms = [
+    ...modalTerms.value,
+    ...(searchText.value.trim() ? [searchText.value.trim()] : []),
+  ];
+  console.log(allTerms);
+
   emit("search", {
     filter: currentFilter.value,
     sort: currentSort.value,
-    query: searchText.value.trim(),
+    query: allTerms.join(","),
   });
   scrollToTop();
 }
@@ -261,7 +282,7 @@ $breakpoint-sm: 425px;
 .network-toolbar__search {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
   background-color: var(--Branco, #fff);
   border-radius: 0.75rem;
   padding: 12px 16px;
@@ -284,14 +305,97 @@ $breakpoint-sm: 425px;
   flex-shrink: 0;
 }
 
-.network-toolbar__search-input {
+.network-toolbar__search-icon-btn {
+  background: none;
   border: none;
+  padding: 0;
+  color: var(--Cinza_M, #a6a6a6);
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.network-toolbar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background-color: var(--Laranja_M, #c0622a);
+  color: var(--Branco, #fff);
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.network-toolbar__chip--overflow {
+  background-color: transparent;
+  color: var(--Cinza_M, #a6a6a6);
+  border: 1px solid var(--Cinza_M, #a6a6a6);
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.network-toolbar__chip--overflow:hover {
+  background-color: var(--Off_white, #f8f8f8);
+}
+
+.network-toolbar__chip-remove {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.network-toolbar__chip-remove:hover {
+  opacity: 1;
+}
+
+.network-toolbar__divider {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  background-color: var(--Cinza_C, #d9d9d9);
+  flex-shrink: 0;
+}
+
+.search-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+
+  .bi-chevron-down {
+    font-size: 0.688rem;
+  }
+}
+
+.search-active-dot {
+  position: absolute;
+  top: 0px;
+  right: 20px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--Laranja_M, #c0622a);
+  border: 1.5px solid var(--Branco, #fff);
+}
+
+.network-toolbar__search-input {
+  border: 1px solid var(--Cinza_E, #2f2f2f);
   outline: none;
+  border-radius: 5px;
   background: transparent;
   font-size: 0.875rem;
   color: var(--Preto, #1a1a1a);
   flex: 1;
   min-width: 0;
+  padding: 0.281rem 0.625rem;
 }
 
 .network-toolbar__search-input::placeholder {
