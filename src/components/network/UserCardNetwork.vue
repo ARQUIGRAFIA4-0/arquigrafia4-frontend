@@ -50,13 +50,13 @@ const visibleTagsTeste = [{
   term: "termo",
 }, {
   id: 2,
-  term: "Termos",
+  term: "textolongo",
 }, {
   id: 3,
   term: "Termoss",
 }, {
   id: 4,
-  term: "Design",
+  term: "Designsssss",
 }, {
   id: 5,
   term: "Paisagismo",
@@ -71,13 +71,10 @@ $breakpoint-md: 768px;
 $breakpoint-sm: 425px;
 
 .user-card {
-  max-width: 220px;
-  // max-height: 337px;
-  // min-height: 211px;
-  height: 100%;
+  box-sizing: border-box;
   width: 100%;
+  min-width: 0;
   background-color: var(--Off_white, #f8f8f8);
-  // color: var(--branco, #ffffff);
   border: 0.25px solid var(--Cinza_C, #c2c2c2);
   border-radius: 0.25rem;
   box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
@@ -148,10 +145,6 @@ $breakpoint-sm: 425px;
     @media (max-width: $breakpoint-sm) {
       font-size: 0.625rem;
     }
-  }
-
-  @media (max-width: $breakpoint-sm) {
-    max-width: 142px;
   }
 }
 </style>

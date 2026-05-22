@@ -28,17 +28,16 @@ defineProps({
 $breakpoint-lg: 1024px;
 $breakpoint-md: 768px;
 $breakpoint-sm: 425px;
+$breakpoint-xs: 320px;
+
 
 
 .collective-card {
-  max-width: 220px;
-  // max-height: 337px;
-  // min-height: 211px;
-  height: 100%;
+  max-height: 116px;
   width: 100%;
+  box-sizing: border-box;
   background-color: var(--Off_white, #f8f8f8);
   border-radius: 0.625rem;
-  // box-shadow: 0.65px 0.65px 2.61px 0.65px rgba(0, 0, 0, 0.1);
   box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
   padding: 1rem 1.375rem;
   display: flex;
@@ -50,8 +49,7 @@ $breakpoint-sm: 425px;
 
   &__media {
     width: 46px;
-    max-height: 46px;
-    overflow: hidden;
+    height: 46px;
   }
 
   &__image {
@@ -62,11 +60,10 @@ $breakpoint-sm: 425px;
   }
 
   &__body {
-    padding: 0.75rem 0.5rem 0.5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.326rem;
   }
 
   &__name {
@@ -74,12 +71,9 @@ $breakpoint-sm: 425px;
     font-weight: 500;
     color: var(--Preto, #1a1a1a);
     margin: 0;
-
     width: 100%;
     max-width: 170px;
-
     text-align: center;
-
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -109,17 +103,12 @@ $breakpoint-sm: 425px;
   }
 
   @media (max-width: $breakpoint-sm) {
-    max-width: 142px;
-    height: 211px;
+    height: 100%;
+    max-height: none;
   }
 
-  @media (max-width: $breakpoint-md) {
-    width: 142px;
-    height: 211px;
-  }
-
-  @media (min-width: $breakpoint-lg) {
-    height: 148px;
+  @media (min-width: $breakpoint-xs) {
+    padding: 1rem 0;
   }
 }
 </style>
