@@ -43,8 +43,8 @@
     <!-- Busca -->
     <div class="network-toolbar__search">
       <!-- Lupa — abre o modal -->
-      <button class="btn network-toolbar__search-icon-btn" type="button" data-bs-toggle="offcanvas"
-        data-bs-target="#offcanvasSearch">
+      <button v-if="!isMobile" class="btn network-toolbar__search-icon-btn" type="button"
+        @click="searchModalRef.openModal()" data-bs-target="#offcanvasSearch">
         <span class="search-icon-wrapper">
           <i class="bi bi-search" />
           <i class="bi bi-chevron-down"></i>
