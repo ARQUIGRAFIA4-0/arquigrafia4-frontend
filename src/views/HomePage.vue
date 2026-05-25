@@ -3,23 +3,22 @@
     <div class="tabs-container">
       <ul class="nav nav-underline tabs-nav">
         <li class="nav-item">
-          <button
-            :class="['nav-link', { active: activeTab === 'acervo' }]"
-            :aria-current="activeTab === 'acervo' ? 'page' : undefined"
-            data-label="Acervo"
-            @click="navigateToCollection"
-          >
+          <button :class="['nav-link', { active: activeTab === 'acervo' }]"
+            :aria-current="activeTab === 'acervo' ? 'page' : undefined" data-label="Acervo"
+            @click="navigateToCollection">
             Acervo
           </button>
         </li>
         <li class="nav-item">
-          <button
-            :class="['nav-link', { active: activeTab === 'lab' }]"
-            :aria-current="activeTab === 'lab' ? 'page' : undefined"
-            data-label="Lab"
-            @click="navigateToLab"
-          >
+          <button :class="['nav-link', { active: activeTab === 'lab' }]"
+            :aria-current="activeTab === 'lab' ? 'page' : undefined" data-label="Lab" @click="navigateToLab">
             Lab
+          </button>
+        </li>
+        <li class="nav-item">
+          <button :class="['nav-link', { active: activeTab === 'rede' }]"
+            :aria-current="activeTab === 'rede' ? 'page' : undefined" data-label="Rede" @click="navigateToRede">
+            Rede
           </button>
         </li>
       </ul>
@@ -27,10 +26,7 @@
 
     <template v-if="activeTab === 'acervo'">
       <template v-if="hasNoResults">
-        <no-search-results
-          @clear="handleClearSearch"
-          @new-search="handleNewSearch"
-        />
+        <no-search-results @clear="handleClearSearch" @new-search="handleNewSearch" />
       </template>
 
       <template v-else-if="viewMode === 'grid'">
@@ -53,83 +49,41 @@
 
       <div class="toolbar" data-cy="toolbar">
         <template v-if="isMobile">
-          <page-toolbar-mobile
-            :view-selection="viewSelection"
-            :search-mode="localSearchMode"
-            data-cy="toolbar-mobile"
-            @search-mode-change="handleMobileSearchModeChange"
-            @open-view-menu="openViewMenu"
-            @open-search-text="openSearchText"
-            @open-search-color="openSearchColor"
-            @open-search-date="openSearchDate"
-          />
+          <page-toolbar-mobile :view-selection="viewSelection" :search-mode="localSearchMode" data-cy="toolbar-mobile"
+            @search-mode-change="handleMobileSearchModeChange" @open-view-menu="openViewMenu"
+            @open-search-text="openSearchText" @open-search-color="openSearchColor"
+            @open-search-date="openSearchDate" />
         </template>
         <template v-else>
-          <page-toolbar
-            :search-mode="localSearchMode"
-            :text-query="textQuery"
-            :date-range="dateRange"
-            :color="selectedColor"
-            :advanced-filters="advancedFilters"
-            :view-selection="viewSelection"
-            :map-settings="mapSettings"
-            data-cy="toolbar-desktop"
-            @search-mode-change="handleToolbarSearchModeChange"
-            @update:text-query="handleTextQueryUpdate"
-            @update:date-range="handleDateRangeUpdate"
-            @update:color="handleColorUpdate"
-            @update:map-settings="handleMapSettingsUpdate"
-            @view-change="handleViewChange"
-            @view-subcontrol="handleToolbarViewSubcontrol"
-            @open-advanced-search="openAdvancedSearch"
-            @confirm="handleToolbarConfirm"
-            @remove-chip="handleRemoveChip"
-            @remove-url-chip="handleRemoveUrlChip"
-            @clear-all-filters="handleClearAllFilters"
-          />
+          <page-toolbar :search-mode="localSearchMode" :text-query="textQuery" :date-range="dateRange"
+            :color="selectedColor" :advanced-filters="advancedFilters" :view-selection="viewSelection"
+            :map-settings="mapSettings" data-cy="toolbar-desktop" @search-mode-change="handleToolbarSearchModeChange"
+            @update:text-query="handleTextQueryUpdate" @update:date-range="handleDateRangeUpdate"
+            @update:color="handleColorUpdate" @update:map-settings="handleMapSettingsUpdate"
+            @view-change="handleViewChange" @view-subcontrol="handleToolbarViewSubcontrol"
+            @open-advanced-search="openAdvancedSearch" @confirm="handleToolbarConfirm" @remove-chip="handleRemoveChip"
+            @remove-url-chip="handleRemoveUrlChip" @clear-all-filters="handleClearAllFilters" />
         </template>
       </div>
 
       <!-- Mobile Drawers -->
-      <mobile-drawer-view-menu
-        v-model="drawerViewMenu"
-        @select="handleMobileViewChange"
-      />
+      <mobile-drawer-view-menu v-model="drawerViewMenu" @select="handleMobileViewChange" />
 
-      <mobile-drawer-search-text
-        v-model="drawerSearchText"
-        :filters="advancedFilters"
+      <mobile-drawer-search-text v-model="drawerSearchText" :filters="advancedFilters"
         :has-active-filters="Boolean(route.query.q || route.query.title || route.query.contributor || route.query['subject_term[]'] || route.query['subject[]'])"
-        @update:filters="handleAdvancedFiltersUpdate"
-        @open="handleDrawerTextOpen"
-        @confirm="confirmAdvancedDrawer"
-        @clear="handleClearTextFilters"
-      />
+        @update:filters="handleAdvancedFiltersUpdate" @open="handleDrawerTextOpen" @confirm="confirmAdvancedDrawer"
+        @clear="handleClearTextFilters" />
 
-      <mobile-drawer-search-color
-        v-model="drawerSearchColor"
-        :available-colors="availableColors"
-        :value="selectedColor"
-        @update:value="handleColorUpdate"
-        @open="handleDrawerColorOpen"
-        @confirm="confirmColor"
-      />
+      <mobile-drawer-search-color v-model="drawerSearchColor" :available-colors="availableColors" :value="selectedColor"
+        @update:value="handleColorUpdate" @open="handleDrawerColorOpen" @confirm="confirmColor" />
 
-      <mobile-drawer-search-date
-        v-model="drawerSearchDate"
-        :value="dateRange"
+      <mobile-drawer-search-date v-model="drawerSearchDate" :value="dateRange"
         :active-range="{ from: route.query.date_from || '', to: route.query.date_to || '' }"
-        @update:value="handleDateRangeUpdate"
-        @open="handleDrawerDateOpen"
-        @confirm="confirmDate"
-        @clear="handleClearDateFilter"
-      />
+        @update:value="handleDateRangeUpdate" @open="handleDrawerDateOpen" @confirm="confirmDate"
+        @clear="handleClearDateFilter" />
 
-      <advanced-search-modal
-        v-model="modalAdvancedSearch"
-        :filters="advancedFilters"
-        @confirm="confirmAdvancedSearch"
-      />
+      <advanced-search-modal v-model="modalAdvancedSearch" :filters="advancedFilters"
+        @confirm="confirmAdvancedSearch" />
     </template>
   </div>
 </template>
@@ -257,12 +211,12 @@ syncFromSnapshot(searchMode.value);
           ? Boolean(snapshot.value)
           : snapshot.mode === "avancada"
             ? Boolean(
-                snapshot.value?.terms?.length ||
-                  snapshot.value?.locations?.length ||
-                  snapshot.value?.tags?.length ||
-                  snapshot.value?.subjects?.length ||
-                  snapshot.value?.use
-              )
+              snapshot.value?.terms?.length ||
+              snapshot.value?.locations?.length ||
+              snapshot.value?.tags?.length ||
+              snapshot.value?.subjects?.length ||
+              snapshot.value?.use
+            )
             : false;
 
   if (hasValue) {
@@ -318,12 +272,12 @@ watch(
             ? Boolean(snapshot.value)
             : snapshot.mode === "avancada"
               ? Boolean(
-                  snapshot.value?.terms?.length ||
-                  snapshot.value?.locations?.length ||
-                  snapshot.value?.tags?.length ||
-                  snapshot.value?.subjects?.length ||
-                  snapshot.value?.use
-                )
+                snapshot.value?.terms?.length ||
+                snapshot.value?.locations?.length ||
+                snapshot.value?.tags?.length ||
+                snapshot.value?.subjects?.length ||
+                snapshot.value?.use
+              )
               : false;
     if (hasValue) {
       performSearch({ mode: snapshot.mode, value: snapshot.value });
@@ -364,6 +318,10 @@ function navigateToCollection() {
 
 function navigateToLab() {
   router.push("/explore/lab");
+}
+
+function navigateToRede() {
+  router.push("/explore/rede");
 }
 
 function handleViewChange({ selection }) {
@@ -466,11 +424,11 @@ function confirmAdvancedSearch(payload) {
     if (!term || typeof term.value !== 'string' || !term.value.trim()) return;
     const v = term.value.trim();
     switch (term.field) {
-      case 'title':  titleValues.push(v); break;
+      case 'title': titleValues.push(v); break;
       case 'author': contributorValues.push(v); break;
-      case 'tag':    subjectTermValues.push(v); break;
+      case 'tag': subjectTermValues.push(v); break;
       case 'all':
-      default:       qValues.push(v); break;
+      default: qValues.push(v); break;
     }
   });
 
@@ -577,11 +535,11 @@ function confirmAdvancedDrawer({ value }) {
     if (!term || typeof term.value !== 'string' || !term.value.trim()) return;
     const v = term.value.trim();
     switch (term.field) {
-      case 'title':  titleValues.push(v); break;
+      case 'title': titleValues.push(v); break;
       case 'author': contributorValues.push(v); break;
-      case 'tag':    subjectTermValues.push(v); break;
+      case 'tag': subjectTermValues.push(v); break;
       case 'all':
-      default:       qValues.push(v); break;
+      default: qValues.push(v); break;
     }
   });
 
@@ -700,7 +658,7 @@ function handleRemoveChip(chip) {
 
 function handleRemoveUrlChip(chip) {
   const query = { ...route.query };
-  
+
   if (chip.type === "q") {
     delete query.q;
   } else if (chip.type === "date_range") {
@@ -744,7 +702,7 @@ function handleRemoveUrlChip(chip) {
       query['license[]'] = updated.length === 1 ? updated[0] : updated;
     }
   }
-  
+
   router.push({ query });
 }
 
