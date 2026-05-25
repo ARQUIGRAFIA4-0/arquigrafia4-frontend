@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRoute } from "vue-router";
 import { useAuthStore } from "../../store/auth";
 import { useProfilesStore } from "../../store/profiles";
 import ProfileCard from "@/components/ProfileCard.vue";
@@ -9,13 +10,20 @@ import ProfileCollections from "@/components/ProfileCollections.vue";
 
 const authStore = useAuthStore();
 const profilesStore = useProfilesStore();
+const route = useRoute();
 const isMobile = ref(window.innerWidth < 768);
 
 const currentUserData = computed(() => authStore.loggedUser);
 const currentUserAuthHeader = computed(() => authStore.authHeader);
 
 const privateProfileData = ref(null);
-const selectedTab = ref("Imagens");
+
+const selectedTab = computed(() => {
+  if (route.name === "my-profile-collections") {
+    return "Coleções";
+  }
+  return "Imagens";
+});
 
 onMounted(async () => {
   privateProfileData.value = await profilesStore.getProfileById(currentUserAuthHeader.value, currentUserData.value.id);
@@ -41,9 +49,17 @@ function handleResize() {
     <div class="d-none d-md-block col-md-1"></div>
     <div class="col-12 col-md-8">
       <div class="profile-container__content">
-        <ProfileNav :selected="selectedTab" @select="selectedTab = $event" :isCurrentUser="true" />
-        <ProfileCollections v-if="selectedTab === 'Coleções'" :isCurrentUser="true" :userData="currentUserData" />
-        <ProfileImages v-if="selectedTab === 'Imagens'" :isCurrentUser="true" :userData="currentUserData" />
+        <ProfileNav :selected="selectedTab" :isCurrentUser="true" />
+        <ProfileCollections
+          v-if="selectedTab === 'Coleções'"
+          :isCurrentUser="true"
+          :userData="currentUserData"
+        />
+        <ProfileImages
+          v-if="selectedTab === 'Imagens'"
+          :isCurrentUser="true"
+          :userData="currentUserData"
+        />
       </div>
     </div>
   </div>

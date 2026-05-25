@@ -114,6 +114,7 @@ const getImageDetails = async (id) => {
       collective,
       authors,
       date,
+      dates: image.dates || [],
       location: locationLabel,
       locationCoordinates,
       description,
