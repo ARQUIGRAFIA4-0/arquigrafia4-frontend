@@ -43,8 +43,8 @@
     <!-- Busca -->
     <div class="network-toolbar__search">
       <!-- Lupa — abre o modal -->
-      <button v-if="!isMobile" class="btn network-toolbar__search-icon-btn" type="button"
-        @click="searchModalRef.openModal()" data-bs-target="#offcanvasSearch">
+      <button v-if="!isMobile" :disabled="modalTerms.length > 0" class="btn network-toolbar__search-icon-btn"
+        type="button" @click="searchModalRef.openModal()">
         <span class="search-icon-wrapper">
           <i class="bi bi-search" />
           <i class="bi bi-chevron-down"></i>
@@ -54,17 +54,21 @@
 
       <!-- Modo: termos do modal ativos -->
       <template v-if="modalTerms.length > 0">
-        <!-- Primeiro chip -->
-        <span class="network-toolbar__chip">
-          {{ modalTerms[0] }}
-          <button type="button" class="network-toolbar__chip-remove" @click="removeTerm(0)">×</button>
-        </span>
+        <span class="network-toolbar__advanced-label">Busca avançada ativa</span>
 
-        <button v-if="modalTerms.length > 1" class="btn network-toolbar__chip network-toolbar__chip--overflow"
-          type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSearch">
-          +{{ modalTerms.length - 1 }} mais
+        <button class="btn btn-sm network-toolbar__chip network-toolbar__chip--clear" type="button"
+          @click="clearSearch">
+          <i class="bi bi-x-lg" style="font-size: 0.7rem;" />
+          Limpar
+        </button>
+
+        <button class="btn btn-sm network-toolbar__chip network-toolbar__chip--edit" type="button"
+          @click="searchModalRef.openModal()">
+          <i class="bi bi-pencil-square" style="font-size: 0.7rem;" />
+          Editar
         </button>
       </template>
+
 
       <!-- Modo: sem termos do modal — input simples visível -->
       <template v-else>
@@ -72,7 +76,7 @@
           @keydown.enter="onConfirm" />
       </template>
 
-      <button class="btn network-toolbar__search-btn" type="button" @click="onConfirm">
+      <button v-if="modalTerms.length === 0" class="btn network-toolbar__search-btn" type="button" @click="onConfirm">
         <i class="bi bi-arrow-right" />
       </button>
     </div>
@@ -156,7 +160,6 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
-// import { Offcanvas } from "bootstrap";
 import NetworkSearchModal from "./NetworkSearchModal.vue";
 
 const emit = defineEmits(["search"]);
@@ -213,17 +216,17 @@ function onSearchTerms(terms) {
   // terms é um array: ["mari", "maria"]
   // passa como query separada por vírgula ou ajuste conforme a API esperar
   modalTerms.value = terms;
-  onConfirm();
-}
-function removeTerm(index) {
-  modalTerms.value.splice(index, 1);
-  // sincroniza com o modal
-  if (searchModalRef.value) {
-    searchModalRef.value.terms.splice(index, 1);
-  }
+  searchText.value = "";
   onConfirm();
 }
 
+function clearSearch() {
+  modalTerms.value = [];
+  if (searchModalRef.value) {
+    searchModalRef.value.terms = [];
+  }
+  onConfirm();
+}
 
 // --- Confirm ---
 function onConfirm() {
@@ -231,7 +234,6 @@ function onConfirm() {
     ...modalTerms.value,
     ...(searchText.value.trim() ? [searchText.value.trim()] : []),
   ];
-  console.log(allTerms);
 
   emit("search", {
     filter: currentFilter.value,
@@ -313,54 +315,6 @@ $breakpoint-sm: 425px;
   font-size: 1rem;
   display: inline-flex;
   align-items: center;
-  flex-shrink: 0;
-}
-
-.network-toolbar__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  background-color: var(--Laranja_M, #c0622a);
-  color: var(--Branco, #fff);
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.8rem;
-  white-space: nowrap;
-}
-
-.network-toolbar__chip--overflow {
-  background-color: transparent;
-  color: var(--Cinza_M, #a6a6a6);
-  border: 1px solid var(--Cinza_M, #a6a6a6);
-  font-size: 0.8rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.25rem;
-}
-
-.network-toolbar__chip--overflow:hover {
-  background-color: var(--Off_white, #f8f8f8);
-}
-
-.network-toolbar__chip-remove {
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 1rem;
-  line-height: 1;
-  padding: 0;
-  cursor: pointer;
-  opacity: 0.8;
-}
-
-.network-toolbar__chip-remove:hover {
-  opacity: 1;
-}
-
-.network-toolbar__divider {
-  display: inline-block;
-  width: 1px;
-  height: 20px;
-  background-color: var(--Cinza_C, #d9d9d9);
   flex-shrink: 0;
 }
 
@@ -453,13 +407,6 @@ $breakpoint-sm: 425px;
   max-width: 100vw;
   left: 0;
   // bottom: 0;
-}
-
-.network-offcanvas--search {
-  height: 100vh;
-  max-height: 100vh;
-  width: 100vw;
-  max-width: 100vw;
 }
 
 .network-offcanvas__body {
@@ -565,14 +512,6 @@ $breakpoint-sm: 425px;
   padding-left: 2rem;
 }
 
-.offcanvas-backdrop {
-  width: 100vw;
-  height: 100vh;
-  left: 0;
-  top: 0;
-  position: relative;
-}
-
 .dropdown-menu.menu-dark .dropdown-item.active::before {
   content: "";
   display: inline-block;
@@ -588,5 +527,46 @@ $breakpoint-sm: 425px;
   mask-repeat: no-repeat;
   mask-position: center;
   mask-size: contain;
+}
+
+.network-toolbar__advanced-label {
+  font-size: 0.875rem;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--Preto, #1a1a1a);
+  white-space: nowrap;
+}
+
+.network-toolbar__chip--clear {
+  background-color: transparent;
+  color: var(--Preto, #1a1a1a);
+  border: 1px solid var(--Cinza_M, #a6a6a6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.250rem 0.688rem;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--Branco, #fff);
+    // border-color: var(--Preto, #1a1a1a);
+    background-color: var(--Preto, #1a1a1a);
+  }
+}
+
+.network-toolbar__chip--edit {
+  background-color: var(--Preto, #1a1a1a);
+  color: var(--Branco, #fff);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  padding: 0.250rem 0.688rem;
+
+  &:hover {
+    opacity: 0.85;
+  }
 }
 </style>
