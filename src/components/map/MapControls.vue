@@ -1,10 +1,13 @@
 <template>
   <div class="map-controls d-flex flex-row align-items-center gap-2 px-2 py-1">
-    <div
-      class="action-btn d-flex justify-content-center align-items-center text-white"
+    <button
+      type="button"
+      class="action-btn btn btn-link text-decoration-none text-white d-flex justify-content-center align-items-center"
+      @click="$emit('search')"
+      title="Buscar endereço"
     >
       <i class="bi bi-search" style="font-size: 1.2rem"></i>
-    </div>
+    </button>
     <button
       type="button"
       class="action-btn btn btn-link text-decoration-none text-white d-flex justify-content-center align-items-center"
@@ -25,7 +28,7 @@
 </template>
 
 <script setup>
-defineEmits(["zoom-in", "zoom-out"]);
+defineEmits(["zoom-in", "zoom-out", "search"]);
 </script>
 
 <style scoped>
