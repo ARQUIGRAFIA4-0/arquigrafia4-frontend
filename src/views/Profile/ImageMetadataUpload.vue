@@ -344,7 +344,21 @@
 
             <div class="mb-4 px-3">
               <UiField label="Obra" explain="Informe a obra relacionada">
-                <div class="position-relative">
+                <!-- Selected state -->
+                <div v-if="form.work" class="form-control d-flex align-items-center justify-content-between gap-2" style="height: auto; min-height: 38px;">
+                  <div class="d-flex flex-column lh-sm">
+                    <span class="fw-semibold">{{ form.work.label }}</span>
+                    <small v-if="form.work.address" class="text-muted">{{ form.work.address }}</small>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-close flex-shrink-0"
+                    aria-label="Remover obra"
+                    @click="form.work = null; workInput = ''"
+                  />
+                </div>
+                <!-- Search state -->
+                <div v-else class="position-relative">
                   <input
                     type="text"
                     class="form-control"
@@ -378,11 +392,10 @@
                       v-if="canShowCreateWork"
                       type="button"
                       class="dropdown-item text-primary d-flex align-items-center gap-1"
-                      disabled
-                      title="em breve"
+                      @click="showWorkCreateModal = true; showWorkSuggestions = false"
                     >
                       <i class="bi bi-plus-circle" />
-                      <span>Criar obra (em breve)</span>
+                      <span>Criar obra "{{ workInput.trim() }}"</span>
                     </button>
                   </div>
                 </div>
@@ -679,6 +692,11 @@
       </button>
     </div>
   </div>
+
+  <WorkCreateModal
+    v-model="showWorkCreateModal"
+    @created="onWorkCreated"
+  />
 </template>
 
 <script setup>
@@ -688,6 +706,7 @@ import ImagePreviewPanel from "@/components/imageMetadaUpload/ImagePreviewPanel.
 import UiField from "@/components/ui/UiField.vue";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
+import WorkCreateModal from "@/components/work/WorkCreateModal.vue";
 import { useImageUploadStore } from "@/store/imageUploads";
 import { useAuthStore } from "@/store/auth";
 import { useVracStore } from "@/store/vrac";
@@ -1179,6 +1198,7 @@ const removeTag = (index) => {
 };
 
 // Work autocomplete state
+const showWorkCreateModal = ref(false);
 const allWorks = ref([]);
 const workInput = ref("");
 const filteredWorkSuggestions = ref([]);
@@ -1211,9 +1231,8 @@ const canShowCreateWork = computed(() => {
 watch(
   () => form.value.work,
   (selected) => {
-    workInput.value = selected?.label || "";
-  },
-  { immediate: true }
+    if (!selected) workInput.value = "";
+  }
 );
 
 const onWorkInputChange = () => {
@@ -1245,9 +1264,26 @@ const hideWorkSuggestions = () => {
 };
 
 const selectWork = (work) => {
-  form.value.work = { id: work.id, label: workPrimaryTitle(work) };
+  form.value.work = {
+    id: work.id,
+    label: workPrimaryTitle(work),
+    address: work.location?.label || null,
+  };
   filteredWorkSuggestions.value = [];
   showWorkSuggestions.value = false;
+};
+
+const onWorkCreated = (work) => {
+  allWorks.value.push(work);
+  workFuse = new Fuse(allWorks.value, {
+    keys: [
+      { name: "titles.label", weight: 0.7 },
+      { name: "location.label", weight: 0.3 },
+    ],
+    threshold: 0.3,
+    includeScore: true,
+  });
+  selectWork(work);
 };
 
 const licenses = [
