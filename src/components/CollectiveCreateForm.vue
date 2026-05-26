@@ -54,7 +54,12 @@ async function handleSubmit() {
   });
 
   if (result.success) {
-    router.push("/eu");
+    const collectiveId = result.data?.data?.id;
+    if (collectiveId) {
+      router.push({ name: "collective-detail", params: { id: collectiveId } });
+    } else {
+      router.push("/eu");
+    }
   } else {
     displayAlert(result.message, "error");
   }
@@ -155,7 +160,7 @@ onMounted(() => {
         class="alert alert-dark bg-off-white alert-light border border-dark border-start-3 mb-4 collective-warning-alert"
         role="alert"
       >
-        <i class="bi bi-exclamation-triangle me-2"></i>
+        <i class="bi bi-exclamation-triangle-fill me-2" style="color: var(--Cinza_E);"></i>
         Recomendamos que apenas adicione grupos dos quais você de fato participa.
       </div>
 

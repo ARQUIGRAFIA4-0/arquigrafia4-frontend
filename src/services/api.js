@@ -394,6 +394,96 @@ const createCollective = async (authHeader, formData) => {
   }
 };
 
+/**
+ * Busca os dados de um coletivo pelo ID (sem autenticação)
+ * @param {string} id - UUID do coletivo
+ * @returns {Promise<object>} Dados do coletivo
+ */
+const getCollective = async (id) => {
+  try {
+    const response = await axios.get(`/api/collectives/${id}`, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return response.data.data;
+  } catch (error) {
+    throw new Error("Não foi possível carregar os dados do coletivo.");
+  }
+};
+
+/**
+ * Envia uma solicitação de entrada no coletivo
+ * @param {string} authHeader - Header de autorização (Bearer token)
+ * @param {string} id - UUID do coletivo
+ * @returns {Promise<void>}
+ */
+const requestJoinCollective = async (authHeader, id) => {
+  try {
+    await axios.post(`/api/collectives/${id}/join-requests`, null, {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authHeader,
+      },
+    });
+  } catch (error) {
+    const status = error.response?.status;
+    const message =
+      status === 422
+        ? error.response?.data?.message || "Você já possui uma solicitação pendente para este coletivo."
+        : "Não foi possível enviar a solicitação.";
+    const err = new Error(message);
+    err.status = status;
+    throw err;
+  }
+};
+
+/**
+ * Remove o próprio usuário do coletivo
+ * @param {string} authHeader - Header de autorização (Bearer token)
+ * @param {string} collectiveId - UUID do coletivo
+ * @param {string} userId - UUID do usuário
+ * @returns {Promise<void>}
+ */
+const leaveCollective = async (authHeader, collectiveId, userId) => {
+  try {
+    await axios.delete(`/api/collectives/${collectiveId}/members/${userId}`, {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authHeader,
+      },
+    });
+  } catch (error) {
+    const status = error.response?.status;
+    let message;
+    if (status === 422) {
+      message = error.response?.data?.message ||
+        "Você é o único administrador do coletivo. Transfira a administração antes de sair.";
+    } else if (status === 403) {
+      message = "Você não tem permissão para realizar esta ação.";
+    } else {
+      message = "Não foi possível sair do coletivo. Tente novamente.";
+    }
+    const err = new Error(message);
+    err.status = status;
+    throw err;
+  }
+};
+
+/**
+ * Busca todos os subjects disponíveis
+ * @returns {Promise<Array<{id: string, term: string}>>}
+ */
+const getAllSubjects = async () => {
+  try {
+    const response = await axios.get("/api/vrac-subjects", {
+      headers: { "Content-Type": "application/json" },
+    });
+    return response.data.data || [];
+  } catch (error) {
+    console.error("Error fetching all subjects:", error);
+    return [];
+  }
+};
+
 export const api = {
   getImages: fetchImages,
   getGeoJSON,
@@ -402,6 +492,10 @@ export const api = {
   searchImages,
   getTotalImages,
   getSubjectById,
+  getAllSubjects,
   deleteImage,
   createCollective,
+  getCollective,
+  requestJoinCollective,
+  leaveCollective,
 };

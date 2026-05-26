@@ -152,6 +152,11 @@ export default [
     meta: { requiresAuth: true },
   },
   {
+    path: "/coletivos/:id",
+    name: "collective-detail",
+    component: () => import("../views/Collective/ViewCollective.vue"),
+  },
+  {
     path: "/eu",
     redirect: { name: "my-profile-images" },
     meta: { requiresAuth: true }

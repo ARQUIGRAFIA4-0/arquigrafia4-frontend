@@ -50,5 +50,66 @@ export const useCollectivesStore = defineStore("collectives", () => {
     }
   }
 
-  return { isLoading, createCollective };
+  /**
+   * Busca os dados de um coletivo pelo ID.
+   * @param {string} id - UUID do coletivo
+   * @returns {{ success: boolean, message?: string, data?: object }}
+   */
+  async function getCollective(id) {
+    isLoading.value = true;
+    try {
+      const data = await api.getCollective(id);
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, message: error.message };
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
+   * Envia uma solicitação de entrada no coletivo.
+   * @param {string} id - UUID do coletivo
+   * @returns {{ success: boolean, message?: string, alreadyRequested?: boolean }}
+   */
+  async function requestJoin(id) {
+    const authStore = useAuthStore();
+    if (!authStore.isLoggedIn) {
+      return { success: false, message: "Você precisa estar logado para solicitar entrada." };
+    }
+    try {
+      await api.requestJoinCollective(authStore.authHeader, id);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+        alreadyRequested: error.status === 422,
+      };
+    }
+  }
+
+  /**
+   * Remove o próprio usuário do coletivo.
+   * @param {string} collectiveId - UUID do coletivo
+   * @returns {{ success: boolean, message?: string, isLastAdmin?: boolean }}
+   */
+  async function leaveCollective(collectiveId) {
+    const authStore = useAuthStore();
+    if (!authStore.isLoggedIn) {
+      return { success: false, message: "Você precisa estar logado para realizar esta ação." };
+    }
+    try {
+      await api.leaveCollective(authStore.authHeader, collectiveId, authStore.loggedUser.id);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+        isLastAdmin: error.status === 422,
+      };
+    }
+  }
+
+  return { isLoading, createCollective, getCollective, requestJoin, leaveCollective };
 });

@@ -13,6 +13,10 @@ const subjectTermsCache = ref({});
  */
 const loadingIds = new Set();
 
+/** Controle de carregamento completo da lista */
+let allSubjectsLoaded = false;
+let allSubjectsLoading = false;
+
 /**
  * Composable para gerenciar cache de termos de subjects
  * Busca termos de subjects por ID e mantém cache local
@@ -94,15 +98,40 @@ export function useSubjectTerms() {
   }
 
   /**
+   * Carrega todos os subjects de uma vez via GET /api/vrac-subjects e popula o cache.
+   * Executa apenas uma vez (resultado fica em cache para toda a sessão).
+   * @returns {Promise<void>}
+   */
+  async function loadAllSubjects() {
+    if (allSubjectsLoaded || allSubjectsLoading) return;
+    allSubjectsLoading = true;
+    try {
+      const subjects = await api.getAllSubjects();
+      for (const subject of subjects) {
+        if (subject?.id && subject?.term) {
+          subjectTermsCache.value[subject.id] = subject.term;
+        }
+      }
+      allSubjectsLoaded = true;
+    } catch (error) {
+      console.error('Erro ao carregar lista completa de subjects:', error);
+    } finally {
+      allSubjectsLoading = false;
+    }
+  }
+
+  /**
    * Limpa o cache (útil para testes ou refresh)
    */
   function clearCache() {
     subjectTermsCache.value = {};
     loadingIds.clear();
+    allSubjectsLoaded = false;
   }
 
   return {
     loadSubjectTerms,
+    loadAllSubjects,
     getTermById,
     isTermLoaded,
     isTermLoading,
