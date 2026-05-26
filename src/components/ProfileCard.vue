@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from "vue";
+import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
 import profileImageDefault from '@/assets/profile_image.png';
 
 const props = defineProps({
@@ -13,9 +14,33 @@ const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 
 const showFullProfile = ref(false);
 
-const isLoading = computed(() => {
-  return !props.userData || !props.profileData;
-});
+const { hasLoaded, finishInitialLoad, reset: resetInitialSkeleton } = useInitialSkeleton();
+const loadStartedAt = ref(Date.now());
+
+const showSkeleton = computed(() => !hasLoaded.value);
+
+async function tryFinishInitialLoad() {
+  if (hasLoaded.value || !props.userData || !props.profileData) return;
+  await finishInitialLoad(loadStartedAt.value);
+}
+
+watch(
+  () => [props.userData, props.profileData],
+  () => {
+    tryFinishInitialLoad();
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.userData?.id,
+  (newId, oldId) => {
+    if (oldId !== undefined && newId !== oldId) {
+      resetInitialSkeleton();
+      loadStartedAt.value = Date.now();
+    }
+  }
+);
 
 const currentProfileData = computed(() => {
   return props.profileData || {};
@@ -52,8 +77,13 @@ function checkSocials(socials) {
 
 <template>
   <div class="profile-card">
-    <!-- Exibe skeleton durante carregamento de dados -->
-    <div v-if="isLoading" class="profile-card__skeleton">
+    <!-- Skeleton com tempo mínimo (mesmo padrão das tabs Imagens/Coleções) -->
+    <div
+      v-if="showSkeleton"
+      class="profile-card__skeleton"
+      aria-busy="true"
+      aria-label="Carregando perfil"
+    >
       <div class="profile-card__header">
         <div class="profile-card__image profile-card__image--skeleton">
           <div class="profile-card__skeleton-avatar"></div>
@@ -65,10 +95,24 @@ function checkSocials(socials) {
           </div>
         </div>
       </div>
+      <div v-if="!isMobile" class="profile-card__skeleton-content">
+        <div class="profile-card__skeleton-block profile-card__skeleton-block--label"></div>
+        <div class="profile-card__skeleton-block profile-card__skeleton-block--value"></div>
+        <div class="profile-card__skeleton-block profile-card__skeleton-block--label"></div>
+        <div class="profile-card__skeleton-icons">
+          <div class="profile-card__skeleton-icon"></div>
+        </div>
+        <div class="profile-card__skeleton-block profile-card__skeleton-block--label"></div>
+        <div class="profile-card__skeleton-tags">
+          <div class="profile-card__skeleton-tag"></div>
+          <div class="profile-card__skeleton-tag profile-card__skeleton-tag--short"></div>
+        </div>
+        <div class="profile-card__skeleton-button"></div>
+      </div>
     </div>
 
-    <!-- Exibe conteúdo real quando dados carregados -->
-    <template v-else>
+    <!-- Conteúdo real após carga inicial -->
+    <div v-else class="profile-card__loaded">
       <div class="profile-card__header">
         <div class="profile-card__image">
           <!-- <img :src="currentProfileData?.profile_image || profileImageDefault" alt="Foto de perfil" /> -->
@@ -177,7 +221,7 @@ function checkSocials(socials) {
           'chevron-icon'
         ]" @click="showFullProfile = !showFullProfile" aria-label="Mostrar mais"></i>
       </div>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -379,8 +423,25 @@ $breakpoint-md: 768px;
     }
   }
 
+  &__loaded {
+    animation: profile-card-fade-in 0.3s ease;
+  }
+
   &__skeleton {
     display: block;
+    min-height: 420px;
+
+    @media (max-width: #{$breakpoint-md - 1px}) {
+      min-height: 0;
+    }
+  }
+
+  &__skeleton-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    margin-top: 24px;
   }
 
   &__image--skeleton {
@@ -435,6 +496,72 @@ $breakpoint-md: 768px;
     border-radius: 4px;
     margin-bottom: 16px;
   }
+
+  &__skeleton-block {
+    height: 16px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+
+    &--label {
+      width: 100px;
+      height: 14px;
+    }
+
+    &--value {
+      width: 160px;
+      height: 14px;
+      margin-top: -16px;
+    }
+  }
+
+  &__skeleton-icons {
+    display: flex;
+    justify-content: center;
+    margin-top: -8px;
+  }
+
+  &__skeleton-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+  }
+
+  &__skeleton-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-top: -8px;
+  }
+
+  &__skeleton-tag {
+    width: 180px;
+    height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+
+    &--short {
+      width: 140px;
+    }
+  }
+
+  &__skeleton-button {
+    width: 100%;
+    max-width: 220px;
+    height: 32px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    margin-top: 8px;
+  }
 }
 
 @keyframes loading {
@@ -443,6 +570,15 @@ $breakpoint-md: 768px;
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+@keyframes profile-card-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 </style>
