@@ -4,7 +4,8 @@ import { useRoute } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import { useCollectivesStore } from "@/store/collectives";
 import CollectiveCard from "@/components/CollectiveCard.vue";
-import ProfileImages from "@/components/ProfileImages.vue";
+import ProfileNav from "@/components/ProfileNav.vue";
+import CollectiveImages from "@/components/CollectiveImages.vue";
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -13,6 +14,7 @@ const collectivesStore = useCollectivesStore();
 const isMobile = ref(window.innerWidth < 768);
 const collectiveData = ref(null);
 const loadError = ref("");
+const selectedTab = ref("Imagens");
 
 const currentUser = computed(() => authStore.loggedUser);
 const isLoggedIn = computed(() => authStore.isLoggedIn);
@@ -71,11 +73,11 @@ function handleResize() {
       <!-- Conteúdo principal (abas) -->
       <div class="col-12 col-md-8">
         <div class="collective-container__content">
-          <!-- Placeholder: tabs e conteúdo serão implementados futuramente -->
-          <ProfileImages
-            v-if="collectiveData"
-            :isCurrentUser="false"
-            :userData="null"
+          <ProfileNav :selected="selectedTab" @select="selectedTab = $event" :isCurrentUser="false" />
+          <CollectiveImages
+            v-if="selectedTab === 'Imagens'"
+            :collectiveId="collectiveData?.id ?? null"
+            :collectiveName="collectiveData?.name ?? null"
           />
         </div>
       </div>

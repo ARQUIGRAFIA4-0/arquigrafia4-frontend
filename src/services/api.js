@@ -236,6 +236,11 @@ const fetchImages = async (page = 1, filters = {}) => {
       params.user_id = filters.userId;
     }
 
+    // Filtro por collective_id
+    if (filters.collectiveId) {
+      params.collective_id = filters.collectiveId;
+    }
+    
     // Filtro por assuntos (tags de sujeito por ID)
     if (filters.subjects?.length) {
       params['subject[]'] = filters.subjects.length === 1 ? filters.subjects[0] : filters.subjects;
