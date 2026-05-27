@@ -64,6 +64,12 @@ export default [
     meta: { section: "comentarios" },
   },
   {
+    path: "/explore/interpretacoes/image/:id",
+    name: "image-detail-interpretacoes",
+    component: () => import("../views/ImageDetail.vue"),
+    meta: { section: "interpretacoes" },
+  },
+  {
     path: "/explore/relacionadas/image/:id",
     name: "image-detail-relacionadas",
     component: () => import("../views/ImageDetail.vue"),
