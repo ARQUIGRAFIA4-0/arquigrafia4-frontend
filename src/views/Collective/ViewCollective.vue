@@ -4,8 +4,9 @@ import { useRoute } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import { useCollectivesStore } from "@/store/collectives";
 import CollectiveCard from "@/components/CollectiveCard.vue";
-import ProfileNav from "@/components/ProfileNav.vue";
+import CollectiveNav from "@/components/CollectiveNav.vue";
 import CollectiveImages from "@/components/CollectiveImages.vue";
+import CollectiveMembers from "@/components/CollectiveMembers.vue";
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -49,6 +50,12 @@ onUnmounted(() => {
 function handleResize() {
   isMobile.value = window.innerWidth < 768;
 }
+
+function handleMembersUpdated(newMembers) {
+  if (collectiveData.value) {
+    collectiveData.value = { ...collectiveData.value, members: newMembers };
+  }
+}
 </script>
 
 <template>
@@ -73,11 +80,20 @@ function handleResize() {
       <!-- Conteúdo principal (abas) -->
       <div class="col-12 col-md-8">
         <div class="collective-container__content">
-          <ProfileNav :selected="selectedTab" @select="selectedTab = $event" :isCurrentUser="false" />
+          <CollectiveNav :selected="selectedTab" @select="selectedTab = $event" />
           <CollectiveImages
             v-if="selectedTab === 'Imagens'"
             :collectiveId="collectiveData?.id ?? null"
             :collectiveName="collectiveData?.name ?? null"
+            :isMember="userRole !== null"
+          />
+          <CollectiveMembers
+            v-else-if="selectedTab === 'Participantes'"
+            :members="collectiveData?.members ?? null"
+            :collectiveId="String(collectiveData?.id ?? '')"
+            :userRole="userRole"
+            :currentUserId="currentUser?.id"
+            @update:members="handleMembersUpdated"
           />
         </div>
       </div>

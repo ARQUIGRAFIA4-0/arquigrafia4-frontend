@@ -517,6 +517,68 @@ const updateCollective = async (authHeader, id, formData) => {
   }
 };
 
+/**
+ * Remove um membro do coletivo (ação de admin)
+ * @param {string} authHeader
+ * @param {string} collectiveId
+ * @param {string} userId
+ * @returns {Promise<object>} Dados atualizados do coletivo
+ */
+const removeMember = async (authHeader, collectiveId, userId) => {
+  try {
+    const response = await axios.delete(`/api/collectives/${collectiveId}/members/${userId}`, {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authHeader,
+      },
+    });
+    return response.data.data;
+  } catch (error) {
+    const status = error.response?.status;
+    let message;
+    if (status === 422) {
+      message = error.response?.data?.message ||
+        "Não é possível remover o último administrador do coletivo.";
+    } else if (status === 403) {
+      message = "Você não tem permissão para realizar esta ação.";
+    } else {
+      message = "Não foi possível remover o membro. Tente novamente.";
+    }
+    const err = new Error(message);
+    err.status = status;
+    throw err;
+  }
+};
+
+/**
+ * Promove um membro para admin do coletivo
+ * @param {string} authHeader
+ * @param {string} collectiveId
+ * @param {string} userId
+ * @returns {Promise<object>} Dados atualizados do coletivo
+ */
+const promoteMemberToAdmin = async (authHeader, collectiveId, userId) => {
+  try {
+    const response = await axios.put(
+      `/api/collectives/${collectiveId}/members/${userId}`,
+      { role: "admin" },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authHeader,
+        },
+      }
+    );
+    return response.data.data;
+  } catch (error) {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || "Não foi possível atualizar o papel do membro.";
+    const err = new Error(message);
+    err.status = status;
+    throw err;
+  }
+};
+
 export const api = {
   getImages: fetchImages,
   getGeoJSON,
@@ -532,4 +594,6 @@ export const api = {
   requestJoinCollective,
   leaveCollective,
   updateCollective,
+  removeMember,
+  promoteMemberToAdmin,
 };

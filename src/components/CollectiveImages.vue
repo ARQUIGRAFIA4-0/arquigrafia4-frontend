@@ -9,6 +9,7 @@ import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
 const props = defineProps({
   collectiveId: { type: String, default: null },
   collectiveName: { type: String, default: null },
+  isMember: { type: Boolean, default: false },
 });
 
 const filters = computed(() =>
@@ -89,7 +90,7 @@ onBeforeUnmount(() => {
     <ProfileGridSkeleton v-if="!shouldFetch || !hasLoadedImages" />
 
     <div
-      v-else-if="hasLoadedImages && !loading && items.length === 0"
+      v-else-if="hasLoadedImages && !loading && items.length === 0 && isMember"
       class="collective-upload-visual"
       role="status"
     >
@@ -99,6 +100,15 @@ onBeforeUnmount(() => {
         <p>Clique aqui ou arraste arquivos para esta área</p>
         <p>Limite aceito: 10 imagens / 6Mb por arquivo</p>
       </div>
+    </div>
+
+    <div
+      v-else-if="hasLoadedImages && !loading && items.length === 0"
+      class="alert alert-dark bg-off-white alert-light border border-dark border-start-3 d-inline-flex align-items-center px-3 py-2"
+      role="status"
+    >
+      <i class="bi bi-exclamation-circle-fill text-dark me-2"></i>
+      <span>{{ collectiveName }} ainda não tem contribuições no ARQUIGRAFIA.</span>
     </div>
 
     <div v-else-if="hasLoadedImages && items.length > 0">

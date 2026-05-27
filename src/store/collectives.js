@@ -133,5 +133,43 @@ export const useCollectivesStore = defineStore("collectives", () => {
     }
   }
 
-  return { isLoading, createCollective, getCollective, requestJoin, leaveCollective, updateCollective };
+  /**
+   * Remove um membro do coletivo (ação de admin).
+   * @param {string} collectiveId
+   * @param {string} userId
+   * @returns {{ success: boolean, data?: object, message?: string }}
+   */
+  async function removeMember(collectiveId, userId) {
+    const authStore = useAuthStore();
+    if (!authStore.isLoggedIn) {
+      return { success: false, message: "Você precisa estar logado para realizar esta ação." };
+    }
+    try {
+      const data = await api.removeMember(authStore.authHeader, collectiveId, userId);
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  /**
+   * Promove um membro para admin do coletivo.
+   * @param {string} collectiveId
+   * @param {string} userId
+   * @returns {{ success: boolean, data?: object, message?: string }}
+   */
+  async function promoteMemberToAdmin(collectiveId, userId) {
+    const authStore = useAuthStore();
+    if (!authStore.isLoggedIn) {
+      return { success: false, message: "Você precisa estar logado para realizar esta ação." };
+    }
+    try {
+      const data = await api.promoteMemberToAdmin(authStore.authHeader, collectiveId, userId);
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  return { isLoading, createCollective, getCollective, requestJoin, leaveCollective, updateCollective, removeMember, promoteMemberToAdmin };
 });
