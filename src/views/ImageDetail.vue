@@ -39,6 +39,10 @@
           <ImageComments :image-url="image?.imageUrl" />
         </div>
 
+        <ImageInterpretations v-else-if="currentSection === 'interpretacoes'" @submit="handleSpecSubmit" />
+        <!-- <ImageInterpretations v-else-if="currentSection === 'especificacoes'" :image-id="image?.id"
+          @submit="handleSpecSubmit" /> -->
+
         <div v-else class="text-muted small">
           <!--  -->
         </div>
@@ -55,6 +59,7 @@ import { findLicenseByUrl } from "@/constants/creativeCommonsLicenses";
 import ImageComments from "@/components/imageDetail/ImageComments.vue";
 import ImageDisplay from "@/components/imageDetail/ImageDisplay.vue";
 import ImageMetadata from "@/components/imageDetail/ImageMetadata.vue";
+import ImageInterpretations from "@/components/imageDetail/ImageInterpretations.vue";
 
 defineOptions({ name: "ImageDetail" });
 
@@ -74,6 +79,11 @@ const tabs = [
     label: "Comentários",
     section: "comentarios",
     routeName: "image-detail-comentarios",
+  },
+  {
+    label: "Interpretações",
+    section: "interpretacoes",
+    routeName: "image-detail-interpretacoes",
   },
   // {
   //   label: "Imagens relacionadas",
@@ -107,6 +117,11 @@ const handleShare = () => {
 const handleReportSubmit = (payload) => {
   console.log("Report submitted", payload);
   // TODO: enviar denúncia para a API
+};
+
+const handleSpecSubmit = (payload) => {
+  console.log("Especificações enviadas:", payload);
+  // TODO: enviar para a API
 };
 
 onMounted(async () => {
