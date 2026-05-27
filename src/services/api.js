@@ -119,6 +119,7 @@ const getImageDetails = async (id) => {
         latest_date: dateInfo.latest_date,
         circa: dateInfo.circa_earliest_date ?? false,
       } : null,
+      dates: image.dates || [],
       location: locationLabel,
       locationCoordinates,
       description,

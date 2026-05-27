@@ -70,10 +70,36 @@ export const useVracStore = defineStore("vrac", () => {
     }
   }
 
+  async function getVRACAgentRoles() {
+    try {
+      const response = await axios.get("/api/vrac-agent-roles?per_page=-1", {
+        headers: { "Content-Type": "application/json" },
+      });
+      return response.data.data;
+    } catch (error) {
+      throw Error("Não foi possível obter os tipos de autor.");
+    }
+  }
+
+  async function getVRACWorks() {
+    try {
+      const response = await axios.get("/api/vrac-works?per_page=-1", {
+        headers: {
+          "Content-Type": "application/json"
+        },
+      });
+      return response.data.data;
+    } catch (error) {
+      throw Error("Não foi possível obter as obras.");
+    }
+  }
+
   return {
     getVRACSubjects,
     addVRACSubject,
     getVRACContributorNames,
     addVRACContributorName,
+    getVRACAgentRoles,
+    getVRACWorks,
   };
 });

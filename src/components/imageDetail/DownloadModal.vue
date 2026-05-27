@@ -10,22 +10,32 @@
           <div class="download-modal__column">
             <div class="download-modal__header">
               <h2 id="download-modal-title" class="download-modal__title">
-                Faça o download
+                {{ isCollection ? "Baixar coleção" : "Faça o download" }}
               </h2>
             </div>
 
             <div class="download-modal__body">
-              <p class="download-modal__intro">
-                Antes de realizar o download, atente-se às condições de uso da
-                imagem.
-              </p>
+              <template v-if="isCollection">
+                <p class="download-modal__intro">
+                  Você vai baixar <strong>{{ collectionCount }}</strong>
+                  {{ collectionCount === 1 ? "imagem" : "imagens" }} em um arquivo ZIP.
+                  Confira as licenças Creative Commons de cada imagem antes de usar.
+                </p>
+                <p v-if="busy" class="download-modal__loading">Baixando Imagens...</p>
+              </template>
+              <template v-else>
+                <p class="download-modal__intro">
+                  Antes de realizar o download, atente-se às condições de uso da
+                  imagem.
+                </p>
 
-              <div class="download-modal__license">
-                <LicenseInfoBlock
-                  :license-info="licenseInfo"
-                  :show-heading="false"
-                />
-              </div>
+                <div class="download-modal__license">
+                  <LicenseInfoBlock
+                    :license-info="licenseInfo"
+                    :show-heading="false"
+                  />
+                </div>
+              </template>
             </div>
           </div>
 
@@ -33,6 +43,7 @@
             <button
               type="button"
               class="download-modal__btn download-modal__btn--secondary"
+              :disabled="isBusy"
               @click="close"
             >
               Cancelar
@@ -40,17 +51,10 @@
             <button
               type="button"
               class="download-modal__btn download-modal__btn--primary"
-              :disabled="downloading"
+              :disabled="isBusy || (isCollection && !collectionCount)"
               @click="confirmDownload"
             >
-              <span v-if="downloading">
-                <span
-                  class="spinner-border spinner-border-sm me-1"
-                  role="status"
-                  aria-hidden="true"
-                ></span>
-                Baixando...
-              </span>
+              <span v-if="isBusy">Baixando Imagens...</span>
               <span v-else>Estou ciente</span>
             </button>
           </div>
@@ -62,7 +66,7 @@
 
 <script setup>
 import LicenseInfoBlock from "@/components/imageDetail/LicenseInfoBlock.vue";
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 
 defineOptions({
   name: "DownloadModal",
@@ -81,17 +85,29 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  collectionCount: {
+    type: Number,
+    default: null,
+  },
+  busy: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(["update:modelValue", "confirm"]);
 
 const downloading = ref(false);
 
+const isCollection = computed(() => props.collectionCount != null);
+const isBusy = computed(() => props.busy || downloading.value);
+
 function resetState() {
   downloading.value = false;
 }
 
 function close() {
+  if (isBusy.value) return;
   emit("update:modelValue", false);
 }
 
@@ -116,6 +132,10 @@ watch(
 );
 
 function confirmDownload() {
+  if (isCollection.value) {
+    emit("confirm");
+    return;
+  }
   downloading.value = true;
   emit("confirm", props.image);
   emit("update:modelValue", false);
@@ -410,5 +430,23 @@ function confirmDownload() {
 
   .download-modal__btn--secondary { order: 1; }
   .download-modal__btn--primary { order: 2; }
+}
+
+.download-modal__loading {
+  margin: 0;
+  color: var(--Laranja_E);
+  font-size: 14px;
+  animation: download-loading-blink 1.2s ease-in-out infinite;
+}
+
+@keyframes download-loading-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
 }
 </style>
