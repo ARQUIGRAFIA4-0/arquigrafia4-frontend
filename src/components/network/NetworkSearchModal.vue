@@ -1,66 +1,4 @@
 <template>
-  <Teleport to="body">
-    <dialog v-if="!isMobile" ref="dialogEl" class="search-dialog">
-
-      <div class="offcanvas-body network-offcanvas__body">
-
-        <button class="network-offcanvas__close btn btn-icon" type="button" @click="closeModal" aria-label="Fechar">
-          <i class="bi bi-x-lg" />
-        </button>
-
-
-        <div class="search-modal__header">
-          <div class="d-flex align-items-center gap-2">
-            <h2 class="network-offcanvas__title">Busca por nome</h2>
-            <span class="search-modal__help-icon" data-bs-toggle="tooltip" data-bs-placement="right"
-              data-bs-custom-class="search-modal__tooltip"
-              title="Digite um nome e clique em + ou pressione Enter para adicionar. Você pode adicionar múltiplos nomes — a busca retornará resultados para qualquer um deles.">
-              <i class="bi bi-info-circle-fill" />
-            </span>
-          </div>
-
-          <button v-if="terms.length > 0" class="btn search-modal__clear-btn" type="button" @click="clearAll">
-            <i class="bi bi-x-lg" />
-            Limpar busca
-          </button>
-        </div>
-
-        <!-- Campo de entrada -->
-        <div class="search-modal__input-row">
-          <input v-model="inputText" class="search-modal__input" type="text" placeholder="Digite um nome..."
-            @keydown.enter="addTerm" />
-          <button class="search-modal__add-btn" type="button" @click="addTerm">
-            <i class="bi bi-plus-lg" />
-          </button>
-        </div>
-
-        <!-- Chips -->
-        <div v-if="terms.length > 0" class="search-modal__chips-section">
-          <p class="search-modal__chips-label">Termos de busca</p>
-          <div class="search-modal__chips">
-            <span v-for="(term, index) in terms" :key="index" class="search-modal__chip">
-              {{ term }}
-              <button class="search-modal__chip-remove" type="button" :aria-label="`Remover ${term}`"
-                @click="removeTerm(index)">
-                ×
-              </button>
-            </span>
-          </div>
-        </div>
-
-        <!-- Ações -->
-        <div class="network-offcanvas__actions">
-          <button class="btn network-offcanvas__btn-voltar" type="button" @click="closeModal">
-            Voltar
-          </button>
-          <button class="btn network-offcanvas__btn-salvar" type="button" @click="confirm">
-            Buscar
-          </button>
-        </div>
-      </div>
-    </dialog>
-  </Teleport>
-
   <div v-if="isMobile" id="offcanvasSearch" ref="offcanvasEl"
     class="offcanvas offcanvas-bottom network-offcanvas network-offcanvas--search" data-bs-backdrop="false"
     data-bs-scroll="true" tabindex="-1">
@@ -73,13 +11,10 @@
       <div class="search-modal__header">
         <div class="d-flex align-items-center gap-2">
           <h2 class="network-offcanvas__title">Busca por nome</h2>
-          <span class="search-modal__help-icon" data-bs-toggle="tooltip" data-bs-placement="top"
-            data-bs-custom-class="search-modal__tooltip"
-            title="Digite um nome e clique em + ou pressione Enter para adicionar. Você pode adicionar múltiplos nomes — a busca retornará resultados para qualquer um deles.">
-            <i class="bi bi-info-circle-fill" />
-          </span>
+          <UiField id="network-offcanvas-help" class="network-offcanvas__help-field" label=" "
+            explain="Busque por um nome específico ou pelo nome de um coletivo." />
         </div>
-        <button v-if="terms.length > 0" class="btn search-modal__clear-btn" type="button" @click="clearAll">
+        <button v-if="inputText" class="btn search-modal__clear-btn" type="button" @click="clearInput">
           <i class="bi bi-x-lg" />
           Limpar busca
         </button>
@@ -87,25 +22,14 @@
 
       <div class="search-modal__input-row">
         <input v-model="inputText" class="search-modal__input" type="text" placeholder="Digite um nome..."
-          @keydown.enter="addTerm" />
-        <button class="search-modal__add-btn" type="button" @click="addTerm">
-          <i class="bi bi-plus-lg" />
-        </button>
-      </div>
-
-      <div v-if="terms.length > 0" class="search-modal__chips-section">
-        <p class="search-modal__chips-label">Termos de busca</p>
-        <div class="search-modal__chips">
-          <span v-for="(term, index) in terms" :key="index" class="search-modal__chip">
-            {{ term }}
-            <button class="search-modal__chip-remove" type="button" :aria-label="`Remover ${term}`"
-              @click="removeTerm(index)">×</button>
-          </span>
-        </div>
+          @keydown.enter="confirm" />
       </div>
 
       <div class="network-offcanvas__actions">
-        <button class="btn network-offcanvas__btn-voltar" type="button" data-bs-dismiss="offcanvas">Voltar</button>
+        <button class="btn network-offcanvas__btn-voltar" type="button" data-bs-dismiss="offcanvas"
+          @click="clearSearch">
+          Voltar
+        </button>
         <button class="btn network-offcanvas__btn-salvar" type="button" data-bs-dismiss="offcanvas"
           @click="confirm">Buscar</button>
       </div>
@@ -114,13 +38,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
-import { Tooltip, Offcanvas } from "bootstrap";
-
-// onMounted(() => {
-//   const el = document.querySelector(".search-modal__help-icon");
-//   if (el) new Tooltip(el);
-// });
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import { Offcanvas } from "bootstrap";
+import UiField from "../ui/UiField.vue";
 
 const emit = defineEmits(["search"]);
 
@@ -136,12 +56,6 @@ function onResize() {
 
 onMounted(() => {
   window.addEventListener("resize", onResize);
-
-  nextTick(() => {
-    document.querySelectorAll(".search-modal__help-icon").forEach((el) => {
-      new Tooltip(el);
-    });
-  });
 });
 
 onBeforeUnmount(() => {
@@ -179,26 +93,23 @@ function closeMobile() {
   if (el) Offcanvas.getInstance(el)?.hide();
 }
 
-function addTerm() {
-  const value = inputText.value.trim();
-  if (!value || terms.value.includes(value)) return;
-  terms.value.push(value);
+function clearInput() {
   inputText.value = "";
 }
 
-function removeTerm(index) {
-  terms.value.splice(index, 1);
-}
-
-function clearAll() {
-  terms.value = [];
+function clearSearch() {
   inputText.value = "";
-  emit("search", []);
+  emit("search", "");
 }
 
 function confirm() {
-  emit("search", [...terms.value]);
-  closeModal();
+  emit("search", inputText.value.trim());
+
+  if (isMobile.value) {
+    closeMobile();
+  } else {
+    closeModal();
+  }
 }
 
 defineExpose({ terms, openModal, closeModal, closeMobile });
@@ -208,22 +119,6 @@ defineExpose({ terms, openModal, closeModal, closeMobile });
 @use "@/scss/variables" as *;
 $breakpoint-md: 768px;
 
-/* ── Dialog desktop ── */
-.search-dialog {
-  border: none;
-  border-radius: 0.75rem;
-  padding: 0;
-  width: 480px;
-  max-width: 90vw;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
-  overflow: hidden;
-
-  &::backdrop {
-    background-color: rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-}
 
 /* ── Offcanvas mobile ── */
 .network-offcanvas--search {
@@ -282,20 +177,27 @@ $breakpoint-md: 768px;
 }
 
 .search-modal__clear-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.8rem;
-  color: var(--Cinza_M, #a6a6a6);
+  background-color: transparent;
+  color: var(--Preto, #1a1a1a);
   border: 1px solid var(--Cinza_M, #a6a6a6);
-  border-radius: 0.375rem;
-  padding: 0.25rem 0.625rem;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.250rem 0.688rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+
+  & .bi {
+    line-height: 0;
+    font-size: 0.7rem;
+  }
 
   &:hover {
-    color: var(--Preto, #1a1a1a);
-    border-color: var(--Preto, #1a1a1a);
+    color: var(--Branco, #fff);
+    background-color: var(--Preto, #1a1a1a);
   }
+
 }
 
 .search-modal__input {
@@ -312,34 +214,6 @@ $breakpoint-md: 768px;
     color: var(--Cinza_M, #a6a6a6);
     font-style: italic;
   }
-}
-
-.search-modal__add-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  background-color: var(--Preto, #1a1a1a);
-  color: var(--Branco, #fff);
-  border: none;
-  font-size: 1rem;
-  flex-shrink: 0;
-
-  &:hover {
-    opacity: 0.85;
-  }
-}
-
-.search-modal__chips-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.search-modal__chips-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin: 0;
 }
 
 .search-modal__chips {
@@ -359,52 +233,10 @@ $breakpoint-md: 768px;
   font-size: 0.875rem;
 }
 
-.search-modal__chip-remove {
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 1rem;
-  line-height: 1;
-  padding: 0;
-  cursor: pointer;
-  opacity: 0.8;
-
-  &:hover {
-    opacity: 1;
-  }
+.network-offcanvas__help-field {
+  width: 0;
 }
 
-.search-modal__help-icon {
-  display: inline-flex;
-  align-items: center;
-  cursor: default;
-
-  .bi {
-    font-size: 0.75rem;
-  }
-
-  &:hover {
-    color: var(--Cinza_E, #1a1a1a);
-  }
-}
-
-/* Tooltip branco */
-:global(.search-modal__tooltip .tooltip-inner) {
-  max-width: 260px;
-  font-size: 0.8rem;
-  text-align: left;
-  padding: 0.5rem 0.75rem;
-  background-color: #fff;
-  color: #1a1a1a;
-  border-radius: 0.375rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-}
-
-:global(.search-modal__tooltip .tooltip-arrow::before) {
-  border-right-color: #fff;
-}
-
-/* Ações */
 .network-offcanvas__actions {
   display: flex;
   gap: 0.75rem;

@@ -62,6 +62,8 @@ import UserCardNetwork from "../components/network/UserCardNetwork.vue";
 import NetworkToolbar from "../components/network/NetworkToolbar.vue";
 import { useNetworksStore } from "@/store/networks";
 import { useRoute, useRouter } from "vue-router";
+// console.log(results);
+
 
 const store = useNetworksStore();
 

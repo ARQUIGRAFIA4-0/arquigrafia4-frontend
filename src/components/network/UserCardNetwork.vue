@@ -19,8 +19,6 @@ import networkImageDefault2 from '@/assets/networkImageDefault-2.png';
 import networkImageDefault3 from '@/assets/networkImageDefault-3.png';
 const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 
-
-
 const props = defineProps({
   user: {
     type: Object,

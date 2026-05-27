@@ -42,43 +42,30 @@
 
     <!-- Busca -->
     <div class="network-toolbar__search">
-      <!-- Lupa — abre o modal -->
-      <button v-if="!isMobile" :disabled="modalTerms.length > 0" class="btn network-toolbar__search-icon-btn"
-        type="button" @click="searchModalRef.openModal()">
-        <span class="search-icon-wrapper">
-          <i class="bi bi-search" />
-          <i class="bi bi-chevron-down"></i>
-          <span v-if="modalTerms.length > 0" class="search-active-dot" />
+      <span class="search-icon-wrapper">
+        <i class="bi bi-search network-toolbar__search-icon-static" />
+        <span v-if="searched" class="search-active-dot" />
+      </span>
+
+      <!-- Modo: chip ativo -->
+      <template v-if="searchText && searched">
+        <span class="network-toolbar__chip">
+          {{ searchText }}
         </span>
-      </button>
-
-      <!-- Modo: termos do modal ativos -->
-      <template v-if="modalTerms.length > 0">
-        <span class="network-toolbar__advanced-label">Busca avançada ativa</span>
-
-        <button class="btn btn-sm network-toolbar__chip network-toolbar__chip--clear" type="button"
-          @click="clearSearch">
-          <i class="bi bi-x-lg" style="font-size: 0.7rem;" />
+        <button type="button" class="btn network-toolbar__chip--clear" @click="clearSearch">
+          <i class="bi bi-x-lg" />
           Limpar
         </button>
+      </template>
 
-        <button class="btn btn-sm network-toolbar__chip network-toolbar__chip--edit" type="button"
-          @click="searchModalRef.openModal()">
-          <i class="bi bi-pencil-square" style="font-size: 0.7rem;" />
-          Editar
+      <!-- Modo: input -->
+      <template v-else>
+        <input v-model="inputDraft" class="network-toolbar__search-input" type="text" placeholder="Busca por nome"
+          @keydown.enter="onConfirm" />
+        <button class="btn network-toolbar__search-btn" type="button" @click="onConfirm">
+          <i class="bi bi-arrow-right" />
         </button>
       </template>
-
-
-      <!-- Modo: sem termos do modal — input simples visível -->
-      <template v-else>
-        <input v-model="searchText" class="network-toolbar__search-input" type="text" placeholder="Busca por nome"
-          @keydown.enter="onConfirm" />
-      </template>
-
-      <button v-if="modalTerms.length === 0" class="btn network-toolbar__search-btn" type="button" @click="onConfirm">
-        <i class="bi bi-arrow-right" />
-      </button>
     </div>
 
   </div>
@@ -100,7 +87,7 @@
         data-bs-target="#offcanvasSearch">
         <span class="search-icon-wrapper">
           <i class="bi bi-search" />
-          <span v-if="modalTerms.length > 0" class="search-active-dot" />
+          <span v-if="searched" class="search-active-dot" />
         </span>
       </button>
     </div>
@@ -163,6 +150,9 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import NetworkSearchModal from "./NetworkSearchModal.vue";
 
 const emit = defineEmits(["search"]);
+const inputDraft = ref("");
+const searchText = ref("");
+const searched = ref(false);
 
 // --- Responsivo ---
 const isMobile = ref(window.innerWidth < 768);
@@ -174,8 +164,6 @@ onBeforeUnmount(() => window.removeEventListener("resize", onResize));
 // --- Estado desktop ---
 const currentFilter = ref("todos");
 const currentSort = ref("mais-recentes");
-const searchText = ref("");
-const modalTerms = ref([]);
 const searchModalRef = ref(null);
 
 // --- Opções ---
@@ -193,15 +181,12 @@ const sortOptions = [
 ];
 const currentFilterOption = computed(() => filterOptions.find(o => o.value === currentFilter.value) ?? filterOptions[0]);
 const currentSortOption = computed(() => sortOptions.find(o => o.value === currentSort.value) ?? sortOptions[0]);
-
-// --- Estado mobile (cópias para o offcanvas não aplicar antes de salvar) ---
 const mobileFilter = ref("todos");
 const mobileSort = ref("mais-recentes");
 
 const scrollToTop = () => { window.scrollTo({ top: 0, behavior: "smooth", }); };
 
 function cancelMobileFilters() {
-  // reverte para o valor aplicado atual
   mobileFilter.value = currentFilter.value;
   mobileSort.value = currentSort.value;
 }
@@ -211,41 +196,42 @@ function saveMobileFilters() {
   currentSort.value = mobileSort.value;
   onConfirm();
 }
-// --- Busca ---
-function onSearchTerms(terms) {
-  // terms é um array: ["mari", "maria"]
-  // passa como query separada por vírgula ou ajuste conforme a API esperar
-  modalTerms.value = terms;
-  searchText.value = "";
-  onConfirm();
+
+function onSearchTerms(query) {
+  searchText.value = query;
+  searched.value = !!query;
+  inputDraft.value = query;
+  emitSearch();
 }
 
-function clearSearch() {
-  modalTerms.value = [];
-  if (searchModalRef.value) {
-    searchModalRef.value.terms = [];
-  }
-  onConfirm();
-}
-
-// --- Confirm ---
-function onConfirm() {
-  const allTerms = [
-    ...modalTerms.value,
-    ...(searchText.value.trim() ? [searchText.value.trim()] : []),
-  ];
-
+function emitSearch() {
   emit("search", {
     filter: currentFilter.value,
     sort: currentSort.value,
-    query: allTerms.join(","),
+    query: searchText.value,
   });
   scrollToTop();
 }
 
-// --- Watches desktop ---
-watch(currentFilter, onConfirm);
-watch(currentSort, onConfirm);
+function clearSearch() {
+  inputDraft.value = "";
+  searchText.value = "";
+  searched.value = false;
+  emitSearch();
+}
+
+// --- Confirm ---
+function onConfirm() {
+  const value = inputDraft.value.trim();
+  if (!value) return;
+  searchText.value = value;
+  searched.value = true;
+  emitSearch();
+  scrollToTop();
+}
+
+watch(currentFilter, emitSearch);
+watch(currentSort, emitSearch);
 </script>
 
 <style lang="scss" scoped>
@@ -292,29 +278,9 @@ $breakpoint-sm: 425px;
   flex: 1;
 }
 
-.network-toolbar__search--offcanvas {
-  box-shadow: none;
-  border: 1px solid var(--Cinza_C, #d9d9d9);
-  border-radius: 0.5rem;
-  padding: 10px 12px;
-  flex: none;
-  width: 100%;
-}
-
 .network-toolbar__search-icon {
   color: var(--Cinza_M, #a6a6a6);
   font-size: 1rem;
-  flex-shrink: 0;
-}
-
-.network-toolbar__search-icon-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--Cinza_M, #a6a6a6);
-  font-size: 1rem;
-  display: inline-flex;
-  align-items: center;
   flex-shrink: 0;
 }
 
@@ -331,8 +297,9 @@ $breakpoint-sm: 425px;
 
 .search-active-dot {
   position: absolute;
+  box-sizing: border-box;
   top: 0px;
-  right: 20px;
+  right: 0px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -402,11 +369,9 @@ $breakpoint-sm: 425px;
 .network-offcanvas {
   height: 100vh;
   max-height: 100vh;
-  /* FORÇAR tela inteira */
   width: 100vw;
   max-width: 100vw;
   left: 0;
-  // bottom: 0;
 }
 
 .network-offcanvas__body {
@@ -506,67 +471,44 @@ $breakpoint-sm: 425px;
   height: 30px;
 }
 
-/* ── Dropdown (padrão do projeto) ── */
-.dropdown-menu.menu-dark .dropdown-item {
-  position: relative;
-  padding-left: 2rem;
-}
-
-.dropdown-menu.menu-dark .dropdown-item.active::before {
-  content: "";
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
-  position: absolute;
-  left: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13.485 1.929a1.25 1.25 0 0 1 0 1.768l-7.071 7.07a1.25 1.25 0 0 1-1.768 0L.515 7.676A1.25 1.25 0 0 1 2.283 5.91l2.121 2.12 6.187-6.187a1.25 1.25 0 0 1 1.768 0z'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13.485 1.929a1.25 1.25 0 0 1 0 1.768l-7.071 7.07a1.25 1.25 0 0 1-1.768 0L.515 7.676A1.25 1.25 0 0 1 2.283 5.91l2.121 2.12 6.187-6.187a1.25 1.25 0 0 1 1.768 0z'/%3E%3C/svg%3E");
-  mask-repeat: no-repeat;
-  mask-position: center;
-  mask-size: contain;
-}
-
-.network-toolbar__advanced-label {
-  font-size: 0.875rem;
-  font-style: italic;
-  font-weight: 400;
-  color: var(--Preto, #1a1a1a);
-  white-space: nowrap;
-}
-
 .network-toolbar__chip--clear {
   background-color: transparent;
   color: var(--Preto, #1a1a1a);
   border: 1px solid var(--Cinza_M, #a6a6a6);
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
   padding: 0.250rem 0.688rem;
   cursor: pointer;
+  font-size: 0.875rem;
+
+  & .bi {
+    line-height: 0;
+    font-size: 0.7rem;
+  }
 
   &:hover {
     color: var(--Branco, #fff);
-    // border-color: var(--Preto, #1a1a1a);
     background-color: var(--Preto, #1a1a1a);
   }
 }
 
-.network-toolbar__chip--edit {
-  background-color: var(--Preto, #1a1a1a);
-  color: var(--Branco, #fff);
-  border: none;
+.network-toolbar__search-icon-static {
+  color: var(--Cinza_M, #a6a6a6);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.network-toolbar__chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  cursor: pointer;
-  padding: 0.250rem 0.688rem;
-
-  &:hover {
-    opacity: 0.85;
-  }
+  gap: 0.5rem;
+  background-color: var(--Laranja_M, #c0622a);
+  color: var(--Branco, #fff);
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
 }
 </style>
