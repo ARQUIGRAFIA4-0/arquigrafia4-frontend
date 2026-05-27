@@ -1,5 +1,5 @@
 <template>
-  <div class="collective-card">
+  <a class="collective-card" :href="`/collective/${collective.id}`">
     <div class="collective-card__media">
       <img class="collective-card__image" :src="collectiveImageDefault" :alt="`foto de ${collective.name}`" />
     </div>
@@ -7,10 +7,10 @@
       <h3 class="collective-card__name">{{ collective.name }}</h3>
       <div class="collective-card__location">
         <i class="bi bi-geo-alt"></i>
-        <span>{{ collective.location ?? '-' }}</span>
+        <span>{{ collective.location ?? 'Não especificado' }}</span>
       </div>
     </div>
-  </div>
+  </a>
 </template>
 
 <script setup>
@@ -45,6 +45,12 @@ $breakpoint-xs: 320px;
   align-items: center;
   justify-content: center;
   gap: 0.326rem;
+  text-decoration: none;
+  transition: box-shadow 0.2s ease-in-out;
+
+  &:hover {
+    box-shadow: 2px 2px 6px 3px rgba(0, 0, 0, 0.25);
+  }
 
 
   &__media {

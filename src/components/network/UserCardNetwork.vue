@@ -1,5 +1,5 @@
 <template>
-  <div class="user-card">
+  <a class="user-card" :href="`/profile/${user.id}`">
     <div class="user-card__media">
       <img class="user-card__image" :src="userImage" :alt="`foto de ${user.name}`" />
     </div>
@@ -8,7 +8,7 @@
       <!-- <FitTags :subjects="user.tags ?? []" /> -->
       <FitTags :subjects="visibleTagsTeste ?? []" />
     </div>
-  </div>
+  </a>
 </template>
 
 <script setup>
@@ -45,16 +45,16 @@ const userImage = computed(() => {
 //tags de exemplo em forma de objeto'
 const visibleTagsTeste = [{
   id: 1,
-  term: "termo",
+  term: "arquitetura",
 }, {
   id: 2,
-  term: "textolongo",
+  term: "design",
 }, {
   id: 3,
-  term: "Termoss",
+  term: "urbanismo",
 }, {
   id: 4,
-  term: "Designsssss",
+  term: "artista",
 }, {
   id: 5,
   term: "Paisagismo",
@@ -76,6 +76,12 @@ $breakpoint-sm: 425px;
   border: 0.25px solid var(--Cinza_C, #c2c2c2);
   border-radius: 0.25rem;
   box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+  transition: box-shadow 0.2s ease-in-out;
+
+  &:hover {
+    box-shadow: 2px 2px 6px 3px rgba(0, 0, 0, 0.25);
+  }
 
   &__media {
     width: 100%;
