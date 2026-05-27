@@ -111,5 +111,27 @@ export const useCollectivesStore = defineStore("collectives", () => {
     }
   }
 
-  return { isLoading, createCollective, getCollective, requestJoin, leaveCollective };
+  /**
+   * Atualiza os dados de um coletivo.
+   * @param {string} id - UUID do coletivo
+   * @param {FormData} formData - Dados do formulário
+   * @returns {{ success: boolean, message?: string, data?: object }}
+   */
+  async function updateCollective(id, formData) {
+    const authStore = useAuthStore();
+    if (!authStore.isLoggedIn) {
+      return { success: false, message: "Você precisa estar logado para realizar esta ação." };
+    }
+    isLoading.value = true;
+    try {
+      const data = await api.updateCollective(authStore.authHeader, id, formData);
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, message: error.message };
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  return { isLoading, createCollective, getCollective, requestJoin, leaveCollective, updateCollective };
 });

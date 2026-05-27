@@ -1051,7 +1051,7 @@ function handleCancel() {
       <i class="bi bi-arrow-right"></i>
     </div>
     <!-- Botões de submit e cancelamento -->
-    <div class="row row-cols-2 g-3">
+    <div class="row row-cols-2 g-3 mb-5">
       <div class="col">
         <button class="btn btn-outline-secondary btn-sm w-100" @click="handleCancel">Cancelar</button>
       </div>

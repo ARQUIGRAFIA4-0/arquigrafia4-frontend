@@ -6,6 +6,8 @@ import { useSubjectTerms } from "@/composables/useSubjectTerms";
 import { useCollectivesStore } from "@/store/collectives";
 import profileImageDefault from "@/assets/collective_image.png";
 
+const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
+
 const props = defineProps({
   collectiveData: { type: Object, default: null },
   /** null = visitante/não membro | "member" | "admin" */
@@ -31,7 +33,8 @@ const showSkeleton = computed(() => !hasLoaded.value);
 
 const hasSocials = computed(() => {
   const s = props.collectiveData?.socials;
-  return Array.isArray(s) && s.length > 0;
+  if (!s || typeof s !== 'object' || Array.isArray(s)) return false;
+  return Object.values(s).some(val => !!val);
 });
 
 watch(
@@ -51,14 +54,6 @@ watch(
   },
   { immediate: true }
 );
-
-function getSocialLabel(url) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
-}
 
 async function handleJoinRequest() {
   if (joinRequested.value) return;
@@ -129,7 +124,9 @@ async function handleLeave() {
       <div class="collective-card__header">
         <div class="collective-card__image">
           <img
-            :src="collectiveData?.avatar_url || profileImageDefault"
+            :src="collectiveData?.avatar_url
+              ? (collectiveData.avatar_url.startsWith('http') ? collectiveData.avatar_url : `${API_BASE_URL}${collectiveData.avatar_url}`)
+              : (collectiveData?.avatar_path ? `${API_BASE_URL}/storage/${collectiveData.avatar_path}` : profileImageDefault)"
             alt="Foto do coletivo"
           />
         </div>
@@ -161,13 +158,43 @@ async function handleLeave() {
 
         <div v-if="hasSocials" class="collective-card__section">
           <h3>Redes</h3>
-          <ul class="collective-card__socials">
-            <li v-for="url in collectiveData.socials" :key="url">
-              <a :href="url" target="_blank" rel="noopener noreferrer">
-                {{ getSocialLabel(url) }}
+          <div class="collective-card__socials-icons">
+            <div v-if="collectiveData.socials.lattes">
+              <a :href="collectiveData.socials.lattes" target="_blank" rel="noopener noreferrer">
+                <img src="@/assets/logo_lattes.svg" alt="Lattes" />
               </a>
-            </li>
-          </ul>
+            </div>
+            <div v-if="collectiveData.socials.orcid">
+              <a :href="collectiveData.socials.orcid" target="_blank" rel="noopener noreferrer">
+                <img src="@/assets/logo_orcid.svg" alt="Orcid" />
+              </a>
+            </div>
+            <div v-if="collectiveData.socials.facebook">
+              <a :href="collectiveData.socials.facebook" target="_blank" rel="noopener noreferrer">
+                <img src="@/assets/logo_facebook.svg" alt="Facebook" />
+              </a>
+            </div>
+            <div v-if="collectiveData.socials.instagram">
+              <a :href="collectiveData.socials.instagram" target="_blank" rel="noopener noreferrer">
+                <img src="@/assets/logo_instagram.svg" alt="Instagram" />
+              </a>
+            </div>
+            <div v-if="collectiveData.socials.linkedin">
+              <a :href="collectiveData.socials.linkedin" target="_blank" rel="noopener noreferrer">
+                <img src="@/assets/logo_linkedin.svg" alt="LinkedIn" />
+              </a>
+            </div>
+            <div v-if="collectiveData.socials.whatsapp">
+              <a :href="`https://wa.me/${collectiveData.socials.whatsapp}`" target="_blank" rel="noopener noreferrer">
+                <img src="@/assets/logo_whatsapp.svg" alt="WhatsApp" />
+              </a>
+            </div>
+            <div v-if="collectiveData.socials.x">
+              <a :href="collectiveData.socials.x" target="_blank" rel="noopener noreferrer">
+                <img src="@/assets/logo_x.svg" alt="X" />
+              </a>
+            </div>
+          </div>
         </div>
 
         <!-- Ações condicionais -->
@@ -203,9 +230,12 @@ async function handleLeave() {
 
           <!-- Admin -->
           <template v-if="userRole === 'admin'">
-            <button class="btn btn-outline-secondary btn-sm w-100" disabled>
+            <RouterLink
+              :to="{ name: 'collective-edit', params: { id: collectiveData?.id } }"
+              class="btn btn-outline-secondary btn-sm w-100"
+            >
               Editar perfil
-            </button>
+            </RouterLink>
           </template>
 
           <!-- Membro ou admin: deixar de participar -->
@@ -360,19 +390,16 @@ $breakpoint-md: 768px;
     }
   }
 
-  &__socials {
+  &__socials-icons {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    row-gap: 15px;
+    justify-content: center;
 
-    li a {
-      font-size: 13px;
-      color: $color-azul-e;
-      word-break: break-all;
+    img {
+      width: 20px;
+      height: 20px;
     }
   }
 

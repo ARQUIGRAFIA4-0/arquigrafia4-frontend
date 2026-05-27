@@ -157,6 +157,12 @@ export default [
     component: () => import("../views/Collective/ViewCollective.vue"),
   },
   {
+    path: "/coletivos/:id/editar",
+    name: "collective-edit",
+    component: () => import("../views/Collective/EditCollective.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
     path: "/eu",
     redirect: { name: "my-profile-images" },
     meta: { requiresAuth: true }

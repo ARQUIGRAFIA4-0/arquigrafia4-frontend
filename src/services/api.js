@@ -476,11 +476,39 @@ const getAllSubjects = async () => {
   try {
     const response = await axios.get("/api/vrac-subjects", {
       headers: { "Content-Type": "application/json" },
+      params: { per_page: -1 },
     });
     return response.data.data || [];
   } catch (error) {
     console.error("Error fetching all subjects:", error);
     return [];
+  }
+};
+
+/**
+ * Atualiza os dados de um coletivo
+ * @param {string} authHeader - Header de autorização (Bearer token)
+ * @param {string} id - UUID do coletivo
+ * @param {FormData} formData - Dados do formulário
+ * @returns {Promise<object>} Dados atualizados do coletivo
+ */
+const updateCollective = async (authHeader, id, formData) => {
+  // Laravel não suporta multipart/form-data em PATCH/PUT via PHP.
+  // Usamos POST com _method=PATCH (method spoofing do Laravel).
+  formData.append("_method", "PATCH");
+  try {
+    const response = await axios.post(`/api/collectives/${id}`, formData, {
+      headers: {
+        "Authorization": authHeader,
+      },
+    });
+    return response.data.data;
+  } catch (error) {
+    const errors = error.response?.data?.errors;
+    const message = errors
+      ? Object.values(errors)[0]?.[0]
+      : (error.response?.data?.message || "Não foi possível atualizar o coletivo.");
+    throw new Error(message);
   }
 };
 
@@ -498,4 +526,5 @@ export const api = {
   getCollective,
   requestJoinCollective,
   leaveCollective,
+  updateCollective,
 };
