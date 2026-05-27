@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, nextTick, watch } from "vue";
 import { RouterLink } from "vue-router";
 import UiCard from "@/components/ui/UiCard.vue";
 import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
+import UploadImageBox from "@/components/UploadImageBox.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
 
@@ -89,18 +90,11 @@ onBeforeUnmount(() => {
   <div>
     <ProfileGridSkeleton v-if="!shouldFetch || !hasLoadedImages" />
 
-    <div
+    <UploadImageBox
       v-else-if="hasLoadedImages && !loading && items.length === 0 && isMember"
-      class="collective-upload-visual"
-      role="status"
-    >
-      <h1 class="collective-upload-visual__title">Seu coletivo ainda não tem<br />contribuições.</h1>
-      <i class="bi bi-plus-circle-fill collective-upload-visual__icon"></i>
-      <div class="collective-upload-visual__instructions">
-        <p>Clique aqui ou arraste arquivos para esta área</p>
-        <p>Limite aceito: 10 imagens / 6Mb por arquivo</p>
-      </div>
-    </div>
+      :show-upload-instructions="true"
+      instructions-title="Seu coletivo ainda não tem<br />contribuições."
+    />
 
     <div
       v-else-if="hasLoadedImages && !loading && items.length === 0"
@@ -152,60 +146,6 @@ $breakpoint-md: 768px;
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
     @content;
-  }
-}
-
-.collective-upload-visual {
-  > * + * {
-    margin-top: 1.5rem;
-  }
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: $color-off-white;
-  border: 2px solid $color-cinza-m;
-  width: 100%;
-  border-radius: 7px;
-  padding: 80px 0;
-  box-shadow: 4px 4px 8px 0px rgba(0, 0, 0, 0.1);
-
-  @include md {
-    min-height: 500px;
-  }
-
-  &__title {
-    font-weight: 500;
-    font-size: 16px;
-    line-height: 150%;
-    letter-spacing: 0%;
-    text-align: center;
-
-    @include md {
-      font-size: 30px;
-    }
-  }
-
-  &__icon {
-    font-size: 50px;
-    color: $color-azul-e;
-  }
-
-  &__instructions {
-    p {
-      font-weight: 400;
-      font-size: 12px;
-      line-height: 125%;
-      letter-spacing: 0%;
-      text-align: center;
-
-      @include md {
-        font-size: 16px;
-        line-height: 20px;
-        margin-bottom: 0.5rem;
-      }
-    }
   }
 }
 </style>
