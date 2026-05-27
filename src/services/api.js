@@ -114,6 +114,11 @@ const getImageDetails = async (id) => {
       collective,
       authors,
       date,
+      dateRaw: dateInfo ? {
+        earliest_date: dateInfo.earliest_date,
+        latest_date: dateInfo.latest_date,
+        circa: dateInfo.circa_earliest_date ?? false,
+      } : null,
       dates: image.dates || [],
       location: locationLabel,
       locationCoordinates,
@@ -212,12 +217,12 @@ const searchImages = async ({ mode, value, page = 1 } = {}) => {
 const fetchImages = async (page = 1, filters = {}) => {
   try {
     const params = { page };
-    
+
     // Filtro por busca textual geral (q)
     if (filters.q && typeof filters.q === 'string') {
       params.q = filters.q.trim();
     }
-    
+
     // Filtro por intervalo de datas
     if (filters.date_from) {
       params.date_from = filters.date_from;
@@ -225,27 +230,27 @@ const fetchImages = async (page = 1, filters = {}) => {
     if (filters.date_to) {
       params.date_to = filters.date_to;
     }
-    
+
     // Filtro por user_id
     if (filters.userId) {
       params.user_id = filters.userId;
     }
-    
+
     // Filtro por assuntos (tags de sujeito por ID)
     if (filters.subjects?.length) {
       params['subject[]'] = filters.subjects.length === 1 ? filters.subjects[0] : filters.subjects;
     }
-    
+
     // Filtro por termos de assunto (partial match)
     if (filters.subjectTerms?.length) {
       params['subject_term[]'] = filters.subjectTerms.length === 1 ? filters.subjectTerms[0] : filters.subjectTerms;
     }
-    
+
     // Filtro por título (partial match)
     if (filters.title && typeof filters.title === 'string') {
       params.title = filters.title.trim();
     }
-    
+
     // Filtro por contribuidor/autor (partial match)
     if (filters.contributor && typeof filters.contributor === 'string') {
       params.contributor = filters.contributor.trim();
@@ -263,7 +268,7 @@ const fetchImages = async (page = 1, filters = {}) => {
     if (filters.sortOrder) {
       params.sort_order = filters.sortOrder;
     }
-    
+
     const { data } = await axios.get("/api/images", { params });
 
     const rawItems = filters.excludeCollectives

@@ -28,7 +28,10 @@
           </div>
         </div>
 
-        <ImageMetadata v-if="currentSection === 'dados'" :image="image" :license-info="licenseInfo" />
+        <ImageMetadata v-if="currentSection === 'dados' && !isEditing" :image="image" :license-info="licenseInfo" />
+
+        <ImageMetadataEdit v-else-if="currentSection === 'dados' && isEditing" :image="image"
+          @updated="fetchImageData" />
 
         <div v-else-if="currentSection === 'comentarios'">
           <div v-if="loadingComments" class="text-center py-4">
@@ -51,18 +54,23 @@
 import { ref, onMounted, computed } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { api } from "@/services/api";
+import { useAuthStore } from "@/store/auth";
+import { storeToRefs } from "pinia";
 import { findLicenseByUrl } from "@/constants/creativeCommonsLicenses";
 import ImageComments from "@/components/imageDetail/ImageComments.vue";
 import ImageDisplay from "@/components/imageDetail/ImageDisplay.vue";
 import ImageMetadata from "@/components/imageDetail/ImageMetadata.vue";
-
+import ImageMetadataEdit from "@/components/imageDetail/ImageMetadataEdit.vue";
 defineOptions({ name: "ImageDetail" });
 
 const router = useRouter();
 const route = useRoute();
 const image = ref(null);
 const loading = ref(true);
-
+const comments = ref([]);
+const loadingComments = ref(false);
+const authStore = useAuthStore();
+const { loggedUser } = storeToRefs(authStore);
 
 const tabs = [
   {
@@ -82,6 +90,11 @@ const tabs = [
   // },
 ];
 
+const isOwner = computed(() => {
+  return loggedUser.value?.id === image.value?.uploader?.id;
+});
+
+const isEditing = computed(() => route.query.edit === "true" && isOwner.value);
 const currentSection = computed(() => route.meta?.section ?? "dados");
 
 const licenseInfo = computed(() => {
@@ -89,6 +102,26 @@ const licenseInfo = computed(() => {
   if (!rightsUrl) return null;
   return findLicenseByUrl(rightsUrl);
 });
+
+const loadComments = async (imageId) => {
+  loadingComments.value = true;
+  try {
+    comments.value = await api.getImageComments(imageId);
+  } catch (error) {
+    console.error("Error loading comments:", error);
+  } finally {
+    loadingComments.value = false;
+  }
+};
+
+const fetchImageData = async () => {
+  try {
+    const imageId = route.params.id;
+    image.value = await api.getImageDetails(imageId);
+  } catch (error) {
+    console.error("Error fetching image data:", error);
+  }
+};
 
 const goBack = () => {
   router.back();
