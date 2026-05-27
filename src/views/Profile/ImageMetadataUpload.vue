@@ -344,12 +344,61 @@
 
             <div class="mb-4 px-3">
               <UiField label="Obra" explain="Informe a obra relacionada">
-                <input
-                  type="text"
-                  class="form-control"
-                  placeholder="Texto exemplo"
-                  v-model="form.work"
-                />
+                <!-- Selected state -->
+                <div v-if="form.work" class="form-control d-flex align-items-center justify-content-between gap-2" style="height: auto; min-height: 38px;">
+                  <div class="d-flex flex-column lh-sm">
+                    <span class="fw-semibold">{{ form.work.label }}</span>
+                    <small v-if="form.work.address" class="text-muted">{{ form.work.address }}</small>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-close flex-shrink-0"
+                    aria-label="Remover obra"
+                    @click="form.work = null; workInput = ''"
+                  />
+                </div>
+                <!-- Search state -->
+                <div v-else class="position-relative">
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Busque por nome ou endereço"
+                    v-model="workInput"
+                    @input="onWorkInputChange"
+                    @focus="showWorkSuggestions = true"
+                    @blur="hideWorkSuggestions"
+                    autocomplete="off"
+                  />
+                  <div
+                    v-if="showWorkSuggestions && (filteredWorkSuggestions.length > 0 || canShowCreateWork)"
+                    class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
+                    style="z-index: 1000; max-height: 320px; overflow-y: auto"
+                  >
+                    <button
+                      v-for="work in filteredWorkSuggestions"
+                      :key="work.id"
+                      type="button"
+                      class="dropdown-item d-flex flex-column align-items-start py-2"
+                      @click="selectWork(work)"
+                    >
+                      <span class="fw-semibold">{{ workPrimaryTitle(work) }}</span>
+                      <small v-if="workMatchedAlternate(work, workInput)" class="text-muted fst-italic">
+                        também conhecido como: {{ workMatchedAlternate(work, workInput) }}
+                      </small>
+                      <small v-else-if="work.location?.label" class="text-muted">{{ work.location.label }}</small>
+                      <small v-if="workMatchedAlternate(work, workInput) && work.location?.label" class="text-muted">{{ work.location.label }}</small>
+                    </button>
+                    <button
+                      v-if="canShowCreateWork"
+                      type="button"
+                      class="dropdown-item text-primary d-flex align-items-center gap-1"
+                      @click="showWorkCreateModal = true; showWorkSuggestions = false"
+                    >
+                      <i class="bi bi-plus-circle" />
+                      <span>Criar obra "{{ workInput.trim() }}"</span>
+                    </button>
+                  </div>
+                </div>
               </UiField>
             </div>
 
@@ -643,6 +692,11 @@
       </button>
     </div>
   </div>
+
+  <WorkCreateModal
+    v-model="showWorkCreateModal"
+    @created="onWorkCreated"
+  />
 </template>
 
 <script setup>
@@ -652,6 +706,7 @@ import ImagePreviewPanel from "@/components/imageMetadaUpload/ImagePreviewPanel.
 import UiField from "@/components/ui/UiField.vue";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
+import WorkCreateModal from "@/components/work/WorkCreateModal.vue";
 import { useImageUploadStore } from "@/store/imageUploads";
 import { useAuthStore } from "@/store/auth";
 import { useVracStore } from "@/store/vrac";
@@ -764,7 +819,7 @@ const defaultForm = {
   unknownAuthor: false,
   hasAuthorization: true,
   license: "CC BY-NC-SA",
-  work: "",
+  work: null,
   tags: [],
   description: "",
   date: "",
@@ -1037,6 +1092,20 @@ onMounted(async () => {
     if (Array.isArray(contributors)) {
       allContributorNames.value = contributors;
     }
+
+    // Fetch works
+    const works = await vracStore.getVRACWorks();
+    if (Array.isArray(works)) {
+      allWorks.value = works;
+      workFuse = new Fuse(allWorks.value, {
+        keys: [
+          { name: "titles.label", weight: 0.7 },
+          { name: "location.label", weight: 0.3 },
+        ],
+        threshold: 0.3,
+        includeScore: true,
+      });
+    }
   } catch (error) {
     console.error("Error fetching data:", error);
   }
@@ -1126,6 +1195,95 @@ const addTag = async () => {
 
 const removeTag = (index) => {
   form.value.tags.splice(index, 1);
+};
+
+// Work autocomplete state
+const showWorkCreateModal = ref(false);
+const allWorks = ref([]);
+const workInput = ref("");
+const filteredWorkSuggestions = ref([]);
+const showWorkSuggestions = ref(false);
+let workFuse = null;
+let workDebounceTimer = null;
+
+const workPrimaryTitle = (work) => {
+  const titles = work?.titles || [];
+  const preferred = titles.find((t) => t.pref);
+  return (preferred || titles[0])?.label || "(sem título)";
+};
+
+const workMatchedAlternate = (work, query) => {
+  if (!query?.trim()) return null;
+  const q = query.trim().toLowerCase();
+  const preferred = workPrimaryTitle(work).toLowerCase();
+  if (preferred.includes(q)) return null;
+  const alt = (work?.titles || []).find(
+    (t) => !t.pref && t.label.toLowerCase().includes(q)
+  );
+  return alt?.label || null;
+};
+
+const canShowCreateWork = computed(() => {
+  const term = workInput.value.trim();
+  return term.length > 0;
+});
+
+watch(
+  () => form.value.work,
+  (selected) => {
+    if (!selected) workInput.value = "";
+  }
+);
+
+const onWorkInputChange = () => {
+  if (form.value.work && workInput.value !== form.value.work.label) {
+    form.value.work = null;
+  }
+
+  if (workDebounceTimer) clearTimeout(workDebounceTimer);
+
+  workDebounceTimer = setTimeout(() => {
+    if (!workInput.value.trim()) {
+      filteredWorkSuggestions.value = [];
+      return;
+    }
+
+    if (workFuse) {
+      const results = workFuse.search(workInput.value);
+      filteredWorkSuggestions.value = results
+        .map((result) => result.item)
+        .slice(0, 10);
+    }
+  }, 300);
+};
+
+const hideWorkSuggestions = () => {
+  setTimeout(() => {
+    showWorkSuggestions.value = false;
+  }, 200);
+};
+
+const selectWork = (work) => {
+  form.value.work = {
+    id: work.id,
+    label: workPrimaryTitle(work),
+    address: work.location?.label || null,
+  };
+  filteredWorkSuggestions.value = [];
+  showWorkSuggestions.value = false;
+};
+
+const onWorkCreated = (work) => {
+  allWorks.value.push(work);
+  workFuse = new Fuse(allWorks.value, {
+    keys: [
+      { name: "titles.label", weight: 0.7 },
+      { name: "location.label", weight: 0.3 },
+    ],
+    threshold: 0.3,
+    includeScore: true,
+  });
+  selectWork(work);
 };
 
 const licenses = [
@@ -1332,6 +1490,11 @@ const handleSubmit = async () => {
         subjectUuids.forEach((uuid) => {
           formData.append("subjects[]", uuid);
         });
+
+        // Add selected work (single-select but backend expects array)
+        if (metadata.work?.id) {
+          formData.append("works[]", metadata.work.id);
+        }
 
         // Log FormData entries for debugging
         console.log(`\n=== FormData for Image ${index + 1} ===`);
