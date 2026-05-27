@@ -91,13 +91,11 @@ onMounted(() => {
       :class="[
         'alert',
         'fs-6',
-        alertType === 'success' ? 'bg-positivo-e' : 'bg-negativo-e',
-        'text-white',
+        alertType === 'success' ? 'alert-positivo' : 'alert-negativo',
         'mb-3',
         'd-flex',
         'align-items-center',
         'justify-content-between',
-        'auth-alert',
       ]"
       role="alert"
     >
@@ -107,7 +105,7 @@ onMounted(() => {
       </div>
       <button
         type="button"
-        class="btn-close text-white"
+        class="btn-close"
         @click="closeAlert"
         aria-label="Fechar"
       ></button>

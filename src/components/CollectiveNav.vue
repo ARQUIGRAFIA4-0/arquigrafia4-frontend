@@ -1,5 +1,8 @@
 <script setup>
-const props = defineProps({ selected: String });
+const props = defineProps({
+  selected: String,
+  userRole: { type: String, default: null },
+});
 </script>
 
 <template>
@@ -12,6 +15,11 @@ const props = defineProps({ selected: String });
       :class="{ 'collective-nav--selected': props.selected === 'Participantes' }"
       @click="$emit('select', 'Participantes')"
     >Participantes</li>
+    <li
+      v-if="props.userRole === 'admin'"
+      :class="{ 'collective-nav--selected': props.selected === 'Solicitações' }"
+      @click="$emit('select', 'Solicitações')"
+    >Solicitações</li>
   </ul>
 </template>
 

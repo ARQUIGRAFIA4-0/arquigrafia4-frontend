@@ -75,19 +75,27 @@ async function handleRemove(memberId) {
   if (result.success) {
     expandedCardId.value = null;
     emit("update:members", result.data.members);
+  } else if (result.notFound) {
+    expandedCardId.value = null;
+    emit("update:members", props.members.filter((m) => m.id !== memberId));
+    actionError.value = result.message;
   } else {
     actionError.value = result.message;
   }
 }
 
-async function handlePromote(memberId) {
-  actionLoading.value = memberId;
+async function handleRoleToggle(member) {
+  const newRole = member.role === "admin" ? "member" : "admin";
+  actionLoading.value = member.id;
   actionError.value = "";
-  const result = await collectivesStore.promoteMemberToAdmin(props.collectiveId, memberId);
+  const result = await collectivesStore.updateMemberRole(props.collectiveId, member.id, newRole);
   actionLoading.value = null;
   if (result.success) {
     expandedCardId.value = null;
-    emit("update:members", result.data.members);
+    emit(
+      "update:members",
+      props.members.map((m) => (m.id === member.id ? { ...m, role: newRole } : m))
+    );
   } else {
     actionError.value = result.message;
   }
@@ -107,12 +115,14 @@ onBeforeUnmount(() => {
     <!-- Alerta de erro nas ações -->
     <div
       v-if="actionError"
-      class="alert alert-danger d-flex align-items-center gap-2 mb-3 fs-6"
+      class="alert alert-negativo d-flex align-items-center justify-content-between mb-3 fs-6"
       role="alert"
     >
-      <i class="bi bi-exclamation-triangle-fill"></i>
-      <span>{{ actionError }}</span>
-      <button type="button" class="btn-close ms-auto" @click="actionError = ''" aria-label="Fechar" />
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>{{ actionError }}</span>
+      </div>
+      <button type="button" class="btn-close" @click="actionError = ''" aria-label="Fechar" />
     </div>
 
     <!-- Skeleton enquanto os dados carregam -->
@@ -176,14 +186,13 @@ onBeforeUnmount(() => {
                 Remover
               </button>
               <button
-                v-if="member.role === 'member'"
                 class="member-card__action-btn member-card__action-btn--admin"
                 type="button"
                 :disabled="actionLoading === member.id"
-                @click.stop="handlePromote(member.id)"
+                @click.stop="handleRoleToggle(member)"
               >
                 <span v-if="actionLoading === member.id" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                Admin
+                {{ member.role === 'admin' ? 'Revogar' : 'Admin' }}
               </button>
             </div>
           </div>
@@ -210,6 +219,7 @@ $breakpoint-md: 768px;
   box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.10);
   display: flex;
   flex-direction: column;
+  height: 100%;
   cursor: pointer;
   overflow: hidden;
   transition: background-color 0.15s ease;
@@ -252,6 +262,7 @@ $breakpoint-md: 768px;
     padding: 16px 10px 16px;
     display: flex;
     flex-direction: column;
+    flex: 1;
     gap: 8px;
   }
 
@@ -269,7 +280,7 @@ $breakpoint-md: 768px;
   &__footer {
     display: flex;
     justify-content: flex-end;
-    padding-top: 8px;
+    padding-top: 14px;
     padding-right: 4px;
   }
 

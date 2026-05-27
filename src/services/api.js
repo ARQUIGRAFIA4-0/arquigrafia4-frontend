@@ -431,10 +431,12 @@ const requestJoinCollective = async (authHeader, id) => {
     });
   } catch (error) {
     const status = error.response?.status;
-    const message =
-      status === 422
-        ? error.response?.data?.message || "Você já possui uma solicitação pendente para este coletivo."
-        : "Não foi possível enviar a solicitação.";
+    let message;
+    if (status === 422) {
+      message = error.response?.data?.message || "Não foi possível realizar esta ação.";
+    } else {
+      message = "Não foi possível enviar a solicitação.";
+    }
     const err = new Error(message);
     err.status = status;
     throw err;
@@ -460,8 +462,7 @@ const leaveCollective = async (authHeader, collectiveId, userId) => {
     const status = error.response?.status;
     let message;
     if (status === 422) {
-      message = error.response?.data?.message ||
-        "Você é o único administrador do coletivo. Transfira a administração antes de sair.";
+      message = error.response?.data?.message || "Não foi possível realizar esta ação.";
     } else if (status === 403) {
       message = "Você não tem permissão para realizar esta ação.";
     } else {
@@ -536,9 +537,10 @@ const removeMember = async (authHeader, collectiveId, userId) => {
   } catch (error) {
     const status = error.response?.status;
     let message;
-    if (status === 422) {
-      message = error.response?.data?.message ||
-        "Não é possível remover o último administrador do coletivo.";
+    if (status === 404) {
+      message = "Este participante não faz mais parte do coletivo.";
+    } else if (status === 422) {
+      message = error.response?.data?.message || "Não foi possível realizar esta ação.";
     } else if (status === 403) {
       message = "Você não tem permissão para realizar esta ação.";
     } else {
@@ -579,6 +581,86 @@ const promoteMemberToAdmin = async (authHeader, collectiveId, userId) => {
   }
 };
 
+/**
+ * Atualiza o papel (role) de um membro no coletivo.
+ * @param {string} authHeader
+ * @param {string} collectiveId
+ * @param {string} userId
+ * @param {"admin"|"member"} role
+ * @returns {Promise<void>}
+ */
+const updateMemberRole = async (authHeader, collectiveId, userId, role) => {
+  try {
+    await axios.put(
+      `/api/collectives/${collectiveId}/members/${userId}`,
+      { role },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authHeader,
+        },
+      }
+    );
+  } catch (error) {
+    const status = error.response?.status;
+    let message;
+    if (status === 422) {
+      message = error.response?.data?.message || "Não foi possível realizar esta ação.";
+    } else if (status === 403) {
+      message = "Você não tem permissão para realizar esta ação.";
+    } else {
+      message = error.response?.data?.message || "Não foi possível atualizar o papel do membro.";
+    }
+    const err = new Error(message);
+    err.status = status;
+    throw err;
+  }
+};
+
+/**
+ * Busca as solicitações de entrada pendentes de um coletivo
+ */
+const getJoinRequests = async (authHeader, collectiveId) => {
+  try {
+    const response = await axios.get(`/api/collectives/${collectiveId}/join-requests`, {
+      headers: { "Authorization": authHeader },
+    });
+    return response.data.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Não foi possível carregar as solicitações pendentes."
+    );
+  }
+};
+
+/**
+ * Aprova ou recusa uma solicitação de entrada no coletivo.
+ * @param {"approve"|"reject"} action
+ */
+const handleJoinRequest = async (authHeader, collectiveId, userId, action) => {
+  try {
+    const response = await axios.put(
+      `/api/collectives/${collectiveId}/join-requests/${userId}`,
+      { action },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authHeader,
+        },
+      }
+    );
+    return { alreadyProcessed: false, data: response.data?.data ?? null };
+  } catch (error) {
+    if (error.response?.status === 404) {
+      // A solicitação já foi processada (ex: solicitante cancelou). Trata como sucesso.
+      return { alreadyProcessed: true, data: null };
+    }
+    throw new Error(
+      error.response?.data?.message || "Não foi possível processar a solicitação."
+    );
+  }
+};
+
 export const api = {
   getImages: fetchImages,
   getGeoJSON,
@@ -596,4 +678,7 @@ export const api = {
   updateCollective,
   removeMember,
   promoteMemberToAdmin,
+  updateMemberRole,
+  getJoinRequests,
+  handleJoinRequest,
 };

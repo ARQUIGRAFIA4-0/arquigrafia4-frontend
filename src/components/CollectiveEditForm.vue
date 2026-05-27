@@ -298,14 +298,23 @@ async function handleSubmit() {
         },
       }
     );
-    router.push({ name: 'collective-detail', params: { id: props.collectiveData.id } });
+    displayAlert('Alterações salvas com sucesso!', 'success');
+    scrollToTop();
+    setTimeout(() => {
+      router.push({ name: 'collective-detail', params: { id: props.collectiveData.id } });
+    }, 1500);
   } catch (error) {
-    const apiErrors = error.response?.data?.errors;
-    if (apiErrors) {
-      const firstError = Object.values(apiErrors)[0]?.[0];
-      displayAlert(firstError || 'Erro ao salvar alterações.');
+    const status = error.response?.status;
+    if (status === 403) {
+      displayAlert('Você não tem permissão para editar este coletivo.');
     } else {
-      displayAlert(error.response?.data?.message || 'Erro inesperado. Tente novamente.');
+      const apiErrors = error.response?.data?.errors;
+      if (apiErrors) {
+        const firstError = Object.values(apiErrors)[0]?.[0];
+        displayAlert(firstError || 'Erro ao salvar alterações.');
+      } else {
+        displayAlert(error.response?.data?.message || 'Erro inesperado. Tente novamente.');
+      }
     }
     scrollToTop();
     console.error('[CollectiveEditForm] handleSubmit error:', error);
@@ -323,14 +332,14 @@ function handleCancel() {
   <!-- Alerta -->
   <div
     v-if="showAlert"
-    :class="['alert', 'fs-6', alertType === 'success' ? 'bg-positivo-e' : 'bg-negativo-e', 'text-white', 'mb-3', 'd-flex', 'align-items-center', 'justify-content-between', 'auth-alert']"
+      :class="['alert', 'fs-6', alertType === 'success' ? 'alert-positivo' : 'alert-negativo', 'mb-3', 'd-flex', 'align-items-center', 'justify-content-between']"
     role="alert"
   >
     <div class="d-flex align-items-center gap-2">
       <i :class="alertType === 'success' ? 'bi bi-check-all' : 'bi bi-exclamation-triangle-fill'"></i>
       <span>{{ alertMessage }}</span>
     </div>
-    <button type="button" class="btn-close text-white" @click="closeAlert" aria-label="Fechar"></button>
+    <button type="button" class="btn-close" @click="closeAlert" aria-label="Fechar"></button>
   </div>
 
   <form @submit.prevent="handleSubmit" class="collective-form">

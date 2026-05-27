@@ -25,6 +25,7 @@ const loadStartedAt = ref(Date.now());
 const showFullProfile = ref(false);
 const joinRequested = ref(false);
 const joinError = ref("");
+const joinSuccess = ref("");
 const inviteCopied = ref(false);
 const actionError = ref("");
 const leaveLoading = ref(false);
@@ -58,12 +59,11 @@ watch(
 async function handleJoinRequest() {
   if (joinRequested.value) return;
   joinError.value = "";
+  joinSuccess.value = "";
   const result = await collectivesStore.requestJoin(props.collectiveData.id);
-  if (result.success || result.alreadyRequested) {
+  if (result.success) {
     joinRequested.value = true;
-    if (result.alreadyRequested) {
-      joinError.value = result.message;
-    }
+    joinSuccess.value = "Solicitação enviada! Aguarde a aprovação de um administrador.";
   } else {
     joinError.value = result.message;
   }
@@ -200,17 +200,36 @@ async function handleLeave() {
         <!-- Ações condicionais -->
         <div class="collective-card__actions">
           <!-- Feedbacks globais -->
-          <div v-if="inviteCopied" class="alert alert-success py-1 px-2 small" role="alert">
-            Link copiado! Compartilhe com quem quiser convidar.
+          <div v-if="inviteCopied" class="alert alert-positivo d-flex align-items-center justify-content-between py-2 px-2 small" role="alert">
+            <div class="d-flex align-items-center gap-3">
+              <i class="bi bi-check-all"></i>
+              <span>Link copiado! Pronto para compartilhar.</span>
+            </div>
+            <button type="button" class="btn-close btn-sm" @click="inviteCopied = false" aria-label="Fechar" />
           </div>
-          <div v-if="actionError" class="alert alert-danger py-1 px-2 small" role="alert">
-            {{ actionError }}
+          <div v-if="actionError" class="alert alert-negativo d-flex align-items-center justify-content-between py-2 px-2 small" role="alert">
+            <div class="d-flex align-items-center gap-3">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <span>{{ actionError }}</span>
+            </div>
+            <button type="button" class="btn-close btn-sm" @click="actionError = ''" aria-label="Fechar" />
           </div>
 
           <!-- Usuário logado, não membro -->
           <template v-if="isLoggedIn && userRole === null">
-            <div v-if="joinError" class="alert alert-warning py-1 px-2 small" role="alert">
-              {{ joinError }}
+            <div v-if="joinSuccess" class="alert alert-positivo d-flex align-items-center justify-content-between py-2 px-2 small" role="alert">
+              <div class="d-flex align-items-center gap-3">
+                <i class="bi bi-check-all"></i>
+                <span>{{ joinSuccess }}</span>
+              </div>
+              <button type="button" class="btn-close btn-sm" @click="joinSuccess = ''" aria-label="Fechar" />
+            </div>
+            <div v-if="joinError" class="alert alert-negativo d-flex align-items-center justify-content-between py-2 px-2 small" role="alert">
+              <div class="d-flex align-items-center gap-3">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>{{ joinError }}</span>
+              </div>
+              <button type="button" class="btn-close btn-sm" @click="joinError = ''" aria-label="Fechar" />
             </div>
             <button
               class="btn btn-primary btn-sm w-100"

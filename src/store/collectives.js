@@ -81,11 +81,7 @@ export const useCollectivesStore = defineStore("collectives", () => {
       await api.requestJoinCollective(authStore.authHeader, id);
       return { success: true };
     } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-        alreadyRequested: error.status === 422,
-      };
+      return { success: false, message: error.message };
     }
   }
 
@@ -148,6 +144,9 @@ export const useCollectivesStore = defineStore("collectives", () => {
       const data = await api.removeMember(authStore.authHeader, collectiveId, userId);
       return { success: true, data };
     } catch (error) {
+      if (error.status === 404) {
+        return { success: false, notFound: true, message: error.message };
+      }
       return { success: false, message: error.message };
     }
   }
@@ -171,5 +170,70 @@ export const useCollectivesStore = defineStore("collectives", () => {
     }
   }
 
-  return { isLoading, createCollective, getCollective, requestJoin, leaveCollective, updateCollective, removeMember, promoteMemberToAdmin };
+  /**
+   * Atualiza o papel (role) de um membro no coletivo.
+   * @param {string} collectiveId
+   * @param {string} userId
+   * @param {"admin"|"member"} role
+   * @returns {{ success: boolean, message?: string }}
+   */
+  async function updateMemberRole(collectiveId, userId, role) {
+    const authStore = useAuthStore();
+    if (!authStore.isLoggedIn) {
+      return { success: false, message: "Você precisa estar logado para realizar esta ação." };
+    }
+    try {
+      await api.updateMemberRole(authStore.authHeader, collectiveId, userId, role);
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  /**
+   * Busca as solicitações de entrada pendentes de um coletivo.
+   */
+  async function getJoinRequests(collectiveId) {
+    const authStore = useAuthStore();
+    if (!authStore.isLoggedIn) {
+      return { success: false, message: "Você precisa estar logado para realizar esta ação." };
+    }
+    try {
+      const data = await api.getJoinRequests(authStore.authHeader, collectiveId);
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  /**
+   * Aprova ou recusa uma solicitação de entrada no coletivo.
+   * @param {"approve"|"reject"} action
+   */
+  async function handleJoinRequest(collectiveId, userId, action) {
+    const authStore = useAuthStore();
+    if (!authStore.isLoggedIn) {
+      return { success: false, message: "Você precisa estar logado para realizar esta ação." };
+    }
+    try {
+      const result = await api.handleJoinRequest(authStore.authHeader, collectiveId, userId, action);
+      return { success: true, alreadyProcessed: result.alreadyProcessed };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  return {
+    isLoading,
+    createCollective,
+    getCollective,
+    requestJoin,
+    leaveCollective,
+    updateCollective,
+    removeMember,
+    promoteMemberToAdmin,
+    updateMemberRole,
+    getJoinRequests,
+    handleJoinRequest,
+  };
 });

@@ -7,6 +7,7 @@ import CollectiveCard from "@/components/CollectiveCard.vue";
 import CollectiveNav from "@/components/CollectiveNav.vue";
 import CollectiveImages from "@/components/CollectiveImages.vue";
 import CollectiveMembers from "@/components/CollectiveMembers.vue";
+import CollectiveRequests from "@/components/CollectiveRequests.vue";
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -56,6 +57,14 @@ function handleMembersUpdated(newMembers) {
     collectiveData.value = { ...collectiveData.value, members: newMembers };
   }
 }
+
+async function handleRequestApproved() {
+  // Recarrega collectiveData para manter a lista de membros atualizada
+  const result = await collectivesStore.getCollective(route.params.id);
+  if (result.success) {
+    collectiveData.value = result.data;
+  }
+}
 </script>
 
 <template>
@@ -80,7 +89,7 @@ function handleMembersUpdated(newMembers) {
       <!-- Conteúdo principal (abas) -->
       <div class="col-12 col-md-8">
         <div class="collective-container__content">
-          <CollectiveNav :selected="selectedTab" @select="selectedTab = $event" />
+          <CollectiveNav :selected="selectedTab" :userRole="userRole" @select="selectedTab = $event" />
           <CollectiveImages
             v-if="selectedTab === 'Imagens'"
             :collectiveId="collectiveData?.id ?? null"
@@ -94,6 +103,11 @@ function handleMembersUpdated(newMembers) {
             :userRole="userRole"
             :currentUserId="currentUser?.id"
             @update:members="handleMembersUpdated"
+          />
+          <CollectiveRequests
+            v-else-if="selectedTab === 'Solicitações' && userRole === 'admin'"
+            :collectiveId="String(collectiveData?.id ?? '')"
+            @request-approved="handleRequestApproved"
           />
         </div>
       </div>
