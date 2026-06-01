@@ -116,6 +116,13 @@ async function handleSubmit() {
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
+$breakpoint-md: 770px;
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
 
 /* block */
 .arch-reads {
@@ -181,14 +188,28 @@ async function handleSubmit() {
   &__sliders {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 40px;
     margin-bottom: 64px;
+    margin-top: 28px;
+
+    @include md {
+      gap: 24px;
+    }
   }
 
   &__row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 12px;
+    /* gap: 4px 12px; */
+    /* gap: 24px; */
+    position: relative;
+
+    @include md {
+      flex-wrap: nowrap; // volta a linha única no desktop
+      /* gap: 12px; */
+      gap: 4px 12px;
+    }
   }
 
   /* labels */
@@ -200,21 +221,48 @@ async function handleSubmit() {
     white-space: nowrap;
     min-width: 88px;
     flex-shrink: 0;
+    transition: color 0.2s ease;
+    position: absolute;
+    /* transform: translateY(-50%); */
 
     &--left {
       text-align: left;
+      flex: 1;
+      top: -30px;
+      left: 0;
+
+      @include md {
+        flex: 0 0 auto;
+      }
     }
 
     &--right {
-      text-align: left;
+      text-align: right;
+      flex: 1;
+      top: -30px;
+      right: 0;
+
+      @include md {
+        flex: 0 0 auto;
+        text-align: left;
+      }
+    }
+
+    @include md {
+      position: static;
     }
   }
 
   /* range track wrapper */
   &__track-wrapper {
-    flex: 1;
+    /* flex: 1; */
+    flex: 0 0 100%;
     display: flex;
     align-items: center;
+
+    @include md {
+      flex: 1; // volta a ficar entre os labels
+    }
   }
 
   /* native range input – cross-browser reset */
@@ -222,7 +270,7 @@ async function handleSubmit() {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 3px;
+    height: 6px;
     background: var(--Cinza_C);
     border-radius: 10px;
     outline: none;
@@ -237,7 +285,7 @@ async function handleSubmit() {
       height: 0.875rem;
       border-radius: 50%;
       background: var(--Cinza_E);
-      border: none;
+      border: 4px solid var(--Preto);
       cursor: pointer;
       transition: transform 0.15s ease, background 0.15s ease;
     }
