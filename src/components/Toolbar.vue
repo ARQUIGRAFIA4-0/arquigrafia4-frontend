@@ -21,7 +21,13 @@
         />
       </button>
 
-      <div class="toolbar-acervo__collection-inner">
+      <button
+        type="button"
+        class="toolbar-acervo__collection-inner"
+        aria-label="Adicionar à coleção"
+        title="Adicionar à coleção"
+        @click="confirmAddToCollection"
+      >
         <img
           src="@/assets/icons/toolbar-gallery.svg"
           alt=""
@@ -34,21 +40,11 @@
           Adicionar à coleção
         </span>
 
-        <button
-          type="button"
-          class="toolbar-acervo__icon-btn toolbar-acervo__icon-btn--arrow"
-          aria-label="Continuar adicionando à coleção"
-          title="Continuar"
-          @click="confirmAddToCollection"
-        >
-          <img
-            src="@/assets/icons/toolbar-arrow-next.svg"
-            alt=""
-            width="22"
-            height="15"
-          />
-        </button>
-      </div>
+        <span
+          class="toolbar-acervo__collection-arrow"
+          aria-hidden="true"
+        ></span>
+      </button>
     </div>
 
     <!-- Modo normal -->
@@ -935,13 +931,34 @@ function onViewSubcontrol() {
   align-items: center;
   gap: var(--m, 16px);
   border-radius: 6px;
+  border: 0;
   background: var(--Off_white, #faf9f9);
+  cursor: pointer;
+}
+
+.toolbar-acervo__collection-inner:hover {
+  opacity: 0.9;
+}
+
+.toolbar-acervo__collection-inner:focus-visible {
+  outline: 2px solid var(--Laranja_E, #aa4f28);
+  outline-offset: 2px;
+}
+
+.toolbar-acervo__collection-arrow {
+  display: block;
+  flex-shrink: 0;
+  width: 22px;
+  height: 15px;
+  background-color: var(--Laranja_E, #aa4f28);
+  -webkit-mask: url("@/assets/icons/toolbar-arrow-next.svg") no-repeat center / contain;
+  mask: url("@/assets/icons/toolbar-arrow-next.svg") no-repeat center / contain;
 }
 
 .toolbar-acervo__collection-label {
-  color: var(--Cinza_M, #636262);
+  color: var(--Laranja_E, #aa4f28);
   font-family: "DM Sans", sans-serif;
-  font-size: 20px;
+  font-size: 16px;
   font-style: normal;
   font-weight: 500;
   line-height: 150%;

@@ -31,7 +31,12 @@
 
       <template v-else-if="viewMode === 'grid'">
         <div class="container-grid" data-cy="view-grid">
-          <view-grid :search="activeSearch" @no-results="handleNoResults" />
+          <view-grid
+            :search="activeSearch"
+            :selection-mode="isAddToCollectionMode"
+            v-model:selected-images="selectedGridImages"
+            @no-results="handleNoResults"
+          />
         </div>
       </template>
 
@@ -127,6 +132,7 @@ const activeTab = computed(() => {
 const viewSelection = ref(viewRouteToSelection(route.params.viewMode));
 const viewMode = computed(() => selectionToViewMode(viewSelection.value));
 const isAddToCollectionMode = ref(false);
+const selectedGridImages = ref([]);
 
 const { searchMode, loadSnapshot, setSearchMode, submitSearch } =
   useSearchQuery();
@@ -149,6 +155,7 @@ const mapSettings = ref(normalizeMapSettings(mapSettingsQuery.value));
 watch(viewMode, (mode) => {
   if (mode !== "grid") {
     isAddToCollectionMode.value = false;
+    selectedGridImages.value = [];
   }
 });
 
@@ -345,10 +352,19 @@ function handleAddToCollectionOpen() {
 
 function handleAddToCollectionClose() {
   isAddToCollectionMode.value = false;
+  selectedGridImages.value = [];
 }
 
 function handleAddToCollectionConfirm() {
-  // próximo passo: abrir modal / confirmar coleção
+  if (selectedGridImages.value.length === 0) return;
+
+  const payload = {
+    images: selectedGridImages.value,
+    imageIds: selectedGridImages.value.map((img) => img.id),
+  };
+
+  console.log("teste:", payload);
+  // Etapa 6: abrir AlbumPickerModal
 }
 
 function handleToolbarConfirm({ mode, value }) {
