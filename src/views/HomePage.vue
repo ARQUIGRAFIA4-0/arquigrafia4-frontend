@@ -62,7 +62,10 @@
             @update:color="handleColorUpdate" @update:map-settings="handleMapSettingsUpdate"
             @view-change="handleViewChange" @view-subcontrol="handleToolbarViewSubcontrol"
             @open-advanced-search="openAdvancedSearch" @confirm="handleToolbarConfirm" @remove-chip="handleRemoveChip"
-            @remove-url-chip="handleRemoveUrlChip" @clear-all-filters="handleClearAllFilters" />
+            @remove-url-chip="handleRemoveUrlChip" @clear-all-filters="handleClearAllFilters"
+            @add-to-collection-open="handleAddToCollectionOpen"
+            @add-to-collection-close="handleAddToCollectionClose"
+            @add-to-collection-confirm="handleAddToCollectionConfirm" />
         </template>
       </div>
 
@@ -123,6 +126,7 @@ const activeTab = computed(() => {
 });
 const viewSelection = ref(viewRouteToSelection(route.params.viewMode));
 const viewMode = computed(() => selectionToViewMode(viewSelection.value));
+const isAddToCollectionMode = ref(false);
 
 const { searchMode, loadSnapshot, setSearchMode, submitSearch } =
   useSearchQuery();
@@ -141,6 +145,12 @@ function normalizeMapSettings(value) {
 
 const mapSettings = ref(normalizeMapSettings(mapSettingsQuery.value));
 
+
+watch(viewMode, (mode) => {
+  if (mode !== "grid") {
+    isAddToCollectionMode.value = false;
+  }
+});
 
 watch(
   mapSettingsQuery,
@@ -327,6 +337,18 @@ function navigateToRede() {
 function handleViewChange({ selection }) {
   viewSelection.value = selection;
   updateRoute(selection);
+}
+
+function handleAddToCollectionOpen() {
+  isAddToCollectionMode.value = true;
+}
+
+function handleAddToCollectionClose() {
+  isAddToCollectionMode.value = false;
+}
+
+function handleAddToCollectionConfirm() {
+  // próximo passo: abrir modal / confirmar coleção
 }
 
 function handleToolbarConfirm({ mode, value }) {

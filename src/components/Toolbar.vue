@@ -1,6 +1,59 @@
 <template>
-  <div id="toolbar" class="d-flex flex-row justify-content-between gap-4">
-    <div id="view-mode-container" class="d-flex align-items-center rounded-3 bg-white gap-2">
+  <div id="toolbar" class="toolbar-acervo">
+    <!-- Modo: Adicionar à coleção -->
+    <div
+      v-if="isAddToCollectionMode"
+      class="toolbar-acervo__panel toolbar-acervo__panel--collection"
+    >
+      <button
+        type="button"
+        class="toolbar-acervo__icon-btn"
+        aria-label="Fechar modo adicionar à coleção"
+        title="Fechar"
+        @click="closeAddToCollectionMode"
+      >
+        <img
+          src="@/assets/icons/toolbar-close.svg"
+          alt=""
+          width="25"
+          height="25"
+          class="toolbar-acervo__icon-btn-image"
+        />
+      </button>
+
+      <div class="toolbar-acervo__collection-inner">
+        <img
+          src="@/assets/icons/toolbar-gallery.svg"
+          alt=""
+          width="24"
+          height="24"
+          class="toolbar-acervo__gallery-icon"
+        />
+
+        <span class="toolbar-acervo__collection-label">
+          Adicionar à coleção
+        </span>
+
+        <button
+          type="button"
+          class="toolbar-acervo__icon-btn toolbar-acervo__icon-btn--arrow"
+          aria-label="Continuar adicionando à coleção"
+          title="Continuar"
+          @click="confirmAddToCollection"
+        >
+          <img
+            src="@/assets/icons/toolbar-arrow-next.svg"
+            alt=""
+            width="22"
+            height="15"
+          />
+        </button>
+      </div>
+    </div>
+
+    <!-- Modo normal -->
+    <template v-else>
+    <div id="view-mode-container" class="toolbar-acervo__panel d-flex align-items-center gap-2">
       <div class="dropdown dropup">
         <button id="view-mode-dropdown" class="btn btn-icon dropdown-toggle caret-right" type="button"
           data-bs-toggle="dropdown" data-bs-offset="0,16" aria-expanded="false">
@@ -25,7 +78,7 @@
         <i :class="['bi', currentViewSubcontrol.icon]" />
       </button>
     </div>
-    <div id="search-mode-container" class="d-flex align-items-center p-2 px-3 rounded-3 gap-3 flex-fill bg-white">
+    <div id="search-mode-container" class="toolbar-acervo__panel toolbar-acervo__panel--search d-flex align-items-center gap-3 flex-fill">
       <div class="dropdown dropup">
         <button id="search-mode-dropdown" class="btn btn-icon dropdown-toggle caret-right pe-2" type="button"
           data-bs-toggle="dropdown" data-bs-offset="0,16" aria-expanded="false" :disabled="hasActiveUrlFilter"
@@ -128,6 +181,29 @@
         <i :class="['bi', primaryActionIcon]" />
       </button>
     </div>
+
+    <div
+      v-if="isGridView"
+      id="gallery-mode-container"
+      class="toolbar-acervo__panel toolbar-acervo__panel--gallery"
+    >
+      <button
+        type="button"
+        class="toolbar-acervo__gallery-btn"
+        aria-label="Adicionar à coleção"
+        title="Adicionar à coleção"
+        @click="openAddToCollectionMode"
+      >
+        <img
+          src="@/assets/icons/toolbar-gallery.svg"
+          alt=""
+          width="24"
+          height="24"
+          class="toolbar-acervo__gallery-icon"
+        />
+      </button>
+    </div>
+    </template>
   </div>
 </template>
 
@@ -196,6 +272,10 @@ const emit = defineEmits([
   "remove-chip",
   "remove-url-chip",
   "clear-all-filters",
+  "gallery-click",
+  "add-to-collection-open",
+  "add-to-collection-close",
+  "add-to-collection-confirm",
 ]);
 
 // Detecta se há filtro de URL ativo
@@ -279,6 +359,30 @@ const colorHex = computed(() => hslToHex(Number(hue.value), 100, 50));
 
 const currentSearchMode = computed(() => props.searchMode || "textual");
 const currentViewSelection = computed(() => props.viewSelection || "grid");
+const isGridView = computed(() => currentViewSelection.value === "grid");
+
+const isAddToCollectionMode = ref(false);
+
+function openAddToCollectionMode() {
+  isAddToCollectionMode.value = true;
+  emit("gallery-click");
+  emit("add-to-collection-open");
+}
+
+function closeAddToCollectionMode() {
+  isAddToCollectionMode.value = false;
+  emit("add-to-collection-close");
+}
+
+function confirmAddToCollection() {
+  emit("add-to-collection-confirm");
+}
+
+watch(isGridView, (grid) => {
+  if (!grid) {
+    isAddToCollectionMode.value = false;
+  }
+});
 
 const viewOptionsList = computed(() => viewOptions());
 
@@ -657,10 +761,62 @@ function onViewSubcontrol() {
 </script>
 
 <style scoped>
-#toolbar #view-mode-container,
-#toolbar #search-mode-container {
-  box-shadow: var(--shadow-elevation-medium);
-  padding: 12px;
+.toolbar-acervo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+}
+
+.toolbar-acervo__panel {
+  display: flex;
+  height: 56px;
+  padding: var(--p, 12px) var(--m, 16px);
+  align-items: center;
+  gap: var(--m, 16px);
+  border-radius: 6px;
+  background: var(--Off_white, #faf9f9);
+  box-shadow: 4px 4px 20px 4px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+}
+
+.toolbar-acervo__panel--search {
+  padding: var(--ppp, 4px) var(--pp, 8px);
+  min-width: 0;
+}
+
+.toolbar-acervo__panel--gallery {
+  flex: 0 0 auto;
+  justify-content: center;
+  padding: var(--p, 12px) var(--m, 16px);
+}
+
+.toolbar-acervo__gallery-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.toolbar-acervo__gallery-btn:hover {
+  opacity: 0.85;
+}
+
+.toolbar-acervo__gallery-btn:focus-visible {
+  outline: 2px solid var(--Laranja_E, #aa4f28);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.toolbar-acervo__gallery-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
 }
 
 #toolbar #confirm-search {
@@ -765,5 +921,66 @@ function onViewSubcontrol() {
   background-color: #D27D30;
   pointer-events: none;
   border: 2px solid var(--Branco);
+}
+
+.toolbar-acervo__panel--collection {
+  gap: 20px;
+  width: 100%;
+  max-width: fit-content;
+}
+
+.toolbar-acervo__collection-inner {
+  display: flex;
+  padding: var(--ppp, 4px) var(--pp, 8px);
+  align-items: center;
+  gap: var(--m, 16px);
+  border-radius: 6px;
+  background: var(--Off_white, #faf9f9);
+}
+
+.toolbar-acervo__collection-label {
+  color: var(--Cinza_M, #636262);
+  font-family: "DM Sans", sans-serif;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 150%;
+  white-space: nowrap;
+}
+
+.toolbar-acervo__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toolbar-acervo__icon-btn--arrow {
+  width: auto;
+  height: auto;
+  aspect-ratio: auto;
+}
+
+.toolbar-acervo__icon-btn:hover {
+  opacity: 0.85;
+}
+
+.toolbar-acervo__icon-btn:focus-visible {
+  outline: 2px solid var(--Laranja_E, #aa4f28);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.toolbar-acervo__icon-btn-image {
+  display: block;
+  width: 25px;
+  height: 25px;
 }
 </style>
