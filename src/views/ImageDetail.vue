@@ -42,7 +42,11 @@
           <ImageComments :image-url="image?.imageUrl" />
         </div>
 
-        <ImageInterpretations v-else-if="currentSection === 'interpretacoes'" @submit="handleSpecSubmit" />
+        <ImageInterpretations 
+          v-else-if="currentSection === 'interpretacoes'" 
+          @submit="handleSpecSubmit"  
+          :image-id="image?.id"
+        />
 
         <div v-else class="text-muted small">
           <!--  -->
