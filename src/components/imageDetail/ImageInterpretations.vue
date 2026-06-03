@@ -27,17 +27,43 @@
         <span class="arch-reads__label arch-reads__label--left">{{ pair.left }}</span>
 
         <div class="arch-reads__track-wrapper">
-          <input 
-            type="range" 
-            class="arch-reads__range" 
-            :id="`spec-${pair.id}`" 
-            min="0" 
-            max="100" 
-            step="1"
-            v-model.number="pair.value" 
-            :disabled="!isLoggedIn" 
-            :aria-label="`${pair.left} / ${pair.right}`" 
-          />
+
+          <!-- ── custom track ──────────────────────────────────────────── -->
+          <div class="arch-reads__track" :class="{ 'arch-reads__track--submitted': submitted }">
+
+            <!-- outros usuários: um ponto por avaliação -->
+            <span
+              v-for="(val, i) in pair.othersValues"
+              :key="i"
+              class="arch-reads__dot arch-reads__dot--other"
+              :style="{ left: val + '%' }"
+              :title="'Avaliação de outro usuário: ' + val"
+            />
+
+            <!-- thumb do usuário logado (laranja) — só quando já avaliou -->
+            <span
+              v-if="submitted && pair.myValue !== null"
+              class="arch-reads__dot arch-reads__dot--mine"
+              :style="{ left: pair.myValue + '%' }"
+              :title="'Sua avaliação: ' + pair.myValue"
+            />
+
+            <!-- input nativo — visível apenas antes de enviar -->
+            <input
+              v-if="!submitted"
+              type="range"
+              class="arch-reads__range"
+              :id="`spec-${pair.binomialId}`"
+              min="0"
+              max="100"
+              step="1"
+              v-model.number="pair.value"
+              :disabled="!isLoggedIn"
+              :aria-label="`${pair.left} / ${pair.right}`"
+            />
+          </div>
+          <!-- ─────────────────────────────────────────────────────────── -->
+
         </div>
 
         <span class="arch-reads__label arch-reads__label--right">
@@ -51,16 +77,19 @@
 
     <!-- Submit -->
     <div class="arch-reads__footer">
-      <button 
+      <button
+        v-if="!submitted"
         class="arch-reads__submit btn w-100" 
-        :disabled="!isLoggedIn || submitting || submitted"
-        @click="handleSubmit" v-if="!submitted"
+        :disabled="!isLoggedIn || submitting || loading"
+        @click="handleSubmit" 
       >
         <span v-if="submitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
         <span v-if="submitting">Enviando...</span>
         <span v-else>Enviar avaliação</span>
       </button>
-      <span v-else class="arch-reads__submit--success"><i class="bi bi-check-all"></i> Avaliação enviada</span>
+      <span v-else class="arch-reads__submit--success">
+        <i class="bi bi-check-all"></i> Avaliação enviada
+      </span>
     </div>
 
     <!-- Info box -->
@@ -75,6 +104,7 @@
         parecidas entre os usuários.
       </p>
     </div>
+
   </div>
 </template>
 
@@ -83,19 +113,15 @@ import { ref, computed, watch } from 'vue';
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import axios from 'axios'
-// import { useCommentStore } from '@/store/commentStore'
-// import { useAuthStore } from '@/store/auth'
 
 defineOptions({ name: 'ImageInterpretations' })
 
 const props = defineProps({
   imageId: {
     type: [String, Number],
-    required: true,
+    default: null,
   },
 })
-console.log( 'ImageInterpretations props:', props);
-
 
 const emit = defineEmits(['submit'])
 
@@ -112,7 +138,7 @@ const error      = ref(null)
 watch( 
   () => props.imageId,
     (id) => {
-      if (!id) return  // ← ignora o disparo com undefined
+      if (!id) return 
       fetchBinomials()
       error.value = null
     },
@@ -121,35 +147,46 @@ watch(
 
 async function fetchBinomials() {
   if (!props.imageId) return
-
   loading.value = true
   error.value   = null
 
   try {
-    // GET /api/images/{image}/binomials/evaluations
-    const { data } = await axios.get(`api/images/${props.imageId}/binomials/evaluations`)
+    const [respBinomials, respEvaluations] = await Promise.all([
+      axios.get(`/api/images/${props.imageId}/binomials`),
+      axios.get(`/api/images/${props.imageId}/binomials/evaluations`),
+    ])
     
-    // { binomials: [...], evaluations: [...] }
-    const binomials   = data.binomials  ?? []
-    const evaluations = data.evaluations ?? []
+    const binomials   = respBinomials.data.data  ?? []
+    const evaluations = respEvaluations.data.evaluations ?? []
 
-    // index saved values by binomial_id for O(1) lookup
-    const savedValues = Object.fromEntries(
-      evaluations.map(e => [e.binomial_id, e.value])
+    // my_value vem por binômio — null se nunca avaliou
+    const myValuesMap = Object.fromEntries(
+      binomials.map(b => [String(b.id), b.my_value ?? null])
     )
+
+    const userAlreadyEvaluated = binomials.some(b => b.my_value !== null)
 
     pairs.value = binomials
       .slice()
       .sort((a, b) => a.order - b.order)
-      .map(b => ({
-        binomialId: b.id,
-        left:  b.word_left,
-        right: b.word_right,
-        value: savedValues[b.id] ?? 50,
-      }))
+      .map(b => {
+        const bid     = String(b.id)
+        const myValue = myValuesMap[bid]
 
-    // if the user already has saved evaluations, reflect that on the button
-    if (evaluations.length > 0) {
+        return {
+          binomialId:   b.id,
+          left:         b.word_left,
+          right:        b.word_right,
+          value:        myValue ?? 50,   // posição inicial do range nativo
+          myValue,                        // dot laranja após envio
+          // pontos azuis — um por avaliador (todos, pois my_value já separa o usuário logado)
+          othersValues: evaluations
+            .map(e => e.values?.[bid])
+            .filter(v => v !== undefined && v !== null),
+        }
+      })
+
+    if (userAlreadyEvaluated) {
       submitted.value = true
     }
   } catch (err) {
@@ -185,6 +222,8 @@ async function handleSubmit() {
     }
     )
 
+    pairs.value = pairs.value.map(p => ({ ...p, myValue: p.value }))
+
     submitted.value = true
     emit('submit', data)
   } catch (err) {
@@ -199,6 +238,16 @@ async function handleSubmit() {
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
 $breakpoint-md: 770px;
+
+$track-color:   #d1d5db;
+$track-height:  6px;
+$thumb-color:   #1a1a1a;
+$thumb-size:    14px;
+$label-width:   88px;
+
+$dot-other-color: #57b8e8;       // azul claro
+$dot-mine-color:  #e07b2a;       // laranja
+$dot-size:        12px;
 
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
@@ -360,6 +409,51 @@ $breakpoint-md: 770px;
     }
   }
 
+  // Acts as the visual rail; dots and native input sit inside it.
+  &__track {
+    position: relative;
+    width: 100%;
+    height: $track-height;
+    background: $track-color;
+    border-radius: 999px;
+
+    // native range is stretched over the track
+    input[type="range"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    &--submitted {
+        background: var(--Azul_C);
+      }
+  }
+
+  // ── dots (other users + mine) ─────────────────────────────────────────────
+  &__dot {
+    position: absolute;
+    top: 50%;
+    width:  $dot-size;
+    height: $dot-size;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+
+    &--other {
+      background: var(--Azul_C);
+    }
+
+    &--mine {
+      width:  $thumb-size;
+      height: $thumb-size;
+      background: $dot-mine-color;
+      border: 2px solid rgba(224, 124, 42, 0.185);
+      z-index: 2;
+    }
+  }
+
   /* native range input – cross-browser reset */
   &__range {
     -webkit-appearance: none;
@@ -371,58 +465,44 @@ $breakpoint-md: 770px;
     outline: none;
     cursor: pointer;
     margin: 0;
+    z-index: 1;
 
-    /* ---- thumb: webkit */
+    &::-webkit-slider-runnable-track {
+      height: 6px;
+      background: transparent;
+      border-radius: 999px;
+    }
+
     &::-webkit-slider-thumb {
       -webkit-appearance: none;
-      appearance: none;
-      width: 0.875rem;
-      height: 0.875rem;
+      width:  $thumb-size;
+      height: $thumb-size;
       border-radius: 50%;
-      background: var(--Cinza_E);
-      border: 4px solid var(--Preto);
-      cursor: pointer;
-      transition: transform 0.15s ease, background 0.15s ease;
-    }
-
-    /* ---- thumb: firefox */
-    &::-moz-range-thumb {
-      width: 0.875rem;
-      height: 0.875rem;
-      border-radius: 50%;
-      background: var(--Cinza_E);
+      background: $thumb-color;
       border: none;
-      cursor: pointer;
-      transition: transform 0.15s ease, background 0.15s ease;
+      margin-top: calc((#{$track-height} - #{$thumb-size}) / 2);
+      transition: transform 0.15s ease;
     }
 
-    /* ---- track: firefox */
     &::-moz-range-track {
-      background: var(--Cinza_M);
-      height: 3px;
-      border-radius: 10px;
+      height: $track-height;
+      background: transparent;
+      border-radius: 999px;
     }
 
-    /* hover / focus states */
-    &:hover,
-    &:focus-visible {
-      &::-webkit-slider-thumb {
-        transform: scale(1.25);
-      }
-
-      &::-moz-range-thumb {
-        transform: scale(1.25);
-      }
+    &::-moz-range-thumb {
+      width:  $thumb-size;
+      height: $thumb-size;
+      border-radius: 50%;
+      background: $thumb-color;
+      border: none;
+      transition: transform 0.15s ease;
     }
 
-    &:focus-visible {
-      &::-webkit-slider-thumb {
-        box-shadow: 0 0 0 3px rgba(var(--Cinza_E), 0.18);
-      }
-
-      &::-moz-range-thumb {
-        box-shadow: 0 0 0 3px rgba(var(--Cinza_E), 0.18);
-      }
+    &:not(:disabled):hover,
+    &:not(:disabled):focus-visible {
+      &::-webkit-slider-thumb { transform: scale(1.25); }
+      &::-moz-range-thumb     { transform: scale(1.25); }
     }
   }
 
