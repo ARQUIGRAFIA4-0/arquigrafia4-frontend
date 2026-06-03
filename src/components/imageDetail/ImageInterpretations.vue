@@ -15,24 +15,47 @@
       </h2>
     </div>
 
+    <!-- ToDo: trocar para um skeleton -->
+    <div v-if="loading" class="arch-reads__loading">
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      Carregando binômios...
+    </div>
+
     <!-- Sliders -->
     <div class="arch-reads__sliders">
-      <div v-for="pair in pairs" :key="pair.id" class="arch-reads__row">
+      <div v-for="pair in pairs" :key="pair.binomialId" class="arch-reads__row">
         <span class="arch-reads__label arch-reads__label--left">{{ pair.left }}</span>
 
         <div class="arch-reads__track-wrapper">
-          <input type="range" class="arch-reads__range" :id="`spec-${pair.id}`" min="0" max="100" step="1"
-            v-model.number="pair.value" :disabled="!isLoggedIn" :aria-label="`${pair.left} / ${pair.right}`" />
+          <input 
+            type="range" 
+            class="arch-reads__range" 
+            :id="`spec-${pair.id}`" 
+            min="0" 
+            max="100" 
+            step="1"
+            v-model.number="pair.value" 
+            :disabled="!isLoggedIn" 
+            :aria-label="`${pair.left} / ${pair.right}`" 
+          />
         </div>
 
-        <span class="arch-reads__label arch-reads__label--right">{{ pair.right }}</span>
+        <span class="arch-reads__label arch-reads__label--right">
+          {{ pair.right }}
+        </span>
       </div>
     </div>
 
+    <!-- Error -->
+    <p v-if="error" class="arch-reads__error">{{ error }}</p>
+
     <!-- Submit -->
     <div class="arch-reads__footer">
-      <button class="arch-reads__submit btn w-100" :disabled="!isLoggedIn || submitting || submitted"
-        @click="handleSubmit" v-if="!submitted">
+      <button 
+        class="arch-reads__submit btn w-100" 
+        :disabled="!isLoggedIn || submitting || submitted"
+        @click="handleSubmit" v-if="!submitted"
+      >
         <span v-if="submitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
         <span v-if="submitting">Enviando...</span>
         <span v-else>Enviar avaliação</span>
@@ -56,9 +79,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
+import axios from 'axios'
 // import { useCommentStore } from '@/store/commentStore'
 // import { useAuthStore } from '@/store/auth'
 
@@ -67,47 +91,105 @@ defineOptions({ name: 'ImageInterpretations' })
 const props = defineProps({
   imageId: {
     type: [String, Number],
-    default: null,
+    required: true,
   },
 })
+console.log( 'ImageInterpretations props:', props);
+
 
 const emit = defineEmits(['submit'])
 
 const authStore = useAuthStore()
 const isLoggedIn = computed(() => authStore.isLoggedIn)
 
-const pairs = ref([
-  { id: 'aberta', left: 'Aberta', right: 'Fechada', value: 50 },
-  { id: 'interna', left: 'Interna', right: 'Externa', value: 50 },
-  { id: 'complexa', left: 'Complexa', right: 'Simples', value: 50 },
-  { id: 'simetrica', left: 'Simétrica', right: 'Assimétrica', value: 50 },
-  { id: 'translucida', left: 'Translúcida', right: 'Opaca', value: 50 },
-  { id: 'horizontal', left: 'Horizontal', right: 'Vertical', value: 50 },
-])
-
+// ── state ──────────────────────────────────────────────────────────────────
+const pairs      = ref([])
+const loading    = ref(true)
 const submitting = ref(false)
-const submitted = ref(false)
+const submitted  = ref(false)
+const error      = ref(null)
+
+watch( 
+  () => props.imageId,
+    (id) => {
+      if (!id) return  // ← ignora o disparo com undefined
+      fetchBinomials()
+      error.value = null
+    },
+    { immediate: true }
+)
+
+async function fetchBinomials() {
+  if (!props.imageId) return
+
+  loading.value = true
+  error.value   = null
+
+  try {
+    // GET /api/images/{image}/binomials/evaluations
+    const { data } = await axios.get(`api/images/${props.imageId}/binomials/evaluations`)
+    
+    // { binomials: [...], evaluations: [...] }
+    const binomials   = data.binomials  ?? []
+    const evaluations = data.evaluations ?? []
+
+    // index saved values by binomial_id for O(1) lookup
+    const savedValues = Object.fromEntries(
+      evaluations.map(e => [e.binomial_id, e.value])
+    )
+
+    pairs.value = binomials
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map(b => ({
+        binomialId: b.id,
+        left:  b.word_left,
+        right: b.word_right,
+        value: savedValues[b.id] ?? 50,
+      }))
+
+    // if the user already has saved evaluations, reflect that on the button
+    if (evaluations.length > 0) {
+      submitted.value = true
+    }
+  } catch (err) {
+    console.error('Erro ao buscar binômios:', err)
+    error.value = 'Não foi possível carregar os binômios.'
+  } finally {
+    loading.value = false
+  }
+}
 
 async function handleSubmit() {
-  if (!isLoggedIn.value || submitting.value || submitted.value) return
+  if (!isLoggedIn.value || submitting.value) return
 
   submitting.value = true
+  submitted.value  = false
+  error.value      = null
 
-  const payload = {
-    imageId: props.imageId,
-    ratings: pairs.value.reduce((acc, p) => {
-      acc[p.id] = p.value
-      return acc
-    }, {}),
+  const body = {
+    evaluations: pairs.value.map(p => ({
+      binomial_id: p.binomialId,
+      value:       p.value,
+    })),
   }
 
   try {
-    // TODO: trocar por chamada real à API
-    await new Promise(resolve => setTimeout(resolve, 800))
-    emit('submit', payload)
+    const { data } = await axios.post(
+      `/api/images/${props.imageId}/binomials`,
+      body, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: authStore.authHeader,
+      },
+    }
+    )
+
     submitted.value = true
+    emit('submit', data)
   } catch (err) {
     console.error('Erro ao enviar avaliação:', err)
+    error.value = 'Erro ao enviar avaliação. Tente novamente.'
   } finally {
     submitting.value = false
   }
@@ -182,6 +264,19 @@ $breakpoint-md: 770px;
     strong {
       font-weight: 700;
     }
+  }
+
+   &__loading {
+    font-size: 0.875rem;
+    color: var(--Cinza_M, #6c757d);
+    display: flex;
+    align-items: center;
+  }
+
+  &__error {
+    font-size: 0.8125rem;
+    color: #dc3545;
+    margin: 0;
   }
 
   /* sliders */
