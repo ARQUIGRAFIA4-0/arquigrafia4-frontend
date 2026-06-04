@@ -179,7 +179,7 @@
     </div>
 
     <div
-      v-if="isGridView"
+      v-if="isGridView && isLoggedIn"
       id="gallery-mode-container"
       class="toolbar-acervo__panel toolbar-acervo__panel--gallery"
     >
@@ -205,7 +205,9 @@
 
 <script setup>
 import { computed, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "@/store/auth";
 import hslToHex from "@/helpers/hslToHex";
 import hexToHue from "@/helpers/hexToHue";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
@@ -222,6 +224,8 @@ defineOptions({ name: "AppToolbar" });
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
+const { isLoggedIn } = storeToRefs(authStore);
 const { getTermById, loadSubjectTerms, isTermLoaded } = useSubjectTerms();
 
 const props = defineProps({
@@ -368,6 +372,7 @@ const isAddToCollectionMode = computed({
 });
 
 function openAddToCollectionMode() {
+  if (!isLoggedIn.value) return;
   isAddToCollectionMode.value = true;
   emit("gallery-click");
   emit("add-to-collection-open");
@@ -384,6 +389,12 @@ function confirmAddToCollection() {
 
 watch(isGridView, (grid) => {
   if (!grid && isAddToCollectionMode.value) {
+    closeAddToCollectionMode();
+  }
+});
+
+watch(isLoggedIn, (loggedIn) => {
+  if (!loggedIn && isAddToCollectionMode.value) {
     closeAddToCollectionMode();
   }
 });
