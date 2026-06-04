@@ -60,7 +60,8 @@
             @open-search-date="openSearchDate" />
         </template>
         <template v-else>
-          <page-toolbar :search-mode="localSearchMode" :text-query="textQuery" :date-range="dateRange"
+          <page-toolbar v-model:add-to-collection-mode="isAddToCollectionMode"
+            :search-mode="localSearchMode" :text-query="textQuery" :date-range="dateRange"
             :color="selectedColor" :advanced-filters="advancedFilters" :view-selection="viewSelection"
             :map-settings="mapSettings" data-cy="toolbar-desktop" @search-mode-change="handleToolbarSearchModeChange"
             @update:text-query="handleTextQueryUpdate" @update:date-range="handleDateRangeUpdate"
@@ -92,12 +93,62 @@
 
       <advanced-search-modal v-model="modalAdvancedSearch" :filters="advancedFilters"
         @confirm="confirmAdvancedSearch" />
+
+      <Teleport to="body">
+        <AlbumPickerModal
+          v-model="showAlbumPicker"
+          :albums="loadedAlbums"
+          :preselected-album-ids="[]"
+          @open-create-collection="onCollectionCreateModalOpen"
+          @confirm-add="onGridAlbumPickerConfirmAdd"
+        />
+
+        <CollectionCreateModal
+          v-model="showCollectionCreateModal"
+          :user-data="loggedUser"
+          @created="onCollectionCreated"
+        />
+
+        <transition name="copy-toast-fade">
+          <div
+            v-if="showAddToAlbumToast"
+            class="homepage-add-to-album-toast"
+            role="status"
+            aria-live="polite"
+          >
+            <i class="bi bi-check-all" aria-hidden="true" />
+            <span class="homepage-add-to-album-toast__text">
+              <template v-if="!addToAlbumToastMultipleCollections">
+                Imagens adicionadas à Coleção
+                <span class="homepage-add-to-album-toast__collection-name">
+                  {{ addToAlbumToastCollectionName }}
+                </span>
+              </template>
+              <template v-else>
+                Imagens adicionadas às coleções
+              </template>
+            </span>
+            <button
+              type="button"
+              class="homepage-add-to-album-toast__link"
+              @click="onAddToAlbumToastVisualizar"
+            >
+              visualizar
+            </button>
+          </div>
+        </transition>
+      </Teleport>
     </template>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, nextTick, onUnmounted } from "vue";
+import { storeToRefs } from "pinia";
+import { useAuthStore } from "@/store/auth";
+import { useAlbumsStore } from "@/store/albums";
+import AlbumPickerModal from "@/components/imageDetail/AlbumPickerModal.vue";
+import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
 import { useRoute, useRouter } from "vue-router";
 import { useRouteQuery } from "@vueuse/router";
 import PageToolbar from "@/components/Toolbar.vue";
@@ -123,6 +174,9 @@ import { sanitizeDateParam } from "@/helpers/dateUtils";
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
+const albumsStore = useAlbumsStore();
+const { isLoggedIn, authHeader, loggedUser } = storeToRefs(authStore);
 const breakpoints = useBreakpoints({ md: 768 });
 const isMobile = breakpoints.smaller("md");
 
@@ -133,6 +187,14 @@ const viewSelection = ref(viewRouteToSelection(route.params.viewMode));
 const viewMode = computed(() => selectionToViewMode(viewSelection.value));
 const isAddToCollectionMode = ref(false);
 const selectedGridImages = ref([]);
+const showAlbumPicker = ref(false);
+const showCollectionCreateModal = ref(false);
+const loadedAlbums = ref([]);
+const showAddToAlbumToast = ref(false);
+const addToAlbumToastCollectionName = ref("");
+const addToAlbumToastCollectionId = ref(null);
+const addToAlbumToastMultipleCollections = ref(false);
+let addToAlbumToastTimeout = null;
 
 const { searchMode, loadSnapshot, setSearchMode, submitSearch } =
   useSearchQuery();
@@ -355,17 +417,121 @@ function handleAddToCollectionClose() {
   selectedGridImages.value = [];
 }
 
-function handleAddToCollectionConfirm() {
-  if (selectedGridImages.value.length === 0) return;
+async function loadMyAlbums() {
+  const userId = loggedUser.value?.id;
 
-  const payload = {
-    images: selectedGridImages.value,
-    imageIds: selectedGridImages.value.map((img) => img.id),
-  };
+  if (!isLoggedIn.value || !userId) {
+    console.warn("Usuário não logado — não é possível adicionar à coleção.");
+    return;
+  }
 
-  console.log("teste:", payload);
-  // Etapa 6: abrir AlbumPickerModal
+  try {
+    const response = await albumsStore.getUserAlbums(authHeader.value, userId);
+    loadedAlbums.value = Array.isArray(response) ? response : response?.data ?? [];
+    showAlbumPicker.value = true;
+  } catch (error) {
+    console.error("Erro ao buscar coleções:", error);
+    showAlbumPicker.value = false;
+  }
 }
+
+function showBulkCollectionsToast(albumIds) {
+  if (addToAlbumToastTimeout) {
+    clearTimeout(addToAlbumToastTimeout);
+  }
+
+  const selectedAlbums = albumIds
+    .map((id) => loadedAlbums.value.find((album) => album.id === id))
+    .filter(Boolean);
+
+  if (selectedAlbums.length === 1) {
+    addToAlbumToastCollectionName.value = selectedAlbums[0].title;
+    addToAlbumToastCollectionId.value = selectedAlbums[0].id;
+    addToAlbumToastMultipleCollections.value = false;
+  } else {
+    addToAlbumToastCollectionName.value = "";
+    addToAlbumToastCollectionId.value = null;
+    addToAlbumToastMultipleCollections.value = true;
+  }
+
+  showAddToAlbumToast.value = true;
+
+  addToAlbumToastTimeout = setTimeout(() => {
+    showAddToAlbumToast.value = false;
+    addToAlbumToastTimeout = null;
+  }, 4400);
+}
+
+// Visualizar coleção
+function onAddToAlbumToastVisualizar() {
+  if (addToAlbumToastCollectionId.value) {
+    router.push({
+      name: "my-collection-detail",
+      params: {
+        collectionId: addToAlbumToastCollectionId.value,
+        viewMode: "grid",
+      },
+    });
+  } else {
+    router.push({ name: "my-profile-collections" });
+  }
+
+  showAddToAlbumToast.value = false;
+
+  if (addToAlbumToastTimeout) {
+    clearTimeout(addToAlbumToastTimeout);
+    addToAlbumToastTimeout = null;
+  }
+}
+
+// Confirmar adicionar imagens às coleções
+async function onGridAlbumPickerConfirmAdd({ albumIds }) {
+  if (!Array.isArray(albumIds) || albumIds.length === 0) return;
+
+  const imageIds = selectedGridImages.value.map((img) => img.id);
+  if (!imageIds.length) return;
+
+  try {
+    await Promise.all(
+      albumIds.map((albumId) =>
+        albumsStore.addImageToAlbum(authHeader.value, albumId, imageIds)
+      )
+    );
+
+    showBulkCollectionsToast(albumIds);
+
+    showAlbumPicker.value = false;
+    isAddToCollectionMode.value = false;
+    selectedGridImages.value = [];
+
+  } catch (error) {
+    console.error("Erro ao adicionar imagens às coleções:", error);
+  }
+}
+
+function onCollectionCreateModalOpen() {
+  showAlbumPicker.value = false;
+  nextTick(() => {
+    showCollectionCreateModal.value = true;
+  });
+}
+
+async function onCollectionCreated() {
+  showCollectionCreateModal.value = false;
+  await loadMyAlbums();
+  showAlbumPicker.value = true;
+}
+
+async function handleAddToCollectionConfirm() {
+  if (selectedGridImages.value.length === 0) return;
+  await loadMyAlbums();
+}
+
+onUnmounted(() => {
+  if (addToAlbumToastTimeout) {
+    clearTimeout(addToAlbumToastTimeout);
+  }
+});
 
 function handleToolbarConfirm({ mode, value }) {
   submitSearch({ mode, value });
@@ -863,5 +1029,88 @@ $breakpoint-md: 768px;
   transform: translateX(-50%);
   max-width: fit-content;
   z-index: 1000;
+}
+
+.homepage-add-to-album-toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1300;
+  display: inline-flex;
+  align-items: center;
+  gap: 24px;
+  width: auto;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+  padding: 12px 12px 12px 16px;
+  border-radius: 4px;
+  background: #356407;
+  color: var(--branco, #fff);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.homepage-add-to-album-toast .bi {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.homepage-add-to-album-toast__text {
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.homepage-add-to-album-toast__collection-name {
+  font-style: italic;
+}
+
+.homepage-add-to-album-toast__link {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.5;
+  text-decoration: underline;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.copy-toast-fade-enter-active,
+.copy-toast-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.copy-toast-fade-enter-from,
+.copy-toast-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+@media (max-width: 767px) {
+  .homepage-add-to-album-toast {
+    top: max(12px, env(safe-area-inset-top, 0px));
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+    gap: 16px;
+    padding: 12px 14px;
+    white-space: normal;
+  }
+
+  .homepage-add-to-album-toast__text {
+    white-space: normal;
+    min-width: 0;
+  }
 }
 </style>

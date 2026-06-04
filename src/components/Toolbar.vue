@@ -253,6 +253,10 @@ const props = defineProps({
     type: String,
     default: "2d",
   },
+  addToCollectionMode: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([
@@ -272,6 +276,7 @@ const emit = defineEmits([
   "add-to-collection-open",
   "add-to-collection-close",
   "add-to-collection-confirm",
+  "update:addToCollectionMode",
 ]);
 
 // Detecta se há filtro de URL ativo
@@ -357,7 +362,10 @@ const currentSearchMode = computed(() => props.searchMode || "textual");
 const currentViewSelection = computed(() => props.viewSelection || "grid");
 const isGridView = computed(() => currentViewSelection.value === "grid");
 
-const isAddToCollectionMode = ref(false);
+const isAddToCollectionMode = computed({
+  get: () => props.addToCollectionMode,
+  set: (value) => emit("update:addToCollectionMode", value),
+});
 
 function openAddToCollectionMode() {
   isAddToCollectionMode.value = true;
@@ -375,8 +383,8 @@ function confirmAddToCollection() {
 }
 
 watch(isGridView, (grid) => {
-  if (!grid) {
-    isAddToCollectionMode.value = false;
+  if (!grid && isAddToCollectionMode.value) {
+    closeAddToCollectionMode();
   }
 });
 
