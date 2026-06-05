@@ -77,19 +77,48 @@
 
     <!-- Submit -->
     <div class="arch-reads__footer">
+
+      <span v-if="submitted" class="arch-reads__submit--success">
+        <i class="bi bi-check-all"></i> Avaliação enviada
+      </span> 
+      
       <button
         v-if="!submitted"
-        class="arch-reads__submit btn w-100" 
-        :disabled="!isLoggedIn || submitting || loading"
-        @click="handleSubmit" 
+        class="arch-reads__submit btn w-100"
+        :disabled="submitting || loading"
+        @click="handleSubmit"
       >
         <span v-if="submitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
         <span v-if="submitting">Enviando...</span>
         <span v-else>Enviar avaliação</span>
       </button>
-      <span v-else class="arch-reads__submit--success">
-        <i class="bi bi-check-all"></i> Avaliação enviada
-      </span>
+
+    <button
+      v-else
+      class="arch-reads__submit arch-reads__submit--update btn w-100"
+      @click="submitted = false"
+    >
+      Atualizar avaliação
+    </button>
+
+
+
+      <!-- <button
+        v-if="isLoggedIn"
+        class="arch-reads__submit btn w-100" 
+        :class="{ 'arch-reads__submit--update': submitted && !justUpdated }"
+        :disabled="submitting || loading"
+        @click="handleSubmit" 
+      >
+        <span v-if="submitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        <span v-if="submitting">{{ submitted ? 'Atualizando...' : 'Enviando...' }}</span>
+        <span v-else-if="justUpdated"><i class="bi bi-check-all me-1"></i> Atualizado</span>
+        <span v-else-if="submitted">Atualizar avaliação</span>
+        <span v-else>Enviar avaliação</span>
+      </button> -->
+
+      <!-- ToDo: Fazer esse cara aparecer depois!!!-->
+      
     </div>
 
     <!-- Info box -->
@@ -132,7 +161,8 @@ const isLoggedIn = computed(() => authStore.isLoggedIn)
 const pairs      = ref([])
 const loading    = ref(true)
 const submitting = ref(false)
-const submitted  = ref(false)
+const submitted   = ref(false)
+const justUpdated = ref(false)
 const error      = ref(null)
 
 watch( 
@@ -147,12 +177,16 @@ watch(
 
 async function fetchBinomials() {
   if (!props.imageId) return
+
   loading.value = true
   error.value   = null
 
   try {
     const [respBinomials, respEvaluations] = await Promise.all([
-      axios.get(`/api/images/${props.imageId}/binomials`),
+      axios.get(`/api/images/${props.imageId}/binomials`, {headers: {
+        "Content-Type": "application/json",
+        Authorization: authStore.authHeader,
+      },}),
       axios.get(`/api/images/${props.imageId}/binomials/evaluations`),
     ])
     
@@ -163,7 +197,8 @@ async function fetchBinomials() {
     const myValuesMap = Object.fromEntries(
       binomials.map(b => [String(b.id), b.my_value ?? null])
     )
-
+    console.log(myValuesMap);
+    
     const userAlreadyEvaluated = binomials.some(b => b.my_value !== null)
 
     pairs.value = binomials
@@ -225,6 +260,7 @@ async function handleSubmit() {
     pairs.value = pairs.value.map(p => ({ ...p, myValue: p.value }))
 
     submitted.value = true
+    justUpdated.value = true
     emit('submit', data)
   } catch (err) {
     console.error('Erro ao enviar avaliação:', err)
@@ -238,16 +274,6 @@ async function handleSubmit() {
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
 $breakpoint-md: 770px;
-
-$track-color:   #d1d5db;
-$track-height:  6px;
-$thumb-color:   #1a1a1a;
-$thumb-size:    14px;
-$label-width:   88px;
-
-$dot-other-color: #57b8e8;       // azul claro
-$dot-mine-color:  #e07b2a;       // laranja
-$dot-size:        12px;
 
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
@@ -413,8 +439,8 @@ $dot-size:        12px;
   &__track {
     position: relative;
     width: 100%;
-    height: $track-height;
-    background: $track-color;
+    height: 6px;
+    background: var(--Cinza_C);
     border-radius: 999px;
 
     // native range is stretched over the track
@@ -435,8 +461,8 @@ $dot-size:        12px;
   &__dot {
     position: absolute;
     top: 50%;
-    width:  $dot-size;
-    height: $dot-size;
+    width:  12px;
+    height: 12px;
     border-radius: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
@@ -446,9 +472,9 @@ $dot-size:        12px;
     }
 
     &--mine {
-      width:  $thumb-size;
-      height: $thumb-size;
-      background: $dot-mine-color;
+      width:  14px;
+      height: 14px;
+      background: var(--Laranja_M);
       border: 2px solid rgba(224, 124, 42, 0.185);
       z-index: 2;
     }
@@ -475,26 +501,26 @@ $dot-size:        12px;
 
     &::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width:  $thumb-size;
-      height: $thumb-size;
+      width:  14px;
+      height: 14px;
       border-radius: 50%;
-      background: $thumb-color;
+      background: var(--Preto);
       border: none;
-      margin-top: calc((#{$track-height} - #{$thumb-size}) / 2);
+      margin-top: calc((#{6px} - #{14px}) / 2);
       transition: transform 0.15s ease;
     }
 
     &::-moz-range-track {
-      height: $track-height;
+      height: 6px;
       background: transparent;
       border-radius: 999px;
     }
 
     &::-moz-range-thumb {
-      width:  $thumb-size;
-      height: $thumb-size;
+      width:  14px;
+      height: 14px;
       border-radius: 50%;
-      background: $thumb-color;
+      background: var(--Preto);
       border: none;
       transition: transform 0.15s ease;
     }
