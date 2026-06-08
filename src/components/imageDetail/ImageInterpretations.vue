@@ -1,24 +1,24 @@
 <template>
   <div class="arch-reads" :class="{ 'arch-reads--locked': !isLoggedIn }">
 
-    <!-- Auth banner -->
     <div v-if="!isLoggedIn" class="arch-reads__auth-banner">
       Você ainda não acessou sua conta. Faça seu
       <RouterLink :to="{ name: 'login' }">login</RouterLink>
       e avalie a imagem.
     </div>
 
-    <!-- Header -->
     <div class="arch-reads__header">
       <h2 class="arch-reads__title">
         Quais <strong>qualidades da arquitetura</strong> são <strong>visíveis nesta imagem</strong>?
       </h2>
     </div>
 
-    <!-- ToDo: trocar para um skeleton -->
-    <div v-if="loading" class="arch-reads__loading">
-      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-      Carregando binômios...
+    <div v-if="loading" class="arch-reads__skeleton">
+      <div v-for="n in 6" :key="n" class="arch-reads__skeleton-row">
+        <div class="arch-reads__skeleton-label"></div>
+        <div class="arch-reads__skeleton-track"></div>
+        <div class="arch-reads__skeleton-label"></div>
+      </div>
     </div>
 
     <!-- Sliders -->
@@ -32,35 +32,17 @@
           <div class="arch-reads__track" :class="{ 'arch-reads__track--submitted': submitted }">
 
             <!-- outros usuários: um ponto por avaliação -->
-            <span
-              v-for="(val, i) in pair.othersValues"
-              :key="i"
-              class="arch-reads__dot arch-reads__dot--other"
-              :style="{ left: val + '%' }"
-              :title="'Avaliação de outro usuário: ' + val"
-            />
+            <span v-for="(val, i) in pair.othersValues" :key="i" class="arch-reads__dot arch-reads__dot--other"
+              :style="{ left: val + '%' }" :title="'Avaliação de outro usuário: ' + val" />
 
             <!-- thumb do usuário logado (laranja) — só quando já avaliou -->
-            <span
-              v-if="submitted && pair.myValue !== null"
-              class="arch-reads__dot arch-reads__dot--mine"
-              :style="{ left: pair.myValue + '%' }"
-              :title="'Sua avaliação: ' + pair.myValue"
-            />
+            <span v-if="submitted && pair.myValue !== null" class="arch-reads__dot arch-reads__dot--mine"
+              :style="{ left: pair.myValue + '%' }" :title="'Sua avaliação: ' + pair.myValue" />
 
             <!-- input nativo — visível apenas antes de enviar -->
-            <input
-              v-if="!submitted"
-              type="range"
-              class="arch-reads__range"
-              :id="`spec-${pair.binomialId}`"
-              min="0"
-              max="100"
-              step="1"
-              v-model.number="pair.value"
-              :disabled="!isLoggedIn"
-              :aria-label="`${pair.left} / ${pair.right}`"
-            />
+            <input v-if="!submitted" type="range" class="arch-reads__range" :id="`spec-${pair.binomialId}`" min="0"
+              max="100" step="1" v-model.number="pair.value" :disabled="!isLoggedIn"
+              :aria-label="`${pair.left} / ${pair.right}`" />
           </div>
           <!-- ─────────────────────────────────────────────────────────── -->
 
@@ -72,53 +54,25 @@
       </div>
     </div>
 
-    <!-- Error -->
-    <p v-if="error" class="arch-reads__error">{{ error }}</p>
-
-    <!-- Submit -->
     <div class="arch-reads__footer">
 
-      <span v-if="submitted" class="arch-reads__submit--success">
+      <span v-if="error" class="arch-reads__error"><i class="bi bi-exclamation-lg"></i>{{ error }}</span>
+
+      <span v-if="submitted && pairs.some(p => p.myValue !== null)" class="arch-reads__submit--success">
         <i class="bi bi-check-all"></i> Avaliação enviada
-      </span> 
-      
-      <button
-        v-if="!submitted"
-        class="arch-reads__submit btn w-100"
-        :disabled="submitting || loading"
-        @click="handleSubmit"
-      >
+      </span>
+
+      <button v-if="!submitted" class="arch-reads__submit btn w-100" :disabled="submitting || loading"
+        @click="handleSubmit">
         <span v-if="submitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
         <span v-if="submitting">Enviando...</span>
         <span v-else>Enviar avaliação</span>
       </button>
 
-    <button
-      v-else
-      class="arch-reads__submit arch-reads__submit--update btn w-100"
-      @click="submitted = false"
-    >
-      Atualizar avaliação
-    </button>
+      <button v-else class="arch-reads__submit arch-reads__submit--update btn w-100" @click="submitted = false">
+        Atualizar avaliação
+      </button>
 
-
-
-      <!-- <button
-        v-if="isLoggedIn"
-        class="arch-reads__submit btn w-100" 
-        :class="{ 'arch-reads__submit--update': submitted && !justUpdated }"
-        :disabled="submitting || loading"
-        @click="handleSubmit" 
-      >
-        <span v-if="submitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-        <span v-if="submitting">{{ submitted ? 'Atualizando...' : 'Enviando...' }}</span>
-        <span v-else-if="justUpdated"><i class="bi bi-check-all me-1"></i> Atualizado</span>
-        <span v-else-if="submitted">Atualizar avaliação</span>
-        <span v-else>Enviar avaliação</span>
-      </button> -->
-
-      <!-- ToDo: Fazer esse cara aparecer depois!!!-->
-      
     </div>
 
     <!-- Info box -->
@@ -156,65 +110,63 @@ const emit = defineEmits(['submit'])
 
 const authStore = useAuthStore()
 const isLoggedIn = computed(() => authStore.isLoggedIn)
-
-// ── state ──────────────────────────────────────────────────────────────────
-const pairs      = ref([])
-const loading    = ref(true)
+const pairs = ref([])
+const loading = ref(true)
 const submitting = ref(false)
-const submitted   = ref(false)
+const submitted = ref(false)
 const justUpdated = ref(false)
-const error      = ref(null)
+const error = ref(null)
 
-watch( 
+watch(
   () => props.imageId,
-    (id) => {
-      if (!id) return 
-      fetchBinomials()
-      error.value = null
-    },
-    { immediate: true }
+  (id) => {
+    if (!id) return
+    fetchBinomials()
+    error.value = null
+  },
+  { immediate: true }
 )
 
 async function fetchBinomials() {
   if (!props.imageId) return
 
   loading.value = true
-  error.value   = null
+  error.value = null
 
   try {
     const [respBinomials, respEvaluations] = await Promise.all([
-      axios.get(`/api/images/${props.imageId}/binomials`, {headers: {
-        "Content-Type": "application/json",
-        Authorization: authStore.authHeader,
-      },}),
+      axios.get(`/api/images/${props.imageId}/binomials`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authStore.authHeader,
+        },
+      }),
       axios.get(`/api/images/${props.imageId}/binomials/evaluations`),
     ])
-    
-    const binomials   = respBinomials.data.data  ?? []
-    const evaluations = respEvaluations.data.evaluations ?? []
 
-    // my_value vem por binômio — null se nunca avaliou
+    const binomials = respBinomials.data.data ?? respEvaluations.data.binomials ?? []
+    const evaluations = respEvaluations.data.evaluations ?? []
+    const userAlreadyEvaluated = respBinomials.data.data !== null && binomials.some(b => b.my_value !== null)
+
+
     const myValuesMap = Object.fromEntries(
       binomials.map(b => [String(b.id), b.my_value ?? null])
     )
     console.log(myValuesMap);
-    
-    const userAlreadyEvaluated = binomials.some(b => b.my_value !== null)
 
     pairs.value = binomials
       .slice()
       .sort((a, b) => a.order - b.order)
       .map(b => {
-        const bid     = String(b.id)
+        const bid = String(b.id)
         const myValue = myValuesMap[bid]
 
         return {
-          binomialId:   b.id,
-          left:         b.word_left,
-          right:        b.word_right,
-          value:        myValue ?? 50,   // posição inicial do range nativo
-          myValue,                        // dot laranja após envio
-          // pontos azuis — um por avaliador (todos, pois my_value já separa o usuário logado)
+          binomialId: b.id,
+          left: b.word_left,
+          right: b.word_right,
+          value: myValue ?? 50,
+          myValue,
           othersValues: evaluations
             .map(e => e.values?.[bid])
             .filter(v => v !== undefined && v !== null),
@@ -236,13 +188,12 @@ async function handleSubmit() {
   if (!isLoggedIn.value || submitting.value) return
 
   submitting.value = true
-  submitted.value  = false
-  error.value      = null
+  error.value = null
 
   const body = {
     evaluations: pairs.value.map(p => ({
       binomial_id: p.binomialId,
-      value:       p.value,
+      value: p.value,
     })),
   }
 
@@ -281,7 +232,6 @@ $breakpoint-md: 770px;
   }
 }
 
-/* block */
 .arch-reads {
   display: flex;
   flex-direction: column;
@@ -305,7 +255,6 @@ $breakpoint-md: 770px;
     }
   }
 
-  /* auth banner */
   &__auth-banner {
     background-color: var(--Laranja_C);
     border: 1px solid var(--Laranja_E);
@@ -323,7 +272,6 @@ $breakpoint-md: 770px;
     }
   }
 
-  /* header */
   &__header {
     padding-bottom: 4px;
   }
@@ -341,20 +289,47 @@ $breakpoint-md: 770px;
     }
   }
 
-   &__loading {
-    font-size: 0.875rem;
-    color: var(--Cinza_M, #6c757d);
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  &__skeleton-row {
     display: flex;
     align-items: center;
+    gap: 12px;
   }
 
-  &__error {
-    font-size: 0.8125rem;
-    color: #dc3545;
-    margin: 0;
+  &__skeleton-label {
+    width: 88px; // troca
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease infinite;
+    flex-shrink: 0;
   }
 
-  /* sliders */
+  &__skeleton-track {
+    flex: 1;
+    height: 3px; //troca
+    border-radius: 999px;
+    background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease infinite;
+  }
+
+  @keyframes skeleton-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
   &__sliders {
     display: flex;
     flex-direction: column;
@@ -371,18 +346,14 @@ $breakpoint-md: 770px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    /* gap: 4px 12px; */
-    /* gap: 24px; */
     position: relative;
 
     @include md {
-      flex-wrap: nowrap; // volta a linha única no desktop
-      /* gap: 12px; */
+      flex-wrap: nowrap;
       gap: 4px 12px;
     }
   }
 
-  /* labels */
   &__label {
     font-size: 1rem;
     color: var(--Preto, #1a1a1a);
@@ -393,7 +364,6 @@ $breakpoint-md: 770px;
     flex-shrink: 0;
     transition: color 0.2s ease;
     position: absolute;
-    /* transform: translateY(-50%); */
 
     &--left {
       text-align: left;
@@ -423,19 +393,16 @@ $breakpoint-md: 770px;
     }
   }
 
-  /* range track wrapper */
   &__track-wrapper {
-    /* flex: 1; */
     flex: 0 0 100%;
     display: flex;
     align-items: center;
 
     @include md {
-      flex: 1; // volta a ficar entre os labels
+      flex: 1;
     }
   }
 
-  // Acts as the visual rail; dots and native input sit inside it.
   &__track {
     position: relative;
     width: 100%;
@@ -443,7 +410,6 @@ $breakpoint-md: 770px;
     background: var(--Cinza_C);
     border-radius: 999px;
 
-    // native range is stretched over the track
     input[type="range"] {
       position: absolute;
       inset: 0;
@@ -453,15 +419,14 @@ $breakpoint-md: 770px;
     }
 
     &--submitted {
-        background: var(--Azul_C);
-      }
+      background: var(--Azul_C);
+    }
   }
 
-  // ── dots (other users + mine) ─────────────────────────────────────────────
   &__dot {
     position: absolute;
     top: 50%;
-    width:  12px;
+    width: 12px;
     height: 12px;
     border-radius: 50%;
     transform: translate(-50%, -50%);
@@ -472,7 +437,7 @@ $breakpoint-md: 770px;
     }
 
     &--mine {
-      width:  14px;
+      width: 14px;
       height: 14px;
       background: var(--Laranja_M);
       border: 2px solid rgba(224, 124, 42, 0.185);
@@ -480,7 +445,6 @@ $breakpoint-md: 770px;
     }
   }
 
-  /* native range input – cross-browser reset */
   &__range {
     -webkit-appearance: none;
     appearance: none;
@@ -501,7 +465,7 @@ $breakpoint-md: 770px;
 
     &::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width:  14px;
+      width: 14px;
       height: 14px;
       border-radius: 50%;
       background: var(--Preto);
@@ -517,7 +481,7 @@ $breakpoint-md: 770px;
     }
 
     &::-moz-range-thumb {
-      width:  14px;
+      width: 14px;
       height: 14px;
       border-radius: 50%;
       background: var(--Preto);
@@ -527,12 +491,16 @@ $breakpoint-md: 770px;
 
     &:not(:disabled):hover,
     &:not(:disabled):focus-visible {
-      &::-webkit-slider-thumb { transform: scale(1.25); }
-      &::-moz-range-thumb     { transform: scale(1.25); }
+      &::-webkit-slider-thumb {
+        transform: scale(1.25);
+      }
+
+      &::-moz-range-thumb {
+        transform: scale(1.25);
+      }
     }
   }
 
-  /* submit button */
   &__footer {
     margin-bottom: 12px;
   }
@@ -571,6 +539,7 @@ $breakpoint-md: 770px;
       font-size: 0.875rem;
       position: relative;
       overflow: hidden;
+      margin-bottom: 12px;
 
       .bi {
         font-size: 1.25rem;
@@ -588,7 +557,38 @@ $breakpoint-md: 770px;
     }
   }
 
-  /* info box */
+  &__error {
+    width: 100%;
+    background-color: var(--Negativo_C);
+    border: 1px solid var(--Negativo_E);
+    border-radius: 4px;
+    padding: 12px;
+    padding-left: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 1.5rem;
+    color: var(--Negativo_E);
+    font-weight: 500;
+    font-size: 0.875rem;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 12px;
+
+    .bi {
+      font-size: 1.25rem;
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0px;
+      display: block;
+      width: 4px;
+      height: 100%;
+      background: var(--Negativo_E);
+    }
+  }
+
   &__info {
     display: flex;
     gap: 24px;
