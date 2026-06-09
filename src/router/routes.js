@@ -64,6 +64,12 @@ export default [
     meta: { section: "comentarios" },
   },
   {
+    path: "/explore/interpretacoes/image/:id",
+    name: "image-detail-interpretacoes",
+    component: () => import("../views/ImageDetail.vue"),
+    meta: { section: "interpretacoes" },
+  },
+  {
     path: "/explore/relacionadas/image/:id",
     name: "image-detail-relacionadas",
     component: () => import("../views/ImageDetail.vue"),
@@ -96,6 +102,12 @@ export default [
       }
       return true;
     },
+  },
+  // Rota de redes
+  {
+    path: "/explore/rede",
+    name: "rede",
+    component: () => import("../views/NetworkPage.vue")
   },
   // About routes
   {
@@ -196,7 +208,7 @@ export default [
       return true;
     },
     meta: { requiresAuth: true }
-  },  
+  },
   {
     path: "/profile",
     redirect: "/",

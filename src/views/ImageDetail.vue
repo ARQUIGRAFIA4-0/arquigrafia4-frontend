@@ -142,6 +142,11 @@ const handleReportSubmit = (payload) => {
   // TODO: enviar denúncia para a API
 };
 
+const handleSpecSubmit = (payload) => {
+  console.log("Especificações enviadas:", payload);
+  // TODO: enviar para a API
+};
+
 onMounted(async () => {
   try {
     const imageId = route.params.id;

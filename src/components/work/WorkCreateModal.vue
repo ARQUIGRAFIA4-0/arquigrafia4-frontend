@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, watch, onUnmounted, markRaw } from "vue";
 import { useVracStore } from "@/store/vrac";
-import { useAuthStore } from "@/store/auth";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
 import UiField from "@/components/ui/UiField.vue";
@@ -15,7 +14,6 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue", "created"]);
 
 const vracStore = useVracStore();
-const authStore = useAuthStore();
 
 // ── Step management ─────────────────────────────────────────────────────────
 const step = ref(1);
@@ -124,10 +122,10 @@ const titleTypeLabel = (type) =>
   TITLE_TYPES.find((t) => t.value === type)?.label || type;
 
 // --- Agents (authors) ---
-const agentRoles = ref([]);
-const agentRoleInput = ref("");
+const AGENT_ROLE_LABELS = ["Engenharia", "Arquitetura", "Paisagismo", "Construção"];
+const agentRoleInput = ref(AGENT_ROLE_LABELS[0]);
 const agentNameInput = ref("");
-const agents = ref([]);  // [{ roleId, roleName, contributorNameId, contributorName }]
+const agents = ref([]);  // [{ roleLabel, contributorNameId, contributorName }]
 
 const allContributorNames = ref([]);
 let nameFuse = null;
@@ -158,10 +156,8 @@ const hideNameSuggestions = () => {
 const addAgent = (contributorName = null) => {
   const name = contributorName?.name || agentNameInput.value.trim();
   if (!name || !agentRoleInput.value) return;
-  const role = agentRoles.value.find((r) => r.id === agentRoleInput.value);
   agents.value.push({
-    roleId: agentRoleInput.value,
-    roleName: role?.label || agentRoleInput.value,
+    roleLabel: agentRoleInput.value,
     contributorNameId: contributorName?.id || null,
     contributorName: name,
   });
@@ -238,12 +234,12 @@ const materials      = makeVocabField();
 const subjects3      = makeVocabField(); // "subjects" already used in ImageMetadataUpload scope
 
 const VOCAB_FIELDS = [
-  { field: stylePeriods,  label: "Aspectos estéticos",      explain: "Estilos e períodos históricos relacionados à obra",     endpoint: "vrac-style-periods",   labelKey: "label" },
-  { field: culturalCtxs,  label: "Contexto cultural",       explain: "Contextos culturais relacionados à obra",               endpoint: "vrac-cultural-contexts", labelKey: "label" },
-  { field: workTypes,     label: "Tipologia",               explain: "Tipo de obra arquitetônica",                            endpoint: "vrac-work-types",      labelKey: "label" },
-  { field: techniques,    label: "Técnicas de construção",  explain: "Técnicas construtivas utilizadas na obra",              endpoint: "vrac-techniques",      labelKey: "label" },
-  { field: materials,     label: "Materiais",               explain: "Materiais utilizados na obra",                         endpoint: "vrac-materials",       labelKey: "label" },
-  { field: subjects3,     label: "Assuntos",                explain: "Assuntos e temas relacionados à obra",                  endpoint: "vrac-subjects",        labelKey: "term"  },
+  { field: stylePeriods,  label: "Aspectos estéticos",      explain: "Estilos e períodos históricos relacionados à obra",     endpoint: "vrac-style-periods",     labelKey: "label", createPayload: (v) => ({ label: v }),                              responseKey: "period"    },
+  { field: culturalCtxs,  label: "Contexto cultural",       explain: "Contextos culturais relacionados à obra",               endpoint: "vrac-cultural-contexts", labelKey: "label", createPayload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "context"   },
+  { field: workTypes,     label: "Tipologia",               explain: "Tipo de obra arquitetônica",                            endpoint: "vrac-work-types",        labelKey: "label", createPayload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "work_type" },
+  { field: techniques,    label: "Técnicas de construção",  explain: "Técnicas construtivas utilizadas na obra",              endpoint: "vrac-techniques",        labelKey: "label", createPayload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "technique" },
+  { field: materials,     label: "Materiais",               explain: "Materiais utilizados na obra",                          endpoint: "vrac-materials",         labelKey: "label", createPayload: (v) => ({ label: v, type: "other", vocab: "ARQUIGRAFIA" }), responseKey: "material"  },
+  { field: subjects3,     label: "Assuntos",                explain: "Assuntos e temas relacionados à obra",                  endpoint: "vrac-subjects",          labelKey: "term",  createPayload: (v) => ({ term: v, type: "otherTopic", vocab: "ARQUIGRAFIA" }), responseKey: "data"     },
 ];
 
 const onVocabInput = (vf) => {
@@ -266,6 +262,62 @@ const addVocabItem = (vf, item) => {
   vf.suggestions.value = [];
 };
 
+const canCreateVocab = (vfMeta) => {
+  const term = vfMeta.field.input.value.trim();
+  if (!term) return false;
+  const labelKey = vfMeta.labelKey;
+  const items = vfMeta.field._items ?? [];
+  if (items.some((i) => (i[labelKey] || "").toLowerCase() === term.toLowerCase())) return false;
+  if (vfMeta.field.selected.value.some((s) => s.label.toLowerCase() === term.toLowerCase())) return false;
+  return true;
+};
+
+// Stage a new term locally — it is only POSTed when the parent materializes the work draft.
+const createAndAddVocabItem = (vfMeta) => {
+  const term = vfMeta.field.input.value.trim().toLowerCase();
+  if (!term) return;
+  if (vfMeta.field.selected.value.some((s) => s.label.toLowerCase() === term)) return;
+  vfMeta.field.selected.value.push({ id: null, label: term, isNew: true });
+  vfMeta.field.input.value = "";
+  vfMeta.field.suggestions.value = [];
+};
+
+const findExactVocabMatch = (vfMeta) => {
+  const term = vfMeta.field.input.value.trim().toLowerCase();
+  if (!term) return null;
+  const labelKey = vfMeta.labelKey;
+  const items = vfMeta.field._items ?? [];
+  return items.find((i) => (i[labelKey] || "").toLowerCase() === term) || null;
+};
+
+const onVocabEnter = (vfMeta) => {
+  const exact = findExactVocabMatch(vfMeta);
+  if (exact) {
+    addVocabItem(vfMeta.field, exact);
+    return;
+  }
+  const first = vfMeta.field.suggestions.value[0];
+  if (first) {
+    addVocabItem(vfMeta.field, first);
+  } else if (canCreateVocab(vfMeta)) {
+    createAndAddVocabItem(vfMeta);
+  }
+};
+
+const onVocabPlusClick = (vfMeta) => {
+  const exact = findExactVocabMatch(vfMeta);
+  if (exact) {
+    addVocabItem(vfMeta.field, exact);
+    return;
+  }
+  const first = vfMeta.field.suggestions.value[0];
+  if (first) {
+    addVocabItem(vfMeta.field, first);
+  } else if (canCreateVocab(vfMeta)) {
+    createAndAddVocabItem(vfMeta);
+  }
+};
+
 const removeVocabItem = (vf, index) => vf.selected.value.splice(index, 1);
 
 const hideVocabSuggestions = (vf) => {
@@ -277,104 +329,62 @@ const hasPreferredTitle = computed(() =>
   titles.value.some((t) => t.type === "other")
 );
 
-const canSubmit = computed(() =>
-  hasPreferredTitle.value && !isSubmitting.value
-);
+const canSubmit = computed(() => hasPreferredTitle.value);
 
 // --- Submit ---
-const isSubmitting = ref(false);
 const errorMessage = ref("");
 
-const handleSubmit = async () => {
-  if (!canSubmit.value) return;
-  isSubmitting.value = true;
-  errorMessage.value = "";
-
-  try {
-    const payload = {
-      latitude: parseFloat(pickedCoords.value.lat.toFixed(8)),
-      longitude: parseFloat(pickedCoords.value.lng.toFixed(8)),
-      location_label: locationLabel.value || undefined,
-    };
-
-    // Create titles via their own endpoint, collect IDs
-    const titleIds = [];
-    for (const t of titles.value) {
-      const res = await axios.post(
-        "/api/vrac-titles",
-        { label: t.label, type: t.type, pref: t.pref },
-        { headers: { Authorization: authStore.authHeader } }
-      );
-      titleIds.push(res.data.title.id);
-    }
-    payload.titles = titleIds;
-
-    // Create/resolve agents
-    const agentIds = [];
-    for (const a of agents.value) {
-      let contribId = a.contributorNameId;
-      if (!contribId) {
-        const res = await axios.post(
-          "/api/vrac-contributor-names",
-          { name: a.contributorName, type: "personal" },
-          { headers: { Authorization: authStore.authHeader } }
-        );
-        contribId = res.data.name.id;
-      }
-      const res = await axios.post(
-        "/api/vrac-agents",
-        { contributor_name_id: contribId, role_id: a.roleId },
-        { headers: { Authorization: authStore.authHeader } }
-      );
-      agentIds.push(res.data.agent.id);
-    }
-    if (agentIds.length) payload.agents = agentIds;
-
-    // Create dates
-    const dateIds = [];
-    for (const d of dates.value) {
-      const res = await axios.post(
-        "/api/vrac-dates",
-        {
-          type: d.type,
-          earliest_date: d.earliest,
-          latest_date: d.latest,
-          circa_earliest_date: d.circa,
-          circa_latest_date: d.circa,
-        },
-        { headers: { Authorization: authStore.authHeader } }
-      );
-      dateIds.push(res.data.date.id);
-    }
-    if (dateIds.length) payload.dates = dateIds;
-
-    if (descriptionInput.value.trim()) {
-      payload.description = descriptionInput.value.trim();
-    }
-
-    if (stylePeriods.selected.value.length)  payload.style_periods   = stylePeriods.selected.value.map((s) => s.id);
-    if (culturalCtxs.selected.value.length)  payload.cultural_contexts = culturalCtxs.selected.value.map((s) => s.id);
-    if (workTypes.selected.value.length)     payload.work_types      = workTypes.selected.value.map((s) => s.id);
-    if (techniques.selected.value.length)    payload.techniques      = techniques.selected.value.map((s) => s.id);
-    if (materials.selected.value.length)     payload.materials       = materials.selected.value.map((s) => s.id);
-    if (subjects3.selected.value.length)     payload.subjects        = subjects3.selected.value.map((s) => s.id);
-
-    console.log("[WorkCreateModal] authHeader:", authStore.authHeader);
-    console.log("[WorkCreateModal] payload:", payload);
-    const workRes = await axios.post("/api/vrac-works", payload, {
-      headers: { Authorization: authStore.authHeader },
-    });
-
-    const work = workRes.data.data;
-    close();
-    emit("created", work);
-  } catch (err) {
-    console.error("[WorkCreateModal] submit error:", err);
-    errorMessage.value =
-      err?.response?.data?.message || err?.message || "Erro ao criar obra. Tente novamente.";
-  } finally {
-    isSubmitting.value = false;
+const vocabDraftBuckets = (vf) => {
+  const existing = [];
+  const newTerms = [];
+  for (const item of vf.selected.value) {
+    if (item.id) existing.push(item.id);
+    else newTerms.push(item.label);
   }
+  return { existing, newTerms };
+};
+
+const buildDraft = () => {
+  const preferredTitle =
+    titles.value.find((t) => t.pref)?.label || titles.value[0]?.label || "";
+
+  return {
+    coords: {
+      lat: parseFloat(pickedCoords.value.lat.toFixed(8)),
+      lng: parseFloat(pickedCoords.value.lng.toFixed(8)),
+    },
+    locationLabel: locationLabel.value || "",
+    titles: titles.value.map((t) => ({ label: t.label, type: t.type, pref: t.pref })),
+    agents: agents.value.map((a) => ({
+      roleLabel: a.roleLabel,
+      contributorNameId: a.contributorNameId,
+      contributorName: a.contributorName,
+    })),
+    dates: dates.value.map((d) => ({
+      type: d.type,
+      earliest_date: d.earliest,
+      latest_date: d.latest,
+      circa_earliest_date: d.circa,
+      circa_latest_date: d.circa,
+    })),
+    description: descriptionInput.value.trim() || null,
+    stylePeriods:   vocabDraftBuckets(stylePeriods),
+    culturalCtxs:   vocabDraftBuckets(culturalCtxs),
+    workTypes:      vocabDraftBuckets(workTypes),
+    techniques:     vocabDraftBuckets(techniques),
+    materials:      vocabDraftBuckets(materials),
+    subjects:       vocabDraftBuckets(subjects3),
+    // Display hints for the parent's work chip
+    label: preferredTitle,
+    address: locationLabel.value || "",
+  };
+};
+
+const handleSubmit = () => {
+  if (!canSubmit.value) return;
+  const draft = buildDraft();
+  close();
+  emit("created", draft);
 };
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -387,6 +397,7 @@ const reset = () => {
   titleLabelInput.value = "";
   titleTypeInput.value = "other";
   agents.value = [];
+  agentRoleInput.value = AGENT_ROLE_LABELS[0];
   agentNameInput.value = "";
   dates.value = [];
   dateYearInput.value = "";
@@ -411,14 +422,7 @@ watch(
     if (!open) { reset(); return; }
 
     try {
-      const [roles, contributors] = await Promise.all([
-        vracStore.getVRACAgentRoles(),
-        vracStore.getVRACContributorNames(),
-      ]);
-      if (Array.isArray(roles) && roles.length) {
-        agentRoles.value = roles;
-        agentRoleInput.value = roles[0].id;
-      }
+      const contributors = await vracStore.getVRACContributorNames();
       if (Array.isArray(contributors)) {
         allContributorNames.value = contributors;
         nameFuse = new Fuse(contributors, {
@@ -631,12 +635,12 @@ onUnmounted(() => {
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                   >
-                    {{ agentRoles.find(r => r.id === agentRoleInput)?.label || 'Tipo de autor' }}
+                    {{ agentRoleInput }}
                   </button>
                   <ul class="dropdown-menu menu-light">
-                    <li v-for="r in agentRoles" :key="r.id">
-                      <button class="dropdown-item" @click.prevent="agentRoleInput = r.id">
-                        {{ r.label }}
+                    <li v-for="r in AGENT_ROLE_LABELS" :key="r">
+                      <button class="dropdown-item" @click.prevent="agentRoleInput = r">
+                        {{ r }}
                       </button>
                     </li>
                   </ul>
@@ -682,7 +686,7 @@ onUnmounted(() => {
                     type="button"
                     class="btn btn-primary btn-sm btn-tag"
                   >
-                    {{ a.roleName }}: {{ a.contributorName }}
+                    {{ a.roleLabel }}: {{ a.contributorName }}
                     <button type="button" class="btn-close ms-2" aria-label="Remover" @click.stop="removeAgent(i)" />
                   </button>
                 </div>
@@ -830,10 +834,10 @@ onUnmounted(() => {
                     @input="onVocabInput(vf.field)"
                     @focus="vf.field.showSuggestions.value = true"
                     @blur="hideVocabSuggestions(vf.field)"
-                    @keydown.enter.prevent="addVocabItem(vf.field, vf.field.suggestions.value[0])"
+                    @keydown.enter.prevent="onVocabEnter(vf)"
                   />
                   <div
-                    v-if="vf.field.showSuggestions.value && vf.field.suggestions.value.length > 0"
+                    v-if="vf.field.showSuggestions.value && (vf.field.suggestions.value.length > 0 || canCreateVocab(vf))"
                     class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
                     style="z-index: 1500; max-height: 220px; overflow-y: auto"
                   >
@@ -846,12 +850,21 @@ onUnmounted(() => {
                     >
                       {{ item[vf.labelKey] }}
                     </button>
+                    <button
+                      v-if="canCreateVocab(vf)"
+                      type="button"
+                      class="dropdown-item text-primary d-flex align-items-center gap-1"
+                      @click="createAndAddVocabItem(vf)"
+                    >
+                      <i class="bi bi-plus-circle" />
+                      <span>Criar "{{ vf.field.input.value.trim() }}"</span>
+                    </button>
                   </div>
                   <button
                     type="button"
                     class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
                     :aria-label="`Adicionar ${vf.label.toLowerCase()}`"
-                    @click="addVocabItem(vf.field, vf.field.suggestions.value[0])"
+                    @click="onVocabPlusClick(vf)"
                   >
                     <i class="bi bi-plus-square-fill" />
                   </button>
@@ -885,7 +898,7 @@ onUnmounted(() => {
               :disabled="!canSubmit"
               @click="handleSubmit"
             >
-              {{ isSubmitting ? "Salvando..." : "Salvar e continuar" }}
+              Confirmar
             </button>
           </div>
         </template>
