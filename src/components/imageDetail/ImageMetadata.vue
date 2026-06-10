@@ -17,7 +17,7 @@
         <div v-else class="metadata-person-avatar metadata-person-avatar--placeholder">
           <span>{{ displayInitial }}</span>
         </div>
-        <RouterLink v-if="collectiveId" :to="`/collective/${collectiveId}`" class="metadata-uploader-link">
+        <RouterLink v-if="collectiveId" :to="`/coletivos/${collectiveId}`" class="metadata-uploader-link">
           {{ displayName }}
         </RouterLink>
         <RouterLink v-else-if="uploaderUserId" :to="`/profile/${uploaderUserId}`" class="metadata-uploader-link">
