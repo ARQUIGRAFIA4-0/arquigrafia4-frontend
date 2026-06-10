@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, computed } from "vue";
 import { storeToRefs } from "pinia";
+import { resolveAlbumCover } from "@/helpers/collectionCover";
 import { useAuthStore } from "@/store/auth";
 import { useUsersStore } from "@/store/users";
 import defaultCover from "@/assets/album-default.png";
@@ -190,7 +191,7 @@ watch(
               @click="toggleAlbum(album.id)"
             >
               <div class="album-picker__thumb">
-                <img :src="defaultCover" :alt="album.title" />
+                <img :src="resolveAlbumCover(album)" :alt="album.title" />
               </div>
               <span class="album-picker__text">
                 <span class="album-picker__label">{{ album.title }}</span>
