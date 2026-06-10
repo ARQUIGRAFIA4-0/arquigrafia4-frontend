@@ -12,6 +12,10 @@ const props = defineProps({
       @click="$emit('select', 'Imagens')"
     >Imagens</li>
     <li
+      :class="{ 'collective-nav--selected': props.selected === 'Coleções' }"
+      @click="$emit('select', 'Coleções')"
+    >Coleções</li>
+    <li
       :class="{ 'collective-nav--selected': props.selected === 'Participantes' }"
       @click="$emit('select', 'Participantes')"
     >Participantes</li>

@@ -40,6 +40,25 @@ export const useAlbumsStore = defineStore("albums", () => {
         }
     }
 
+    // Função para buscar os álbuns de um coletivo
+    async function getCollectiveAlbums(authHeader, collectiveId) {
+        try {
+            const headers = { "Content-Type": "application/json" };
+            if (authHeader) {
+                headers.Authorization = authHeader;
+            }
+            const response = await axios.get(`/api/collectives/${collectiveId}/albums`, {
+                headers,
+            });
+            return response.data;
+        }
+        catch (error) {
+            throw new Error(
+                error?.response?.data?.message || "Não foi possível buscar as coleções do coletivo."
+            );
+        }
+    }
+
     // Função para deletar um álbum
     async function deleteAlbum(authHeader, albumId) {
         try {
@@ -154,5 +173,5 @@ export const useAlbumsStore = defineStore("albums", () => {
         }
     }   
 
-    return { createAlbum, getUserAlbums, deleteAlbum, getDataAlbumByAlbumId, addImageToAlbum, removeImagesFromAlbum, getTagsByAlbumId };
+    return { createAlbum, getUserAlbums, getCollectiveAlbums, deleteAlbum, getDataAlbumByAlbumId, addImageToAlbum, removeImagesFromAlbum, getTagsByAlbumId };
 })
