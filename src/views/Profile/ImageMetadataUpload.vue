@@ -1285,17 +1285,123 @@ const selectWork = (work) => {
   showWorkSuggestions.value = false;
 };
 
-const onWorkCreated = (work) => {
-  allWorks.value.push(work);
-  workFuse = new Fuse(allWorks.value, {
-    keys: [
-      { name: "titles.label", weight: 0.7 },
-      { name: "location.label", weight: 0.3 },
-    ],
-    threshold: 0.3,
-    includeScore: true,
-  });
-  selectWork(work);
+// The modal emits a self-contained draft. No backend records are created here —
+// see `materializeWork` for the actual POSTs, deferred until image submit.
+const onWorkCreated = (draft) => {
+  form.value.work = {
+    draft,
+    label: draft.label || "(sem título)",
+    address: draft.address || null,
+  };
+  filteredWorkSuggestions.value = [];
+  showWorkSuggestions.value = false;
+};
+
+// Materialize a draft into a real VRACWork. Called only when the image upload
+// is actually submitted, so cancelling never leaves orphan records.
+const materializeWork = async (draft) => {
+  const authHeader = { Authorization: authStore.authHeader };
+
+  const titleIds = [];
+  for (const t of draft.titles) {
+    const res = await axios.post(
+      "/api/vrac-titles",
+      { label: t.label, type: t.type, pref: t.pref },
+      { headers: authHeader }
+    );
+    titleIds.push(res.data.title.id);
+  }
+
+  // Resolve agent role labels → IDs (lookup, else create with lowercased label)
+  let roles = null;
+  const roleIdCache = {};
+  const resolveRoleId = async (label) => {
+    if (roleIdCache[label]) return roleIdCache[label];
+    if (!roles) roles = (await vracStore.getVRACAgentRoles()) || [];
+    const match = roles.find((r) => r.label?.toLowerCase() === label.toLowerCase());
+    if (match) {
+      roleIdCache[label] = match.id;
+      return match.id;
+    }
+    const res = await axios.post(
+      "/api/vrac-agent-roles",
+      { label: label.toLowerCase() },
+      { headers: authHeader }
+    );
+    const id = res.data.role.id;
+    roles.push(res.data.role);
+    roleIdCache[label] = id;
+    return id;
+  };
+
+  const agentIds = [];
+  for (const a of draft.agents) {
+    let contribId = a.contributorNameId;
+    if (!contribId) {
+      const res = await axios.post(
+        "/api/vrac-contributor-names",
+        { name: a.contributorName, type: "personal" },
+        { headers: authHeader }
+      );
+      contribId = res.data.name.id;
+    }
+    const roleId = await resolveRoleId(a.roleLabel);
+    const res = await axios.post(
+      "/api/vrac-agents",
+      { contributor_name_id: contribId, role_id: roleId },
+      { headers: authHeader }
+    );
+    agentIds.push(res.data.agent.id);
+  }
+
+  const dateIds = [];
+  for (const d of draft.dates) {
+    const res = await axios.post("/api/vrac-dates", d, { headers: authHeader });
+    dateIds.push(res.data.date.id);
+  }
+
+  // Vocab buckets: existing IDs are used as-is; new terms are POSTed first (lowercased).
+  const VOCAB_CREATE = {
+    stylePeriods: { endpoint: "vrac-style-periods",     payload: (v) => ({ label: v }),                              responseKey: "period"    },
+    culturalCtxs: { endpoint: "vrac-cultural-contexts", payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "context"   },
+    workTypes:    { endpoint: "vrac-work-types",        payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "work_type" },
+    techniques:   { endpoint: "vrac-techniques",        payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "technique" },
+    materials:    { endpoint: "vrac-materials",         payload: (v) => ({ label: v, type: "other", vocab: "ARQUIGRAFIA" }), responseKey: "material"  },
+    subjects:     { endpoint: "vrac-subjects",          payload: (v) => ({ term: v, type: "otherTopic", vocab: "ARQUIGRAFIA" }), responseKey: "data" },
+  };
+
+  const resolvedVocab = {};
+  for (const key of Object.keys(VOCAB_CREATE)) {
+    const bucket = draft[key] || { existing: [], newTerms: [] };
+    const ids = [...bucket.existing];
+    const cfg = VOCAB_CREATE[key];
+    for (const term of bucket.newTerms) {
+      const lower = term.toLowerCase();
+      const res = await axios.post(`/api/${cfg.endpoint}`, cfg.payload(lower), { headers: authHeader });
+      const created = res.data[cfg.responseKey];
+      if (created?.id) ids.push(created.id);
+    }
+    resolvedVocab[key] = ids;
+  }
+
+  const workPayload = {
+    latitude: draft.coords.lat,
+    longitude: draft.coords.lng,
+    location_label: draft.locationLabel || undefined,
+    titles: titleIds,
+  };
+  if (agentIds.length)                       workPayload.agents            = agentIds;
+  if (dateIds.length)                        workPayload.dates             = dateIds;
+  if (draft.description)                     workPayload.description       = draft.description;
+  if (resolvedVocab.stylePeriods.length)     workPayload.style_periods     = resolvedVocab.stylePeriods;
+  if (resolvedVocab.culturalCtxs.length)     workPayload.cultural_contexts = resolvedVocab.culturalCtxs;
+  if (resolvedVocab.workTypes.length)        workPayload.work_types        = resolvedVocab.workTypes;
+  if (resolvedVocab.techniques.length)       workPayload.techniques        = resolvedVocab.techniques;
+  if (resolvedVocab.materials.length)        workPayload.materials         = resolvedVocab.materials;
+  if (resolvedVocab.subjects.length)         workPayload.subjects          = resolvedVocab.subjects;
+
+  const workRes = await axios.post("/api/vrac-works", workPayload, { headers: authHeader });
+  return workRes.data.data;
 };
 
 const licenses = [
@@ -1503,9 +1609,30 @@ const handleSubmit = async () => {
           formData.append("subjects[]", uuid);
         });
 
-        // Add selected work (single-select but backend expects array)
-        if (metadata.work?.id) {
-          formData.append("works[]", metadata.work.id);
+        // Add selected work (single-select but backend expects array).
+        // If the work is still a draft from WorkCreateModal, materialize it now —
+        // this is the first moment the user has committed to the upload.
+        let workId = metadata.work?.id || null;
+        if (!workId && metadata.work?.draft) {
+          const newWork = await materializeWork(metadata.work.draft);
+          workId = newWork?.id || null;
+          if (workId) {
+            // Persist the resolved id so a retry of this image doesn't re-create the work.
+            metadata.work.id = workId;
+            metadata.work.draft = null;
+            allWorks.value.push(newWork);
+            workFuse = new Fuse(allWorks.value, {
+              keys: [
+                { name: "titles.label", weight: 0.7 },
+                { name: "location.label", weight: 0.3 },
+              ],
+              threshold: 0.3,
+              includeScore: true,
+            });
+          }
+        }
+        if (workId) {
+          formData.append("works[]", workId);
         }
 
         // Log FormData entries for debugging

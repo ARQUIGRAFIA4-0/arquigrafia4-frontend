@@ -1,5 +1,9 @@
 <script setup>
 import { ref, watch, computed } from "vue";
+import { storeToRefs } from "pinia";
+import { resolveAlbumCover } from "@/helpers/collectionCover";
+import { useAuthStore } from "@/store/auth";
+import { useUsersStore } from "@/store/users";
 import defaultCover from "@/assets/album-default.png";
 
 // Options
@@ -33,6 +37,45 @@ function onAddCollection() {
  * Start: Selecionar álbum para inserir imagem
  */
 const selectedAlbumIds = ref([]);
+const hasAlbumSelection = computed(() => selectedAlbumIds.value.length > 0);
+
+const primaryActionLabel = computed(() =>
+  props.preselectedAlbumIds.length ? "Atualizar" : "Adicionar"
+);
+
+const authStore = useAuthStore();
+const usersStore = useUsersStore();
+const authorNamesByAlbumId = ref({});
+
+// Obter nomes dos autores dos álbuns
+async function resolveAlbumAuthors() {
+  const albums = Array.isArray(props.albums) ? props.albums : [];
+
+  if (!albums.length) {
+    authorNamesByAlbumId.value = {};
+    return;
+  }
+
+  const userId = albums[0]?.user_id;
+  let authorName = "";
+
+  if (userId) {
+    try {
+      const user = await usersStore.getUser(userId);
+      authorName = user?.name?.trim() || "";
+    } catch {
+      authorName = "";
+    }
+  }
+
+  authorNamesByAlbumId.value = Object.fromEntries(
+    albums.map((album) => [album.id, authorName])
+  );
+}
+
+function getAlbumAuthorName(album) {
+  return authorNamesByAlbumId.value[album?.id] || "";
+}
 
 // Selecionar/desselecionar álbum
 function toggleAlbum(albumId) {
@@ -56,17 +99,28 @@ function onConfirmAdd() {
   
 }
 
-// sempre que abrir modal, resetar seleção
+// sempre que abrir modal, resetar seleção e carregar autores
 watch(
   () => props.modelValue,
   (isOpen) => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      authorNamesByAlbumId.value = {};
+      return;
+    }
 
-    // pré-seleciona álbuns em que a imagem já está
     selectedAlbumIds.value = [...(props.preselectedAlbumIds || [])];
-
+    resolveAlbumAuthors();
   }
+);
 
+watch(
+  () => props.albums,
+  () => {
+    if (props.modelValue) {
+      resolveAlbumAuthors();
+    }
+  },
+  { deep: true }
 );
 
 </script>
@@ -114,6 +168,7 @@ watch(
             <button
               type="button"
               class="album-picker__cell album-picker__cell--action"
+              :class="{ 'album-picker__cell--dimmed': hasAlbumSelection }"
               @click="onAddCollection"
             >
               <span class="album-picker__add-thumb" aria-hidden="true">
@@ -124,17 +179,29 @@ watch(
               <span class="album-picker__label">Criar coleção</span>
             </button>
             <button
-                v-for="album in albums"
-                :key="album.id"
-                type="button"
-                class="album-picker__cell album-picker__cell--action"
-                :class="{ 'album-picker__cell--selected': selectedAlbumIds.includes(album.id) }"
-                @click="toggleAlbum(album.id)"
-              >
+              v-for="album in albums"
+              :key="album.id"
+              type="button"
+              class="album-picker__cell album-picker__cell--action"
+              :class="{
+                'album-picker__cell--selected': selectedAlbumIds.includes(album.id),
+                'album-picker__cell--dimmed':
+                  hasAlbumSelection && !selectedAlbumIds.includes(album.id),
+              }"
+              @click="toggleAlbum(album.id)"
+            >
               <div class="album-picker__thumb">
-                <img :src="defaultCover" :alt="album.title" />
+                <img :src="resolveAlbumCover(album)" :alt="album.title" />
               </div>
-              <span class="album-picker__label">{{ album.title }}</span>
+              <span class="album-picker__text">
+                <span class="album-picker__label">{{ album.title }}</span>
+                <span
+                  v-if="getAlbumAuthorName(album)"
+                  class="album-picker__subtitle"
+                >
+                  {{ getAlbumAuthorName(album) }}
+                </span>
+              </span>
             </button>
           </div>
         </div>
@@ -153,7 +220,7 @@ watch(
             :aria-label="primaryActionLabel"
             @click="onConfirmAdd"
           >
-          {{ props.preselectedAlbumIds.length ? "Atualizar" : "Adicionar" }}
+          {{ primaryActionLabel }}
           </button>
         </footer>
       </div>
@@ -287,9 +354,19 @@ watch(
   flex-wrap: nowrap;
 }
 
-.album-picker__cell--action:hover,
-.album-picker__cell--action:focus-visible {
-  opacity: 0.88;
+.album-picker__cell--action {
+  border-radius: 4px;
+  transition: opacity 0.2s ease, box-shadow 0.2s ease;
+}
+
+.album-picker__cell--dimmed {
+  opacity: 0.4;
+}
+
+.album-picker__cell--action:not(.album-picker__cell--selected):hover,
+.album-picker__cell--action:not(.album-picker__cell--selected):focus-visible {
+  opacity: 1;
+  box-shadow: inset 0 0 0 1px var(--Cinza_E, #2f2f2f);
 }
 
 .album-picker__add-thumb {
@@ -339,18 +416,33 @@ watch(
   display: block;
 }
 
-.album-picker__label {
+.album-picker__text {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.album-picker__label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-
   color: #000;
-  font-family: "DM Sans";
+  font-family: "DM Sans", sans-serif;
   font-size: 14px;
-  font-style: normal;
   font-weight: 700;
+  line-height: 125%;
+}
+
+.album-picker__subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--Cinza_M, #636262);
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
   line-height: 125%;
 }
 
@@ -469,18 +561,30 @@ watch(
     height: 30px;
     border-radius: 5px;
   }
+
+  .album-picker__subtitle {
+    font-size: 12px;
+  }
 }
 
 .album-picker__cell--selected {
-  background: var(--bs-gray-100);
+  opacity: 1;
+  box-shadow: inset 0 0 0 2px var(--Cinza_E, #2f2f2f);
+}
+
+.album-picker__cell--selected:hover,
+.album-picker__cell--selected:focus-visible {
+  opacity: 1;
+  box-shadow: inset 0 0 0 2px var(--Cinza_E, #2f2f2f);
 }
 
 .album-picker__cell--selected .album-picker__label {
-  color: var(--Laranja_M, #000);
+  color: #000;
+  font-weight: 700;
 }
 
 .album-picker__cell--selected .album-picker__thumb {
-  border-color: var(--Laranja_M, #000);
+  border-color: var(--Branco, #fff);
 }
 
 .album-picker__btn--add:disabled {

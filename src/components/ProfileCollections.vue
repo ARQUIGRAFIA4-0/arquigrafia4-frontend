@@ -8,7 +8,7 @@
   import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
   import albumDefaultImage from "@/assets/album-default.png";
   import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
-
+  import { resolveAlbumCover } from "@/helpers/collectionCover";
   import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
 
   const showCreateModal = ref(false);
@@ -209,7 +209,7 @@
             <template #image>
               <div class="profile-grid-card__image-wrapper">
                 <img
-                  :src="album.cover_url || album.cover || album.thumbnail || albumDefaultImage"
+                  :src="resolveAlbumCover(album)"
                   class="profile-grid-card__image"
                   :alt="album.title || 'Capa da coleção'"
                   @error="handleCoverError"

@@ -17,6 +17,7 @@
     <div class="row g-2 g-md-4">
       <div v-for="item in items" :key="item.id" class="col-6 col-md-4 col-lg-2">
         <RouterLink
+          v-if="!selectionMode"
           :to="`/explore/dados/image/${item.id}`"
           class="view-grid__link"
         >
@@ -34,11 +35,13 @@
             </template>
             <div class="ui-card__header">
               <h3 class="ui-card__title">{{ item.title }}</h3>
-              <p v-if="formatDate(item.dates)" class="ui-card__subtitle">{{ formatDate(item.dates) }}</p>
+              <p v-if="formatDate(item.dates)" class="ui-card__subtitle">
+                {{ formatDate(item.dates) }}
+              </p>
               <div v-if="item.subjects && item.subjects.length > 0" class="ui-card__tags">
-                <button 
-                  v-for="(subject, index) in item.subjects" 
-                  :key="index" 
+                <button
+                  v-for="(subject, index) in item.subjects"
+                  :key="index"
                   class="btn btn-outline-primary btn-sm btn-tag grid-tag"
                   type="button"
                   @click.prevent="handleTagClick(subject)"
@@ -49,6 +52,55 @@
             </div>
           </UiCard>
         </RouterLink>
+
+        <div
+          v-else
+          class="view-grid__link view-grid__link--selectable"
+          role="button"
+          tabindex="0"
+          :aria-pressed="isSelected(item.id)"
+          @click="onCardClick(item, $event)"
+          @keydown.enter.prevent="toggleSelection(item)"
+          @keydown.space.prevent="toggleSelection(item)"
+        >
+          <UiCard
+            class="h-100 view-grid__card"
+            :class="{ 'view-grid__card--selected': isSelected(item.id) }"
+          >
+            <template #image>
+              <div class="view-grid__image-wrapper">
+                <img
+                  :src="item.imageUrl"
+                  class="view-grid__image"
+                  :alt="item.title"
+                  :data-test-image="item.id"
+                  @error="handleImageError"
+                />
+
+                <div
+                  class="view-grid__select-indicator"
+                  :class="{ 'view-grid__select-indicator--checked': isSelected(item.id) }"
+                  aria-hidden="true"
+                >
+                  <i v-if="isSelected(item.id)" class="bi bi-check-lg"></i>
+                </div>
+
+                <div
+                  v-if="isSelected(item.id)"
+                  class="view-grid__select-overlay"
+                  aria-hidden="true"
+                ></div>
+              </div>
+            </template>
+
+            <div class="ui-card__header">
+              <h3 class="ui-card__title">{{ item.title }}</h3>
+              <p v-if="formatDate(item.dates)" class="ui-card__subtitle">
+                {{ formatDate(item.dates) }}
+              </p>
+            </div>
+          </UiCard>
+        </div>
       </div>
     </div>
 
@@ -71,13 +123,21 @@ const router = useRouter();
 const route = useRoute();
 
 const props = defineProps({
+  selectionMode: {
+    type: Boolean,
+    default: false,
+  },
+  selectedImages: {
+    type: Array,
+    default: () => [],
+  },
   search: {
     type: Object,
     default: null,
   },
 });
 
-const emit = defineEmits(["no-results"]);
+const emit = defineEmits(["no-results", "update:selected-images"]);
 
 // Combina filtros da prop search com filtros da URL
 const filters = computed(() => {
@@ -201,6 +261,39 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener("scroll", handleScroll);
 });
+
+// Função para verificar se a imagem está selecionada
+function isSelected(itemId) {
+  return props.selectedImages.some((img) => img.id === itemId);
+}
+
+// Função para adicionar ou remover a imagem da seleção
+function toggleSelection(item) {
+  const current = [...props.selectedImages];
+  const index = current.findIndex((img) => img.id === item.id);
+
+  if (index >= 0) {
+    current.splice(index, 1);
+  } else {
+    current.push({
+      id: item.id,
+      title: item.title,
+      imageUrl: item.imageUrl,
+    });
+  }
+
+  emit("update:selectedImages", current);
+}
+
+// Função para lidar com o clique na imagem
+function onCardClick(item, event) {
+  if (!props.selectionMode) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  toggleSelection(item);
+}
+
 </script>
 
 <style lang="scss" scoped>
@@ -347,5 +440,48 @@ $breakpoint-md: 768px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s infinite;
+}
+
+.view-grid__link--selectable {
+  cursor: pointer;
+}
+
+.view-grid__card--selected {
+  border-color: var(--Laranja_E, #aa4f28);
+}
+
+.view-grid__select-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.view-grid__select-indicator--checked {
+  background: var(--Laranja_E, #aa4f28);
+  border-color: var(--Laranja_E, #aa4f28);
+  color: #fff;
+}
+
+.view-grid__select-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(170, 79, 40, 0.35);
+  pointer-events: none;
+}
+
+.view-grid__link--selectable .view-grid__card:hover {
+  transform: none;
+  box-shadow: 1px 1px 3px 2px #0000001a;
 }
 </style>
