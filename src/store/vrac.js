@@ -1,18 +1,28 @@
 import { defineStore } from "pinia";
 import axios from "../axios";
 
+// Module-level cache: persists for the page session, deduplicates concurrent calls
+let _subjectsCache = null;
+let _subjectsFetchPromise = null;
+
 export const useVracStore = defineStore("vrac", () => {
   async function getVRACSubjects() {
-    try {
-      const response = await axios.get("/api/vrac-subjects?per_page=-1", {
-        headers: {
-          "Content-Type": "application/json"
-        },
+    if (_subjectsCache !== null) return _subjectsCache;
+    if (_subjectsFetchPromise) return _subjectsFetchPromise;
+    _subjectsFetchPromise = axios
+      .get("/api/vrac-subjects?per_page=-1", {
+        headers: { "Content-Type": "application/json" },
+      })
+      .then((response) => {
+        _subjectsCache = response.data.data;
+        _subjectsFetchPromise = null;
+        return _subjectsCache;
+      })
+      .catch((error) => {
+        _subjectsFetchPromise = null;
+        throw Error("Não foi possível obter os termos.");
       });
-      return response.data.data;
-    } catch (error) {
-      throw Error("Não foi possível obter os termos.");
-    }
+    return _subjectsFetchPromise;
   }
 
   async function addVRACSubject(term) {
