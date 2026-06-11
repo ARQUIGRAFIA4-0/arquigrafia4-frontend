@@ -28,11 +28,14 @@
           </div>
         </div>
 
+        <!-- Visualização dos dados -->
         <ImageMetadata v-if="currentSection === 'dados' && !isEditing" :image="image" :license-info="licenseInfo" />
 
+        <!-- Edição dos dados -->
         <ImageMetadataEdit v-else-if="currentSection === 'dados' && isEditing" :image="image"
           @updated="fetchImageData" />
 
+        <!-- Comentários -->
         <div v-else-if="currentSection === 'comentarios'">
           <div v-if="loadingComments" class="text-center py-4">
             <div class="spinner-border text-primary" role="status">
@@ -42,9 +45,17 @@
           <ImageComments :image-url="image?.imageUrl" />
         </div>
 
-        <div v-else class="text-muted small">
-          <!--  -->
-        </div>
+        <!-- Dono gerencia as pendencias -->
+        <ImageSuggestion v-else-if="currentSection === 'sugestoes' && isOwner" :image="image"
+          @updated="fetchImageData" />
+
+        <!-- Não-dono em modo sugestão (formulário) -->
+        <ImageSuggestionEdit v-else-if="currentSection === 'sugestoes' && !isOwner && isSuggesting" :image="image"
+          @submitted="fetchImageData" />
+
+        <!-- Não-dono visualizando histórico  -->
+        <ImageSuggestionView v-else-if="currentSection === 'sugestoes' && !isOwner && !isSuggesting" :image="image" />
+
       </div>
     </div>
   </div>
@@ -61,13 +72,17 @@ import ImageComments from "@/components/imageDetail/ImageComments.vue";
 import ImageDisplay from "@/components/imageDetail/ImageDisplay.vue";
 import ImageMetadata from "@/components/imageDetail/ImageMetadata.vue";
 import ImageMetadataEdit from "@/components/imageDetail/ImageMetadataEdit.vue";
+import ImageSuggestion from "@/components/imageDetail/ImageSuggestion.vue";
+import ImageSuggestionEdit from "../components/imageDetail/ImageSuggestionEdit.vue";
+import ImageSuggestionView from "../components/imageDetail/ImageSuggestionView.vue";
+
 defineOptions({ name: "ImageDetail" });
 
 const router = useRouter();
 const route = useRoute();
 const image = ref(null);
 const loading = ref(true);
-const comments = ref([]);
+// const comments = ref([]);
 const loadingComments = ref(false);
 const authStore = useAuthStore();
 const { loggedUser } = storeToRefs(authStore);
@@ -83,6 +98,11 @@ const tabs = [
     section: "comentarios",
     routeName: "image-detail-comentarios",
   },
+  {
+    label: "Sugestões",
+    section: "sugestoes",
+    routeName: "image-detail-sugestoes",
+  },
   // {
   //   label: "Imagens relacionadas",
   //   section: "relacionadas",
@@ -93,8 +113,13 @@ const tabs = [
 const isOwner = computed(() => {
   return loggedUser.value?.id === image.value?.uploader?.id;
 });
+const isLoggedIn = computed(() => !!loggedUser.value);
+const isEditing = computed(
+  () => route.query.edit === "true" && isOwner.value);
+const isSuggesting = computed(
+  () => route.query.suggest === "true" && isLoggedIn.value && !isOwner.value
+);
 
-const isEditing = computed(() => route.query.edit === "true" && isOwner.value);
 const currentSection = computed(() => route.meta?.section ?? "dados");
 
 const licenseInfo = computed(() => {
@@ -103,49 +128,41 @@ const licenseInfo = computed(() => {
   return findLicenseByUrl(rightsUrl);
 });
 
-const loadComments = async (imageId) => {
-  loadingComments.value = true;
-  try {
-    comments.value = await api.getImageComments(imageId);
-  } catch (error) {
-    console.error("Error loading comments:", error);
-  } finally {
-    loadingComments.value = false;
-  }
-};
-
+// ─── Data ─────────────────────────────────────────────────────────────────────
 const fetchImageData = async () => {
   try {
-    const imageId = route.params.id;
-    image.value = await api.getImageDetails(imageId);
+    image.value = await api.getImageDetails(route.params.id);
   } catch (error) {
-    console.error("Error fetching image data:", error);
+    console.error("Erro ao carregar imagem:", error);
   }
 };
 
-const goBack = () => {
-  router.back();
-};
-
+// ─── Handlers ─────────────────────────────────────────────────────────────────
+const goBack = () => router.back();
 const handleDownload = () => {
   console.log("Download clicked", image.value);
   // TODO: implementar lógica de download
 };
-
 const handleShare = () => {
   console.log("Share clicked", image.value);
   // TODO: implementar lógica de compartilhamento
 };
-
 const handleReportSubmit = (payload) => {
   console.log("Report submitted", payload);
   // TODO: enviar denúncia para a API
 };
 
-const handleSpecSubmit = (payload) => {
-  console.log("Especificações enviadas:", payload);
-  // TODO: enviar para a API
-};
+
+// const loadComments = async (imageId) => {
+//   loadingComments.value = true;
+//   try {
+//     comments.value = await api.getImageComments(imageId);
+//   } catch (error) {
+//     console.error("Error loading comments:", error);
+//   } finally {
+//     loadingComments.value = false;
+//   }
+// };
 
 onMounted(async () => {
   try {
