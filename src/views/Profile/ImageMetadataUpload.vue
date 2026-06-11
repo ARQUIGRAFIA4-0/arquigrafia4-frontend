@@ -716,6 +716,8 @@ import { formatDate, parseYearFromDateString } from "@/helpers/dateUtils";
 import Fuse from "fuse.js";
 defineOptions({ name: "ImageMetadataUpload" });
 
+const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
+
 const router = useRouter();
 const imageUploadStore = useImageUploadStore();
 const { pendingImages, selectedIndex } = storeToRefs(imageUploadStore);
@@ -734,6 +736,16 @@ const selectedIdentityId = ref(null);
 
 const getInitials = (name) => name?.charAt(0).toUpperCase() || "?";
 
+const resolveAvatarUrl = (entity) => {
+  if (entity.avatar_url) {
+    return entity.avatar_url.startsWith("http") ? entity.avatar_url : `${API_BASE_URL}${entity.avatar_url}`;
+  }
+  if (entity.avatar_path) {
+    return `${API_BASE_URL}/storage/${entity.avatar_path}`;
+  }
+  return null;
+};
+
 // All publishing identities: the user + their collectives
 const publishingIdentities = computed(() => {
   if (!loggedUser.value) return [];
@@ -743,7 +755,7 @@ const publishingIdentities = computed(() => {
       id: user.id,
       type: "user",
       name: user.name || user.username,
-      avatar: user.avatar || null,
+      avatar: resolveAvatarUrl(user),
       initials: user.initials || getInitials(user.name || user.username),
     },
   ];
@@ -753,7 +765,7 @@ const publishingIdentities = computed(() => {
         id: collective.id,
         type: "collective",
         name: collective.name,
-        avatar: collective.avatar_path || null,
+        avatar: resolveAvatarUrl(collective),
         initials: getInitials(collective.name),
       });
     }

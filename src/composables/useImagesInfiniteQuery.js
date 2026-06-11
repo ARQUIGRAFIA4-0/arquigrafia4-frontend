@@ -23,6 +23,7 @@ export const useImagesInfiniteQuery = (options = {}) => {
       if (filtersVal.date_from) filterKey.date_from = filtersVal.date_from;
       if (filtersVal.date_to) filterKey.date_to = filtersVal.date_to;
       if (filtersVal.userId) filterKey.userId = filtersVal.userId;
+      if (filtersVal.collectiveId) filterKey.collectiveId = filtersVal.collectiveId;
       if (filtersVal.subjects?.length) filterKey.subjects = [...filtersVal.subjects].sort().join(',');
       if (filtersVal.subjectTerms?.length) filterKey.subjectTerms = [...filtersVal.subjectTerms].sort().join(',');
       if (filtersVal.title) filterKey.title = filtersVal.title;
