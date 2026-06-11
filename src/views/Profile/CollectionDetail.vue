@@ -334,6 +334,19 @@ function handleDownloadCollection() {
 
 }
 
+// Edita a coleção.
+function handleEditCollection() {
+  if (!collectionId.value) return;
+
+  router.push({
+    name: "my-collection-edit",
+    params: {
+      collectionId: collectionId.value,
+    },
+  });
+
+}
+
 // Baixa a coleção como ZIP.
 async function handleCollectionDownloadConfirm() {
   downloadingCollection.value = true;
@@ -407,6 +420,7 @@ watch(
       @view-change="handleCollectionViewChange"
       @toggle-info="handleToggleCollectionInfo"
       @download="handleDownloadCollection"
+      @edit="handleEditCollection"
     />
 
     <DownloadModal
