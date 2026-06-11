@@ -201,7 +201,7 @@ export default [
     path: "/eu/colecoes/:collectionId/edit",
     name: "my-collection-edit",
     component: () => import("../views/Profile/CollectionEdit.vue"),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, showFooter: false },
   },
   {
     path: "/eu/colecoes/:collectionId/:viewMode",

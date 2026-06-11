@@ -343,6 +343,9 @@ function handleEditCollection() {
     params: {
       collectionId: collectionId.value,
     },
+    query: {
+      viewMode: route.params.viewMode || "grid",
+    },
   });
 
 }
