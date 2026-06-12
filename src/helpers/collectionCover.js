@@ -11,7 +11,7 @@ function hashString(value) {
   }
 
   return Math.abs(hash);
-  
+
 }
 
 export function getRandomCollectionCover(seed = null) {
@@ -19,13 +19,8 @@ export function getRandomCollectionCover(seed = null) {
     return albumDefaultImage;
   }
 
-  const index =
-    seed == null || seed === ""
-      ? Math.floor(Math.random() * COLLECTION_COVER_IMAGES.length)
-      : hashString(seed) % COLLECTION_COVER_IMAGES.length;
-
+  const index = seed ? hashString(seed) % COLLECTION_COVER_IMAGES.length : Math.floor(Math.random() * COLLECTION_COVER_IMAGES.length);
   return COLLECTION_COVER_IMAGES[index];
-
 }
 
 export function resolveAlbumCover(album) {

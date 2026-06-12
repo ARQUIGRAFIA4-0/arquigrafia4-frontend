@@ -198,6 +198,12 @@ export default [
     meta: { requiresAuth: true }
   },
   {
+    path: "/eu/colecoes/:collectionId/edit",
+    name: "my-collection-edit",
+    component: () => import("../views/Profile/CollectionEdit.vue"),
+    meta: { requiresAuth: true, showFooter: false },
+  },
+  {
     path: "/eu/colecoes/:collectionId/:viewMode",
     name: "my-collection-detail",
     component: () => import("../views/Profile/CollectionDetail.vue"),
