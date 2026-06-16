@@ -40,6 +40,25 @@ export const useAlbumsStore = defineStore("albums", () => {
         }
     }
 
+    // Função para buscar os álbuns de um coletivo
+    async function getCollectiveAlbums(authHeader, collectiveId) {
+        try {
+            const headers = { "Content-Type": "application/json" };
+            if (authHeader) {
+                headers.Authorization = authHeader;
+            }
+            const response = await axios.get(`/api/collectives/${collectiveId}/albums`, {
+                headers,
+            });
+            return response.data;
+        }
+        catch (error) {
+            throw new Error(
+                error?.response?.data?.message || "Não foi possível buscar as coleções do coletivo."
+            );
+        }
+    }
+
     // Função para deletar um álbum
     async function deleteAlbum(authHeader, albumId) {
         try {
@@ -75,6 +94,27 @@ export const useAlbumsStore = defineStore("albums", () => {
             );
         }
     }    
+
+    // Busca os dados de uma coleção preservando o status HTTP da resposta.
+    // Diferente de getDataAlbumByAlbumId, retorna { success, data, status, message }
+    // para que views públicas possam distinguir 403 (sem acesso) de 404 (não encontrada).
+    // O header de autorização é opcional (visitantes não autenticados).
+    async function getAlbumDetail(authHeader, albumId) {
+        try {
+            const headers = { "Content-Type": "application/json" };
+            if (authHeader) {
+                headers.Authorization = authHeader;
+            }
+            const response = await axios.get(`/api/albums/${albumId}`, { headers });
+            return { success: true, data: response.data };
+        } catch (error) {
+            return {
+                success: false,
+                status: error?.response?.status ?? null,
+                message: error?.response?.data?.message || "Não foi possível buscar os dados da coleção.",
+            };
+        }
+    }
 
     // Adicionar imagem ao álbum
     async function addImageToAlbum(authHeader, albumId, imageIds) {
@@ -154,5 +194,5 @@ export const useAlbumsStore = defineStore("albums", () => {
         }
     }   
 
-    return { createAlbum, getUserAlbums, deleteAlbum, getDataAlbumByAlbumId, addImageToAlbum, removeImagesFromAlbum, getTagsByAlbumId };
+    return { createAlbum, getUserAlbums, getCollectiveAlbums, deleteAlbum, getDataAlbumByAlbumId, getAlbumDetail, addImageToAlbum, removeImagesFromAlbum, getTagsByAlbumId };
 })

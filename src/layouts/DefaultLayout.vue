@@ -19,6 +19,10 @@ import AppHeader from "../components/AppHeader.vue";
 const route = useRoute();
 
 const shouldShowFooter = computed(() => {
+  if (route.meta.showFooter === false) {
+    return false;
+  }
+
   if (route.name !== "explore") {
     return true;
   }

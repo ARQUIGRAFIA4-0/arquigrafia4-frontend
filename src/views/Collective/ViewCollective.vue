@@ -6,6 +6,7 @@ import { useCollectivesStore } from "@/store/collectives";
 import CollectiveCard from "@/components/CollectiveCard.vue";
 import CollectiveNav from "@/components/CollectiveNav.vue";
 import CollectiveImages from "@/components/CollectiveImages.vue";
+import CollectiveCollections from "@/components/CollectiveCollections.vue";
 import CollectiveMembers from "@/components/CollectiveMembers.vue";
 import CollectiveRequests from "@/components/CollectiveRequests.vue";
 
@@ -93,6 +94,12 @@ async function handleRequestApproved() {
           <CollectiveImages
             v-if="selectedTab === 'Imagens'"
             :collectiveId="collectiveData?.id ?? null"
+            :collectiveName="collectiveData?.name ?? null"
+            :isMember="userRole !== null"
+          />
+          <CollectiveCollections
+            v-else-if="selectedTab === 'Coleções'"
+            :collectiveId="collectiveData?.id ? String(collectiveData.id) : null"
             :collectiveName="collectiveData?.name ?? null"
             :isMember="userRole !== null"
           />

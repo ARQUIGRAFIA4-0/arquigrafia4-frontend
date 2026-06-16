@@ -29,6 +29,10 @@ function navigateToLab() {
     router.push("/explore/lab");
   }
 }
+
+function navigateToRede() {
+  router.push("/explore/rede");
+}
 </script>
 
 <template>
@@ -53,6 +57,16 @@ function navigateToLab() {
             @click="navigateToLab"
           >
             Lab
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            :class="['nav-link', { active: activeTab === 'rede' }]"
+            :aria-current="activeTab === 'rede' ? 'page' : undefined"
+            data-label="Rede"
+            @click="navigateToRede"
+          >
+            Rede
           </button>
         </li>
       </ul>
