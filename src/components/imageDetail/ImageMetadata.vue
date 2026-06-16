@@ -135,7 +135,8 @@ const displayName = computed(() =>
 );
 const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 const displayAvatar = computed(() => {
-  const path = props.image?.collective?.avatar_path ?? props.image?.uploader?.avatar_path;
+  const entity = props.image?.collective ?? props.image?.uploader;
+  const path = entity?.avatar_path;
   return path ? `${API_BASE_URL}/storage/${path}` : null;
 });
 

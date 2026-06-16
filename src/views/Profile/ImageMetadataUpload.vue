@@ -711,7 +711,7 @@ import { useImageUploadStore } from "@/store/imageUploads";
 import { useAuthStore } from "@/store/auth";
 import { useVracStore } from "@/store/vrac";
 import { storeToRefs } from "pinia";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { formatDate, parseYearFromDateString } from "@/helpers/dateUtils";
 import Fuse from "fuse.js";
 defineOptions({ name: "ImageMetadataUpload" });
@@ -719,6 +719,7 @@ defineOptions({ name: "ImageMetadataUpload" });
 const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 
 const router = useRouter();
+const route = useRoute();
 const imageUploadStore = useImageUploadStore();
 const { pendingImages, selectedIndex } = storeToRefs(imageUploadStore);
 const authStore = useAuthStore();
@@ -772,6 +773,17 @@ const publishingIdentities = computed(() => {
   }
   return identities;
 });
+
+// Pre-select identity based on the context where the upload was initiated
+watch(publishingIdentities, (identities) => {
+  if (selectedIdentityId.value !== null || !identities.length) return;
+  const { publishAs, publishAsId } = route.query;
+  if (!publishAs || !publishAsId) return;
+  const match = identities.find(
+    (i) => i.type === publishAs && String(i.id) === String(publishAsId)
+  );
+  if (match) selectedIdentityId.value = match.id;
+}, { immediate: true });
 
 // Default to user identity
 const selectedIdentity = computed(() => {
