@@ -1,5 +1,5 @@
 <template>
-  <a class="collective-card" :href="`/collective/${collective.id}`">
+  <a class="collective-card" :href="`/coletivos/${collective.id}`">
     <div class="collective-card__media">
       <img class="collective-card__image" :src="collectiveImageDefault" :alt="`foto de ${collective.name}`" />
     </div>
