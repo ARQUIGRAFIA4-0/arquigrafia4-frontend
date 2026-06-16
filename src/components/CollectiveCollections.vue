@@ -1,5 +1,6 @@
 <script setup>
   import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
+  import { useRouter } from "vue-router";
   import { useAuthStore } from "@/store/auth";
   import { useAlbumsStore } from "@/store/albums";
   import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
@@ -20,6 +21,7 @@
 
   const authStore = useAuthStore();
   const albumsStore = useAlbumsStore();
+  const router = useRouter();
 
   // Para visitantes não logados não enviamos header de autorização
   // (authStore.authHeader resolve para "Bearer null" sem token).
@@ -37,9 +39,20 @@
     useInitialSkeleton();
 
   function toggleCardExpanded(albumId) {
-    // Apenas membros podem expandir o card para acessar ações de gerenciamento.
-    if (!props.isMember) return;
+    // Todos podem expandir o card: "Abrir" para qualquer visitante e,
+    // adicionalmente, "Excluir" para membros do coletivo.
     expandedAlbumId.value = expandedAlbumId.value === albumId ? null : albumId;
+  }
+
+  // Abre o detalhe da coleção (rota canônica pública).
+  function openCollection(albumId) {
+    router.push({
+      name: "collection-detail",
+      params: {
+        collectionId: albumId,
+        viewMode: "grid",
+      },
+    });
   }
 
   // Trata erro de carregamento da capa da coleção
@@ -197,10 +210,11 @@
               </h3>
               <p class="ui-card__subtitle">{{ "\u00A0" }}</p>
               <div
-                v-if="isMember && expandedAlbumId === album.id"
+                v-if="expandedAlbumId === album.id"
                 class="profile-grid-card__actions"
               >
                 <button
+                  v-if="isMember"
                   type="button"
                   class="btn btn-outline-primary btn-sm profile-grid-card__action-btn profile-grid-card__action-btn--delete"
                   title="Excluir coleção"
@@ -208,6 +222,15 @@
                 >
                   <i class="bi bi-trash"></i>
                   <span class="d-none d-md-inline">Excluir</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm profile-grid-card__action-btn"
+                  title="Abrir coleção"
+                  @click.stop="openCollection(album.id)"
+                >
+                  <i class="bi bi-arrow-right"></i>
+                  <span class="d-none d-md-inline">Abrir</span>
                 </button>
               </div>
             </div>
