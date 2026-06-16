@@ -747,7 +747,7 @@ const resolveAvatarUrl = (entity) => {
   return null;
 };
 
-// All publishing identities: the user + their collectives
+// Todas as identidades de publicação: o usuário e seus coletivos
 const publishingIdentities = computed(() => {
   if (!loggedUser.value) return [];
   const user = loggedUser.value;
@@ -774,7 +774,7 @@ const publishingIdentities = computed(() => {
   return identities;
 });
 
-// Pre-select identity based on the context where the upload was initiated
+// Pré-seleciona a identidade com base no contexto de onde o upload foi iniciado
 watch(publishingIdentities, (identities) => {
   if (selectedIdentityId.value !== null || !identities.length) return;
   const { publishAs, publishAsId } = route.query;
@@ -785,7 +785,7 @@ watch(publishingIdentities, (identities) => {
   if (match) selectedIdentityId.value = match.id;
 }, { immediate: true });
 
-// Default to user identity
+// Padrão: identidade do usuário
 const selectedIdentity = computed(() => {
   if (!publishingIdentities.value.length) return null;
   if (!selectedIdentityId.value) return publishingIdentities.value[0];
@@ -903,12 +903,12 @@ watch(
       let date = storedMetadata.date || exifDate || defaultForm.date;
       let dateEnd = storedMetadata.dateEnd || exifDate || defaultForm.dateEnd;
 
-      // If EXIF date exists, use it for both date and dateEnd
+      // Se a data do EXIF existe, usa para data inicial e final
       if (exifDate && !storedMetadata.date) {
         date = exifDate;
         dateEnd = exifDate;
       }
-      // If user-provided date exists and dateType is 'year', expand to full year
+      // Se o usuário informou uma data e o tipo é 'year', expande para o ano completo
       else if (date && !storedMetadata.dateEnd && form.value.dateType === 'year') {
         const year = parseYearFromDateString(date);
         if (year) {
@@ -916,7 +916,7 @@ watch(
           dateEnd = formatDate(year, 12, 31);
         }
       }
-      // If user-provided date exists and dateType is 'interval', expand both dates
+      // Se o usuário informou uma data e o tipo é 'interval', expande as duas datas
       else if (date && dateEnd && form.value.dateType === 'interval') {
         const startYear = parseYearFromDateString(date);
         const endYear = parseYearFromDateString(dateEnd);
@@ -996,7 +996,7 @@ const zoomOut = () => {
   mapInstance.value?.zoomOut();
 };
 
-// Location geocoding
+// Geocodificação de localização
 const locationSuggestions = ref([]);
 const showLocationSuggestions = ref(false);
 
@@ -1073,7 +1073,7 @@ const dateEndYearInput = computed({
 
 const tagInput = ref("");
 
-// Tag autocomplete state
+// Estado do autocomplete de tags
 const allSubjects = ref([]);
 const filteredTagSuggestions = ref([]);
 const showTagSuggestions = ref(false);
@@ -1090,34 +1090,34 @@ const canCreateSubject = computed(() => {
   );
 });
 
-// Contributor names state
+// Estado dos nomes de contribuidores
 const allContributorNames = ref([]);
 
-// Fetch fresh user data, subjects, and contributor names on mount
+// Carrega dados atualizados do usuário, assuntos e nomes de contribuidores na montagem
 onMounted(async () => {
   try {
-    // Refresh user data so collectives are up-to-date
+    // Atualiza dados do usuário para garantir coletivos atualizados
     await authStore.getLoggedUser();
 
-    // Fetch subjects
+    // Busca assuntos
     const subjects = await vracStore.getVRACSubjects();
     if (Array.isArray(subjects)) {
       allSubjects.value = subjects;
-      // Initialize Fuse.js with fetched subjects
+      // Inicializa o Fuse.js com os assuntos carregados
       fuseInstance = new Fuse(allSubjects.value, {
         keys: ["term"],
-        threshold: 0.3, // Allow fuzzy matching
+        threshold: 0.3, // Permite correspondência aproximada
         includeScore: true,
       });
     }
 
-    // Fetch contributor names
+    // Busca nomes de contribuidores
     const contributors = await vracStore.getVRACContributorNames();
     if (Array.isArray(contributors)) {
       allContributorNames.value = contributors;
     }
 
-    // Fetch works
+    // Busca obras
     const works = await vracStore.getVRACWorks();
     if (Array.isArray(works)) {
       allWorks.value = works;
@@ -1135,7 +1135,7 @@ onMounted(async () => {
   }
 });
 
-// Debounced search function
+// Função de busca com debounce
 const onTagInputChange = () => {
   if (debounceTimer) clearTimeout(debounceTimer);
 
@@ -1147,9 +1147,9 @@ const onTagInputChange = () => {
 
     if (fuseInstance) {
       const results = fuseInstance.search(tagInput.value);
-      // Filter out tags that are already added
+      // Exclui tags que já foram adicionadas
       filteredTagSuggestions.value = results
-        .map(result => result.item) // extract the actual subject
+        .map(result => result.item) // extrai o assunto em si
         .filter(item => !form.value.tags.includes(item.term))
         .slice(0, 10);
     }
@@ -1157,7 +1157,7 @@ const onTagInputChange = () => {
 };
 
 const hideTagSuggestions = () => {
-  // Small delay to allow click on suggestion before hiding
+  // Pequeno atraso para permitir o clique na sugestão antes de ocultar
   setTimeout(() => {
     showTagSuggestions.value = false;
   }, 200);
@@ -1221,7 +1221,7 @@ const removeTag = (index) => {
   form.value.tags.splice(index, 1);
 };
 
-// Work autocomplete state
+// Estado do autocomplete de obras
 const showWorkCreateModal = ref(false);
 const allWorks = ref([]);
 const workInput = ref("");
@@ -1297,8 +1297,8 @@ const selectWork = (work) => {
   showWorkSuggestions.value = false;
 };
 
-// The modal emits a self-contained draft. No backend records are created here —
-// see `materializeWork` for the actual POSTs, deferred until image submit.
+// O modal emite um rascunho independente. Nenhum registro é criado no backend aqui —
+// veja `materializeWork` para os POSTs reais, adiados até o envio da imagem.
 const onWorkCreated = (draft) => {
   form.value.work = {
     draft,
@@ -1309,8 +1309,8 @@ const onWorkCreated = (draft) => {
   showWorkSuggestions.value = false;
 };
 
-// Materialize a draft into a real VRACWork. Called only when the image upload
-// is actually submitted, so cancelling never leaves orphan records.
+// Materializa um rascunho em uma VRACWork real. Chamado apenas quando o upload
+// da imagem é de fato enviado, para que cancelamentos não deixem registros órfãos.
 const materializeWork = async (draft) => {
   const authHeader = { Authorization: authStore.authHeader };
 
@@ -1324,7 +1324,7 @@ const materializeWork = async (draft) => {
     titleIds.push(res.data.title.id);
   }
 
-  // Resolve agent role labels → IDs (lookup, else create with lowercased label)
+  // Resolve labels de papel do agente → IDs (busca existente ou cria com label em minúsculas)
   let roles = null;
   const roleIdCache = {};
   const resolveRoleId = async (label) => {
@@ -1372,7 +1372,7 @@ const materializeWork = async (draft) => {
     dateIds.push(res.data.date.id);
   }
 
-  // Vocab buckets: existing IDs are used as-is; new terms are POSTed first (lowercased).
+  // Vocabulários: IDs existentes são usados diretamente; novos termos são criados via POST (em minúsculas).
   const VOCAB_CREATE = {
     stylePeriods: { endpoint: "vrac-style-periods",     payload: (v) => ({ label: v }),                              responseKey: "period"    },
     culturalCtxs: { endpoint: "vrac-cultural-contexts", payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "context"   },
@@ -1532,13 +1532,13 @@ const handleSubmit = async () => {
     const successfulUploads = [];
     const failedUploads = [];
 
-    // Process each image individually
+    // Processa cada imagem individualmente
     for (let index = 0; index < pendingImages.value.length; index++) {
       const image = pendingImages.value[index];
       const metadata = image.metadata || {};
 
       try {
-        // Map selected tags to their UUIDs from allSubjects
+        // Mapeia as tags selecionadas para seus UUIDs em allSubjects
         const subjectUuids = (metadata.tags || [])
           .map((tagTerm) => {
             const subject = allSubjects.value.find((s) => s.term === tagTerm);
@@ -1546,8 +1546,8 @@ const handleSubmit = async () => {
           })
           .filter((id) => id !== null);
 
-        // Find or create photographer UUID
-        // If isAuthor is true, use logged user's name, otherwise use authorName
+        // Busca ou cria o UUID do fotógrafo
+        // Se isAuthor for verdadeiro, usa o nome do usuário logado; caso contrário, usa authorName
         let photographerUuid = null;
         let photographerName = null;
 
@@ -1562,7 +1562,7 @@ const handleSubmit = async () => {
             (c) => c.name.toLowerCase() === photographerName.toLowerCase()
           );
 
-          // If photographer doesn't exist, create it
+          // Se o fotógrafo não existe, cria um novo
           if (!contributor) {
             const newContributor = await vracStore.addVRACContributorName(
               photographerName
@@ -1576,7 +1576,7 @@ const handleSubmit = async () => {
           photographerUuid = contributor?.id || null;
         }
 
-        // Create FormData for this specific image
+        // Cria o FormData para esta imagem específica
         const formData = new FormData();
         formData.append("image", image.file);
         formData.append("user_id", loggedUser.value.id);
@@ -1586,7 +1586,7 @@ const handleSubmit = async () => {
         formData.append("title", metadata.title || "");
         formData.append("license", metadata.license || "CC BY-NC-SA");
 
-        // Add optional fields
+        // Adiciona campos opcionais
         if (photographerUuid) {
           formData.append("photographer", photographerUuid);
         }
@@ -1606,7 +1606,7 @@ const handleSubmit = async () => {
           formData.append("circa", "0");
         }
         if (metadata.coordinates) {
-          // Ensure coordinates have decimal places (Laravel expects decimal:1,8)
+          // Garante casas decimais nas coordenadas (Laravel espera decimal:1,8)
           const lat = parseFloat(metadata.coordinates.lat).toFixed(8);
           const lng = parseFloat(metadata.coordinates.lng).toFixed(8);
           formData.append("latitude", lat);
@@ -1616,20 +1616,20 @@ const handleSubmit = async () => {
           formData.append("location_label", metadata.location);
         }
 
-        // Add subjects array
+        // Adiciona array de assuntos
         subjectUuids.forEach((uuid) => {
           formData.append("subjects[]", uuid);
         });
 
-        // Add selected work (single-select but backend expects array).
-        // If the work is still a draft from WorkCreateModal, materialize it now —
-        // this is the first moment the user has committed to the upload.
+        // Adiciona a obra selecionada (seleção única, mas o backend espera array).
+        // Se a obra ainda é um rascunho do WorkCreateModal, materializa agora —
+        // este é o primeiro momento em que o usuário confirmou o envio.
         let workId = metadata.work?.id || null;
         if (!workId && metadata.work?.draft) {
           const newWork = await materializeWork(metadata.work.draft);
           workId = newWork?.id || null;
           if (workId) {
-            // Persist the resolved id so a retry of this image doesn't re-create the work.
+            // Persiste o ID resolvido para que uma nova tentativa não recrie a obra.
             metadata.work.id = workId;
             metadata.work.draft = null;
             allWorks.value.push(newWork);
@@ -1647,7 +1647,7 @@ const handleSubmit = async () => {
           formData.append("works[]", workId);
         }
 
-        // Log FormData entries for debugging
+        // Loga as entradas do FormData para depuração
         console.log(`\n=== FormData for Image ${index + 1} ===`);
         for (const [key, value] of formData.entries()) {
           if (value instanceof File) {
@@ -1658,7 +1658,7 @@ const handleSubmit = async () => {
         }
         console.log("===========================\n");
 
-        // Submit this image
+        // Envia esta imagem
         const response = await axios.post("/api/images", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
@@ -1678,7 +1678,7 @@ const handleSubmit = async () => {
       }
     }
 
-    // Show results
+    // Exibe os resultados
     if (successfulUploads.length > 0 && failedUploads.length === 0) {
       alertType.value = "success";
       alertMessage.value = `${successfulUploads.length} ${
@@ -1686,7 +1686,7 @@ const handleSubmit = async () => {
       } com sucesso!`;
       showAlert.value = true;
 
-      // Clear images and redirect after a short delay
+      // Limpa as imagens e redireciona após um breve atraso
       setTimeout(() => {
         imageUploadStore.clearImages();
         router.push("/profile");
@@ -1709,10 +1709,10 @@ const handleSubmit = async () => {
       alertMessage.value = message;
       showAlert.value = true;
 
-      // If some succeeded, remove them from the list
+      // Se alguns enviaram com sucesso, remove-os da lista
       if (successfulUploads.length > 0) {
         setTimeout(() => {
-          // Remove successful uploads from pending
+          // Remove os uploads bem-sucedidos da lista pendente
           const remainingImages = pendingImages.value.filter((img) => {
             const title = img.metadata?.title || "";
             return !successfulUploads.includes(title);
