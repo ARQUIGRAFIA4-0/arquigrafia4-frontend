@@ -36,12 +36,12 @@ function formatDate(dates) {
 <template>
   <div
     v-if="isLoading"
-    class="collection-edit-images-grid"
+    class="collection-edit-images-grid collection-edit-images-grid--skeleton"
     role="status"
     aria-label="Carregando imagens da coleção"
   >
     <article
-      v-for="n in 6"
+      v-for="n in 12"
       :key="`collection-edit-skeleton-${n}`"
       class="collection-edit-images-grid__card collection-edit-images-grid__card--skeleton"
       aria-hidden="true"
@@ -204,6 +204,10 @@ function formatDate(dates) {
   line-height: 150%;
 }
 
+.collection-edit-images-grid--skeleton {
+  pointer-events: none;
+}
+
 .collection-edit-images-grid__card--skeleton {
   pointer-events: none;
 }
@@ -211,36 +215,37 @@ function formatDate(dates) {
 .collection-edit-images-grid__image-skeleton,
 .collection-edit-images-grid__title-skeleton,
 .collection-edit-images-grid__subtitle-skeleton {
-  background: #ececec;
-  animation: collection-edit-skeleton-pulse 1.8s ease-in-out infinite;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: collection-edit-images-shimmer 1.5s infinite;
 }
 
 .collection-edit-images-grid__image-skeleton {
   width: 100%;
   aspect-ratio: 220 / 198;
   flex: 0 0 auto;
+  border-radius: 0;
 }
 
 .collection-edit-images-grid__title-skeleton {
   width: 80%;
   height: 14px;
-  border-radius: 4px;
   flex: 1 1 auto;
 }
 
 .collection-edit-images-grid__subtitle-skeleton {
-  width: 40%;
+  width: 50%;
   height: 12px;
-  border-radius: 4px;
   flex: 0 0 12px;
 }
 
-@keyframes collection-edit-skeleton-pulse {
+@keyframes collection-edit-images-shimmer {
   0% {
-    opacity: 0.6;
+    background-position: 200% 0;
   }
   100% {
-    opacity: 1;
+    background-position: -200% 0;
   }
 }
 
