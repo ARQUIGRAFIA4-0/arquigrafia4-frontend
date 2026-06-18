@@ -154,56 +154,6 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
 }
 
 /**
-* Start: Remover imagem
-**/
-const selectedImageId = ref(null);
-const removingImageId = ref(null);
-
-// Ativa a imagem (seleciona ou desseleciona)
-function onCardActivate(item, event) {
-  // evita que clique em botão interno dispare toggle duas vezes
-  const target = event?.target;
-  if (target?.closest?.("button,a")) return;
-
-  selectedImageId.value = selectedImageId.value === item.id ? null : item.id; // Toggle seleção
-}
-
-// Remove a imagem da coleção
-async function removeImageFromCollection(imageId) {
-  if (!collectionId.value || !imageId) return; // Verifica se a coleção e a imagem existem. Para evitar bugs;
-
-  removingImageId.value = imageId; // Define o ID da imagem que está sendo removida
-  
-  try {
-    await albumsStore.removeImagesFromAlbum(
-      authStore.authHeader,
-      collectionId.value,
-      imageId
-    );
-
-    // Controle de estado: Remove a imagem da lista de imagens da coleção
-    collectionImages.value = collectionImages.value.filter((img) => img.id !== imageId);
-
-    if (selectedImageId.value === imageId) {
-      selectedImageId.value = null;
-    }
-
-    if (albumData.value?.images?.length) {
-      albumData.value.images = albumData.value.images.filter(
-        (img) => img.id !== imageId
-      );
-    }
-  } catch (err) {
-    console.error(err);
-  } finally {
-    removingImageId.value = null;
-  }
-}
-/**
-* End: Remover imagem
-*/
-
-/**
  * Start: Toolbar
 */
 const viewSelection = computed(() =>
@@ -487,11 +437,8 @@ watch(
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
                 :is-grid-reflowing="isGridReflowing"
-                :selected-image-id="selectedImageId"
-                :removing-image-id="removingImageId"
                 :is-info-active="isInfoActive"
-                @activate="onCardActivate"
-                @remove="removeImageFromCollection"
+                :allow-remove="false"
               />
 
               <CollectionImagesMosaic
@@ -521,11 +468,8 @@ watch(
               <CollectionImagesGrid
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
-                :selected-image-id="selectedImageId"
-                :removing-image-id="removingImageId"
                 :is-info-active="false"
-                @activate="onCardActivate"
-                @remove="removeImageFromCollection"
+                :allow-remove="false"
               />
             </section>
           </div>
