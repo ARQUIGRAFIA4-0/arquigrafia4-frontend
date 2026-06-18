@@ -94,6 +94,7 @@ onBeforeUnmount(() => {
       v-else-if="hasLoadedImages && !loading && items.length === 0 && isMember"
       :show-upload-instructions="true"
       instructions-title="Seu coletivo ainda não tem<br />contribuições."
+      :publishing-context="{ type: 'collective', id: collectiveId }"
     />
 
     <div

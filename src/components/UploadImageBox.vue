@@ -13,6 +13,10 @@ const props = defineProps({
     type: String,
     default: "Você ainda não tem<br />contribuições.",
   },
+  publishingContext: {
+    type: Object, // { type: 'collective' | 'user', id: string | number }
+    default: null,
+  },
 });
 
 const uploadStore = useImageUploadStore();
@@ -103,7 +107,12 @@ async function handleDrop(event) {
 }
 
 function goToMetadata() {
-  router.push({ name: "image-metadata" });
+  const query = {};
+  if (props.publishingContext) {
+    query.publishAs = props.publishingContext.type;
+    query.publishAsId = String(props.publishingContext.id);
+  }
+  router.push({ name: "image-metadata", query });
 }
 </script>
 

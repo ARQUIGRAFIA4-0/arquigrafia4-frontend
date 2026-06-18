@@ -40,6 +40,9 @@
   const props = defineProps({
       modelValue: { type: Boolean, default: false },
       userData: { type: Object, default: null },
+      // Quando informado, a coleção é criada para o coletivo (collective_id no payload)
+      // em vez de para o usuário autenticado.
+      collectiveId: { type: [String, Number], default: null },
   });
 
   const emit = defineEmits(["update:modelValue", "created"]);
@@ -53,11 +56,14 @@
   async function handleProceedWithCollection() {
     if (isSubmittingCollection.value) return;
     
-    // Validar se o usuário está autenticado
-    const userId = props.userData?.id ?? null;
-    if (!userId) {
-      openCollectionToast("Usuário não identificado.", "error");
-      return;
+    // Para coleção de coletivo basta o collectiveId; para coleção de usuário
+    // é necessário o usuário autenticado.
+    if (!props.collectiveId) {
+      const userId = props.userData?.id ?? null;
+      if (!userId) {
+        openCollectionToast("Usuário não identificado.", "error");
+        return;
+      }
     }
 
     // Validar se o título está preenchido
@@ -70,6 +76,9 @@
 
     // Criar o payload para o envio ao backend
     const payload = { title, description };
+    if (props.collectiveId) {
+      payload.collective_id = props.collectiveId;
+    }
 
     try {
       isSubmittingCollection.value = true;

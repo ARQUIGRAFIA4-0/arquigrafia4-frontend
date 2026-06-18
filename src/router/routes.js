@@ -162,6 +162,33 @@ export default [
     component: () => import("../views/Collective/EditCollective.vue"),
     meta: { requiresAuth: true },
   },
+  // Detalhe canônico de coleção — rota pública, dono polimórfico (usuário ou coletivo).
+  // Autorização é data-driven: dono resolvido pelos dados do álbum; privacidade via 403
+  // do backend. Coleções de usuário também são acessíveis aqui (quem tem direito vê).
+  {
+    path: "/colecoes/:collectionId",
+    name: "collection-detail-redirect",
+    redirect: (to) => ({
+      name: "collection-detail",
+      params: { collectionId: to.params.collectionId, viewMode: "grid" },
+    }),
+  },
+  {
+    path: "/colecoes/:collectionId/:viewMode",
+    name: "collection-detail",
+    component: () => import("../views/CollectionDetailPublic.vue"),
+    beforeEnter: (to) => {
+      const allowed = ["grid", "mosaic"];
+      if (!allowed.includes(to.params.viewMode)) {
+        return {
+          name: "collection-detail",
+          params: { ...to.params, viewMode: "grid" },
+          replace: true,
+        };
+      }
+      return true;
+    },
+  },
   {
     path: "/eu",
     redirect: { name: "my-profile-images" },
