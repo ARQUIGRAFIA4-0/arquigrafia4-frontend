@@ -6,6 +6,7 @@ defineOptions({ name: "CollectionEditForm" });
 const props = defineProps({
   title: { type: String, default: "" },
   description: { type: String, default: "" },
+  disabled: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(["update:title", "update:description"]);
@@ -41,6 +42,7 @@ function onDescriptionInput(event) {
             class="collection-edit-form__input"
             type="text"
             :value="title"
+            :disabled="disabled"
             placeholder="Arquitetura no percurso da fonte à fábrica"
             @input="onTitleInput"
           />
@@ -59,6 +61,7 @@ function onDescriptionInput(event) {
             rows="6"
             :value="description"
             :maxlength="DESCRIPTION_MAX_LENGTH"
+            :disabled="disabled"
             placeholder="Esse conjunto de imagens mostra como o distrito do Brás passou por diversas transformações ao longo do tempo..."
             @input="onDescriptionInput"
           />

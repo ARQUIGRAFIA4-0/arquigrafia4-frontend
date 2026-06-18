@@ -5,18 +5,29 @@ defineOptions({ name: "CollectionEditImagesGrid" });
 const props = defineProps({
   images: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
+  selectedImageId: { type: [String, Number], default: null },
+  removingImageId: { type: [String, Number], default: null },
 });
 
-// Formata a data da imagem.
+const emit = defineEmits(["activate", "remove"]);
+
+function isCardSelected(item) {
+  return props.selectedImageId === item.id;
+}
+
 function formatDate(dates) {
   if (!dates || dates.length === 0) return null;
 
   const dateInfo = dates.find((d) => d.type === "creation") || dates[0];
   if (!dateInfo) return null;
 
-  const earliest = dateInfo.earliest_date ? new Date(dateInfo.earliest_date).getFullYear() : null;
+  const earliest = dateInfo.earliest_date
+    ? new Date(dateInfo.earliest_date).getFullYear()
+    : null;
 
-  const latest = dateInfo.latest_date ? new Date(dateInfo.latest_date).getFullYear() : null;
+  const latest = dateInfo.latest_date
+    ? new Date(dateInfo.latest_date).getFullYear()
+    : null;
 
   const circa = dateInfo.circa_earliest_date || dateInfo.circa_latest_date;
 
@@ -29,7 +40,6 @@ function formatDate(dates) {
   }
 
   return `${prefix}${earliest}-${latest}`;
-  
 }
 </script>
 
@@ -60,32 +70,71 @@ function formatDate(dates) {
     class="collection-edit-images-grid"
     aria-label="Imagens da coleção"
   >
-    <article
+    <div
       v-for="item in images"
       :key="item.id"
-      class="collection-edit-images-grid__card"
+      class="collection-edit-images-grid__link"
+      role="button"
+      tabindex="0"
+      @click="emit('activate', item, $event)"
+      @keydown.enter.prevent="emit('activate', item, $event)"
+      @keydown.space.prevent="emit('activate', item, $event)"
     >
-      <div class="collection-edit-images-grid__image-wrap">
-        <img
-          :src="item.imageUrl"
-          :alt="item.title || 'Imagem da coleção'"
-          class="collection-edit-images-grid__image"
-          loading="lazy"
-        />
-      </div>
+      <article
+        class="collection-edit-images-grid__card"
+        :class="{
+          'collection-edit-images-grid__card--selected': isCardSelected(item),
+        }"
+      >
+        <div class="collection-edit-images-grid__image-wrap">
+          <img
+            :src="item.imageUrl"
+            :alt="item.title || 'Imagem da coleção'"
+            class="collection-edit-images-grid__image"
+            loading="lazy"
+          />
+        </div>
 
-      <div class="collection-edit-images-grid__body">
-        <h3 class="collection-edit-images-grid__title">
-          {{ item.title || "Sem título" }}
-        </h3>
-        <p
-          v-if="formatDate(item.dates)"
-          class="collection-edit-images-grid__subtitle"
-        >
-          {{ formatDate(item.dates) }}
-        </p>
-      </div>
-    </article>
+        <div class="collection-edit-images-grid__body">
+          <div class="collection-edit-images-grid__meta">
+            <h3 class="collection-edit-images-grid__title">
+              {{ item.title || "Sem título" }}
+            </h3>
+            <p class="collection-edit-images-grid__subtitle">
+              {{ formatDate(item.dates) || "\u00a0" }}
+            </p>
+          </div>
+
+          <div
+            class="collection-edit-images-grid__actions"
+            :class="{
+              'collection-edit-images-grid__actions--visible': isCardSelected(item),
+            }"
+          >
+            <button
+              type="button"
+              class="collection-edit-images-grid__btn collection-edit-images-grid__btn--remove"
+              :disabled="removingImageId === item.id"
+              :tabindex="isCardSelected(item) ? 0 : -1"
+              @click.stop="emit('remove', item.id)"
+            >
+              <i class="bi bi-trash" aria-hidden="true" />
+              <span>Remover</span>
+            </button>
+            <button
+              type="button"
+              class="collection-edit-images-grid__btn collection-edit-images-grid__btn--reorder"
+              disabled
+              aria-disabled="true"
+              tabindex="-1"
+            >
+              <i class="bi bi-arrow-left-right" aria-hidden="true" />
+              <span>Reordenar</span>
+            </button>
+          </div>
+        </div>
+      </article>
+    </div>
   </div>
 
   <p v-else class="collection-edit-images-grid__empty">
@@ -98,25 +147,28 @@ function formatDate(dates) {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
 }
 
-@container collection-edit-images (max-width: 560px) {
-  .collection-edit-images-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.collection-edit-images-grid__link {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
 
 .collection-edit-images-grid__card {
   display: flex;
   width: 100%;
-  padding-bottom: var(--pp, 8px);
+  height: 100%;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  align-items: stretch;
+  gap: 0;
   flex-shrink: 0;
   border-radius: 5px;
   border: 0.25px solid var(--Cinza_C, #a6a6a6);
@@ -146,17 +198,29 @@ function formatDate(dates) {
 
 .collection-edit-images-grid__body {
   display: flex;
-  height: 66px;
-  min-height: 66px;
-  max-height: 66px;
-  padding: var(--ppp, 4px) var(--pp, 8px);
+  flex: 1 1 auto;
+  min-height: 94px;
+  padding: var(--ppp, 4px) var(--pp, 8px) var(--pp, 8px);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  align-self: stretch;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--Branco, #fff);
+}
+
+.collection-edit-images-grid__card--selected .collection-edit-images-grid__body {
+  background: var(--Laranja_C, #f3e7dc);
+}
+
+.collection-edit-images-grid__meta {
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
   align-self: stretch;
-  flex: 0 0 66px;
-  overflow: hidden;
-  box-sizing: border-box;
+  flex: 0 0 auto;
 }
 
 .collection-edit-images-grid__title {
@@ -164,11 +228,12 @@ function formatDate(dates) {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  flex: 1 1 auto;
-  min-height: 0;
   align-self: stretch;
+  height: 15px;
+  min-height: 15px;
+  max-height: 15px;
   overflow: hidden;
-  margin: 0;
+  margin: 10px 0 0;
   color: var(--Preto, #1f1f1f);
   text-overflow: ellipsis;
   font-family: "DM Sans", sans-serif;
@@ -179,21 +244,74 @@ function formatDate(dates) {
 }
 
 .collection-edit-images-grid__subtitle {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  flex: 0 0 14px;
+  display: block;
   align-self: stretch;
+  height: 14px;
+  min-height: 14px;
   overflow: hidden;
   margin: 0;
   color: var(--Preto, #1f1f1f);
   text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: "DM Sans", sans-serif;
   font-size: 12px;
   font-style: normal;
   font-weight: 400;
   line-height: 115%;
+}
+
+.collection-edit-images-grid__actions {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  align-self: stretch;
+  width: 100%;
+  min-height: 22px;
+  margin-top: 10px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.collection-edit-images-grid__actions--visible {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.collection-edit-images-grid__btn {
+  display: inline-flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 150%;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.collection-edit-images-grid__btn--remove {
+  border-color: var(--Laranja_E, #aa4f28);
+  background: var(--Branco, #fff);
+  color: var(--Laranja_E, #aa4f28);
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.collection-edit-images-grid__btn--reorder {
+  border-color: var(--Laranja_E, #aa4f28);
+  background: var(--Laranja_E, #aa4f28);
+  color: var(--Branco, #fff);
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .collection-edit-images-grid__empty {
@@ -210,6 +328,12 @@ function formatDate(dates) {
 
 .collection-edit-images-grid__card--skeleton {
   pointer-events: none;
+  gap: 0;
+  padding-bottom: 0;
+}
+
+.collection-edit-images-grid__card--skeleton .collection-edit-images-grid__body {
+  min-height: 94px;
 }
 
 .collection-edit-images-grid__image-skeleton,
@@ -249,15 +373,44 @@ function formatDate(dates) {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1256px) {
   .collection-edit-images-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .collection-edit-images-grid__actions {
+    align-items: center;
+    gap: 6px;
+  }
+
+  .collection-edit-images-grid__btn {
+    height: 22px;
+    gap: 3px;
+    padding: 0 6px;
+    font-size: 11px;
+    line-height: 1;
+    box-sizing: border-box;
+  }
+
+  .collection-edit-images-grid__btn i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 11px;
+    line-height: 1;
+  }
+
+  .collection-edit-images-grid__btn span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
-@media (max-width: 479px) {
+@media (max-width: 767px) {
   .collection-edit-images-grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 }
 </style>

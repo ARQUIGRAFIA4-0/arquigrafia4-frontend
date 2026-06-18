@@ -93,7 +93,25 @@ export const useAlbumsStore = defineStore("albums", () => {
                 error?.response?.data?.message || "Não foi possível buscar os dados do álbum."
             );
         }
-    }    
+    }
+
+    // Atualiza título e descrição do álbum
+    async function updateAlbum(authHeader, albumId, payload) {
+        try {
+            const response = await axios.put(`/api/albums/${albumId}`, payload, {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: authHeader,
+                },
+            });
+
+            return response.data;
+        } catch (error) {
+            throw new Error(
+                error?.response?.data?.message || "Não foi possível atualizar a coleção."
+            );
+        }
+    }
 
     // Busca os dados de uma coleção preservando o status HTTP da resposta.
     // Diferente de getDataAlbumByAlbumId, retorna { success, data, status, message }
@@ -194,5 +212,5 @@ export const useAlbumsStore = defineStore("albums", () => {
         }
     }   
 
-    return { createAlbum, getUserAlbums, getCollectiveAlbums, deleteAlbum, getDataAlbumByAlbumId, getAlbumDetail, addImageToAlbum, removeImagesFromAlbum, getTagsByAlbumId };
+    return { createAlbum, getUserAlbums, getCollectiveAlbums, deleteAlbum, getDataAlbumByAlbumId, updateAlbum, getAlbumDetail, addImageToAlbum, removeImagesFromAlbum, getTagsByAlbumId };
 })

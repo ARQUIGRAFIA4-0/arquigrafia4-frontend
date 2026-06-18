@@ -25,6 +25,43 @@ const showSkeleton = computed(() => !hasLoaded.value);
 
 const collectionId = computed(() => route.params.collectionId);
 
+const selectedImageId = ref(null);
+const removingImageId = ref(null);
+
+function onCardActivate(item, event) {
+  const target = event?.target;
+  if (target?.closest?.("button,a")) return;
+
+  selectedImageId.value =
+    selectedImageId.value === item.id ? null : item.id;
+}
+
+async function removeImageFromCollection(imageId) {
+  if (!collectionId.value || !imageId) return;
+
+  removingImageId.value = imageId;
+
+  try {
+    await albumsStore.removeImagesFromAlbum(
+      authStore.authHeader,
+      collectionId.value,
+      imageId
+    );
+
+    collectionImages.value = collectionImages.value.filter(
+      (img) => img.id !== imageId
+    );
+
+    if (selectedImageId.value === imageId) {
+      selectedImageId.value = null;
+    }
+  } catch (error) {
+    console.error("Erro ao remover imagem da coleção:", error);
+  } finally {
+    removingImageId.value = null;
+  }
+}
+
 // Carrega as imagens da coleção.
 async function loadCollectionImageDetails(imagesFromAlbum = []) {
   const ordered = [...imagesFromAlbum].sort((a, b) => {
@@ -78,8 +115,8 @@ async function fetchCollectionImages() {
   }
 }
 
-// Cancela a edição da coleção.
-function handleCancel() {
+// Volta para a página da coleção.
+function goToCollectionDetail() {
   if (!collectionId.value) return;
 
   router.push({
@@ -91,6 +128,11 @@ function handleCancel() {
   });
 }
 
+// Cancela a edição da coleção.
+function handleCancel() {
+  goToCollectionDetail();
+}
+
 
 /***
  * Start: Formulário de edição da coleção
@@ -100,6 +142,9 @@ const collectionTitle = ref("");
 const collectionDescription = ref("");
 const initialTitle = ref("");
 const initialDescription = ref("");
+const isSaving = ref(false);
+
+const DESCRIPTION_MAX_LENGTH = 500;
 
 const hasChanges = computed(() => {
   return (
@@ -109,7 +154,13 @@ const hasChanges = computed(() => {
 });
 
 const canSave = computed(() => {
-  return hasLoaded.value && collectionTitle.value.trim() && hasChanges.value;
+  return (
+    hasLoaded.value &&
+    collectionTitle.value.trim() &&
+    collectionDescription.value.trim().length <= DESCRIPTION_MAX_LENGTH &&
+    hasChanges.value &&
+    !isSaving.value
+  );
 });
 
 function buildSavePayload() {
@@ -119,12 +170,26 @@ function buildSavePayload() {
   };
 }
 
-function handleSave() {
-  if (!canSave.value) return;
+async function handleSave() {
+  if (!canSave.value || !collectionId.value) return;
 
   const payload = buildSavePayload();
 
-  console.log("[CollectionEdit] payload para o backend:", payload);
+  isSaving.value = true;
+
+  try {
+    await albumsStore.updateAlbum(
+      authStore.authHeader,
+      collectionId.value,
+      payload
+    );
+
+    goToCollectionDetail();
+  } catch (error) {
+    console.error("Erro ao salvar coleção:", error);
+  } finally {
+    isSaving.value = false;
+  }
 }
 
 onMounted(() => {
@@ -134,6 +199,8 @@ onMounted(() => {
 watch(collectionId, () => {
   resetInitialSkeleton();
   collectionImages.value = [];
+  selectedImageId.value = null;
+  removingImageId.value = null;
   collectionTitle.value = "";
   collectionDescription.value = "";
   initialTitle.value = "";
@@ -154,6 +221,10 @@ watch(collectionId, () => {
             <CollectionEditImagesGrid
               :images="collectionImages"
               :is-loading="showSkeleton"
+              :selected-image-id="selectedImageId"
+              :removing-image-id="removingImageId"
+              @activate="onCardActivate"
+              @remove="removeImageFromCollection"
             />
           </section>
 
@@ -219,6 +290,7 @@ watch(collectionId, () => {
                 <CollectionEditForm
                   v-model:title="collectionTitle"
                   v-model:description="collectionDescription"
+                  :disabled="isSaving"
                 />
               </div>
             </template>
@@ -241,7 +313,12 @@ watch(collectionId, () => {
           :aria-disabled="!canSave"
           @click="handleSave"
         >
-          Salvar edições
+          <span class="collection-edit__btn-label collection-edit__btn-label--desktop">
+            {{ isSaving ? "Salvando..." : "Salvar edições" }}
+          </span>
+          <span class="collection-edit__btn-label collection-edit__btn-label--mobile">
+            {{ isSaving ? "Salvando..." : "Salvar" }}
+          </span>
         </button>
       </footer>
     </section>
@@ -311,13 +388,17 @@ watch(collectionId, () => {
   }
 }
 
+.collection-edit__btn-label--mobile {
+  display: none;
+}
+
 .collection-edit__grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 24px;
   align-items: start;
   width: 100%;
-  padding: 24px 32px;
+  padding: 24px 52px;
   box-sizing: border-box;
 }
 
@@ -497,15 +578,55 @@ watch(collectionId, () => {
 }
 
 @media (max-width: 767px) {
+  .collection-edit__content {
+    padding-bottom: 0;
+  }
+
   .collection-edit__grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 24px;
     padding: 16px;
   }
 
+  .collection-edit__sidebar {
+    gap: 12px;
+  }
+
+  .collection-edit__tab-list {
+    gap: 24px;
+  }
+
   .collection-edit__panel {
-    min-height: 240px;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .collection-edit__footer {
+    position: static;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
     padding: 16px;
+    box-shadow: none;
+  }
+
+  .collection-edit__btn--save {
+    order: -1;
+  }
+
+  .collection-edit__btn {
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+  }
+
+  .collection-edit__btn-label--desktop {
+    display: none;
+  }
+
+  .collection-edit__btn-label--mobile {
+    display: inline;
   }
 }
 </style>

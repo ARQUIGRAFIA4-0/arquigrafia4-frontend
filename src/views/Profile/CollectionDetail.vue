@@ -666,6 +666,17 @@ watch(
               </div>
               <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
             </section>
+
+            <div class="collection-detail__mobile-edit">
+              <button
+                type="button"
+                class="collection-detail__mobile-edit-btn"
+                @click="handleEditCollection"
+              >
+                <i class="bi bi-pencil-square" aria-hidden="true" />
+                <span>Editar</span>
+              </button>
+            </div>
             </div>
           </div>
         </div>
@@ -1250,6 +1261,36 @@ watch(
 
   .metadata-tags {
     max-width: 100%;
+  }
+
+  .collection-detail__mobile-edit {
+    width: 100%;
+    padding: 24px 0;
+    box-sizing: border-box;
+  }
+
+  .collection-detail__mobile-edit-btn {
+    display: inline-flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 5px;
+    background: var(--Laranja_E, #aa4f28);
+    color: var(--Branco, #fff);
+    font-family: "DM Sans", sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 150%;
+    cursor: pointer;
+    box-sizing: border-box;
+  }
+
+  .collection-detail__mobile-edit-btn i {
+    font-size: 16px;
+    line-height: 1;
   }
 }
 
