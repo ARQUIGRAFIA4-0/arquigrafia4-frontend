@@ -23,19 +23,42 @@
           <button class="suggestion-view__card-header" :aria-expanded="open.includes(suggestion.id)"
             @click="toggle(suggestion.id)">
             <div class="suggestion-view__card-identity">
+
               <div v-if="suggestion.user?.avatar" class="suggestion-view__avatar suggestion-view__avatar--image">
-                <img :src="suggestion.user.avatar" :alt="suggestion.user?.name" />
+                <img :src="`${API_BASE_URL}${selectedIdentity.avatar}`" :alt="suggestion.user?.name" />
               </div>
-              <div v-else class="suggestion-view__avatar suggestion-view__avatar--initials">
-                {{ initials(suggestion.user) }}
+
+              <div v-else class="suggestion-view__avatar suggestion-view__avatar--image">
+                <img :src="defaultImageUser" :alt="suggestion.user?.name" />
               </div>
+
               <span class="suggestion-view__card-label">
-                <strong>{{ suggestion.user?.name ?? "Usuário" }}</strong>
+                {{ capitalizeWords(suggestion.user?.name) ?? "Usuário" }} -
                 {{ suggestionLabel(suggestion) }}
               </span>
             </div>
-            <i class="bi" :class="open.includes(suggestion.id) ? 'bi-chevron-up' : 'bi-chevron-down'"
-              aria-hidden="true" />
+            <div class="suggestion-view__status-wrapper">
+              <!-- Status -->
+              <div class="suggestion-view__status">
+                <span v-if="suggestion.status === 'accepted'"
+                  class="suggestion-view__status-badge suggestion-view__status-badge--accepted">
+                  Sugestão aceita
+                </span>
+                <span v-else-if="suggestion.status === 'partially_accepted'"
+                  class="suggestion-view__status-badge suggestion-view__status-badge--partial">
+                  Sugestão parcial
+                </span>
+                <span v-else-if="suggestion.status === 'rejected'"
+                  class="suggestion-view__status-badge suggestion-view__status-badge--rejected">
+                  Sugestão recusada
+                </span>
+                <span v-else class="suggestion-view__status-badge suggestion-view__status-badge--pending">
+                  Pendente
+                </span>
+              </div>
+              <i class="bi" :class="open.includes(suggestion.id) ? 'bi-chevron-up' : 'bi-chevron-down'"
+                aria-hidden="true" />
+            </div>
           </button>
 
           <!-- Conteúdo expandido -->
@@ -63,10 +86,22 @@
                 </div>
               </div>
 
-              <div v-if="suggestion.payload?.location_label" class="suggestion-view__field">
+              <!-- <div v-if="suggestion.payload?.location_label" class="suggestion-view__field">
                 <label class="suggestion-view__field-label">Localização sugerida</label>
                 <input class="suggestion-view__field-input" type="text" :value="suggestion.payload.location_label"
                   readonly />
+              </div> -->
+              <div v-if="suggestion.payload?.location_label || hasCoordinates(suggestion)"
+                class="suggestion-view__field">
+                <label class="suggestion-view__field-label">Localização sugerida</label>
+                <input v-if="suggestion.payload?.location_label" class="suggestion-view__field-input" type="text"
+                  :value="suggestion.payload.location_label" readonly />
+                <div v-if="hasCoordinates(suggestion)" class="suggestion-view__map">
+                  <MapLibreMap :style-url="mapStyleUrl"
+                    :center="[suggestion.payload.longitude, suggestion.payload.latitude]" :zoom="14"
+                    :marker-position="{ lat: suggestion.payload.latitude, lng: suggestion.payload.longitude }"
+                    marker-color="#0f89e1" />
+                </div>
               </div>
 
               <div v-if="suggestion.payload?.earliest_date" class="suggestion-view__field">
@@ -75,33 +110,10 @@
                   readonly />
               </div>
 
-              <div v-if="suggestion.payload?.reason" class="suggestion-view__field">
+              <!-- <div v-if="suggestion.payload?.reason" class="suggestion-view__field">
                 <label class="suggestion-view__field-label">Motivo</label>
                 <p class="suggestion-view__reason">{{ suggestion.payload.reason }}</p>
-              </div>
-            </div>
-
-            <!-- Status -->
-            <div class="suggestion-view__status">
-              <span v-if="suggestion.status === 'accepted'"
-                class="suggestion-view__status-badge suggestion-view__status-badge--accepted">
-                <i class="bi bi-check-circle-fill" aria-hidden="true" />
-                A sugestão foi aceita pelo autor
-              </span>
-              <span v-else-if="suggestion.status === 'partially_accepted'"
-                class="suggestion-view__status-badge suggestion-view__status-badge--partial">
-                <i class="bi bi-check-circle" aria-hidden="true" />
-                Sugestão parcialmente aceita pelo autor
-              </span>
-              <span v-else-if="suggestion.status === 'rejected'"
-                class="suggestion-view__status-badge suggestion-view__status-badge--rejected">
-                <i class="bi bi-x-circle-fill" aria-hidden="true" />
-                Sugestão recusada
-              </span>
-              <span v-else class="suggestion-view__status-badge suggestion-view__status-badge--pending">
-                <i class="bi bi-clock" aria-hidden="true" />
-                Aguardando revisão do autor
-              </span>
+              </div> -->
             </div>
           </div>
         </li>
@@ -121,7 +133,7 @@
       <!-- Bloco informativo -->
       <div class="suggestion-view__info">
         <div class="suggestion-view__info-icon">
-          <i class="bi bi-question-circle" aria-hidden="true"></i>
+          <i class="bi bi-question-circle-fill" aria-hidden="true"></i>
         </div>
         <p class="suggestion-view__info-text">
           A plataforma ARQUIGRAFIA é colaborativa e permite que usuários façam sugestões de modificação nos dados das
@@ -138,6 +150,13 @@ import { useRouter } from "vue-router";
 import axios from "@/axios";
 import { useAuthStore } from "@/store/auth";
 import { storeToRefs } from "pinia";
+import defaultImageUser from "@/assets/profile_image.png";
+import { useImageForm } from "@/composables/useImageForm";
+import MapLibreMap from "@/components/map/MapLibreMap.vue";
+
+const mapStyleUrl = "https://tiles.openfreemap.org/styles/positron";
+const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
+const { capitalizeWords } = useImageForm();
 
 defineOptions({ name: "ImageSuggestionView" });
 
@@ -154,6 +173,11 @@ const loading = ref(true);
 const suggestions = ref([]);
 const open = ref([]);
 
+const hasCoordinates = (suggestion) => {
+  const { latitude, longitude } = suggestion.payload ?? {};
+  return latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null;
+};
+
 const initials = (user) => {
   if (!user?.name) return "?";
   return user.name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
@@ -168,8 +192,11 @@ const suggestionLabel = (suggestion) => {
     location_label: "sugeriu uma nova localização",
     earliest_date: "sugeriu uma nova data",
     photographer: "sugeriu um novo fotógrafo",
+    latitude: "sugeriu uma nova localização",
+    longitude: "sugeriu uma nova localização",
   };
   if (fields.length === 1 && map[fields[0]]) return map[fields[0]];
+  if (fields.every((f) => map[f] === "sugeriu uma nova localização")) return "sugeriu uma nova localização";
   return "sugeriu novas edições";
 };
 
@@ -224,8 +251,6 @@ onMounted(fetchSuggestions);
 <style lang="scss" scoped>
 // ─── Bloco: suggestion-view ───────────────────────────────────────────────────
 .suggestion-view {
-  padding-top: 1.5rem;
-  padding-bottom: 1.5rem;
 
   // ── Loading skeleton ────────────────────────────────────────────────────────
   &__loading {
@@ -235,7 +260,7 @@ onMounted(fetchSuggestions);
   }
 
   &__skeleton-card {
-    background-color: var(--var(--Off_white));
+    background-color: var(--Off_white);
     border-radius: 8px;
     padding: 1rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -290,7 +315,7 @@ onMounted(fetchSuggestions);
   &__list {
     list-style: none;
     padding: 0;
-    margin: 0 0 1rem;
+    margin: 0 0 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -298,9 +323,8 @@ onMounted(fetchSuggestions);
 
   // ── Card ────────────────────────────────────────────────────────────────────
   &__card {
-    background-color: var(--var(--Off_white));
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    background-color: var(--Off_white);
+    border-radius: 5px;
     overflow: hidden;
   }
 
@@ -309,36 +333,75 @@ onMounted(fetchSuggestions);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    padding: .5rem 1rem;
     background: none;
     border: none;
     cursor: pointer;
     text-align: left;
 
     &:hover {
-      background-color: --var(--Off_white)
+      background-color: var(--Off_white)
     }
   }
 
   &__card-identity {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 1rem;
     min-width: 0;
     flex: 1;
   }
 
   &__card-label {
-    font-size: 0.85rem;
-    color: var(--Cinza_M);
+    font-size: .875rem;
+    font-weight: 400;
+    font-style: italic;
+    line-height: 150%;
+    color: var(--Preto);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
 
-    strong {
+  &__status-wrapper {
+    display: flex;
+    gap: 3.125rem;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+
+  // ── Status ──────────────────────────────────────────────────────────────────
+  // &__status {
+  //   text-align: right;
+  // }
+
+  &__status-badge {
+    border-radius: 2px;
+    padding: .25rem .5rem;
+    font-size: .75rem;
+    font-weight: 400;
+    line-height: 114%;
+    background-color: transparent;
+
+    &--accepted {
+      border: 1px solid var(--Positivo_E);
+      color: var(--Positivo_E);
+    }
+
+    &--partial {
+      border: 1px solid var(--Cinza_E);
       color: var(--Cinza_E);
-      font-weight: 600;
+    }
+
+    &--rejected {
+      border: 1px solid var(--Negativo_E);
+      color: var(--Negativo_E);
+    }
+
+    &--pending {
+      border: 1px solid var(--Laranja_E);
+      color: var(--Laranja_E);
     }
   }
 
@@ -417,6 +480,16 @@ onMounted(fetchSuggestions);
     }
   }
 
+  &__map {
+    position: relative;
+    width: 100%;
+    height: 220px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--Cinza_C);
+    margin-top: 0.25rem;
+  }
+
   // ── Tags ────────────────────────────────────────────────────────────────────
   &__tags {
     display: flex;
@@ -434,44 +507,23 @@ onMounted(fetchSuggestions);
   }
 
   // ── Motivo ──────────────────────────────────────────────────────────────────
-  &__reason {
-    font-size: 0.8rem;
-    color: var(--Cinza_M);
-    font-style: italic;
-    margin: 0;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--Cinza_C);
-    border-radius: 4px;
-    background-color: var(--Branco);
-  }
-
-  // ── Status ──────────────────────────────────────────────────────────────────
-  &__status {
-    text-align: right;
-  }
-
-  &__status-badge {
-    display: inline-flex;
+  &__reason-wrapper {
+    display: flex;
+    gap: 4.375rem;
+    justify-content: space-between;
     align-items: center;
-    gap: 0.35rem;
-    font-size: 0.8rem;
+    flex: 1;
+  }
 
-    &--accepted {
-      color: var(--Positivo_E);
-    }
-
-    &--partial {
-      color: var(--Laranja_M);
-    }
-
-    &--rejected {
-      color: var(--Negativo_E);
-    }
-
-    &--pending {
-      color: var(--Cinza_M);
-      font-style: italic;
-    }
+  &__reason {
+    border: 1px solid var(--Laranja_E);
+    border-radius: 2px;
+    padding: .25rem .5rem;
+    font-size: .75rem;
+    font-weight: 400;
+    line-height: 114%;
+    color: var(--Laranja_M);
+    background-color: transparent;
   }
 
   // ── Vazio ───────────────────────────────────────────────────────────────────
@@ -498,7 +550,7 @@ onMounted(fetchSuggestions);
     display: block;
     width: 100%;
     padding: .3125rem .875rem;
-    margin-bottom: 1rem;
+    margin-bottom: .75rem;
     font-size: .875rem;
     font-weight: 400;
     line-height: 150%;
@@ -517,25 +569,40 @@ onMounted(fetchSuggestions);
   // ── Bloco informativo ───────────────────────────────────────────────────────
   &__info {
     display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
+    gap: 24px;
+    align-items: center;
+    background: var(--Off_white);
+    border: 1px solid var(--Cinza_M);
+    border-left: none;
     border-radius: 6px;
-    padding: 14px 16px;
+    padding: 12px 12px;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0px;
+      display: block;
+      width: 4px;
+      height: 100%;
+      background: var(--Preto);
+    }
   }
 
   &__info-icon {
-    font-size: 1rem;
-    color: var(--Cinza_M, #6c757d);
+    color: var(--Preto, #1a1a1a);
     flex-shrink: 0;
-    margin-top: 2px;
+
+    .bi {
+      font-size: 1rem;
+    }
   }
 
   &__info-text {
-    font-size: 0.8125rem; // 13px
-    color: var(--Cinza_M, #6c757d);
-    line-height: 1.55;
+    font-size: 0.75rem;
+    color: var(--Cinza_e);
+    line-height: 1.5;
     margin: 0;
   }
 }
