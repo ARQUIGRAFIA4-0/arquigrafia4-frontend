@@ -1,0 +1,450 @@
+<template>
+  <div class="field-card">
+
+    <!-- Cabeçalho -->
+    <button class="field-card__header" :aria-expanded="isOpen" @click="isOpen = !isOpen">
+      <div class="field-card__identity">
+        <div v-if="userAvatar" class="field-card__avatar field-card__avatar--image">
+          <img :src="userAvatar" :alt="userName" />
+        </div>
+        <div v-else class="field-card__avatar field-card__avatar--initials">
+          {{ initials }}
+        </div>
+        <span class="field-card__label">
+          <strong>{{ userName }}</strong>
+          está sugerindo {{ fieldsLabel }}
+        </span>
+      </div>
+      <i class="bi field-card__chevron" :class="isOpen ? 'bi-chevron-up' : 'bi-chevron-down'" aria-hidden="true" />
+    </button>
+
+    <!-- Conteúdo -->
+    <div v-if="isOpen" class="field-card__body">
+
+      <!-- Um bloco de valor + ações por campo -->
+      <div v-for="entry in fieldStates" :key="entry.field" class="field-card__entry">
+
+        <div class="field-card__value">
+          <textarea v-if="entry.field === 'description'" class="field-card__input field-card__input--textarea"
+            :value="entry.value" rows="5" readonly />
+          <div v-else-if="entry.field === 'subjects'" class="field-card__tags">
+            <span v-for="subject in entry.value" :key="subject" class="field-card__tag">{{ subject }}</span>
+          </div>
+          <div v-else-if="entry.field === 'location'" class="field-card__location">
+            <input v-if="entry.value.label" class="field-card__input" type="text" :value="entry.value.label" readonly />
+            <div v-if="entry.value.lat !== null && entry.value.lng !== null" class="field-card__map">
+              <MapLibreMap :style-url="mapStyleUrl" :center="[entry.value.lng, entry.value.lat]" :zoom="14"
+                :marker-position="entry.value" marker-color="#0f89e1" />
+            </div>
+          </div>
+          <input v-else class="field-card__input" type="text" :value="displayValue(entry)" readonly />
+        </div>
+
+        <!-- Ações deste campo -->
+        <div class="field-card__actions">
+          <button class="field-card__btn field-card__btn--reject"
+            :class="{ 'field-card__btn--active': entry.decision === 'rejected' }" :disabled="entry.processing"
+            @click="decideField(entry, 'reject')">
+            <span v-if="entry.processing && entry.action === 'reject'" class="field-card__spinner" role="status"
+              aria-label="Processando" />
+            <i v-else class="bi bi-hand-thumbs-down" aria-hidden="true" />
+            Recusar
+          </button>
+          <button class="field-card__btn field-card__btn--accept"
+            :class="{ 'field-card__btn--active': entry.decision === 'accepted' }" :disabled="entry.processing"
+            @click="decideField(entry, 'accept')">
+            <span v-if="entry.processing && entry.action === 'accept'" class="field-card__spinner" role="status"
+              aria-label="Processando" />
+            <i v-else class="bi bi-hand-thumbs-up" aria-hidden="true" />
+            Aceitar
+          </button>
+        </div>
+      </div>
+
+      <!-- Motivo (único, da sugestão como um todo) -->
+      <p v-if="reason" class="field-card__reason">
+        <i class="bi bi-chat-left-quote" aria-hidden="true" />
+        {{ reason }}
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, computed } from "vue";
+import axios from "@/axios";
+import { useAuthStore } from "@/store/auth";
+import MapLibreMap from "@/components/map/MapLibreMap.vue";
+
+const props = defineProps({
+  suggestionId: { type: String, required: true },
+  fields: { type: Array, required: true }, // [{ field, value, datePayload }]
+  reason: { type: String, default: null },
+  userName: { type: String, default: "Usuário" },
+  userAvatar: { type: String, default: null },
+  userInitials: { type: String, default: "?" },
+});
+
+const emit = defineEmits(["accepted", "rejected", "error"]);
+
+const authStore = useAuthStore();
+const isOpen = ref(false);
+const mapStyleUrl = "https://tiles.openfreemap.org/styles/positron";
+
+const FIELD_LABELS = {
+  title: "um novo título",
+  description: "uma nova descrição",
+  subjects: "novas tags",
+  location_label: "uma nova localização",
+  earliest_date: "uma nova data",
+  photographer: "um novo fotógrafo",
+  location: "uma nova localização no mapa",
+};
+
+const FIELD_TO_PAYLOAD_KEYS = {
+  location: ["location_label", "latitude", "longitude"],
+};
+
+// ─── Estado individual de decisão por campo ───────────────────────────────────
+// decision: null | 'accepted' | 'rejected'
+const fieldStates = reactive(
+  props.fields.map((f) => ({
+    ...f,
+    decision: null,
+    processing: false,
+    action: null,
+  }))
+);
+
+// ─── Label combinado do cabeçalho ──────────────────────────────────────────────
+// 1 campo: "está sugerindo um novo título"
+// 2+ campos: "está sugerindo um novo título e uma nova descrição"
+const fieldsLabel = computed(() => {
+  const labels = fieldStates.map((f) => FIELD_LABELS[f.field] ?? "novas edições");
+  if (labels.length === 1) return labels[0];
+  return `${labels.slice(0, -1).join(", ")} e ${labels[labels.length - 1]}`;
+});
+
+const initials = computed(() => {
+  if (props.userInitials) return props.userInitials;
+  return props.userName
+    .split(" ")
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
+});
+
+const displayValue = (entry) => {
+  if (entry.field === "earliest_date" && entry.datePayload) {
+    const start = entry.datePayload.earliest_date
+      ? new Date(entry.datePayload.earliest_date).getUTCFullYear()
+      : null;
+    const end = entry.datePayload.latest_date
+      ? new Date(entry.datePayload.latest_date).getUTCFullYear()
+      : null;
+    if (start && end && start !== end) return `${start} – ${end}`;
+    return start ? String(start) : "";
+  }
+  return entry.value;
+};
+
+// ─── Decide um campo (aceitar ou recusar) ─────────────────────────────────────
+// Não chama a API a cada clique: só marca a decisão local. A submissão real
+// (accept/reject) só acontece quando TODOS os campos já têm uma decisão.
+const decideField = (entry, decision) => {
+  entry.decision = decision === "accept" ? "accepted" : "rejected";
+  maybeSubmit();
+};
+
+// ─── Verifica se todos os campos já foram decididos e então submete ──────────
+const maybeSubmit = async () => {
+  const allDecided = fieldStates.every((f) => f.decision !== null);
+  if (!allDecided) return;
+
+  const acceptedFields = fieldStates
+    .filter((f) => f.decision === "accepted")
+    .flatMap((f) => FIELD_TO_PAYLOAD_KEYS[f.field] ?? [f.field]);
+  const rejectedFields = fieldStates
+    .filter((f) => f.decision === "rejected")
+    .flatMap((f) => FIELD_TO_PAYLOAD_KEYS[f.field] ?? [f.field]);
+
+  fieldStates.forEach((f) => {
+    f.processing = true;
+    f.action = f.decision === "accepted" ? "accept" : "reject";
+  });
+
+  try {
+    if (acceptedFields.length > 0) {
+      // Existe ao menos um campo aceito: sugestão é aceita (parcial ou total)
+      await axios.post(
+        `/api/image-suggestions/${props.suggestionId}/accept`,
+        { accepted_fields: acceptedFields },
+        { headers: { Authorization: authStore.authHeader } }
+      );
+      emit("accepted", { suggestionId: props.suggestionId, acceptedFields, rejectedFields });
+    } else {
+      // Nenhum campo aceito: todos foram recusados, sugestão inteira é recusada
+      await axios.post(
+        `/api/image-suggestions/${props.suggestionId}/reject`,
+        {},
+        { headers: { Authorization: authStore.authHeader } }
+      );
+      emit("rejected", { suggestionId: props.suggestionId });
+    }
+  } catch (e) {
+    emit("error", e.response?.data?.message ?? "Erro ao processar sugestão.");
+    // Em caso de erro, libera os campos para nova tentativa
+    fieldStates.forEach((f) => {
+      f.decision = null;
+    });
+  } finally {
+    fieldStates.forEach((f) => {
+      f.processing = false;
+      f.action = null;
+    });
+  }
+};
+</script>
+
+<style lang="scss" scoped>
+@use "sass:color";
+
+.field-card {
+  background-color: var(--Off_white);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+
+  // ── Cabeçalho ──────────────────────────────────────────────────────────────
+  &__header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: var(--Off_white);
+    }
+  }
+
+  &__identity {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__label {
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--Cinza_M);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    strong {
+      color: var(--Cinza_E);
+      font-style: normal;
+      font-weight: 600;
+    }
+  }
+
+  &__chevron {
+    flex-shrink: 0;
+    color: var(--Cinza_M);
+  }
+
+  // ── Avatar ──────────────────────────────────────────────────────────────────
+  &__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    overflow: hidden;
+
+    &--image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    &--initials {
+      background-color: var(--Preto);
+      color: var(--Branco);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+  }
+
+  // ── Corpo ───────────────────────────────────────────────────────────────────
+  &__body {
+    padding: 0 1rem 1rem;
+  }
+
+  // ── Entrada de campo (1 valor + ações) ─────────────────────────────────────
+  &__entry {
+    &+& {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--Cinza_C);
+    }
+  }
+
+  // ── Valor sugerido ──────────────────────────────────────────────────────────
+  &__value {
+    margin-bottom: 0.625rem;
+  }
+
+  &__input {
+    width: 100%;
+    padding: 0.375rem 0.625rem;
+    font-size: 0.875rem;
+    color: var(--Cinza_E);
+    background-color: var(--Branco);
+    border: 1px solid var(--Cinza_C);
+    border-radius: 4px;
+    outline: none;
+    resize: none;
+
+    &--textarea {
+      min-height: 100px;
+    }
+  }
+
+  // ── Tags ────────────────────────────────────────────────────────────────────
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  &__tag {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    background-color: var(--Cinza_E);
+    color: var(--Branco);
+    border-radius: 4px
+  }
+
+  &__map {
+    position: relative;
+    width: 100%;
+    height: 220px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--Cinza_C);
+  }
+
+  &__location {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  // ── Motivo ──────────────────────────────────────────────────────────────────
+  &__reason {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+    margin: 0.625rem 0 0;
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--Cinza_M);
+
+    i {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+  }
+
+  // ── Ações ───────────────────────────────────────────────────────────────────
+  &__actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  &__btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 4px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    &--reject {
+      color: var(--Cinza_E);
+      background-color: transparent;
+      border-color: var(--Cinza_C);
+
+      &:hover:not(:disabled) {
+        background-color: var(--Negativo_E);
+        border-color: var(--Negativo_E);
+        color: var(--Branco);
+      }
+
+      &.field-card__btn--active {
+        background-color: var(--Negativo_E);
+        border-color: var(--Negativo_E);
+        color: var(--Branco);
+      }
+    }
+
+    &--accept {
+      color: var(--Branco);
+      background-color: var(--Preto);
+      border-color: var(--Preto);
+
+      &:hover:not(:disabled) {
+        background-color: var(--Preto);
+        border-color: var(--Preto);
+      }
+
+      &.field-card__btn--active {
+        background-color: var(--Positivo_E);
+        border-color: var(--Positivo_E);
+      }
+    }
+  }
+
+  // ── Spinner ─────────────────────────────────────────────────────────────────
+  &__spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: field-card-spin 0.6s linear infinite;
+  }
+}
+
+@keyframes field-card-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

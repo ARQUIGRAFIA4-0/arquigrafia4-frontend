@@ -1,137 +1,131 @@
 <template>
-  <div class="py-4">
+  <div class="suggestion-view">
 
     <!-- Loading -->
-    <div v-if="loading" class="d-flex flex-column gap-3">
-      <div v-for="i in 3" :key="i" class="bg-off-white p-3 rounded shadow-sm">
-        <div class="d-flex align-items-center gap-3 mb-2">
-          <div class="skeleton rounded-circle" style="width: 36px; height: 36px; flex-shrink: 0" />
-          <div class="flex-grow-1">
-            <div class="skeleton mb-1" style="height: 14px; width: 55%" />
-            <div class="skeleton" style="height: 12px; width: 25%" />
+    <div v-if="loading" class="suggestion-view__loading">
+      <div v-for="i in 3" :key="i" class="suggestion-view__skeleton-card">
+        <div class="suggestion-view__skeleton-header">
+          <div class="suggestion-view__skeleton-avatar" />
+          <div class="suggestion-view__skeleton-lines">
+            <div class="suggestion-view__skeleton-line suggestion-view__skeleton-line--wide" />
+            <div class="suggestion-view__skeleton-line suggestion-view__skeleton-line--narrow" />
           </div>
         </div>
-        <div class="skeleton" style="height: 60px; width: 100%" />
+        <div class="suggestion-view__skeleton-body" />
       </div>
     </div>
 
     <template v-else>
       <!-- Lista de sugestões -->
-      <div v-if="suggestions.length > 0" class="d-flex flex-column gap-2 mb-4">
-        <div v-for="suggestion in suggestions" :key="suggestion.id"
-          class="bg-off-white rounded shadow-sm overflow-hidden">
+      <ul v-if="suggestions.length > 0" class="suggestion-view__list">
+        <li v-for="suggestion in suggestions" :key="suggestion.id" class="suggestion-view__card">
           <!-- Cabeçalho -->
-          <div class="d-flex align-items-center justify-content-between p-3 cursor-pointer" role="button"
+          <button class="suggestion-view__card-header" :aria-expanded="open.includes(suggestion.id)"
             @click="toggle(suggestion.id)">
-            <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
-              <!-- Avatar -->
-              <div v-if="suggestion.user?.avatar" class="rounded-circle overflow-hidden flex-shrink-0"
-                style="width: 36px; height: 36px">
-                <img :src="suggestion.user.avatar" alt="" class="w-100 h-100 object-fit-cover" />
+            <div class="suggestion-view__card-identity">
+              <div v-if="suggestion.user?.avatar" class="suggestion-view__avatar suggestion-view__avatar--image">
+                <img :src="suggestion.user.avatar" :alt="suggestion.user?.name" />
               </div>
-              <div v-else
-                class="rounded-circle bg-black text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0 small"
-                style="width: 36px; height: 36px">
+              <div v-else class="suggestion-view__avatar suggestion-view__avatar--initials">
                 {{ initials(suggestion.user) }}
               </div>
-
-              <!-- Texto -->
-              <span class="text-muted small text-truncate">
-                <strong class="text-dark">{{ suggestion.user?.name ?? "Usuário" }}</strong>
+              <span class="suggestion-view__card-label">
+                <strong>{{ suggestion.user?.name ?? "Usuário" }}</strong>
                 {{ suggestionLabel(suggestion) }}
               </span>
             </div>
-
-            <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
-              <i class="bi transition-transform"
-                :class="open.includes(suggestion.id) ? 'bi-chevron-up' : 'bi-chevron-down'" />
-            </div>
-          </div>
+            <i class="bi" :class="open.includes(suggestion.id) ? 'bi-chevron-up' : 'bi-chevron-down'"
+              aria-hidden="true" />
+          </button>
 
           <!-- Conteúdo expandido -->
-          <div v-if="open.includes(suggestion.id)" class="px-3 pb-3">
-            <!-- Timestamp -->
-            <p class="text-end text-muted small mb-2">{{ timeAgo(suggestion.created_at) }}</p>
+          <div v-if="open.includes(suggestion.id)" class="suggestion-view__card-body">
+            <span class="suggestion-view__timestamp">{{ timeAgo(suggestion.created_at) }}</span>
 
-            <!-- Campos do payload -->
-            <div class="d-flex flex-column gap-3 mb-3">
+            <div class="suggestion-view__fields">
 
-              <div v-if="suggestion.payload?.title">
-                <label class="form-label text-muted small mb-1">Título sugerido</label>
-                <input type="text" class="form-control form-control-sm" :value="suggestion.payload.title" readonly />
+              <div v-if="suggestion.payload?.title" class="suggestion-view__field">
+                <label class="suggestion-view__field-label">Título sugerido</label>
+                <input class="suggestion-view__field-input" type="text" :value="suggestion.payload.title" readonly />
               </div>
 
-              <div v-if="suggestion.payload?.description">
-                <label class="form-label text-muted small mb-1">Descrição sugerida</label>
-                <textarea class="form-control form-control-sm" :value="suggestion.payload.description" rows="3"
-                  readonly />
+              <div v-if="suggestion.payload?.description" class="suggestion-view__field">
+                <label class="suggestion-view__field-label">Descrição sugerida</label>
+                <textarea class="suggestion-view__field-input suggestion-view__field-input--textarea"
+                  :value="suggestion.payload.description" rows="3" readonly />
               </div>
 
-              <div v-if="suggestion.payload?.subjects?.length">
-                <label class="form-label text-muted small mb-1">Tags sugeridas</label>
-                <div class="d-flex flex-wrap gap-2">
-                  <span v-for="subject in suggestion.payload.subjects" :key="subject"
-                    class="badge bg-secondary fw-normal">{{ subject }}</span>
+              <div v-if="suggestion.payload?.subjects?.length" class="suggestion-view__field">
+                <label class="suggestion-view__field-label">Tags sugeridas</label>
+                <div class="suggestion-view__tags">
+                  <span v-for="subject in suggestion.payload.subjects" :key="subject" class="suggestion-view__tag">{{
+                    subject }}</span>
                 </div>
               </div>
 
-              <div v-if="suggestion.payload?.location_label">
-                <label class="form-label text-muted small mb-1">Localização sugerida</label>
-                <input type="text" class="form-control form-control-sm" :value="suggestion.payload.location_label"
+              <div v-if="suggestion.payload?.location_label" class="suggestion-view__field">
+                <label class="suggestion-view__field-label">Localização sugerida</label>
+                <input class="suggestion-view__field-input" type="text" :value="suggestion.payload.location_label"
                   readonly />
               </div>
 
-              <div v-if="suggestion.payload?.earliest_date">
-                <label class="form-label text-muted small mb-1">Data sugerida</label>
-                <input type="text" class="form-control form-control-sm" :value="formatDateRange(suggestion.payload)"
+              <div v-if="suggestion.payload?.earliest_date" class="suggestion-view__field">
+                <label class="suggestion-view__field-label">Data sugerida</label>
+                <input class="suggestion-view__field-input" type="text" :value="formatDateRange(suggestion.payload)"
                   readonly />
               </div>
 
-              <div v-if="suggestion.payload?.reason">
-                <label class="form-label text-muted small mb-1">Motivo</label>
-                <p class="text-muted small fst-italic mb-0 p-2 border rounded bg-white">
-                  {{ suggestion.payload.reason }}
-                </p>
+              <div v-if="suggestion.payload?.reason" class="suggestion-view__field">
+                <label class="suggestion-view__field-label">Motivo</label>
+                <p class="suggestion-view__reason">{{ suggestion.payload.reason }}</p>
               </div>
             </div>
 
             <!-- Status -->
-            <div class="text-end">
-              <span v-if="suggestion.status === 'accepted'" class="small text-success">
+            <div class="suggestion-view__status">
+              <span v-if="suggestion.status === 'accepted'"
+                class="suggestion-view__status-badge suggestion-view__status-badge--accepted">
+                <i class="bi bi-check-circle-fill" aria-hidden="true" />
                 A sugestão foi aceita pelo autor
               </span>
-              <span v-else-if="suggestion.status === 'partially_accepted'" class="small text-warning">
+              <span v-else-if="suggestion.status === 'partially_accepted'"
+                class="suggestion-view__status-badge suggestion-view__status-badge--partial">
+                <i class="bi bi-check-circle" aria-hidden="true" />
                 Sugestão parcialmente aceita pelo autor
               </span>
-              <span v-else-if="suggestion.status === 'rejected'" class="small text-danger">
+              <span v-else-if="suggestion.status === 'rejected'"
+                class="suggestion-view__status-badge suggestion-view__status-badge--rejected">
+                <i class="bi bi-x-circle-fill" aria-hidden="true" />
                 Sugestão recusada
               </span>
-              <span v-else class="small text-muted fst-italic">
+              <span v-else class="suggestion-view__status-badge suggestion-view__status-badge--pending">
+                <i class="bi bi-clock" aria-hidden="true" />
                 Aguardando revisão do autor
               </span>
             </div>
           </div>
-        </div>
-      </div>
+        </li>
+      </ul>
 
       <!-- Vazio -->
-      <div v-else class="text-center py-4 text-muted small mb-4">
-        <i class="bi bi-chat-square-text fs-2 d-block mb-2 opacity-40" />
-        Nenhuma sugestão enviada ainda para esta imagem.
+      <div v-else class="suggestion-view__empty">
+        <i class="bi bi-chat-square-text" aria-hidden="true" />
+        <p>Nenhuma sugestão enviada ainda para esta imagem.</p>
       </div>
 
-      <!-- Botão enviar sugestão (somente logado) -->
-      <button v-if="isLoggedIn" class="btn btn-dark w-100 mb-4" @click="goToSuggest">
+      <!-- Botão enviar sugestão -->
+      <button v-if="isLoggedIn" class="suggestion-view__submit-btn" @click="goToSuggest">
         Enviar sugestão
       </button>
 
-      <!-- Bloco informativo (sempre visível) -->
-      <div class="d-flex align-items-start gap-3 p-3 border rounded bg-off-white">
-        <i class="bi bi-question-circle text-muted fs-5 flex-shrink-0 mt-1" />
-        <p class="text-muted small mb-0">
-          O ARQUIGRAFIA convida o usuário a registrar impressões sobre fotos de arquitetura
-          usando pares de opostos. As respostas geram um gráfico com médias e permitem
-          comparar imagens com percepções parecidas entre os usuários.
+      <!-- Bloco informativo -->
+      <div class="suggestion-view__info">
+        <div class="suggestion-view__info-icon">
+          <i class="bi bi-question-circle" aria-hidden="true"></i>
+        </div>
+        <p class="suggestion-view__info-text">
+          A plataforma ARQUIGRAFIA é colaborativa e permite que usuários façam sugestões de modificação nos dados das
+          imagens caso identifiquem a possibilidade de melhorias.
         </p>
       </div>
     </template>
@@ -140,7 +134,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { useRouter, useRoute } from "vue-router";
+import { useRouter } from "vue-router";
 import axios from "@/axios";
 import { useAuthStore } from "@/store/auth";
 import { storeToRefs } from "pinia";
@@ -152,17 +146,14 @@ const props = defineProps({
 });
 
 const router = useRouter();
-const route = useRoute();
 const authStore = useAuthStore();
 const { loggedUser } = storeToRefs(authStore);
-
 const isLoggedIn = computed(() => !!loggedUser.value);
 
 const loading = ref(true);
 const suggestions = ref([]);
 const open = ref([]);
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const initials = (user) => {
   if (!user?.name) return "?";
   return user.name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
@@ -183,12 +174,8 @@ const suggestionLabel = (suggestion) => {
 };
 
 const formatDateRange = (payload) => {
-  const start = payload.earliest_date
-    ? new Date(payload.earliest_date).getUTCFullYear()
-    : null;
-  const end = payload.latest_date
-    ? new Date(payload.latest_date).getUTCFullYear()
-    : null;
+  const start = payload.earliest_date ? new Date(payload.earliest_date).getUTCFullYear() : null;
+  const end = payload.latest_date ? new Date(payload.latest_date).getUTCFullYear() : null;
   if (start && end && start !== end) return `${start} – ${end}`;
   return start ? String(start) : "";
 };
@@ -202,14 +189,12 @@ const timeAgo = (dateStr) => {
   return `há ${Math.floor(diff / 86400)} dia(s)`;
 };
 
-// ─── Toggle accordion ─────────────────────────────────────────────────────────
 const toggle = (id) => {
   const idx = open.value.indexOf(id);
   if (idx === -1) open.value.push(id);
   else open.value.splice(idx, 1);
 };
 
-// ─── Fetch (todas as sugestões, sem filtro de status) ─────────────────────────
 const fetchSuggestions = async () => {
   if (!props.image?.id) return;
   loading.value = true;
@@ -226,7 +211,6 @@ const fetchSuggestions = async () => {
   }
 };
 
-// ─── Ir para formulário de sugestão ───────────────────────────────────────────
 const goToSuggest = () => {
   router.push({
     name: "image-detail-sugestoes",
@@ -237,3 +221,337 @@ const goToSuggest = () => {
 
 onMounted(fetchSuggestions);
 </script>
+<style lang="scss" scoped>
+// ─── Bloco: suggestion-view ───────────────────────────────────────────────────
+.suggestion-view {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+
+  // ── Loading skeleton ────────────────────────────────────────────────────────
+  &__loading {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  &__skeleton-card {
+    background-color: var(--var(--Off_white));
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  &__skeleton-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  &__skeleton-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--Cinza_C);
+    flex-shrink: 0;
+    animation: skeleton-pulse 1.4s ease infinite;
+  }
+
+  &__skeleton-lines {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  &__skeleton-line {
+    height: 12px;
+    border-radius: 4px;
+    background-color: var(--Cinza_C);
+    animation: skeleton-pulse 1.4s ease infinite;
+
+    &--wide {
+      width: 55%;
+    }
+
+    &--narrow {
+      width: 25%;
+    }
+  }
+
+  &__skeleton-body {
+    height: 60px;
+    border-radius: 4px;
+    background-color: var(--Cinza_C);
+    animation: skeleton-pulse 1.4s ease infinite;
+  }
+
+  // ── Lista ───────────────────────────────────────────────────────────────────
+  &__list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  // ── Card ────────────────────────────────────────────────────────────────────
+  &__card {
+    background-color: var(--var(--Off_white));
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+
+  &__card-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      background-color: --var(--Off_white)
+    }
+  }
+
+  &__card-identity {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__card-label {
+    font-size: 0.85rem;
+    color: var(--Cinza_M);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    strong {
+      color: var(--Cinza_E);
+      font-weight: 600;
+    }
+  }
+
+  &__card-body {
+    padding: 0 1rem 1rem;
+  }
+
+  // ── Avatar ──────────────────────────────────────────────────────────────────
+  &__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    overflow: hidden;
+
+    &--image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    &--initials {
+      background-color: var(--Preto);
+      color: var(--Branco);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+  }
+
+  // ── Timestamp ───────────────────────────────────────────────────────────────
+  &__timestamp {
+    display: block;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--Cinza_M);
+    margin-bottom: 0.75rem;
+  }
+
+  // ── Campos ──────────────────────────────────────────────────────────────────
+  &__fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  &__field-label {
+    font-size: 0.75rem;
+    color: var(--Cinza_M);
+    font-style: italic;
+    margin: 0;
+  }
+
+  &__field-input {
+    width: 100%;
+    padding: 0.375rem 0.625rem;
+    font-size: 0.875rem;
+    color: var(--Cinza_E);
+    background-color: var(--Branco);
+    border: 1px solid var(--Cinza_C);
+    border-radius: 4px;
+    resize: none;
+    outline: none;
+
+    &--textarea {
+      min-height: 80px;
+    }
+  }
+
+  // ── Tags ────────────────────────────────────────────────────────────────────
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  &__tag {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    background-color: var(--Cinza_E);
+    color: var(--Branco);
+    border-radius: 4px;
+  }
+
+  // ── Motivo ──────────────────────────────────────────────────────────────────
+  &__reason {
+    font-size: 0.8rem;
+    color: var(--Cinza_M);
+    font-style: italic;
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--Cinza_C);
+    border-radius: 4px;
+    background-color: var(--Branco);
+  }
+
+  // ── Status ──────────────────────────────────────────────────────────────────
+  &__status {
+    text-align: right;
+  }
+
+  &__status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+
+    &--accepted {
+      color: var(--Positivo_E);
+    }
+
+    &--partial {
+      color: var(--Laranja_M);
+    }
+
+    &--rejected {
+      color: var(--Negativo_E);
+    }
+
+    &--pending {
+      color: var(--Cinza_M);
+      font-style: italic;
+    }
+  }
+
+  // ── Vazio ───────────────────────────────────────────────────────────────────
+  &__empty {
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--Cinza_M);
+
+    i {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 0.5rem;
+      opacity: 0.4;
+    }
+
+    p {
+      font-size: 0.85rem;
+      margin: 0;
+    }
+  }
+
+  // ── Botão enviar sugestão ───────────────────────────────────────────────────
+  &__submit-btn {
+    display: block;
+    width: 100%;
+    padding: .3125rem .875rem;
+    margin-bottom: 1rem;
+    font-size: .875rem;
+    font-weight: 400;
+    line-height: 150%;
+    color: var(--Branco);
+    background-color: var(--Preto);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: var(--Preto);
+    }
+  }
+
+  // ── Bloco informativo ───────────────────────────────────────────────────────
+  &__info {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+
+  &__info-icon {
+    font-size: 1rem;
+    color: var(--Cinza_M, #6c757d);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  &__info-text {
+    font-size: 0.8125rem; // 13px
+    color: var(--Cinza_M, #6c757d);
+    line-height: 1.55;
+    margin: 0;
+  }
+}
+
+// ─── Animação skeleton ────────────────────────────────────────────────────────
+@keyframes skeleton-pulse {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+</style>
