@@ -4,6 +4,7 @@ import { useAuthStore } from "@/store/auth";
 import { storeToRefs } from "pinia";
 import { formatDate, parseYearFromDateString } from "@/helpers/dateUtils";
 import Fuse from "fuse.js";
+import axios from "axios";
 
 
 export function useImageForm() {
@@ -236,7 +237,18 @@ export function useImageForm() {
 
   const handleMapReady = (map) => { mapInstance.value = markRaw(map); };
   const handleMapError = (error) => { console.error("Erro no mapa:", error); };
-  const handleMapClick = ({ lng, lat }) => { form.value.coordinates = { lng, lat }; };
+  // const handleMapClick = ({ lng, lat }) => { form.value.coordinates = { lng, lat }; };
+  const handleMapClick = async (coords) => {
+    form.value.coordinates = coords;
+    try {
+      const { data } = await axios.get("https://nominatim.openstreetmap.org/reverse", {
+        params: { lat: coords.lat, lon: coords.lng, format: "jsonv2" },
+      });
+      form.value.location = data.display_name ?? form.value.location;
+    } catch (e) {
+      console.error("Erro no reverse geocoding:", e);
+    }
+  };
   const zoomIn = () => { mapInstance.value?.zoomIn(); };
   const zoomOut = () => { mapInstance.value?.zoomOut(); };
 
