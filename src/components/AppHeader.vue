@@ -49,6 +49,9 @@ const handleLogout = async () => {
               <router-link class="dropdown-item" to="/eu/editar">Editar perfil</router-link>
             </li>
             <li>
+              <router-link class="dropdown-item" to="/coletivos/criar">Criar coletivo</router-link>
+            </li>
+            <li>
               <hr class="dropdown-divider" />
             </li>
             <li>

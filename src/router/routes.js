@@ -144,7 +144,51 @@ export default [
     name: "about-vocabulary",
     component: () => import("../views/About/AboutVocabulary.vue"),
   },
-  // Profile routes
+  // Collective routes
+  {
+    path: "/coletivos/criar",
+    name: "collective-create",
+    component: () => import("../views/Collective/CreateCollective.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/coletivos/:id",
+    name: "collective-detail",
+    component: () => import("../views/Collective/ViewCollective.vue"),
+  },
+  {
+    path: "/coletivos/:id/editar",
+    name: "collective-edit",
+    component: () => import("../views/Collective/EditCollective.vue"),
+    meta: { requiresAuth: true },
+  },
+  // Detalhe canônico de coleção — rota pública, dono polimórfico (usuário ou coletivo).
+  // Autorização é data-driven: dono resolvido pelos dados do álbum; privacidade via 403
+  // do backend. Coleções de usuário também são acessíveis aqui (quem tem direito vê).
+  {
+    path: "/colecoes/:collectionId",
+    name: "collection-detail-redirect",
+    redirect: (to) => ({
+      name: "collection-detail",
+      params: { collectionId: to.params.collectionId, viewMode: "grid" },
+    }),
+  },
+  {
+    path: "/colecoes/:collectionId/:viewMode",
+    name: "collection-detail",
+    component: () => import("../views/CollectionDetailPublic.vue"),
+    beforeEnter: (to) => {
+      const allowed = ["grid", "mosaic"];
+      if (!allowed.includes(to.params.viewMode)) {
+        return {
+          name: "collection-detail",
+          params: { ...to.params, viewMode: "grid" },
+          replace: true,
+        };
+      }
+      return true;
+    },
+  },
   {
     path: "/eu",
     redirect: { name: "my-profile-images" },
@@ -179,6 +223,12 @@ export default [
     name: "my-collection-detail-redirect",
     redirect: redirectToDefaultCollectionView,
     meta: { requiresAuth: true }
+  },
+  {
+    path: "/eu/colecoes/:collectionId/edit",
+    name: "my-collection-edit",
+    component: () => import("../views/Profile/CollectionEdit.vue"),
+    meta: { requiresAuth: true, showFooter: false },
   },
   {
     path: "/eu/colecoes/:collectionId/:viewMode",

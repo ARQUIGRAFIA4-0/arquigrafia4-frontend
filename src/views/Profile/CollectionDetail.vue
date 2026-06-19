@@ -154,56 +154,6 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
 }
 
 /**
-* Start: Remover imagem
-**/
-const selectedImageId = ref(null);
-const removingImageId = ref(null);
-
-// Ativa a imagem (seleciona ou desseleciona)
-function onCardActivate(item, event) {
-  // evita que clique em botão interno dispare toggle duas vezes
-  const target = event?.target;
-  if (target?.closest?.("button,a")) return;
-
-  selectedImageId.value = selectedImageId.value === item.id ? null : item.id; // Toggle seleção
-}
-
-// Remove a imagem da coleção
-async function removeImageFromCollection(imageId) {
-  if (!collectionId.value || !imageId) return; // Verifica se a coleção e a imagem existem. Para evitar bugs;
-
-  removingImageId.value = imageId; // Define o ID da imagem que está sendo removida
-  
-  try {
-    await albumsStore.removeImagesFromAlbum(
-      authStore.authHeader,
-      collectionId.value,
-      imageId
-    );
-
-    // Controle de estado: Remove a imagem da lista de imagens da coleção
-    collectionImages.value = collectionImages.value.filter((img) => img.id !== imageId);
-
-    if (selectedImageId.value === imageId) {
-      selectedImageId.value = null;
-    }
-
-    if (albumData.value?.images?.length) {
-      albumData.value.images = albumData.value.images.filter(
-        (img) => img.id !== imageId
-      );
-    }
-  } catch (err) {
-    console.error(err);
-  } finally {
-    removingImageId.value = null;
-  }
-}
-/**
-* End: Remover imagem
-*/
-
-/**
  * Start: Toolbar
 */
 const viewSelection = computed(() =>
@@ -334,6 +284,22 @@ function handleDownloadCollection() {
 
 }
 
+// Edita a coleção.
+function handleEditCollection() {
+  if (!collectionId.value) return;
+
+  router.push({
+    name: "my-collection-edit",
+    params: {
+      collectionId: collectionId.value,
+    },
+    query: {
+      viewMode: route.params.viewMode || "grid",
+    },
+  });
+
+}
+
 // Baixa a coleção como ZIP.
 async function handleCollectionDownloadConfirm() {
   downloadingCollection.value = true;
@@ -407,6 +373,7 @@ watch(
       @view-change="handleCollectionViewChange"
       @toggle-info="handleToggleCollectionInfo"
       @download="handleDownloadCollection"
+      @edit="handleEditCollection"
     />
 
     <DownloadModal
@@ -470,11 +437,8 @@ watch(
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
                 :is-grid-reflowing="isGridReflowing"
-                :selected-image-id="selectedImageId"
-                :removing-image-id="removingImageId"
                 :is-info-active="isInfoActive"
-                @activate="onCardActivate"
-                @remove="removeImageFromCollection"
+                :allow-remove="false"
               />
 
               <CollectionImagesMosaic
@@ -504,11 +468,8 @@ watch(
               <CollectionImagesGrid
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
-                :selected-image-id="selectedImageId"
-                :removing-image-id="removingImageId"
                 :is-info-active="false"
-                @activate="onCardActivate"
-                @remove="removeImageFromCollection"
+                :allow-remove="false"
               />
             </section>
           </div>
@@ -649,6 +610,17 @@ watch(
               </div>
               <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
             </section>
+
+            <div class="collection-detail__mobile-edit">
+              <button
+                type="button"
+                class="collection-detail__mobile-edit-btn"
+                @click="handleEditCollection"
+              >
+                <i class="bi bi-pencil-square" aria-hidden="true" />
+                <span>Editar</span>
+              </button>
+            </div>
             </div>
           </div>
         </div>
@@ -1233,6 +1205,36 @@ watch(
 
   .metadata-tags {
     max-width: 100%;
+  }
+
+  .collection-detail__mobile-edit {
+    width: 100%;
+    padding: 24px 0;
+    box-sizing: border-box;
+  }
+
+  .collection-detail__mobile-edit-btn {
+    display: inline-flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 5px;
+    background: var(--Laranja_E, #aa4f28);
+    color: var(--Branco, #fff);
+    font-family: "DM Sans", sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 150%;
+    cursor: pointer;
+    box-sizing: border-box;
+  }
+
+  .collection-detail__mobile-edit-btn i {
+    font-size: 16px;
+    line-height: 1;
   }
 }
 

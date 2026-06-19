@@ -17,7 +17,7 @@
         <div v-else class="metadata-person-avatar metadata-person-avatar--placeholder">
           <span>{{ displayInitial }}</span>
         </div>
-        <RouterLink v-if="collectiveId" :to="`/collective/${collectiveId}`" class="metadata-uploader-link">
+        <RouterLink v-if="collectiveId" :to="`/coletivos/${collectiveId}`" class="metadata-uploader-link">
           {{ displayName }}
         </RouterLink>
         <RouterLink v-else-if="uploaderUserId" :to="`/profile/${uploaderUserId}`" class="metadata-uploader-link">
@@ -135,7 +135,8 @@ const displayName = computed(() =>
 );
 const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 const displayAvatar = computed(() => {
-  const path = props.image?.collective?.avatar_path ?? props.image?.uploader?.avatar_path;
+  const entity = props.image?.collective ?? props.image?.uploader;
+  const path = entity?.avatar_path;
   return path ? `${API_BASE_URL}/storage/${path}` : null;
 });
 

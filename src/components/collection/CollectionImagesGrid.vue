@@ -11,6 +11,7 @@ const props = defineProps({
   selectedImageId: { type: [String, Number], default: null },
   removingImageId: { type: [String, Number], default: null },
   isInfoActive: { type: Boolean, default: false },
+  allowRemove: { type: Boolean, default: true },
 });
 
 // Emite eventos para ativar/desativar a imagem e remover a imagem da coleção
@@ -72,6 +73,7 @@ function formatDate(dates) {
       <div class="collection-grid__card-skeleton-body">
         <div class="collection-grid__card-skeleton-title" />
         <div class="collection-grid__card-skeleton-subtitle" />
+        <div class="collection-grid__card-skeleton-tags" />
       </div>
     </div>
     <span class="visually-hidden">Carregando coleção...</span>
@@ -90,15 +92,15 @@ function formatDate(dates) {
         v-for="item in images"
         :key="item.id"
         class="collection-grid__link"
-        role="button"
-        tabindex="0"
-        @click="emit('activate', item, $event)"
-        @keydown.enter.prevent="emit('activate', item, $event)"
-        @keydown.space.prevent="emit('activate', item, $event)"
+        :role="allowRemove ? 'button' : undefined"
+        :tabindex="allowRemove ? 0 : undefined"
+        @click="allowRemove && emit('activate', item, $event)"
+        @keydown.enter.prevent="allowRemove && emit('activate', item, $event)"
+        @keydown.space.prevent="allowRemove && emit('activate', item, $event)"
       >
         <article
           class="collection-grid__card"
-          :class="{ 'collection-grid__card--selected': isCardSelected(item) }"
+          :class="{ 'collection-grid__card--selected': allowRemove && isCardSelected(item) }"
         >
           <div class="collection-grid__image-wrapper">
             <img :src="item.imageUrl" class="collection-grid__image" :alt="item.title" />
@@ -119,13 +121,16 @@ function formatDate(dates) {
 
             <div class="collection-grid__footer">
               <div
-                v-if="!isCardSelected(item) && item.subjects?.length"
+                v-if="(!allowRemove || !isCardSelected(item)) && item.subjects?.length"
                 class="collection-grid__tags"
               >
                 <FitTags :subjects="item.subjects" :gap="4" />
               </div>
 
-              <div v-else-if="isCardSelected(item)" class="collection-grid__actions">
+              <div
+                v-else-if="allowRemove && isCardSelected(item)"
+                class="collection-grid__actions"
+              >
                 <button
                   type="button"
                   class="collection-grid__remove-btn"
@@ -298,8 +303,9 @@ function formatDate(dates) {
 .collection-grid__card-skeleton {
   display: flex;
   width: 100%;
+  height: 100%;
   max-width: 100%;
-  min-height: 346px;
+  min-height: 458px;
   box-sizing: border-box;
   flex-direction: column;
   align-items: stretch;
@@ -314,6 +320,8 @@ function formatDate(dates) {
 }
 
 .collection-grid__card-skeleton-image {
+  position: relative;
+  flex: 0 0 auto;
   width: 100%;
   max-width: none;
   aspect-ratio: 1 / 1;
@@ -323,23 +331,42 @@ function formatDate(dates) {
 }
 
 .collection-grid__card-skeleton-body {
-  padding: 8px 10px 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  padding: 14px 14px 4px;
+  box-sizing: border-box;
 }
 
 .collection-grid__card-skeleton-title {
-  height: 14px;
+  height: 18px;
   border-radius: 4px;
-  margin-bottom: 6px;
   width: 80%;
+  flex: 0 0 auto;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: collectionSkeletonShimmer 1.5s infinite;
 }
 
 .collection-grid__card-skeleton-subtitle {
-  height: 12px;
+  height: 14px;
   border-radius: 4px;
-  width: 50%;
+  width: 40%;
+  margin-top: 2px;
+  flex: 0 0 auto;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: collectionSkeletonShimmer 1.5s infinite;
+}
+
+.collection-grid__card-skeleton-tags {
+  margin-top: auto;
+  height: 24px;
+  border-radius: 4px;
+  width: 72%;
+  flex: 0 0 auto;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: collectionSkeletonShimmer 1.5s infinite;
