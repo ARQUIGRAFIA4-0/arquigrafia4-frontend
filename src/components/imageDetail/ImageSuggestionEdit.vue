@@ -87,7 +87,7 @@
             <h3 class="metadata-section__subtitle">Direitos de uso da imagem</h3>
             <span class="license-badge">{{
               props.image?.license || form.license
-              }}</span>
+            }}</span>
             <p class="metadata-section__hint">A licença não pode ser alterada.</p>
           </div>
         </section>
