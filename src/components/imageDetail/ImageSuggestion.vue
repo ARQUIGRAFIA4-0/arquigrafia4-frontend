@@ -71,7 +71,6 @@ const PAYLOAD_FIELDS = [
   "title",
   "description",
   "subjects",
-  "location_label",
   "earliest_date",
   "photographer",
 ];
