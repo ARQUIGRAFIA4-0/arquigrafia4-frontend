@@ -4,14 +4,18 @@
     <!-- Cabeçalho -->
     <button class="field-card__header" :aria-expanded="isOpen" @click="isOpen = !isOpen">
       <div class="field-card__identity">
+
         <div v-if="userAvatar" class="field-card__avatar field-card__avatar--image">
-          <img :src="userAvatar" :alt="userName" />
+          <img :src="`${API_BASE_URL}${userAvatar}`" :alt="`foto de perfil de ${userName}`" />
         </div>
-        <div v-else class="field-card__avatar field-card__avatar--initials">
-          {{ initials }}
+
+        <div v-else class="field-card__avatar field-card__avatar--image">
+          <img :src="defaultImageUser" :alt="`foto de perfil de ${userName}`" />
         </div>
+
+
         <span class="field-card__label">
-          <strong>{{ userName }}</strong>
+          {{ capitalizeWords(userName) }}
           está sugerindo {{ fieldsLabel }}
         </span>
       </div>
@@ -25,19 +29,39 @@
       <div v-for="entry in fieldStates" :key="entry.field" class="field-card__entry">
 
         <div class="field-card__value">
-          <textarea v-if="entry.field === 'description'" class="field-card__input field-card__input--textarea"
-            :value="entry.value" rows="5" readonly />
-          <div v-else-if="entry.field === 'subjects'" class="field-card__tags">
-            <span v-for="subject in entry.value" :key="subject" class="field-card__tag">{{ subject }}</span>
+
+          <div v-if="entry.field === 'description'">
+            <h3 class="field-card__value-title">Descrição</h3>
+            <textarea class="field-card__input field-card__input--textarea" :value="entry.value" rows="5" readonly />
           </div>
+
+          <div v-else-if="entry.field === 'subjects'">
+            <h3 class="field-card__value-title">Tags</h3>
+            <div class="field-card__tags">
+              <span v-for="subject in entry.value" :key="subject" class="field-card__tag">{{ subject }}</span>
+            </div>
+          </div>
+
+          <div v-else-if="entry.field === 'earliest_date'">
+            <h3 class="field-card__value-title">Data</h3>
+            <input class="field-card__input" type="text" :value="displayValue(entry)" readonly />
+          </div>
+
+          <div v-else-if="entry.field === 'title'">
+            <h3 class="field-card__value-title">Titulo</h3>
+            <input class="field-card__input" type="text" :value="displayValue(entry)" readonly />
+          </div>
+
           <div v-else-if="entry.field === 'location'" class="field-card__location">
+            <h3 class="field-card__value-title">Localização</h3>
             <input v-if="entry.value.label" class="field-card__input" type="text" :value="entry.value.label" readonly />
             <div v-if="entry.value.lat !== null && entry.value.lng !== null" class="field-card__map">
               <MapLibreMap :style-url="mapStyleUrl" :center="[entry.value.lng, entry.value.lat]" :zoom="14"
                 :marker-position="entry.value" marker-color="#0f89e1" />
             </div>
           </div>
-          <input v-else class="field-card__input" type="text" :value="displayValue(entry)" readonly />
+
+          <!-- <input v-else class="field-card__input" type="text" :value="displayValue(entry)" readonly /> -->
         </div>
 
         <!-- Ações deste campo -->
@@ -62,10 +86,10 @@
       </div>
 
       <!-- Motivo (único, da sugestão como um todo) -->
-      <p v-if="reason" class="field-card__reason">
-        <i class="bi bi-chat-left-quote" aria-hidden="true" />
-        {{ reason }}
-      </p>
+      <div v-if="reason" class="field-card__reason">
+        <span>Justificativa:</span>
+        <p>{{ reason }}</p>
+      </div>
     </div>
   </div>
 </template>
@@ -75,6 +99,11 @@ import { ref, reactive, computed } from "vue";
 import axios from "@/axios";
 import { useAuthStore } from "@/store/auth";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
+import defaultImageUser from "@/assets/profile_image.png";
+import { useImageForm } from "@/composables/useImageForm";
+
+const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
+const { capitalizeWords } = useImageForm();
 
 const props = defineProps({
   suggestionId: { type: String, required: true },
@@ -115,6 +144,9 @@ const fieldStates = reactive(
     action: null,
   }))
 );
+
+console.log(fieldStates);
+
 
 // ─── Label combinado do cabeçalho ──────────────────────────────────────────────
 // 1 campo: "está sugerindo um novo título"
@@ -213,7 +245,6 @@ const maybeSubmit = async () => {
 .field-card {
   background-color: var(--Off_white);
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 
   // ── Cabeçalho ──────────────────────────────────────────────────────────────
@@ -244,18 +275,14 @@ const maybeSubmit = async () => {
   }
 
   &__label {
-    font-size: 0.85rem;
+    font-size: .875rem;
     font-style: italic;
-    color: var(--Cinza_M);
+    font-weight: 400;
+    line-height: 150%;
+    color: var(--Preto);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-
-    strong {
-      color: var(--Cinza_E);
-      font-style: normal;
-      font-weight: 600;
-    }
   }
 
   &__chevron {
@@ -296,15 +323,22 @@ const maybeSubmit = async () => {
   // ── Entrada de campo (1 valor + ações) ─────────────────────────────────────
   &__entry {
     &+& {
-      margin-top: 1rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--Cinza_C);
+      margin-top: 1.5rem;
+      // padding-top: 1rem;
     }
   }
 
   // ── Valor sugerido ──────────────────────────────────────────────────────────
   &__value {
-    margin-bottom: 0.625rem;
+    margin-bottom: 1rem;
+
+    &-title {
+      font-size: 1rem;
+      font-weight: 500;
+      line-height: 150%;
+      color: var(--Preto);
+      margin-bottom: .5625rem;
+    }
   }
 
   &__input {
@@ -356,18 +390,21 @@ const maybeSubmit = async () => {
 
   // ── Motivo ──────────────────────────────────────────────────────────────────
   &__reason {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.35rem;
-    margin: 0.625rem 0 0;
-    font-size: 0.8rem;
-    font-style: italic;
-    color: var(--Cinza_M);
+    margin: 1rem 0;
+    font-size: .875rem;
 
-    i {
-      flex-shrink: 0;
-      margin-top: 2px;
+    span {
+      color: var(--Laranja_M);
+      font-weight: 500;
+      margin-bottom: .5rem;
     }
+
+    p {
+      font-weight: 400;
+      font-style: italic;
+      color: var(--Cinza_M);
+    }
+
   }
 
   // ── Ações ───────────────────────────────────────────────────────────────────
@@ -378,14 +415,16 @@ const maybeSubmit = async () => {
 
   &__btn {
     flex: 1;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.35rem;
-    padding: 0.45rem 0.75rem;
-    font-size: 0.85rem;
-    font-weight: 500;
-    border-radius: 4px;
+    gap: .5rem;
+    padding: .2813rem .875rem;
+    font-size: .875rem;
+    font-weight: 400;
+    line-height: 150%;
+    border-radius: 5px;
     border: 1px solid;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
@@ -395,20 +434,24 @@ const maybeSubmit = async () => {
       cursor: not-allowed;
     }
 
+    .bi {
+      font-size: .875rem;
+    }
+
     &--reject {
       color: var(--Cinza_E);
-      background-color: transparent;
-      border-color: var(--Cinza_C);
+      background-color: var(--Off_white);
+      border-color: var(--Cinza_E);
 
       &:hover:not(:disabled) {
-        background-color: var(--Negativo_E);
-        border-color: var(--Negativo_E);
+        background-color: var(--Laranja_E);
+        border-color: var(--Laranja_E);
         color: var(--Branco);
       }
 
       &.field-card__btn--active {
-        background-color: var(--Negativo_E);
-        border-color: var(--Negativo_E);
+        background-color: var(--Laranja_E);
+        border-color: var(--Laranja_E);
         color: var(--Branco);
       }
     }
