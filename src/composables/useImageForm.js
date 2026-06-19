@@ -11,6 +11,13 @@ export function useImageForm() {
   const authStore = useAuthStore();
   const { loggedUser } = storeToRefs(authStore);
 
+  // --- Capitalize
+  const capitalizeWords = (name) => {
+    return name.split(" ").map((word) => {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    }).join(" ");
+  };
+
   // ─── Tabs
   const tabs = [
     { label: "Essenciais", section: "essenciais" },
@@ -476,6 +483,9 @@ export function useImageForm() {
   };
 
   return {
+    // capitalize
+    capitalizeWords,
+
     // tabs
     tabs,
     currentSection,
