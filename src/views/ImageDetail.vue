@@ -42,6 +42,12 @@
           <ImageComments :image-url="image?.imageUrl" />
         </div>
 
+        <ImageInterpretations 
+          v-else-if="currentSection === 'interpretacoes'" 
+          @submit="handleSpecSubmit"  
+          :image-id="image?.id"
+        />
+
         <div v-else class="text-muted small">
           <!--  -->
         </div>
@@ -61,6 +67,7 @@ import ImageComments from "@/components/imageDetail/ImageComments.vue";
 import ImageDisplay from "@/components/imageDetail/ImageDisplay.vue";
 import ImageMetadata from "@/components/imageDetail/ImageMetadata.vue";
 import ImageMetadataEdit from "@/components/imageDetail/ImageMetadataEdit.vue";
+import ImageInterpretations from "@/components/imageDetail/ImageInterpretations.vue";
 defineOptions({ name: "ImageDetail" });
 
 const router = useRouter();
@@ -82,6 +89,11 @@ const tabs = [
     label: "Comentários",
     section: "comentarios",
     routeName: "image-detail-comentarios",
+  },
+  {
+    label: "Interpretações",
+    section: "interpretacoes",
+    routeName: "image-detail-interpretacoes",
   },
   // {
   //   label: "Imagens relacionadas",
