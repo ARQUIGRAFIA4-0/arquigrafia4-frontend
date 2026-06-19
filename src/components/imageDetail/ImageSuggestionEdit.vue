@@ -87,7 +87,7 @@
             <h3 class="metadata-section__subtitle">Direitos de uso da imagem</h3>
             <span class="license-badge">{{
               props.image?.license || form.license
-            }}</span>
+              }}</span>
             <p class="metadata-section__hint">A licença não pode ser alterada.</p>
           </div>
         </section>
@@ -397,13 +397,42 @@ const buildPayload = async () => {
     reason: reason.value.trim(),
   };
 
-  return Object.fromEntries(
-    Object.entries(payload).filter(
-      ([key, v]) =>
-        v !== null ||
-        ["latitude", "longitude", "location_label"].includes(key)
-    )
+  const payloadKeyToFormFields = {
+    title: ["title"],
+    description: ["description"],
+    photographer: ["authorName", "isAuthor"],
+    subjects: ["tags"],
+    latitude: ["coordinates"],
+    longitude: ["coordinates"],
+    location_label: ["location"],
+    earliest_date: ["date"],
+    latest_date: ["dateEnd"],
+    circa: ["dateAccuracy"],
+  };
+
+
+  const snapshot = initialFormSnapshot.value;
+
+  const finalPayload = Object.fromEntries(
+    Object.entries(payload).filter(([key, v]) => {
+      // Mantém o filtro original: nulos descartados, exceto lat/lng/location_label
+      const passesNullFilter =
+        v !== null || ["latitude", "longitude", "location_label"].includes(key);
+      if (!passesNullFilter) return false;
+
+      const relatedFields = payloadKeyToFormFields[key];
+      // Sem mapeamento (ex.: reason) ou sem snapshot ainda -> sempre envia
+      if (!relatedFields || !snapshot) return true;
+
+      // Se QUALQUER campo do form relacionado mudou, mantém a chave no payload
+      const changed = relatedFields.some(
+        (field) => !isFieldUnchanged(form.value[field], snapshot[field])
+      );
+      return changed;
+    })
   );
+
+  return finalPayload;
 };
 
 // ─── Submit ───────────────────────────────────────────────────────────────────
