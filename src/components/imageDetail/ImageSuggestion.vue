@@ -17,8 +17,8 @@
 
     <!-- Vazio -->
     <div v-else-if="suggestionCards.length === 0" class="image-suggestion__empty">
-      <i class="bi bi-inbox image-suggestion__empty-icon" />
-      <p class="image-suggestion__empty-text">Nenhuma sugestão pendente para esta imagem.</p>
+      <i class="bi bi-chat-left-text image-suggestion__empty-icon" />
+      <p class="image-suggestion__empty-text">Você ainda não tem sugestões para serem avaliadas.</p>
     </div>
 
     <!-- Cards por sugestão -->
@@ -246,20 +246,31 @@ onMounted(fetchSuggestions);
   // ===== EMPTY =====
 
   &__empty {
-    padding: 3rem 0;
-    text-align: center;
-    color: #6c757d;
+    // padding: 1rem 0;
+    width: 100%;
+    height: 57px;
+    background-color: var(--Off_white);
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
   }
 
   &__empty-icon {
     display: block;
-    margin-bottom: 1rem;
-    font-size: 2.5rem;
-    opacity: 0.5;
+    font-size: 1.5rem;
+    color: var(--Cinza_M);
   }
 
   &__empty-text {
     margin: 0;
+    color: var(--Preto);
+    font-size: .875rem;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 150%;
+    justify-self: center;
   }
 
   // ===== ALERT =====
