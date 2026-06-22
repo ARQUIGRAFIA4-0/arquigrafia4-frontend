@@ -87,7 +87,7 @@
             <h3 class="metadata-section__subtitle">Direitos de uso da imagem</h3>
             <span class="license-badge">{{
               props.image?.license || form.license
-            }}</span>
+              }}</span>
             <p class="metadata-section__hint">A licença não pode ser alterada.</p>
           </div>
         </section>
@@ -536,6 +536,7 @@ $avatar-size: 40px;
   }
 
   &__loading {
+    width: 100%;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
@@ -543,16 +544,20 @@ $avatar-size: 40px;
   }
 
   &__skeleton-card {
-    background-color: var(--White);
+    background-color: var(--Off_white);
     padding: 1rem;
     border-radius: 5px;
     box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
   }
 
   &__skeleton-line {
-    background-color: var(--Cinza-C);
+    background: linear-gradient(90deg, #e2e2e2 25%, #f0f0f0 50%, #e2e2e2 75%);
+    background-size: 200% 100%;
+    animation: skeleton-pulse 1.4s infinite;
     border-radius: 4px;
-    animation: skeleton-pulse 1.4s ease-in-out infinite;
+    // background-color: var(--Cinza-C);
+    // border-radius: 4px;
+    // animation: skeleton-pulse 1.4s ease-in-out infinite;
 
     &--label {
       height: 20px;
@@ -563,7 +568,7 @@ $avatar-size: 40px;
     &--field {
       height: 40px;
       width: 100%;
-      margin-top: .5rem;
+      margin-bottom: .75rem;
 
     }
   }
@@ -1141,14 +1146,12 @@ $avatar-size: 40px;
 }
 
 @keyframes skeleton-pulse {
-
-  0%,
-  100% {
-    opacity: 1;
+  0% {
+    background-position: 200% 0;
   }
 
-  50% {
-    opacity: 0.4;
+  100% {
+    background-position: -200% 0;
   }
 }
 
