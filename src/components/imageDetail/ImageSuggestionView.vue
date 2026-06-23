@@ -81,8 +81,11 @@
               <div v-if="suggestion.payload?.subjects?.length" class="suggestion-view__field">
                 <label class="suggestion-view__field-label">Tags sugeridas</label>
                 <div class="suggestion-view__tags">
-                  <span v-for="subject in suggestion.payload.subjects" :key="subject" class="suggestion-view__tag">{{
-                    subject }}</span>
+                  <!-- <span v-for="subject in suggestion.payload.subjects" :key="subject" class="suggestion-view__tag">{{
+                    subject }}</span> -->
+                  <span v-for="subject in suggestion.payload.subjects" :key="subject.id" class="suggestion-view__tag">
+                    {{ subject.term }}
+                  </span>
                 </div>
               </div>
 
@@ -145,7 +148,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import axios from "@/axios";
 import { useAuthStore } from "@/store/auth";
@@ -156,13 +159,15 @@ import MapLibreMap from "@/components/map/MapLibreMap.vue";
 
 const mapStyleUrl = "https://tiles.openfreemap.org/styles/positron";
 const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
-const { capitalizeWords } = useImageForm();
+const { capitalizeWords, loadFormDependencies, allSubjects } = useImageForm();
 
 defineOptions({ name: "ImageSuggestionView" });
 
 const props = defineProps({
   image: { type: Object, default: null },
 });
+console.log("View:", props);
+
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -178,10 +183,12 @@ const hasCoordinates = (suggestion) => {
   return latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null;
 };
 
-const initials = (user) => {
-  if (!user?.name) return "?";
-  return user.name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
-};
+// const resolveSubjectTerm = (uuid) => {
+
+//   const found = allSubjects.value.find((s) => s.id === uuid);
+//   console.log(found);
+//   return found ? found.term : uuid;
+// };
 
 const suggestionLabel = (suggestion) => {
   const fields = Object.keys(suggestion.payload || {}).filter((k) => k !== "reason");
@@ -224,13 +231,17 @@ const toggle = (id) => {
 
 const fetchSuggestions = async () => {
   if (!props.image?.id) return;
+
   loading.value = true;
+
   try {
     const { data } = await axios.get("/api/image-suggestions", {
       params: { image_id: props.image.id },
-      headers: authStore.authHeader ? { Authorization: authStore.authHeader } : {},
+      // headers: authStore.authHeader ? { Authorization: authStore.authHeader } : {},
     });
-    suggestions.value = data.suggestions?.data ?? data.suggestions ?? [];
+    console.log("fetch:", data.data);
+
+    suggestions.value = data.data ?? [];
   } catch (e) {
     console.error("Erro ao carregar sugestões:", e);
   } finally {
@@ -246,7 +257,20 @@ const goToSuggest = () => {
   });
 };
 
-onMounted(fetchSuggestions);
+
+// onMounted(fetchSuggestions);
+
+watch(
+  () => props.image?.id,
+  async (id) => {
+    if (id) {
+      await loadFormDependencies();
+      console.log("allSubjects após load:", allSubjects.value);
+      await fetchSuggestions();
+    }
+  },
+  { immediate: true }
+);
 </script>
 <style lang="scss" scoped>
 // ─── Bloco: suggestion-view ───────────────────────────────────────────────────
@@ -350,6 +374,7 @@ onMounted(fetchSuggestions);
     gap: 1rem;
     min-width: 0;
     flex: 1;
+    margin-right: 25px;
   }
 
   &__card-label {
@@ -365,7 +390,7 @@ onMounted(fetchSuggestions);
 
   &__status-wrapper {
     display: flex;
-    gap: 3.125rem;
+    gap: 1.875rem;
     justify-content: space-between;
     align-items: center;
   }
