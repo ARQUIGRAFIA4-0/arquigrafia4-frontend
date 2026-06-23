@@ -26,8 +26,8 @@
       <h2 class="image-suggestion__title">Analise as sugestões pendentes abaixo</h2>
 
       <SuggestionFieldCard v-for="card in suggestionCards" :key="card.key" :suggestion-id="card.suggestionId"
-        :fields="card.fields" :reason="card.reason" :user-name="card.userName" :user-avatar="card.userAvatar"
-        :user-initials="card.userInitials" @accepted="handleAccepted" @rejected="handleRejected"
+        :fields="card.fields" :createdAt="card.createdAt" :reason="card.reason" :user-name="card.userName"
+        :user-avatar="card.userAvatar" @accepted="handleAccepted" @rejected="handleRejected"
         @error="showAlert('danger', $event)" />
     </div>
 
@@ -51,8 +51,8 @@
 <script setup>
 import { ref, computed, reactive, onMounted } from "vue";
 import axios from "@/axios";
-import { useAuthStore } from "@/store/auth";
 import SuggestionFieldCard from "@/components/imageDetail/suggestions/SuggestionFieldCard.vue";
+import { useImageForm } from "../../composables/useImageForm";
 
 defineOptions({ name: "ImageSuggestion" });
 
@@ -61,7 +61,9 @@ const props = defineProps({
 });
 const emit = defineEmits(["updated"]);
 
-const authStore = useAuthStore();
+// console.log("aqui:", props);
+
+const { loadFormDependencies, allSubjects } = useImageForm();
 const loading = ref(true);
 const suggestions = ref([]);
 const alert = reactive({ show: false, type: "success", message: "" });
@@ -76,24 +78,34 @@ const PAYLOAD_FIELDS = [
 ];
 
 // ─── Iniciais do usuário ──────────────────────────────────────────────────────
-const getUserInitials = (user) => {
-  if (!user?.name) return "?";
-  return user.name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
-};
 
 
 // ─── Agrupa os campos de cada sugestão em um único card ──────────────────────
 // Uma sugestão com título + descrição vira 1 card com os 2 campos dentro;
 // outra sugestão do mesmo usuário com apenas data vira um 2º card separado
 const suggestionCards = computed(() => {
+
   const cards = [];
+
   for (const suggestion of suggestions.value) {
+
     const fields = [];
+
     for (const field of PAYLOAD_FIELDS) {
       const value = suggestion.payload?.[field];
+
       if (value === undefined || value === null) continue;
       // subjects vazio não entra no card
       if (field === "subjects" && (!Array.isArray(value) || value.length === 0)) continue;
+
+      if (field === "subjects") {
+        const terms = value.map((uuid) => {
+          const found = allSubjects.value.find((s) => s.id === uuid);
+          return found ? found.term : uuid;
+        });
+        fields.push({ field, value: terms, datePayload: null });
+        continue;
+      }
 
       fields.push({
         field,
@@ -130,9 +142,10 @@ const suggestionCards = computed(() => {
       reason: suggestion.payload?.reason ?? null,
       userName: suggestion.user?.name ?? "Usuário",
       userAvatar: suggestion.user?.avatar_path ?? null,
-      userInitials: getUserInitials(suggestion.user),
+      createdAt: suggestion.created_at
     });
   }
+
   return cards;
 });
 
@@ -143,9 +156,11 @@ const fetchSuggestions = async () => {
   try {
     const { data } = await axios.get("/api/image-suggestions", {
       params: { image_id: props.image.id, status: "pending" },
-      headers: { Authorization: authStore.authHeader },
+      // headers: { Authorization: authStore.authHeader },
     });
-    suggestions.value = data.suggestions?.data ?? data.suggestions ?? [];
+    console.log(data.data);
+
+    suggestions.value = data.data ?? [];
   } catch (e) {
     console.error("Erro ao carregar sugestões:", e);
   } finally {
@@ -175,7 +190,11 @@ const showAlert = (type, message) => {
   setTimeout(() => { alert.show = false; }, 4000);
 };
 
-onMounted(fetchSuggestions);
+// onMounted(fetchSuggestions);
+onMounted(async () => {
+  await loadFormDependencies();
+  await fetchSuggestions();
+});
 </script>
 
 <style lang="scss" scoped>
