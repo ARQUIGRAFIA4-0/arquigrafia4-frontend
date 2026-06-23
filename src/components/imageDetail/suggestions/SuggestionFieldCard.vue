@@ -25,6 +25,7 @@
     <!-- Conteúdo -->
     <div v-if="isOpen" class="field-card__body">
 
+      <span class="field-card__timestamp">{{ timeAgo(createdAt) }}</span>
       <!-- Um bloco de valor + ações por campo -->
       <div v-for="entry in fieldStates" :key="entry.field" class="field-card__entry">
 
@@ -38,7 +39,7 @@
           <div v-else-if="entry.field === 'subjects'">
             <h3 class="field-card__value-title">Tags</h3>
             <div class="field-card__tags">
-              <span v-for="subject in entry.value" :key="subject" class="field-card__tag">{{ subject }}</span>
+              <span v-for="subject in entry.value" :key="subject.id" class="field-card__tag">{{ subject.term }}</span>
             </div>
           </div>
 
@@ -64,6 +65,12 @@
           <!-- <input v-else class="field-card__input" type="text" :value="displayValue(entry)" readonly /> -->
         </div>
 
+        <!-- Motivo (único, da sugestão como um todo) -->
+        <div v-if="reason" class="field-card__reason">
+          <span>Justificativa:</span>
+          <p>{{ reason }}</p>
+        </div>
+
         <!-- Ações deste campo -->
         <div class="field-card__actions">
           <button class="field-card__btn field-card__btn--reject"
@@ -85,11 +92,6 @@
         </div>
       </div>
 
-      <!-- Motivo (único, da sugestão como um todo) -->
-      <div v-if="reason" class="field-card__reason">
-        <span>Justificativa:</span>
-        <p>{{ reason }}</p>
-      </div>
     </div>
   </div>
 </template>
@@ -111,7 +113,7 @@ const props = defineProps({
   reason: { type: String, default: null },
   userName: { type: String, default: "Usuário" },
   userAvatar: { type: String, default: null },
-  userInitials: { type: String, default: "?" },
+  createdAt: { type: String, default: null },
 });
 
 const emit = defineEmits(["accepted", "rejected", "error"]);
@@ -132,6 +134,7 @@ const FIELD_LABELS = {
 
 const FIELD_TO_PAYLOAD_KEYS = {
   location: ["location_label", "latitude", "longitude"],
+  earliest_date: ["earliest_date", "latest_date"],
 };
 
 // ─── Estado individual de decisão por campo ───────────────────────────────────
@@ -157,15 +160,14 @@ const fieldsLabel = computed(() => {
   return `${labels.slice(0, -1).join(", ")} e ${labels[labels.length - 1]}`;
 });
 
-const initials = computed(() => {
-  if (props.userInitials) return props.userInitials;
-  return props.userName
-    .split(" ")
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
-});
+const timeAgo = (dateStr) => {
+  if (!dateStr) return "";
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 60) return "agora mesmo";
+  if (diff < 3600) return `há ${Math.floor(diff / 60)} minuto(s)`;
+  if (diff < 86400) return `há ${Math.floor(diff / 3600)} hora(s)`;
+  return `há ${Math.floor(diff / 86400)} dia(s)`;
+};
 
 const displayValue = (entry) => {
   if (entry.field === "earliest_date" && entry.datePayload) {
@@ -197,9 +199,14 @@ const maybeSubmit = async () => {
   const acceptedFields = fieldStates
     .filter((f) => f.decision === "accepted")
     .flatMap((f) => FIELD_TO_PAYLOAD_KEYS[f.field] ?? [f.field]);
+
   const rejectedFields = fieldStates
     .filter((f) => f.decision === "rejected")
     .flatMap((f) => FIELD_TO_PAYLOAD_KEYS[f.field] ?? [f.field]);
+
+  if (acceptedFields.length > 0) {
+    acceptedFields.push("reason");
+  }
 
   fieldStates.forEach((f) => {
     f.processing = true;
@@ -215,6 +222,8 @@ const maybeSubmit = async () => {
         { headers: { Authorization: authStore.authHeader } }
       );
       emit("accepted", { suggestionId: props.suggestionId, acceptedFields, rejectedFields });
+      console.log("aceito:", acceptedFields);
+
     } else {
       // Nenhum campo aceito: todos foram recusados, sugestão inteira é recusada
       await axios.post(
@@ -230,6 +239,8 @@ const maybeSubmit = async () => {
     fieldStates.forEach((f) => {
       f.decision = null;
     });
+    console.log(e.response?.data?.message);
+
   } finally {
     fieldStates.forEach((f) => {
       f.processing = false;
@@ -269,7 +280,7 @@ const maybeSubmit = async () => {
   &__identity {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 1rem;
     min-width: 0;
     flex: 1;
   }
@@ -292,8 +303,8 @@ const maybeSubmit = async () => {
 
   // ── Avatar ──────────────────────────────────────────────────────────────────
   &__avatar {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     flex-shrink: 0;
     overflow: hidden;
@@ -318,6 +329,14 @@ const maybeSubmit = async () => {
   // ── Corpo ───────────────────────────────────────────────────────────────────
   &__body {
     padding: 0 1rem 1rem;
+  }
+
+  &__timestamp {
+    display: block;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--Preto);
+    margin-bottom: 0.75rem;
   }
 
   // ── Entrada de campo (1 valor + ações) ─────────────────────────────────────
