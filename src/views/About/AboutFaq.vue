@@ -1,9 +1,7 @@
 <template>
   <AboutLayout>
-    <div class="col-12 col-md-8">
+    <div class="col-12 col-md-7">
       <h1 class="about-faq__title">Perguntas frequentes</h1>
-    </div>
-    <div class="col-12 col-md-8">
       <div class="about-faq__item col-12">
         <h2 class="about-faq__question">
           Posso fazer uso comercial das imagens do ARQUIGRAFIA?
@@ -86,7 +84,7 @@
 
       <div class="about-faq__item col-12">
         <h2 class="about-faq__question">
-          Ainda precisando de Ajuda?
+          Ainda precisando de ajuda?
         </h2>
         <p class="about-faq__answer col-md-10">
           Esta é uma versão beta do ARQUIGRAFIA e ainda pode conter erros. Caso tenha alguma dificuldade técnica,
