@@ -39,7 +39,22 @@
           <div v-else-if="entry.field === 'subjects'">
             <h3 class="field-card__value-title">Tags</h3>
             <div class="field-card__tags">
-              <span v-for="subject in entry.value" :key="subject.id" class="field-card__tag">{{ subject.term }}</span>
+              <span v-for="subject in entry.value" :key="subject.id" class="field-card__tag" :class="{
+                'field-card__tag--added': subject.status === 'added',
+                'field-card__tag--removed': subject.status === 'removed',
+              }">
+                {{ subject.term }}
+              </span>
+            </div>
+            <div v-if="entry.value.some(t => t.status !== 'kept')" class="field-card__tags-legend">
+              <span v-if="entry.value.some(t => t.status === 'added')"
+                class="field-card__tags-legend-item field-card__tags-legend-item--added">
+                Adicionada
+              </span>
+              <span v-if="entry.value.some(t => t.status === 'removed')"
+                class="field-card__tags-legend-item field-card__tags-legend-item--removed">
+                Removida
+              </span>
             </div>
           </div>
 
@@ -148,7 +163,6 @@ const fieldStates = reactive(
   }))
 );
 
-console.log(fieldStates);
 
 
 // ─── Label combinado do cabeçalho ──────────────────────────────────────────────
@@ -384,12 +398,64 @@ const maybeSubmit = async () => {
   }
 
   &__tag {
-    display: inline-block;
-    padding: 0.2rem 0.5rem;
-    font-size: 0.75rem;
-    background-color: var(--Cinza_E);
-    color: var(--Branco);
-    border-radius: 4px
+    display: inline-flex;
+    align-items: center;
+    padding: .3125rem .5rem;
+    gap: .75rem;
+    font-weight: 400;
+    font-size: .75rem;
+    line-height: 114%;
+    border: 1px solid var(--Cinza_M);
+    color: var(--Cinza_M);
+    border-radius: 2px;
+    background-color: var(--Off_white);
+
+    &--added {
+      background-color: transparent;
+      color: var(--Positivo_E);
+      background-color: var(--Positivo_C);
+      border: 1px solid var(--Positivo_E);
+    }
+
+    &--removed {
+      background-color: transparent;
+      color: var(--Negativo_E);
+      border: 1px solid var(--Negativo_E);
+      background-color: var(--Negativo_C);
+      text-decoration: line-through;
+    }
+  }
+
+  // ── Legenda do diff de tags ──────────────────────────────────────────────────
+  &__tags-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  &__tags-legend-item {
+    font-size: 0.6875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--Cinza_M);
+
+    &::before {
+      content: "";
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    &--added::before {
+      background-color: var(--Positivo_E, #1a7a4a);
+    }
+
+    &--removed::before {
+      background-color: var(--Negativo_E, #c0392b);
+    }
   }
 
   &__map {
