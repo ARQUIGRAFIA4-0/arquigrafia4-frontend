@@ -70,6 +70,12 @@ export default [
     meta: { section: "interpretacoes" },
   },
   {
+    path: "/explore/sugestoes/image/:id",
+    name: "image-detail-sugestoes",
+    component: () => import("../views/ImageDetail.vue"),
+    meta: { section: "sugestoes" },
+  },
+  {
     path: "/explore/relacionadas/image/:id",
     name: "image-detail-relacionadas",
     component: () => import("../views/ImageDetail.vue"),

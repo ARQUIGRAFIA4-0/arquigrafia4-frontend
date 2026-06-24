@@ -2,10 +2,17 @@
   <div>
     <div class="d-flex align-items-start justify-content-between mb-4">
       <h1 class="h1 mb-4">{{ props.image?.title || "Carregando..." }}</h1>
+
       <button v-if="canEdit" type="button" class="btn edit-btn" title="Editar informações"
         aria-label="Editar informações da imagem" @click="enterEditMode">
         <i class="bi bi-pencil-square" aria-hidden="true"></i>
       </button>
+
+      <button v-else-if="canSuggest" type="button" class="btn edit-btn" title="Sugerir alterações"
+        aria-label="Sugerir alterações na imagem" @click="enterSuggestMode">
+        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+      </button>
+
     </div>
 
     <div v-if="displayName" class="metadata-section">
@@ -99,11 +106,16 @@ const props = defineProps({
 const isOwner = computed(() => {
   return loggedUser.value?.id === props.image?.uploader?.id;
 });
-
 const isEditing = computed(() => route.query.edit === "true");
+const isSuggesting = computed(() => route.query.suggest === "true");
+const isLoggedIn = computed(() => !!loggedUser.value);
 
 const canEdit = computed(() => {
   return isOwner.value && !isEditing.value;
+});
+
+const canSuggest = computed(() => {
+  return !isOwner.value && isLoggedIn.value && !isSuggesting.value;
 });
 
 function enterEditMode() {
@@ -111,6 +123,16 @@ function enterEditMode() {
     query: {
       ...route.query,
       edit: "true",
+    },
+  });
+}
+
+//ToDo: alterar sugestion para suggestions
+function enterSuggestMode() {
+  router.push({
+    path: `/explore/sugestoes/image/${props.image.id}`,
+    query: {
+      suggest: "true",
     },
   });
 }
