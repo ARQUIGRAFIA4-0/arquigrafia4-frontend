@@ -61,8 +61,6 @@ const props = defineProps({
 });
 const emit = defineEmits(["updated"]);
 
-// console.log("aqui:", props);
-
 const { loadFormDependencies, allSubjects } = useImageForm();
 const loading = ref(true);
 const suggestions = ref([]);
@@ -99,13 +97,107 @@ const suggestionCards = computed(() => {
       if (field === "subjects" && (!Array.isArray(value) || value.length === 0)) continue;
 
       if (field === "subjects") {
-        const terms = value.map((uuid) => {
-          const found = allSubjects.value.find((s) => s.id === uuid);
-          return found ? found.term : uuid;
+        const currentIds = new Set((props.image?.subjects ?? []).map((s) => s.id));
+
+        const currentTagMap = new Map((props.image?.subjects ?? []).map((s) => [s.id, s]));
+
+        // const suggestedIds = new Set(value);
+
+
+        const suggestedTagMap = new Map(
+          value
+            .filter((v) => typeof v === "object" && v !== null)
+            .map((v) => [v.id, v])
+        );
+
+        const suggestedIds = new Set(
+          value.map((v) => (typeof v === "string" ? v : v.id))
+        );
+
+        const allTagIds = new Set([...currentIds, ...suggestedIds]);
+
+        const tags = [...allTagIds].map((uuid) => {
+          const fromImage = currentTagMap.get(uuid);
+          const fromSuggested = suggestedTagMap.get(uuid);
+
+          const fromSubjects = allSubjects.value.find((s) => s.id === uuid);
+
+
+
+          const term = fromImage?.term ?? fromSuggested?.term ?? fromSubjects?.term ?? uuid;
+          const type = fromImage?.type ?? fromSuggested?.type ?? fromSubjects?.type ?? null;
+          const vocab = fromImage?.vocab ?? fromSuggested?.vocab ?? fromSubjects?.vocab ?? null;
+          const ref_id = fromImage?.ref_id ?? fromSuggested?.ref_id ?? fromSubjects?.ref_id ?? null;
+          const source = fromImage?.source ?? fromSuggested?.source ?? fromSubjects?.source ?? null;
+
+          let status = "kept";
+          if (!currentIds.has(uuid)) status = "added";
+          if (!suggestedIds.has(uuid)) status = "removed";
+
+          return { id: uuid, term, type, vocab, ref_id, source, status };
         });
-        fields.push({ field, value: terms, datePayload: null });
+
+        tags.sort((a, b) => {
+          const order = { kept: 0, added: 1, removed: 2 };
+          return order[a.status] - order[b.status];
+        });
+
+        fields.push({ field, value: tags, datePayload: null });
         continue;
       }
+
+      //----------------------------
+
+      // if (field === "subjects") {
+      //   // UUIDs das tags atuais da imagem
+      //   const currentIds = new Set((props.image?.subjects ?? []).map((s) => s.id));
+      //   // console.log("props.image no momento do diff:", props.image?.subjects?.map(s => s.term));
+      //   console.log("tags antigas:", currentIds);
+
+
+      //   // UUIDs das tags sugeridas
+      //   const suggestedIds = new Set(value);
+      //   console.log("tags novas:", suggestedIds);
+
+
+      //   const currentTagMap = new Map(
+      //     (props.image?.subjects ?? []).map((s) => [s.id, s])
+      //   );
+      //   console.log("currentTagMap:", currentTagMap);
+
+
+
+      //   // Monta lista unificada com status de diff
+      //   const allTagIds = new Set([...currentIds, ...suggestedIds]);
+      //   console.log("log:", allTagIds);
+
+      //   const tags = [...allTagIds].map((uuid) => {
+      //     const fromImage = currentTagMap.get(uuid);
+      //     const fromSubjects = allSubjects.value.find((s) => s.id === uuid);
+
+      //     const term = fromImage?.term ?? fromSubjects?.term ?? uuid;
+      //     const type = fromImage?.type ?? fromSubjects?.type ?? null;
+      //     const vocab = fromImage?.vocab ?? fromSubjects?.vocab ?? null;
+      //     const ref_id = fromImage?.ref_id ?? fromSubjects?.ref_id ?? null;
+      //     const source = fromImage?.source ?? fromSubjects?.source ?? null;
+
+      //     let status = "kept";
+      //     if (!currentIds.has(uuid)) status = "added";   // nova: está na sugestão mas não na imagem original
+      //     if (!suggestedIds.has(uuid)) status = "removed";  // removida: estava na imagem mas o sugestor tirou
+
+      //     return { id: uuid, term, type, vocab, ref_id, source, status };
+      //   });
+
+
+      //   // Ordena: mantidas → adicionadas → removidas
+      //   tags.sort((a, b) => {
+      //     const order = { kept: 0, added: 1, removed: 2 };
+      //     return order[a.status] - order[b.status];
+      //   });
+
+      //   fields.push({ field, value: tags, datePayload: null });
+      //   continue;
+      // }
 
       fields.push({
         field,
@@ -158,7 +250,6 @@ const fetchSuggestions = async () => {
       params: { image_id: props.image.id, status: "pending" },
       // headers: { Authorization: authStore.authHeader },
     });
-    console.log(data.data);
 
     suggestions.value = data.data ?? [];
   } catch (e) {
