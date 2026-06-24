@@ -528,12 +528,6 @@ const maybeSubmit = async () => {
       background-color: var(--Off_white);
       border-color: var(--Cinza_E);
 
-      &:hover:not(:disabled) {
-        background-color: var(--Laranja_E);
-        border-color: var(--Laranja_E);
-        color: var(--Branco);
-      }
-
       &.field-card__btn--active {
         background-color: var(--Laranja_E);
         border-color: var(--Laranja_E);
@@ -545,11 +539,6 @@ const maybeSubmit = async () => {
       color: var(--Branco);
       background-color: var(--Preto);
       border-color: var(--Preto);
-
-      &:hover:not(:disabled) {
-        background-color: var(--Preto);
-        border-color: var(--Preto);
-      }
 
       &.field-card__btn--active {
         background-color: var(--Positivo_E);
@@ -566,7 +555,7 @@ const maybeSubmit = async () => {
     border: 2px solid currentColor;
     border-right-color: transparent;
     border-radius: 50%;
-    animation: field-card-spin 0.6s linear infinite;
+    animation: field-card-spin 0.3s linear infinite;
   }
 }
 
