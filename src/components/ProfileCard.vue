@@ -209,6 +209,26 @@ function checkSocials(socials) {
             </li>
           </ul>
         </div>
+        <div v-if="currentProfileData?.collectives?.length > 0" class="profile-card__collectives">
+          <h3>Coletivos</h3>
+          <div class="profile-card__collectives-avatars">
+            <a
+              v-for="collective in currentProfileData.collectives"
+              :key="collective.id"
+              class="profile-card__collective-avatar"
+              :href="`/coletivos/${collective.id}`"
+              :aria-label="collective.name"
+            >
+              <img
+                v-if="collective.avatar_url"
+                :src="collective.avatar_url.startsWith('http') ? collective.avatar_url : `${API_BASE_URL}${collective.avatar_url}`"
+                :alt="collective.name"
+              />
+              <span v-else>{{ collective.name?.charAt(0).toUpperCase() }}</span>
+              <span class="profile-card__collective-tooltip">{{ collective.name }}</span>
+            </a>
+          </div>
+        </div>
         <div v-if="props.isOwnProfile" class="profile-card__toggle-profile-visibility">
           <a :href="`/profile/${userData?.id}`" target="_blank" class="btn btn-secondary btn-sm btn-icon">
             <i class="bi bi-eye" /> Ver perfil público
@@ -403,6 +423,95 @@ $breakpoint-md: 768px;
       @include md {
         font-size: 12px;
       }
+    }
+  }
+
+  &__collectives {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 16px !important;
+
+    >*+* {
+      margin-top: 8px;
+    }
+  }
+
+  &__collectives-avatars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  &__collective-avatar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    overflow: visible;
+    background-color: $color-laranja-e;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+      opacity: 0.8;
+
+      .profile-card__collective-tooltip {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
+    img {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    span:not(.profile-card__collective-tooltip) {
+      color: #fff;
+      font-family: "DM Sans";
+      font-weight: 700;
+      font-size: 20px;
+      line-height: 1;
+      user-select: none;
+    }
+  }
+
+  &__collective-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background-color: #333;
+    color: #fff;
+    font-size: 12px;
+    font-family: "DM Sans";
+    white-space: nowrap;
+    padding: 4px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 10;
+
+    &::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: #333;
     }
   }
 
