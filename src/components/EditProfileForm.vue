@@ -62,6 +62,23 @@ const scholarityPublic = ref();
 const selectedSocialOption = ref("");
 const selectedSocialValue = ref("");
 
+const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
+
+// URL da imagem atual do usuário (antes de qualquer upload novo)
+// Replica a mesma lógica do ProfileCard e AppHeader: avatar_url tem prioridade,
+// com fallback para avatar_path (padrão /storage/{path})
+const currentAvatarUrl = computed(() => {
+  const av = props.userData?.avatar_url;
+  if (av) {
+    return av.startsWith('http') ? av : `${API_BASE_URL}${av}`;
+  }
+  const path = props.userData?.avatar_path;
+  if (path) {
+    return `${API_BASE_URL}/storage/${path}`;
+  }
+  return null;
+});
+
 // Refs para upload de imagem de perfil
 const profileImageFile = ref(null);
 const profileImageURLPreview = ref("");
@@ -581,7 +598,7 @@ function handleCancel() {
       <h3>Foto de perfil</h3>
       <div class="d-flex flex-row gap-3 align-items-end">
         <div class="profile-image-preview position-relative">
-          <img :src="profileImageURLPreview || defaultProfileImage" alt="Foto de perfil"
+          <img :src="profileImageURLPreview || currentAvatarUrl || defaultProfileImage" alt="Foto de perfil"
             :class="{ 'opacity-50': isProcessingImage }" />
           <div v-if="isProcessingImage" class="position-absolute top-50 start-50 translate-middle">
             <div class="spinner-border spinner-border-sm text-secondary" role="status">
@@ -1034,7 +1051,7 @@ function handleCancel() {
       <i class="bi bi-arrow-right"></i>
     </div>
     <!-- Botões de submit e cancelamento -->
-    <div class="row row-cols-2 g-3">
+    <div class="row row-cols-2 g-3 mb-5">
       <div class="col">
         <button class="btn btn-outline-secondary btn-sm w-100" @click="handleCancel">Cancelar</button>
       </div>

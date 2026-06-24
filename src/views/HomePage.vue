@@ -181,7 +181,9 @@ const breakpoints = useBreakpoints({ md: 768 });
 const isMobile = breakpoints.smaller("md");
 
 const activeTab = computed(() => {
-  return route.path.startsWith("/explore/lab") ? "lab" : "acervo";
+  if (route.path.startsWith("/explore/lab")) return "lab";
+  if (route.path.startsWith("/explore/rede")) return "rede";
+  return "acervo";
 });
 const viewSelection = ref(viewRouteToSelection(route.params.viewMode));
 const viewMode = computed(() => selectionToViewMode(viewSelection.value));

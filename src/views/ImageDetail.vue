@@ -56,6 +56,12 @@
         <!-- Não-dono visualizando histórico  -->
         <ImageSuggestionView v-else-if="currentSection === 'sugestoes' && !isOwner && !isSuggesting" :image="image" />
 
+        <ImageInterpretations v-else-if="currentSection === 'interpretacoes'" @submit="handleSpecSubmit"
+          :image-id="image?.id" />
+
+        <div v-else class="text-muted small">
+          <!--  -->
+        </div>
       </div>
     </div>
   </div>
@@ -76,6 +82,7 @@ import ImageSuggestion from "@/components/imageDetail/ImageSuggestion.vue";
 import ImageSuggestionEdit from "../components/imageDetail/ImageSuggestionEdit.vue";
 import ImageSuggestionView from "../components/imageDetail/ImageSuggestionView.vue";
 
+import ImageInterpretations from "@/components/imageDetail/ImageInterpretations.vue";
 defineOptions({ name: "ImageDetail" });
 
 const router = useRouter();

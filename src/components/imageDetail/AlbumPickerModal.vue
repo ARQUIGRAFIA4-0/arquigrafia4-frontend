@@ -1,9 +1,6 @@
 <script setup>
 import { ref, watch, computed } from "vue";
-import { storeToRefs } from "pinia";
-import { useAuthStore } from "@/store/auth";
-import { useUsersStore } from "@/store/users";
-import defaultCover from "@/assets/album-default.png";
+import { resolveAlbumCover } from "@/helpers/collectionCover";
 
 // Options
 defineOptions({
@@ -15,12 +12,16 @@ const props = defineProps({
   modelValue: { type: Boolean, default: false },
   albums: { type: Array, default: () => [] },
   preselectedAlbumIds: { type: Array, default: () => [] },
+  scopes: { type: Array, default: () => [] },
+  selectedScopeId: { type: [String, Number], default: null },
+  loadingAlbums: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
   "update:modelValue",
   "open-create-collection",
   "confirm-add",
+  "change-scope",
 ]);
 
 function close() {
@@ -30,6 +31,32 @@ function close() {
 // Criar coleção
 function onAddCollection() {
   emit("open-create-collection");
+}
+
+/**
+ * Start: Seletor de escopo (usuário ou coletivo)
+ */
+const isScopeOpen = ref(false);
+
+const selectedScope = computed(
+  () =>
+    props.scopes.find((s) => s.id === props.selectedScopeId) ??
+    props.scopes[0] ??
+    null
+);
+
+const availableScopes = computed(() =>
+  props.scopes.filter((s) => s.id !== selectedScope.value?.id)
+);
+
+function toggleScopeDropdown() {
+  isScopeOpen.value = !isScopeOpen.value;
+}
+
+function selectScope(scope) {
+  isScopeOpen.value = false;
+  if (scope.id === selectedScope.value?.id) return;
+  emit("change-scope", scope);
 }
  
 /**
@@ -42,38 +69,9 @@ const primaryActionLabel = computed(() =>
   props.preselectedAlbumIds.length ? "Atualizar" : "Adicionar"
 );
 
-const authStore = useAuthStore();
-const usersStore = useUsersStore();
-const authorNamesByAlbumId = ref({});
-
-// Obter nomes dos autores dos álbuns
-async function resolveAlbumAuthors() {
-  const albums = Array.isArray(props.albums) ? props.albums : [];
-
-  if (!albums.length) {
-    authorNamesByAlbumId.value = {};
-    return;
-  }
-
-  const userId = albums[0]?.user_id;
-  let authorName = "";
-
-  if (userId) {
-    try {
-      const user = await usersStore.getUser(userId);
-      authorName = user?.name?.trim() || "";
-    } catch {
-      authorName = "";
-    }
-  }
-
-  authorNamesByAlbumId.value = Object.fromEntries(
-    albums.map((album) => [album.id, authorName])
-  );
-}
-
-function getAlbumAuthorName(album) {
-  return authorNamesByAlbumId.value[album?.id] || "";
+// Todos os álbuns do escopo compartilham o mesmo dono: o subtítulo é o nome do escopo
+function getAlbumAuthorName() {
+  return selectedScope.value?.name || "";
 }
 
 // Selecionar/desselecionar álbum
@@ -98,28 +96,27 @@ function onConfirmAdd() {
   
 }
 
-// sempre que abrir modal, resetar seleção e carregar autores
+// sempre que abrir o modal, resetar seleção e fechar o dropdown de escopo
 watch(
   () => props.modelValue,
   (isOpen) => {
     if (!isOpen) {
-      authorNamesByAlbumId.value = {};
+      isScopeOpen.value = false;
       return;
     }
 
     selectedAlbumIds.value = [...(props.preselectedAlbumIds || [])];
-    resolveAlbumAuthors();
   }
 );
 
+// ao trocar de escopo, a lista de álbuns recarrega no pai: sincroniza a seleção
 watch(
-  () => props.albums,
-  () => {
+  () => props.preselectedAlbumIds,
+  (ids) => {
     if (props.modelValue) {
-      resolveAlbumAuthors();
+      selectedAlbumIds.value = [...(ids || [])];
     }
-  },
-  { deep: true }
+  }
 );
 
 </script>
@@ -162,8 +159,72 @@ watch(
               </svg>
               <i class="bi bi-x-circle-fill album-picker__close-icon album-picker__close-icon--mobile" aria-hidden="true"></i>
             </button>
-          </header>          
-          <div class="album-picker__list">
+          </header>
+
+          <div v-if="scopes.length > 1" class="album-picker__scope">
+            <span class="album-picker__scope-caption">Adicionar nas coleções de</span>
+            <div
+              class="album-picker__scope-selected"
+              role="button"
+              tabindex="0"
+              @click="toggleScopeDropdown"
+              @keydown.enter.prevent="toggleScopeDropdown"
+              @keydown.space.prevent="toggleScopeDropdown"
+            >
+              <span class="album-picker__scope-identity" v-if="selectedScope">
+                <span class="album-picker__scope-avatar">
+                  <img v-if="selectedScope.avatar" :src="selectedScope.avatar" alt="" />
+                  <span v-else class="album-picker__scope-initials">{{ selectedScope.initials }}</span>
+                </span>
+                <span class="album-picker__scope-name">{{ selectedScope.name }}</span>
+              </span>
+              <i
+                class="bi bi-chevron-down album-picker__scope-chevron"
+                :class="{ 'album-picker__scope-chevron--open': isScopeOpen }"
+                aria-hidden="true"
+              />
+            </div>
+
+            <div v-if="isScopeOpen" class="album-picker__scope-menu">
+              <button
+                v-for="scope in availableScopes"
+                :key="scope.id"
+                type="button"
+                class="album-picker__scope-option"
+                @click="selectScope(scope)"
+              >
+                <span class="album-picker__scope-avatar">
+                  <img v-if="scope.avatar" :src="scope.avatar" alt="" />
+                  <span v-else class="album-picker__scope-initials">{{ scope.initials }}</span>
+                </span>
+                <span class="album-picker__scope-name">{{ scope.name }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div
+            v-if="loadingAlbums"
+            class="album-picker__list album-picker__list--skeleton"
+            :class="{ 'album-picker__list--scope-open': isScopeOpen }"
+            aria-hidden="true"
+          >
+            <div
+              v-for="n in 2"
+              :key="n"
+              class="album-picker__cell album-picker__skeleton-cell"
+            >
+              <div class="album-picker__thumb album-picker__skeleton-block"></div>
+              <span class="album-picker__text">
+                <span class="album-picker__skeleton-line album-picker__skeleton-block"></span>
+                <span class="album-picker__skeleton-line album-picker__skeleton-line--short album-picker__skeleton-block"></span>
+              </span>
+            </div>
+          </div>
+          <div
+            v-else
+            class="album-picker__list"
+            :class="{ 'album-picker__list--scope-open': isScopeOpen }"
+          >
             <button
               type="button"
               class="album-picker__cell album-picker__cell--action"
@@ -190,7 +251,7 @@ watch(
               @click="toggleAlbum(album.id)"
             >
               <div class="album-picker__thumb">
-                <img :src="defaultCover" :alt="album.title" />
+                <img :src="resolveAlbumCover(album)" :alt="album.title" />
               </div>
               <span class="album-picker__text">
                 <span class="album-picker__label">{{ album.title }}</span>
@@ -303,6 +364,175 @@ watch(
   align-self: stretch;
   flex: 1;
   min-height: 0;
+}
+
+.album-picker__scope {
+  position: relative;
+  align-self: stretch;
+  margin-bottom: 8px;
+}
+
+.album-picker__scope-caption {
+  display: block;
+  color: var(--Cinza_M, #636262);
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-style: italic;
+  margin-bottom: 4px;
+}
+
+.album-picker__scope-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #cecece;
+  background: var(--Branco, #fff);
+  cursor: pointer;
+}
+
+.album-picker__scope-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.album-picker__scope-avatar {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2f2f2f;
+}
+
+.album-picker__scope-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.album-picker__scope-initials {
+  color: #fff;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.album-picker__scope-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #2f2f2f;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.album-picker__scope-chevron {
+  flex-shrink: 0;
+  color: #636262;
+  transition: transform 0.2s ease;
+}
+
+.album-picker__scope-chevron--open {
+  transform: rotate(180deg);
+}
+
+.album-picker__scope-menu {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+  border-radius: 8px;
+  border: 1px solid #cecece;
+  background: var(--Off_white, #faf9f9);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 98, 98, 0.45) transparent;
+}
+
+.album-picker__scope-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.album-picker__scope-menu::-webkit-scrollbar-thumb {
+  background: rgba(99, 98, 98, 0.45);
+  border-radius: 999px;
+}
+
+.album-picker__scope-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.album-picker__scope-option + .album-picker__scope-option {
+  border-top: 1px solid color-mix(in srgb, #cecece, transparent 50%);
+}
+
+.album-picker__scope-option:hover,
+.album-picker__scope-option:focus-visible {
+  background: rgba(99, 98, 98, 0.08);
+}
+
+/* Reserva altura suficiente para o dropdown de escopo aberto não ultrapassar o modal */
+.album-picker__list--scope-open {
+  min-height: 200px;
+}
+
+/* Skeleton da lista de coleções (transição ao trocar de escopo) */
+.album-picker__skeleton-cell {
+  cursor: default;
+}
+
+.album-picker__skeleton-line {
+  display: block;
+  height: 12px;
+  width: 80%;
+  border-radius: 4px;
+}
+
+.album-picker__skeleton-line--short {
+  width: 50%;
+  margin-top: 6px;
+}
+
+.album-picker__skeleton-block {
+  background: #e9e8e8;
+  background-image: linear-gradient(
+    90deg,
+    #e9e8e8 0px,
+    #f4f3f3 40px,
+    #e9e8e8 80px
+  );
+  background-size: 600px 100%;
+  animation: album-picker-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes album-picker-shimmer {
+  0% {
+    background-position: -120px 0;
+  }
+  100% {
+    background-position: 240px 0;
+  }
 }
 
 .album-picker__list {
