@@ -1,23 +1,5 @@
 <template>
   <div class="image-suggestion-edit container">
-    <transition name="fade">
-      <div class="upload-box__alert" v-if="showAlert">
-        <div class="alert h-auto fs-6 border border-start-3" :class="alertType === 'success'
-          ? 'alert-success bg-positivo-c text-positivo-e border-success'
-          : 'alert-danger bg-negativo-c text-negativo-e border-danger'
-          " role="alert">
-          <i :class="alertType === 'success'
-            ? 'bi bi-check-circle-fill text-positivo-e'
-            : 'bi bi-exclamation-triangle-fill text-negativo-e'
-            " />
-          <span>{{ alertMessage }}</span>
-          <button type="button" :class="[
-            'btn-close',
-            alertType === 'success' ? 'text-positivo-e' : 'text-negativo-e',
-          ]" @click="showAlert = false" />
-        </div>
-      </div>
-    </transition>
 
     <div class="image-suggestion-edit__content">
 
@@ -251,6 +233,24 @@
         </section>
       </div>
     </div>
+    <transition name="fade">
+      <div class="upload-box__alert" v-if="showAlert">
+        <div class="alert h-auto fs-6 border border-start-3" :class="alertType === 'success'
+          ? 'alert-success bg-positivo-c text-positivo-e border-success'
+          : 'alert-danger bg-negativo-c text-negativo-e border-danger'
+          " role="alert">
+          <i :class="alertType === 'success'
+            ? 'bi bi-check-circle-fill text-positivo-e'
+            : 'bi bi-exclamation-triangle-fill text-negativo-e'
+            " />
+          <span>{{ alertMessage }}</span>
+          <button type="button" :class="[
+            'btn-close',
+            alertType === 'success' ? 'text-positivo-e' : 'text-negativo-e',
+          ]" @click="showAlert = false" />
+        </div>
+      </div>
+    </transition>
   </div>
 
   <!-- Barra de ações -->
@@ -369,7 +369,7 @@ watch(
     initialFormSnapshot.value = JSON.parse(JSON.stringify(form.value))
     loadingImage.value = false;
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 );
 
 const isFieldUnchanged = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
