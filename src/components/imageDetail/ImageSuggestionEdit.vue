@@ -377,7 +377,14 @@ const isFieldUnchanged = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(
 // ─── Payload ──────────────────────────────────────────────────────────────────
 const buildPayload = async () => {
   const photographerUuid = await resolvePhotographerUuid(form.value);
-  const subjectUuids = resolveSubjectUuids(form.value.tags);
+
+  let subjectUuids = resolveSubjectUuids(form.value.tags);
+
+  const ids = props.image?.subjects
+    .filter(subject => form.value.tags.includes(subject.term))
+    .map(subject => subject.id);
+
+  subjectUuids = [...subjectUuids, ...ids]
 
   const payload = {
     title: form.value.title || null,
@@ -463,7 +470,6 @@ const handleSubmit = async () => {
 
   try {
     const payload = await buildPayload();
-    console.log(payload);
 
     await axios.post(`/api/images/${props.image.id}/suggestions`, {
       payload,
