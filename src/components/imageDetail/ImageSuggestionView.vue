@@ -81,19 +81,28 @@
               <div v-if="suggestion.payload?.subjects?.length" class="suggestion-view__field">
                 <label class="suggestion-view__field-label">Tags sugeridas</label>
                 <div class="suggestion-view__tags">
-                  <!-- <span v-for="subject in suggestion.payload.subjects" :key="subject" class="suggestion-view__tag">{{
-                    subject }}</span> -->
-                  <span v-for="subject in suggestion.payload.subjects" :key="subject.id" class="suggestion-view__tag">
+                  <span v-for="subject in resolvedTags(suggestion)" :key="subject.id" class="suggestion-view__tag"
+                    :class="{
+                      'suggestion-view__tag--added': subject.status === 'added',
+                      'suggestion-view__tag--removed': subject.status === 'removed',
+                    }">
                     {{ subject.term }}
+                  </span>
+                </div>
+
+                <div v-if="resolvedTags(suggestion).some(t => t.status !== 'kept')"
+                  class="suggestion-view__tags-legend">
+                  <span v-if="resolvedTags(suggestion).some(t => t.status === 'added')"
+                    class="suggestion-view__tags-legend-item suggestion-view__tags-legend-item--added">
+                    Adicionada
+                  </span>
+                  <span v-if="resolvedTags(suggestion).some(t => t.status === 'removed')"
+                    class="suggestion-view__tags-legend-item suggestion-view__tags-legend-item--removed">
+                    Removida
                   </span>
                 </div>
               </div>
 
-              <!-- <div v-if="suggestion.payload?.location_label" class="suggestion-view__field">
-                <label class="suggestion-view__field-label">Localização sugerida</label>
-                <input class="suggestion-view__field-input" type="text" :value="suggestion.payload.location_label"
-                  readonly />
-              </div> -->
               <div v-if="suggestion.payload?.location_label || hasCoordinates(suggestion)"
                 class="suggestion-view__field">
                 <label class="suggestion-view__field-label">Localização sugerida</label>
@@ -113,10 +122,6 @@
                   readonly />
               </div>
 
-              <!-- <div v-if="suggestion.payload?.reason" class="suggestion-view__field">
-                <label class="suggestion-view__field-label">Motivo</label>
-                <p class="suggestion-view__reason">{{ suggestion.payload.reason }}</p>
-              </div> -->
             </div>
           </div>
         </li>
@@ -148,7 +153,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import axios from "@/axios";
 import { useAuthStore } from "@/store/auth";
@@ -183,12 +188,46 @@ const hasCoordinates = (suggestion) => {
   return latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null;
 };
 
-// const resolveSubjectTerm = (uuid) => {
+const resolvedTags = (suggestion) => {
+  const value = suggestion.payload?.subjects;
+  if (!Array.isArray(value) || value.length === 0) return [];
 
-//   const found = allSubjects.value.find((s) => s.id === uuid);
-//   console.log(found);
-//   return found ? found.term : uuid;
-// };
+  const currentIds = new Set((props.image?.subjects ?? []).map((s) => s.id));
+  const currentTagMap = new Map((props.image?.subjects ?? []).map((s) => [s.id, s]));
+
+  const suggestedTagMap = new Map(
+    value
+      .filter((v) => typeof v === "object" && v !== null)
+      .map((v) => [v.id, v])
+  );
+
+  const suggestedIds = new Set(
+    value.map((v) => (typeof v === "string" ? v : v.id))
+  );
+
+  const allTagIds = new Set([...currentIds, ...suggestedIds]);
+
+  const tags = [...allTagIds].map((uuid) => {
+    const fromImage = currentTagMap.get(uuid);
+    const fromSuggested = suggestedTagMap.get(uuid);
+    const fromSubjects = allSubjects.value.find((s) => s.id === uuid);
+
+    const term = fromImage?.term ?? fromSuggested?.term ?? fromSubjects?.term ?? uuid;
+
+    let status = "kept";
+    if (!currentIds.has(uuid)) status = "added";
+    if (!suggestedIds.has(uuid)) status = "removed";
+
+    return { id: uuid, term, status };
+  });
+
+  tags.sort((a, b) => {
+    const order = { kept: 0, added: 1, removed: 2 };
+    return order[a.status] - order[b.status];
+  });
+
+  return tags;
+};
 
 const suggestionLabel = (suggestion) => {
   const fields = Object.keys(suggestion.payload || {}).filter((k) => k !== "reason");
@@ -256,9 +295,6 @@ const goToSuggest = () => {
     query: { suggest: "true" },
   });
 };
-
-
-// onMounted(fetchSuggestions);
 
 watch(
   () => props.image?.id,
@@ -529,6 +565,50 @@ watch(
     background-color: var(--Cinza_E);
     color: var(--Branco);
     border-radius: 4px;
+
+    &--added {
+      color: var(--Positivo_E);
+      background-color: var(--Positivo_C);
+      border: 1px solid var(--Positivo_E);
+    }
+
+    &--removed {
+      color: var(--Negativo_E);
+      background-color: var(--Negativo_C);
+      border: 1px solid var(--Negativo_E);
+      text-decoration: line-through;
+    }
+  }
+
+  &__tags-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  &__tags-legend-item {
+    font-size: 0.6875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--Cinza_M);
+
+    &::before {
+      content: "";
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    &--added::before {
+      background-color: var(--Positivo_E);
+    }
+
+    &--removed::before {
+      background-color: var(--Negativo_E);
+    }
   }
 
   // ── Motivo ──────────────────────────────────────────────────────────────────
