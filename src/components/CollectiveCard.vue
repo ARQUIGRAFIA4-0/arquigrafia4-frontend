@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
 import { useCollectivesStore } from "@/store/collectives";
@@ -17,6 +17,9 @@ const props = defineProps({
 });
 
 const router = useRouter();
+const route = useRoute();
+
+const isEditingMode = computed(() => route.name === "collective-edit");
 const collectivesStore = useCollectivesStore();
 const { hasLoaded, finishInitialLoad } = useInitialSkeleton();
 const { loadAllSubjects, getTermById } = useSubjectTerms();
@@ -200,9 +203,9 @@ async function handleLeave() {
         <!-- Ações condicionais -->
         <div class="collective-card__actions">
           <!-- Feedbacks globais -->
-          <div v-if="inviteCopied" class="alert alert-positivo d-flex align-items-center justify-content-between py-2 px-2 small" role="alert">
+          <div v-if="inviteCopied" class="alert collective-card__alert-copied d-flex align-items-center justify-content-between py-2 px-2 small" role="alert">
             <div class="d-flex align-items-center gap-3">
-              <i class="bi bi-check-all"></i>
+              <i class="bi bi-arrow-up-right-circle-fill"></i>
               <span>Link copiado! Pronto para compartilhar.</span>
             </div>
             <button type="button" class="btn-close btn-sm" @click="inviteCopied = false" aria-label="Fechar" />
@@ -250,10 +253,12 @@ async function handleLeave() {
           <!-- Admin -->
           <template v-if="userRole === 'admin'">
             <RouterLink
-              :to="{ name: 'collective-edit', params: { id: collectiveData?.id } }"
+              :to="isEditingMode
+                ? { name: 'collective-detail', params: { id: collectiveData?.id } }
+                : { name: 'collective-edit', params: { id: collectiveData?.id } }"
               class="btn btn-outline-secondary btn-sm w-100"
             >
-              Editar perfil
+              {{ isEditingMode ? "Ver perfil" : "Editar perfil" }}
             </RouterLink>
           </template>
 
@@ -545,5 +550,12 @@ $breakpoint-md: 768px;
   50% {
     opacity: 0.5;
   }
+}
+
+.collective-card__alert-copied {
+  background-color: #fff;
+  color: #2f2f2f;
+  border: 0.5px solid #2f2f2f;
+  border-left-width: 4px;
 }
 </style>

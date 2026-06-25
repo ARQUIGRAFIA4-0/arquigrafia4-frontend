@@ -533,8 +533,13 @@ $breakpoint-md: 768px;
   letter-spacing: 0%;
   text-decoration: underline;
   text-decoration-style: solid;
-  text-decoration-thickness: 0%;
+  text-decoration-thickness: auto;
+  text-underline-offset: 4px;
   text-decoration-skip-ink: auto;
+
+  &:visited {
+    color: var(--Azul_E);
+  }
 }
 
 .form-btn-row {

@@ -96,15 +96,17 @@ function onConfirmAdd() {
   
 }
 
-// sempre que abrir o modal, resetar seleção e fechar o dropdown de escopo
+// sempre que abrir o modal, resetar seleção, fechar o dropdown e travar scroll do body
 watch(
   () => props.modelValue,
   (isOpen) => {
     if (!isOpen) {
       isScopeOpen.value = false;
+      document.body.style.overflow = "";
       return;
     }
 
+    document.body.style.overflow = "hidden";
     selectedAlbumIds.value = [...(props.preselectedAlbumIds || [])];
   }
 );
@@ -205,7 +207,6 @@ watch(
           <div
             v-if="loadingAlbums"
             class="album-picker__list album-picker__list--skeleton"
-            :class="{ 'album-picker__list--scope-open': isScopeOpen }"
             aria-hidden="true"
           >
             <div
@@ -223,7 +224,6 @@ watch(
           <div
             v-else
             class="album-picker__list"
-            :class="{ 'album-picker__list--scope-open': isScopeOpen }"
           >
             <button
               type="button"
@@ -451,7 +451,11 @@ watch(
   left: 0;
   right: 0;
   margin-top: 4px;
-  max-height: 180px;
+  /* Mostra ~3 escopos; os demais ficam acessíveis por rolagem interna.
+     Altura fixa e pequena mantém o dropdown contido no modal em qualquer
+     tela, independentemente de quantos coletivos o usuário tenha, e deixa
+     uma folga visível entre a base do dropdown e a borda do modal. */
+  max-height: 144px;
   overflow-y: auto;
   border-radius: 8px;
   border: 1px solid #cecece;
@@ -490,11 +494,6 @@ watch(
 .album-picker__scope-option:hover,
 .album-picker__scope-option:focus-visible {
   background: rgba(99, 98, 98, 0.08);
-}
-
-/* Reserva altura suficiente para o dropdown de escopo aberto não ultrapassar o modal */
-.album-picker__list--scope-open {
-  min-height: 200px;
 }
 
 /* Skeleton da lista de coleções (transição ao trocar de escopo) */

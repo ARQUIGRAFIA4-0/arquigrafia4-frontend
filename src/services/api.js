@@ -302,7 +302,7 @@ const fetchImages = async (page = 1, filters = {}) => {
  */
 const getTotalImages = async () => {
   const apiBaseUrl = "https://api-dev.arquigrafia.org.br";
-  const apiUrl = `${apiBaseUrl}/api/images?per_page=-1`;
+  const apiUrl = `${apiBaseUrl}/api/images?per_page=1`;
 
   try {
     const response = await fetch(apiUrl);

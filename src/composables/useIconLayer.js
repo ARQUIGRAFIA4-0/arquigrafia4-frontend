@@ -20,6 +20,8 @@ export const useIconLayer = ({
   getPopupContent,
   onClusterClick,
   onUnclusteredPointClick,
+  onUnclusteredPointMouseEnter,
+  onUnclusteredPointMouseLeave,
 }) => {
   const resolvedLayerIds = layerIds ?? getDefaultLayerIds(sourceId);
   const iconObjectUrl = shallowRef(null);
@@ -129,6 +131,20 @@ export const useIconLayer = ({
     map.getCanvas().style.cursor = "";
   };
 
+  const handleUnclusteredMouseEnter = (event) => {
+    const map = mapRef.value;
+    if (!map) return;
+    map.getCanvas().style.cursor = "pointer";
+    onUnclusteredPointMouseEnter?.(event);
+  };
+
+  const handleUnclusteredMouseLeave = () => {
+    const map = mapRef.value;
+    if (!map) return;
+    map.getCanvas().style.cursor = "";
+    onUnclusteredPointMouseLeave?.();
+  };
+
   const setupLayer = async () => {
     const map = mapRef.value;
     if (!map) return;
@@ -192,9 +208,23 @@ export const useIconLayer = ({
     });
 
     map.on("click", resolvedLayerIds.cluster, handleClusterClick);
-    map.on("click", resolvedLayerIds.unclustered, handleUnclusteredPointClick);
+    if (onUnclusteredPointClick || getPopupContent) {
+      map.on("click", resolvedLayerIds.unclustered, handleUnclusteredPointClick);
+    }
     map.on("mouseenter", resolvedLayerIds.cluster, handleClusterMouseEnter);
     map.on("mouseleave", resolvedLayerIds.cluster, handleClusterMouseLeave);
+    if (onUnclusteredPointMouseEnter || onUnclusteredPointMouseLeave) {
+      map.on(
+        "mouseenter",
+        resolvedLayerIds.unclustered,
+        handleUnclusteredMouseEnter
+      );
+      map.on(
+        "mouseleave",
+        resolvedLayerIds.unclustered,
+        handleUnclusteredMouseLeave
+      );
+    }
 
     if (isRef(data)) {
       stopWatchData = watch(
@@ -224,13 +254,27 @@ export const useIconLayer = ({
 
     if (typeof map.off === "function") {
       map.off("click", resolvedLayerIds.cluster, handleClusterClick);
-      map.off(
-        "click",
-        resolvedLayerIds.unclustered,
-        handleUnclusteredPointClick
-      );
+      if (onUnclusteredPointClick || getPopupContent) {
+        map.off(
+          "click",
+          resolvedLayerIds.unclustered,
+          handleUnclusteredPointClick
+        );
+      }
       map.off("mouseenter", resolvedLayerIds.cluster, handleClusterMouseEnter);
       map.off("mouseleave", resolvedLayerIds.cluster, handleClusterMouseLeave);
+      if (onUnclusteredPointMouseEnter || onUnclusteredPointMouseLeave) {
+        map.off(
+          "mouseenter",
+          resolvedLayerIds.unclustered,
+          handleUnclusteredMouseEnter
+        );
+        map.off(
+          "mouseleave",
+          resolvedLayerIds.unclustered,
+          handleUnclusteredMouseLeave
+        );
+      }
     }
 
     const hasLayerApi =

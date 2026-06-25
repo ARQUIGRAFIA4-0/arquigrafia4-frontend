@@ -434,11 +434,13 @@ $breakpoint-md: 770px;
 
     &--other {
       background: var(--Azul_C);
+      mix-blend-mode: multiply;
     }
 
     &--mine {
       width: 14px;
       height: 14px;
+      mix-blend-mode: multiply;
       background: var(--Laranja_M);
       border: 2px solid rgba(224, 124, 42, 0.185);
       z-index: 2;
