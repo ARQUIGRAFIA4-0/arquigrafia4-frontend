@@ -9,6 +9,7 @@ import CollectionPeriodsChart from "@/components/CollectionPeriodsChart.vue";
 import UiField from "../../components/ui/UiField.vue";
 import CollectionImagesGrid from "@/components/collection/CollectionImagesGrid.vue";
 import CollectionImagesMosaic from "@/components/collection/CollectionImagesMosaic.vue";
+import CollectionImagesMap from "@/components/collection/CollectionImagesMap.vue";
 import {
   viewRouteToSelection,
   selectionToViewRoute,
@@ -143,6 +144,14 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
     // Carrega as imagens detalhadas
     collectionImages.value = await Promise.all(
       ordered.map((img) => api.getImageDetails(img.id))
+    );
+
+    const plainImages = JSON.parse(JSON.stringify(collectionImages.value));
+    console.log("[CollectionDetail] imagens da coleção:", plainImages);
+    console.log("[CollectionDetail] primeira imagem:", plainImages[0]);
+    console.log(
+      "[CollectionDetail] chaves da primeira imagem:",
+      plainImages[0] ? Object.keys(plainImages[0]) : []
     );
 
   } catch (err) {
@@ -369,7 +378,7 @@ watch(
       class="collection-detail__floating-toolbar"
       :view-selection="viewSelection"
       :is-info-active="isInfoActive"
-      :allowed-views="['grid', 'mosaic']"
+      :allowed-views="['grid', 'mosaic', 'map']"
       @view-change="handleCollectionViewChange"
       @toggle-info="handleToggleCollectionInfo"
       @download="handleDownloadCollection"
@@ -429,7 +438,9 @@ watch(
               class="collection-detail__gallery"
               :class="{
                 'collection-detail__gallery--with-title':
-                  !isInfoActive && !isLoadingCollection,
+                  isInfoActive && !isMobile,
+                'collection-detail__gallery--map':
+                  collectionViewMode === 'map',
               }"
             >
               <CollectionImagesGrid
@@ -447,6 +458,12 @@ watch(
                 :is-loading="isLoadingCollection"
                 :is-info-active="isInfoActive"
               />
+
+              <CollectionImagesMap
+                v-else-if="collectionViewMode === 'map'"
+                :images="collectionImages"
+                :is-loading="isLoadingCollection"
+              />              
             </section>
           </div>
         </template>
@@ -464,12 +481,24 @@ watch(
               'collection-detail__image-wrapper--grid-expanded': isMobileGridExpanded,
             }"
           >
-            <section class="collection-detail__gallery">
+            <section
+              class="collection-detail__gallery"
+              :class="{
+                'collection-detail__gallery--map': collectionViewMode === 'map',
+              }"
+            >
               <CollectionImagesGrid
+                v-if="collectionViewMode !== 'map'"
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
                 :is-info-active="false"
                 :allow-remove="false"
+              />
+
+              <CollectionImagesMap
+                v-else
+                :images="collectionImages"
+                :is-loading="isLoadingCollection"
               />
             </section>
           </div>
@@ -896,6 +925,11 @@ watch(
     opacity 260ms ease;
 }
 
+.collection-detail__gallery--map {
+  min-height: 600px;
+  height: 75vh;
+}
+
 .collection-detail__gallery--with-title {
   transform: translateY(0);
 }
@@ -1162,6 +1196,12 @@ watch(
 
   .collection-detail__image-wrapper--grid-collapsed {
     max-height: 38dvh;
+  }
+
+  .collection-detail__image-wrapper--mobile.collection-detail__image-wrapper--grid-collapsed:has(
+      .collection-detail__gallery--map
+    ) {
+    max-height: 70dvh;
   }
 
   .collection-detail__image-wrapper--grid-expanded {

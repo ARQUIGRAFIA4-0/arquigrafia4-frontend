@@ -235,7 +235,7 @@ export default [
     name: "my-collection-detail",
     component: () => import("../views/Profile/CollectionDetail.vue"),
     beforeEnter: (to) => {
-      const allowed = ["grid", "mosaic"];
+      const allowed = ["grid", "mosaic", "map"];
       const option = resolveViewOptionByRoute(to.params.viewMode);
 
       if (!allowed.includes(option.route)) {
