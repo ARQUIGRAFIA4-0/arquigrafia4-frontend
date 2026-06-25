@@ -302,10 +302,15 @@ export function useImageForm() {
   let fuseInstance = null;
   let debounceTimer = null;
 
+  const getTagTerm = (tag) => (typeof tag === "object" ? tag?.term : tag) ?? "";
+
   const canCreateSubject = computed(() => {
     const term = tagInput.value.trim();
     if (!term) return false;
-    if (form.value.tags.some(t => (t.term ?? t).toLowerCase() === term.toLowerCase())) return false;
+    const alreadyInForm = form.value.tags.some(
+      (t) => getTagTerm(t).toLowerCase() === term.toLowerCase()
+    );
+    if (alreadyInForm) return false;
     return !allSubjects.value.some(
       (s) => s.term.toLowerCase() === term.toLowerCase()
     );
@@ -330,7 +335,9 @@ export function useImageForm() {
         filteredTagSuggestions.value = fuseInstance
           .search(tagInput.value)
           .map((r) => r.item)
-          .filter((item) => !form.value.tags.some(t => (t.term ?? t) === item.term))
+          .filter((item) => !form.value.tags.some(
+            (t) => getTagTerm(t).toLowerCase() === item.term.toLowerCase()
+          ))
           .slice(0, 10);
       }
     }, 300);
@@ -428,17 +435,15 @@ export function useImageForm() {
   //     .map((tagTerm) => allSubjects.value.find((s) => s.term === tagTerm)?.id)
   //     .filter(Boolean);
 
-  const resolveSubjectUuids = (tags = []) => {
-    return tags
-      .map(tag => {
-        if (tag?.id) return tag.id;
-        const term = tag?.term ?? tag;
-        return allSubjects.value.find(
-          s => s.term.toLowerCase() === term.toLowerCase()
-        )?.id;
-      })
-      .filter(Boolean);
-  };
+  const resolveSubjectUuids = (tags = []) =>
+    tags.map((tag) => {
+      // suporta tanto string quanto objeto { id, term }
+      if (typeof tag === "object" && tag?.id) return tag.id;
+      const term = typeof tag === "string" ? tag : tag?.term;
+      return allSubjects.value.find(
+        (s) => s.term.toLowerCase() === term?.toLowerCase()
+      )?.id;
+    }).filter(Boolean);
 
 
   // ─── Inicialização (chamar no onMounted do componente pai) ───────────────────
@@ -447,15 +452,17 @@ export function useImageForm() {
    * Deve ser chamado no onMounted de quem usar o composable.
    */
   const loadFormDependencies = async () => {
-    const subjectsResponse = await vracStore.getVRACSubjects();
-    if (subjectsResponse?.data && Array.isArray(subjectsResponse.data)) {
-      allSubjects.value = subjectsResponse.data;
+
+    const subjects = await vracStore.getVRACSubjects();
+
+    if (Array.isArray(subjects)) {
+      allSubjects.value = subjects;
       initFuse();
     }
 
-    const contributorsResponse = await vracStore.getVRACContributorNames();
-    if (contributorsResponse?.names && Array.isArray(contributorsResponse.names)) {
-      allContributorNames.value = contributorsResponse.names;
+    const contributors = await vracStore.getVRACContributorNames();
+    if (Array.isArray(contributors)) {
+      allContributorNames.value = contributors;
     }
   };
 
