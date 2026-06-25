@@ -203,9 +203,9 @@ async function handleLeave() {
         <!-- Ações condicionais -->
         <div class="collective-card__actions">
           <!-- Feedbacks globais -->
-          <div v-if="inviteCopied" class="alert alert-positivo d-flex align-items-center justify-content-between py-2 px-2 small" role="alert">
+          <div v-if="inviteCopied" class="alert collective-card__alert-copied d-flex align-items-center justify-content-between py-2 px-2 small" role="alert">
             <div class="d-flex align-items-center gap-3">
-              <i class="bi bi-check-all"></i>
+              <i class="bi bi-arrow-up-right-circle-fill"></i>
               <span>Link copiado! Pronto para compartilhar.</span>
             </div>
             <button type="button" class="btn-close btn-sm" @click="inviteCopied = false" aria-label="Fechar" />
@@ -550,5 +550,12 @@ $breakpoint-md: 768px;
   50% {
     opacity: 0.5;
   }
+}
+
+.collective-card__alert-copied {
+  background-color: #fff;
+  color: #2f2f2f;
+  border: 0.5px solid #2f2f2f;
+  border-left-width: 4px;
 }
 </style>
