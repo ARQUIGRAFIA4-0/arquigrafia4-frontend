@@ -106,6 +106,11 @@ const tabs = [
     routeName: "image-detail-comentarios",
   },
   {
+    label: "Interpretações",
+    section: "interpretacoes",
+    routeName: "image-detail-interpretacoes",
+  },
+  {
     label: "Sugestões",
     section: "sugestoes",
     routeName: "image-detail-sugestoes",
