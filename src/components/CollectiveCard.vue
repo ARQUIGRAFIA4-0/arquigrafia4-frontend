@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
 import { useCollectivesStore } from "@/store/collectives";
@@ -17,6 +17,9 @@ const props = defineProps({
 });
 
 const router = useRouter();
+const route = useRoute();
+
+const isEditingMode = computed(() => route.name === "collective-edit");
 const collectivesStore = useCollectivesStore();
 const { hasLoaded, finishInitialLoad } = useInitialSkeleton();
 const { loadAllSubjects, getTermById } = useSubjectTerms();
@@ -250,10 +253,12 @@ async function handleLeave() {
           <!-- Admin -->
           <template v-if="userRole === 'admin'">
             <RouterLink
-              :to="{ name: 'collective-edit', params: { id: collectiveData?.id } }"
+              :to="isEditingMode
+                ? { name: 'collective-detail', params: { id: collectiveData?.id } }
+                : { name: 'collective-edit', params: { id: collectiveData?.id } }"
               class="btn btn-outline-secondary btn-sm w-100"
             >
-              Editar perfil
+              {{ isEditingMode ? "Ver perfil" : "Editar perfil" }}
             </RouterLink>
           </template>
 
