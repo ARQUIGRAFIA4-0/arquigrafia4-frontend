@@ -73,3 +73,36 @@ export function createFeatureCollectionsByType(items = []) {
     },
   };
 }
+
+
+/**
+ * Converte imagens da coleção em FeatureCollection GeoJSON.
+ * Usa locationCoordinates no formato [lat, lng] da API.
+ */
+export function createCollectionImagesFeatureCollection(images = []) {
+  const features = [];
+
+  images.forEach((image) => {
+    const coordinates = normalizeCoordinates(image?.locationCoordinates);
+    if (!coordinates) return;
+
+    features.push({
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates,
+      },
+      properties: {
+        id: image?.id ?? null,
+        title: image?.title ?? "",
+        thumbUrl: image?.thumbUrl ?? image?.imageUrl ?? null,
+        imageUrl: image?.imageUrl ?? null,
+      },
+    });
+  });
+
+  return {
+    type: "FeatureCollection",
+    features,
+  };
+}
