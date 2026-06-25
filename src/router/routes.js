@@ -267,10 +267,10 @@ export default [
   },
   {
     path: "/profile",
-    redirect: "/",
+    redirect: "/perfil",
   },
   {
-    path: "/profile/:id",
+    path: "/perfil/:id",
     name: "view-profile",
     component: () => import("../views/Profile/ViewPublicProfile.vue")
   },

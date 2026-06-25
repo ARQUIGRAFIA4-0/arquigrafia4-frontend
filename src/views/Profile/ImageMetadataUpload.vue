@@ -1689,7 +1689,7 @@ const handleSubmit = async () => {
       // Limpa as imagens e redireciona após um breve atraso
       setTimeout(() => {
         imageUploadStore.clearImages();
-        router.push("/profile");
+        router.push("/perfil");
       }, 2500);
     } else if (failedUploads.length > 0) {
       alertType.value = "error";
@@ -1720,7 +1720,7 @@ const handleSubmit = async () => {
 
           if (remainingImages.length === 0) {
             imageUploadStore.clearImages();
-            router.push("/profile");
+            router.push("/perfil");
           }
         }, 2000);
       }
