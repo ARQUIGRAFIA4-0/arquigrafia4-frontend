@@ -302,10 +302,15 @@ export function useImageForm() {
   let fuseInstance = null;
   let debounceTimer = null;
 
+  const getTagTerm = (tag) => (typeof tag === "object" ? tag?.term : tag) ?? "";
+
   const canCreateSubject = computed(() => {
     const term = tagInput.value.trim();
     if (!term) return false;
-    if (form.value.tags.includes(term)) return false;
+    const alreadyInForm = form.value.tags.some(
+      (t) => getTagTerm(t).toLowerCase() === term.toLowerCase()
+    );
+    if (alreadyInForm) return false;
     return !allSubjects.value.some(
       (s) => s.term.toLowerCase() === term.toLowerCase()
     );
@@ -330,7 +335,9 @@ export function useImageForm() {
         filteredTagSuggestions.value = fuseInstance
           .search(tagInput.value)
           .map((r) => r.item)
-          .filter((item) => !form.value.tags.includes(item.term))
+          .filter((item) => !form.value.tags.some(
+            (t) => getTagTerm(t).toLowerCase() === item.term.toLowerCase()
+          ))
           .slice(0, 10);
       }
     }, 300);
@@ -340,9 +347,9 @@ export function useImageForm() {
     setTimeout(() => { showTagSuggestions.value = false; }, 200);
   };
 
-  const selectTagSuggestion = (term) => {
-    if (!form.value.tags.includes(term)) {
-      form.value.tags.push(term);
+  const selectTagSuggestion = (subject) => {
+    if (!form.value.tags.some(t => t.id === subject.id)) {
+      form.value.tags.push({ id: subject.id, term: subject.term });
     }
     tagInput.value = "";
     filteredTagSuggestions.value = [];
@@ -350,17 +357,18 @@ export function useImageForm() {
   };
 
   const createAndAddSubject = async (term) => {
-    if (!term || form.value.tags.includes(term) || isCreatingSubject.value) return;
+    if (!term || form.value.tags.some(t => (t.term ?? t).toLowerCase() === term.toLowerCase()) || isCreatingSubject.value) return;
     isCreatingSubject.value = true;
     try {
       const response = await vracStore.addVRACSubject(term);
-      const subjectData = response?.data || response;
+      const subjectData = response?.data?.data || response?.data || response;
       if (subjectData?.id && subjectData?.term) {
-        allSubjects.value.push(subjectData);
-        initFuse();
-        form.value.tags.push(subjectData.term);
-      } else {
-        form.value.tags.push(term);
+        const alreadyLoaded = allSubjects.value.some(s => s.id === subjectData.id);
+        if (!alreadyLoaded) {
+          allSubjects.value.push(subjectData);
+          initFuse();
+        }
+        form.value.tags.push({ id: subjectData.id, term: subjectData.term });
       }
       tagInput.value = "";
       filteredTagSuggestions.value = [];
@@ -375,7 +383,7 @@ export function useImageForm() {
   const addTag = async () => {
     const term = tagInput.value.trim();
     if (!term) return;
-    if (form.value.tags.includes(term)) {
+    if (form.value.tags.some(t => (t.term ?? t).toLowerCase() === term.toLowerCase())) {
       tagInput.value = "";
       return;
     }
@@ -383,7 +391,7 @@ export function useImageForm() {
       (s) => s.term.toLowerCase() === term.toLowerCase()
     );
     if (exactMatch) {
-      selectTagSuggestion(exactMatch.term);
+      selectTagSuggestion(exactMatch);
     } else {
       await createAndAddSubject(term);
     }
@@ -422,10 +430,20 @@ export function useImageForm() {
   /**
    * Converte as tags (terms) do form para seus UUIDs na API.
    */
+  // const resolveSubjectUuids = (tags = []) =>
+  //   tags
+  //     .map((tagTerm) => allSubjects.value.find((s) => s.term === tagTerm)?.id)
+  //     .filter(Boolean);
+
   const resolveSubjectUuids = (tags = []) =>
-    tags
-      .map((tagTerm) => allSubjects.value.find((s) => s.term === tagTerm)?.id)
-      .filter(Boolean);
+    tags.map((tag) => {
+      // suporta tanto string quanto objeto { id, term }
+      if (typeof tag === "object" && tag?.id) return tag.id;
+      const term = typeof tag === "string" ? tag : tag?.term;
+      return allSubjects.value.find(
+        (s) => s.term.toLowerCase() === term?.toLowerCase()
+      )?.id;
+    }).filter(Boolean);
 
 
   // ─── Inicialização (chamar no onMounted do componente pai) ───────────────────
@@ -434,15 +452,17 @@ export function useImageForm() {
    * Deve ser chamado no onMounted de quem usar o composable.
    */
   const loadFormDependencies = async () => {
-    const subjectsResponse = await vracStore.getVRACSubjects();
-    if (subjectsResponse?.data && Array.isArray(subjectsResponse.data)) {
-      allSubjects.value = subjectsResponse.data;
+
+    const subjects = await vracStore.getVRACSubjects();
+
+    if (Array.isArray(subjects)) {
+      allSubjects.value = subjects;
       initFuse();
     }
 
-    const contributorsResponse = await vracStore.getVRACContributorNames();
-    if (contributorsResponse?.names && Array.isArray(contributorsResponse.names)) {
-      allContributorNames.value = contributorsResponse.names;
+    const contributors = await vracStore.getVRACContributorNames();
+    if (Array.isArray(contributors)) {
+      allContributorNames.value = contributors;
     }
   };
 
@@ -450,6 +470,10 @@ export function useImageForm() {
    * Popula o form a partir dos dados retornados pela API (modo edição/sugestão).
    * O mapeamento fica centralizado aqui para reusar em Edit e Suggest.
    */
+
+  console.log("allSubjects:", allSubjects.value);
+  console.log("allSubjects-length:", allSubjects.value.length);
+  console.log("tags:", form.value.tags);
 
   const populateFormFromApi = (data, currentUserName = null) => {
     const authorName = data.authors?.[0] || data.rights?.[0]?.rights_holder || "";
@@ -484,7 +508,9 @@ export function useImageForm() {
       unknownAuthor: !authorName,
       license: data.rights?.[0]?.text || "CC BY-NC-SA",
       description: data.description || "",
-      tags: (data.subjects || []).map((s) => s.term || s),
+      tags: (data.subjects || []).map((s) =>
+        typeof s === "object" ? { id: s.id, term: s.term } : { term: s }
+      ),
       date: earliestYear ? `${earliestYear}-01-01` : "",
       dateEnd: latestYear ? `${latestYear}-12-31` : "",
       dateType: earliestYear && latestYear && earliestYear !== latestYear ? "interval" : "year",
