@@ -712,6 +712,7 @@ import { useAuthStore } from "@/store/auth";
 import { useVracStore } from "@/store/vrac";
 import { storeToRefs } from "pinia";
 import { useRouter, useRoute } from "vue-router";
+import { useQueryClient } from "@tanstack/vue-query";
 import { formatDate, parseYearFromDateString } from "@/helpers/dateUtils";
 import Fuse from "fuse.js";
 defineOptions({ name: "ImageMetadataUpload" });
@@ -720,6 +721,7 @@ const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 
 const router = useRouter();
 const route = useRoute();
+const queryClient = useQueryClient();
 const imageUploadStore = useImageUploadStore();
 const { pendingImages, selectedIndex } = storeToRefs(imageUploadStore);
 const authStore = useAuthStore();
@@ -1686,10 +1688,11 @@ const handleSubmit = async () => {
       } com sucesso!`;
       showAlert.value = true;
 
-      // Limpa as imagens e redireciona após um breve atraso
-      setTimeout(() => {
+      // Invalida o cache de imagens e redireciona após um breve atraso
+      setTimeout(async () => {
         imageUploadStore.clearImages();
-        router.push("/perfil");
+        await queryClient.invalidateQueries({ queryKey: ["images"] });
+        router.push({ name: "my-profile-images" });
       }, 2500);
     } else if (failedUploads.length > 0) {
       alertType.value = "error";
@@ -1711,7 +1714,7 @@ const handleSubmit = async () => {
 
       // Se alguns enviaram com sucesso, remove-os da lista
       if (successfulUploads.length > 0) {
-        setTimeout(() => {
+        setTimeout(async () => {
           // Remove os uploads bem-sucedidos da lista pendente
           const remainingImages = pendingImages.value.filter((img) => {
             const title = img.metadata?.title || "";
@@ -1720,7 +1723,8 @@ const handleSubmit = async () => {
 
           if (remainingImages.length === 0) {
             imageUploadStore.clearImages();
-            router.push("/perfil");
+            await queryClient.invalidateQueries({ queryKey: ["images"] });
+            router.push({ name: "my-profile-images" });
           }
         }, 2000);
       }
