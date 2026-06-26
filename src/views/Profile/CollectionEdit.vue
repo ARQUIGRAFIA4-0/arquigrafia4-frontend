@@ -27,6 +27,7 @@ const collectionId = computed(() => route.params.collectionId);
 
 const selectedImageId = ref(null);
 const removingImageId = ref(null);
+const pendingRemovals = ref([]);
 
 function onCardActivate(item, event) {
   const target = event?.target;
@@ -36,29 +37,19 @@ function onCardActivate(item, event) {
     selectedImageId.value === item.id ? null : item.id;
 }
 
-async function removeImageFromCollection(imageId) {
-  if (!collectionId.value || !imageId) return;
+function removeImageFromCollection(imageId) {
+  if (!imageId) return;
 
-  removingImageId.value = imageId;
+  if (!pendingRemovals.value.includes(imageId)) {
+    pendingRemovals.value = [...pendingRemovals.value, imageId];
+  }
 
-  try {
-    await albumsStore.removeImagesFromAlbum(
-      authStore.authHeader,
-      collectionId.value,
-      imageId
-    );
+  collectionImages.value = collectionImages.value.filter(
+    (img) => img.id !== imageId
+  );
 
-    collectionImages.value = collectionImages.value.filter(
-      (img) => img.id !== imageId
-    );
-
-    if (selectedImageId.value === imageId) {
-      selectedImageId.value = null;
-    }
-  } catch (error) {
-    console.error("Erro ao remover imagem da coleção:", error);
-  } finally {
-    removingImageId.value = null;
+  if (selectedImageId.value === imageId) {
+    selectedImageId.value = null;
   }
 }
 
@@ -149,7 +140,8 @@ const DESCRIPTION_MAX_LENGTH = 500;
 const hasChanges = computed(() => {
   return (
     collectionTitle.value.trim() !== initialTitle.value ||
-    collectionDescription.value.trim() !== initialDescription.value
+    collectionDescription.value.trim() !== initialDescription.value ||
+    pendingRemovals.value.length > 0
   );
 });
 
@@ -184,6 +176,14 @@ async function handleSave() {
       payload
     );
 
+    if (pendingRemovals.value.length > 0) {
+      await albumsStore.removeImagesFromAlbum(
+        authStore.authHeader,
+        collectionId.value,
+        pendingRemovals.value
+      );
+    }
+
     goToCollectionDetail();
   } catch (error) {
     console.error("Erro ao salvar coleção:", error);
@@ -201,6 +201,7 @@ watch(collectionId, () => {
   collectionImages.value = [];
   selectedImageId.value = null;
   removingImageId.value = null;
+  pendingRemovals.value = [];
   collectionTitle.value = "";
   collectionDescription.value = "";
   initialTitle.value = "";
