@@ -194,15 +194,13 @@ async function handleSave() {
       payload
     );
 
-    if (pendingRemovals.value.length > 0) {
-      await albumsStore.removeImagesFromAlbum(
+    if (pendingRemovals.value.length > 0 || hasReorder.value) {
+      await albumsStore.syncImages(
         authStore.authHeader,
         collectionId.value,
-        pendingRemovals.value
+        collectionImages.value
       );
     }
-
-    // TODO: persistir nova ordem das imagens quando o endpoint da API estiver disponível
 
     goToCollectionDetail();
   } catch (error) {

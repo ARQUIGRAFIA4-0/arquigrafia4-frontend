@@ -212,5 +212,28 @@ export const useAlbumsStore = defineStore("albums", () => {
         }
     }   
 
-    return { createAlbum, getUserAlbums, getCollectiveAlbums, deleteAlbum, getDataAlbumByAlbumId, updateAlbum, getAlbumDetail, addImageToAlbum, removeImagesFromAlbum, getTagsByAlbumId };
+    // Sincroniza todas as imagens do álbum com nova ordem e/ou remoções
+    async function syncImages(authHeader, albumId, images) {
+        const payload = {
+            images: images.map((img, index) => ({
+                image_id: img.id,
+                position: index + 1,
+            })),
+        };
+        try {
+            const response = await axios.put(`/api/albums/${albumId}/images`, payload, {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: authHeader,
+                },
+            });
+            return response.data;
+        } catch (error) {
+            throw new Error(
+                error?.response?.data?.message || "Não foi possível sincronizar as imagens da coleção."
+            );
+        }
+    }
+
+    return { createAlbum, getUserAlbums, getCollectiveAlbums, deleteAlbum, getDataAlbumByAlbumId, updateAlbum, getAlbumDetail, addImageToAlbum, removeImagesFromAlbum, syncImages, getTagsByAlbumId };
 })
