@@ -28,6 +28,7 @@ const collectionId = computed(() => route.params.collectionId);
 const selectedImageId = ref(null);
 const removingImageId = ref(null);
 const pendingRemovals = ref([]);
+const initialImageOrder = ref([]);
 
 function onCardActivate(item, event) {
   const target = event?.target;
@@ -35,6 +36,10 @@ function onCardActivate(item, event) {
 
   selectedImageId.value =
     selectedImageId.value === item.id ? null : item.id;
+}
+
+function handleReorder(newImages) {
+  collectionImages.value = newImages;
 }
 
 function removeImageFromCollection(imageId) {
@@ -94,6 +99,7 @@ async function fetchCollectionImages() {
     initialDescription.value = collectionDescription.value;
 
     await loadCollectionImageDetails(data?.images || []);
+    initialImageOrder.value = collectionImages.value.map((img) => img.id);
   } catch (error) {
     console.error("Erro ao carregar coleção:", error);
     collectionImages.value = [];
@@ -137,11 +143,23 @@ const isSaving = ref(false);
 
 const DESCRIPTION_MAX_LENGTH = 500;
 
+const hasReorder = computed(() => {
+  const current = collectionImages.value.map((img) => img.id);
+  const initial = initialImageOrder.value.filter(
+    (id) => !pendingRemovals.value.includes(id)
+  );
+  return (
+    current.length !== initial.length ||
+    current.some((id, i) => id !== initial[i])
+  );
+});
+
 const hasChanges = computed(() => {
   return (
     collectionTitle.value.trim() !== initialTitle.value ||
     collectionDescription.value.trim() !== initialDescription.value ||
-    pendingRemovals.value.length > 0
+    pendingRemovals.value.length > 0 ||
+    hasReorder.value
   );
 });
 
@@ -184,6 +202,8 @@ async function handleSave() {
       );
     }
 
+    // TODO: persistir nova ordem das imagens quando o endpoint da API estiver disponível
+
     goToCollectionDetail();
   } catch (error) {
     console.error("Erro ao salvar coleção:", error);
@@ -202,6 +222,7 @@ watch(collectionId, () => {
   selectedImageId.value = null;
   removingImageId.value = null;
   pendingRemovals.value = [];
+  initialImageOrder.value = [];
   collectionTitle.value = "";
   collectionDescription.value = "";
   initialTitle.value = "";
@@ -226,6 +247,7 @@ watch(collectionId, () => {
               :removing-image-id="removingImageId"
               @activate="onCardActivate"
               @remove="removeImageFromCollection"
+              @reorder="handleReorder"
             />
           </section>
 
