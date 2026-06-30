@@ -38,7 +38,7 @@ const DEFAULT_ZOOM = 3;
 const cameraIconSvg = (fill) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="${fill}"/><g transform="translate(8 8) scale(0.75) translate(-8 -8)"><path fill="#FFFFFF" d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/><path fill="#FFFFFF" d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4Zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0"/></g></svg>`;
 
-// FeatureCollection com a flag `selected` por feature (usada no clustering e nos ícones).
+// FeatureCollection com a flag selected por feature (usada no clustering e nos ícones).
 const geoJsonData = computed(() => {
   const base = createCollectionImagesFeatureCollection(props.images);
   return {
@@ -67,11 +67,9 @@ const mapZoom = computed(() =>
 );
 
 /* ----------------------- HOVER: miniatura circular ----------------------- */
+// Cria o conteúdo HTML do popup circular com a miniatura da imagem.
 const createCircularPopupContent = ({ thumbUrl, title }) => {
-  const resolvedThumb =
-    typeof thumbUrl === "string" && thumbUrl.trim().length > 0
-      ? thumbUrl.trim()
-      : "";
+  const resolvedThumb = typeof thumbUrl === "string" && thumbUrl.trim().length > 0 ? thumbUrl.trim() : "";
   const safeTitle = escapeHtml(title || "Imagem");
 
   return `
@@ -85,14 +83,19 @@ const createCircularPopupContent = ({ thumbUrl, title }) => {
       </div>
     </article>
   `;
+
 };
 
+// Fecha o popup ativo.
 const closeActivePopup = () => {
   if (!activePopup) return;
+
   activePopup.remove();
   activePopup = null;
+
 };
 
+// Mostra o popup para o feature.
 const showPopupForFeature = (event) => {
   const map = mapInstance.value;
   const feature = event.features?.[0];
@@ -119,8 +122,8 @@ const showPopupForFeature = (event) => {
   });
 };
 
-/* ------------------------------- Ícones ----------------------------------- */
-// Registra um ícone SVG no mapa, se ainda não estiver registrado.
+/* ------------------------- CLIQUE: seleção laranja ------------------------ */
+// Registra o ícone SVG no mapa, se ainda não estiver registrado.
 const registerIcon = (map, id, svg) =>
   new Promise((resolve) => {
     if (map.hasImage(id)) return resolve();
@@ -133,12 +136,15 @@ const registerIcon = (map, id, svg) =>
       URL.revokeObjectURL(url);
       resolve();
     };
+
     image.onerror = () => {
       URL.revokeObjectURL(url);
       resolve();
     };
+
     image.src = url;
-  });
+
+});
 
 /* ------------------------------- Seleção ---------------------------------- */
 const setCursor = (value) => {
@@ -146,23 +152,24 @@ const setCursor = (value) => {
   if (map) map.getCanvas().style.cursor = value;
 };
 
-// Clique em um ponto individual → seleciona a imagem.
+// Manipulador de evento para quando o usuário clica em um ponto no mapa.
 const handlePointClick = (event) => {
   const feature = event.features?.[0];
   if (!feature) return;
 
   selectedId.value = feature.properties?.id ?? null;
   emit("select", selectedId.value);
+
 };
 
-// Limpa a seleção.
+// Limpa a seleção e emite o evento de seleção.
 const clearSelection = () => {
   if (selectedId.value === null) return;
   selectedId.value = null;
   emit("select", null);
 };
 
-// Clique em um cluster → aproxima o zoom para expandi-lo.
+// Clique em um cluster -> aproxima o zoom para expandi-lo.
 const handleClusterClick = async (event) => {
   const map = mapInstance.value;
   if (!map) return;
@@ -180,7 +187,7 @@ const handleClusterClick = async (event) => {
     const zoom = await source.getClusterExpansionZoom(clusterId);
     map.easeTo({ center: features[0].geometry.coordinates, zoom });
   } catch {
-    /* noop */
+    // Fazer nada
   }
 };
 
@@ -198,6 +205,7 @@ const handleClusterEnter = () => setCursor("pointer");
 const handleClusterLeave = () => setCursor("");
 
 /* ------------------------------- Mapa ------------------------------------- */
+// Ajusta o mapa para exibir todos os features visíveis.
 const fitMapToFeatures = () => {
   const map = mapInstance.value;
   const features = geoJsonData.value.features;
@@ -215,6 +223,7 @@ const fitMapToFeatures = () => {
   const bounds = new LngLatBounds();
   features.forEach((feature) => bounds.extend(feature.geometry.coordinates));
   map.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: 500 });
+
 };
 
 const setupLayers = async (map) => {
@@ -290,10 +299,12 @@ const setupLayers = async (map) => {
   map.on("mouseleave", clusterLayerId, handleClusterLeave);
 };
 
+// Manipulador de evento para quando o mapa estiver pronto.
 const handleMapReady = async (map) => {
   mapInstance.value = markRaw(map);
 
-  // Clique fora dos ícones → limpa a seleção.
+  // Clique fora dos ícones -> limpa a seleção.
+  // Registrado antes dos awaits para garantir que sempre exista.
   map.on("click", (event) => {
     if (!map.getLayer(unclusteredLayerId)) return;
     const hits = map.queryRenderedFeatures(event.point, {
