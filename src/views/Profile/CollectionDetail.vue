@@ -146,6 +146,8 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
       ordered.map((img) => api.getImageDetails(img.id))
     );
 
+    selectedMapImageId.value = null;
+
     const plainImages = JSON.parse(JSON.stringify(collectionImages.value));
     console.log("[CollectionDetail] imagens da coleção:", plainImages);
     console.log("[CollectionDetail] primeira imagem:", plainImages[0]);
@@ -171,6 +173,21 @@ const viewSelection = computed(() =>
 const collectionViewMode = computed(() =>
   selectionToViewMode(viewSelection.value)
 );
+
+const selectedMapImageId = ref(null);
+
+const selectedMapImage = computed(() =>
+  collectionImages.value.find((img) => img.id === selectedMapImageId.value) || null
+);
+
+function handleMapSelect(id) {
+  selectedMapImageId.value = id;
+}
+
+watch(collectionViewMode, (mode) => {
+  if (mode !== "map") selectedMapImageId.value = null;
+});
+
 const isInfoActive = ref(true);
 const isGridReflowing = ref(false);
 const isMobileGridExpanded = ref(false);
@@ -463,6 +480,7 @@ watch(
                 v-else-if="collectionViewMode === 'map'"
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
+                @select="handleMapSelect"
               />              
             </section>
           </div>
@@ -499,6 +517,7 @@ watch(
                 v-else
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
+                @select="handleMapSelect"
               />
             </section>
           </div>
@@ -556,6 +575,30 @@ watch(
                 <p class="collection-detail__description">{{ collectionDescription }}</p>
               </aside>
 
+              <section
+                v-if="collectionViewMode === 'map' && selectedMapImage"
+                class="collection-detail__selected-image"
+                aria-label="Imagem selecionada no mapa"
+              >
+                <img
+                  :src="selectedMapImage.imageUrl"
+                  :alt="selectedMapImage.title || 'Imagem da coleção'"
+                  class="collection-detail__selected-image-media"
+                />
+                <div class="collection-detail__selected-image-caption">
+                  <h2 class="collection-detail__selected-image-title">
+                    {{ selectedMapImage.title || "Sem título" }}
+                  </h2>
+                  <p
+                    v-if="selectedMapImage.location"
+                    class="collection-detail__selected-image-location"
+                  >
+                    {{ selectedMapImage.location }}
+                  </p>
+                </div>
+              </section>
+
+              <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
               <section class="collection-detail__actors">
               <div class="collection-detail__actors-title-area">
                 <h2 class="collection-detail__actors-title">Coleção criada por</h2>
@@ -639,6 +682,7 @@ watch(
               </div>
               <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
             </section>
+            </template>
 
             <div class="collection-detail__mobile-edit">
               <button
@@ -671,6 +715,30 @@ watch(
                 <p class="collection-detail__description">{{ collectionDescription }}</p>
               </aside>
 
+              <section
+                v-if="collectionViewMode === 'map' && selectedMapImage"
+                class="collection-detail__selected-image"
+                aria-label="Imagem selecionada no mapa"
+              >
+                <img
+                  :src="selectedMapImage.imageUrl"
+                  :alt="selectedMapImage.title || 'Imagem da coleção'"
+                  class="collection-detail__selected-image-media"
+                />
+                <div class="collection-detail__selected-image-caption">
+                  <h2 class="collection-detail__selected-image-title">
+                    {{ selectedMapImage.title || "Sem título" }}
+                  </h2>
+                  <p
+                    v-if="selectedMapImage.location"
+                    class="collection-detail__selected-image-location"
+                  >
+                    {{ selectedMapImage.location }}
+                  </p>
+                </div>
+              </section>
+
+              <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
               <section class="collection-detail__actors">
                 <div class="collection-detail__actors-title-area">
                   <h2 class="collection-detail__actors-title">Coleção criada por</h2>
@@ -754,6 +822,7 @@ watch(
                 </div>
                 <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
               </section>
+              </template>
             </div>
           </div>
         </div>
@@ -928,6 +997,45 @@ watch(
 .collection-detail__gallery--map {
   min-height: 600px;
   height: 75vh;
+}
+
+.collection-detail__selected-image {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 12px;
+}
+
+.collection-detail__selected-image-media {
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+
+.collection-detail__selected-image-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.collection-detail__selected-image-title {
+  margin: 0;
+  color: var(--Preto, #1f1f1f);
+  font-family: "DM Sans", sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 140%;
+}
+
+.collection-detail__selected-image-location {
+  margin: 0;
+  color: var(--Cinza_E, #2f2f2f);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  line-height: 150%;
 }
 
 .collection-detail__gallery--with-title {
