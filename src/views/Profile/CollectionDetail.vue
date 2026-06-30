@@ -184,6 +184,12 @@ function handleMapSelect(id) {
   selectedMapImageId.value = id;
 }
 
+// Redireciona para a página de detalhes da imagem.
+function goToImageDetail(id) {
+  if (!id) return;
+  router.push(`/explore/dados/image/${id}`);
+}
+
 watch(collectionViewMode, (mode) => {
   if (mode !== "map") selectedMapImageId.value = null;
 });
@@ -580,22 +586,40 @@ watch(
                 class="collection-detail__selected-image"
                 aria-label="Imagem selecionada no mapa"
               >
-                <img
-                  :src="selectedMapImage.imageUrl"
-                  :alt="selectedMapImage.title || 'Imagem da coleção'"
+                <div
                   class="collection-detail__selected-image-media"
+                  role="img"
+                  :aria-label="selectedMapImage.title || 'Imagem da coleção'"
+                  :style="{ backgroundImage: `url(${selectedMapImage.imageUrl})` }"
                 />
-                <div class="collection-detail__selected-image-caption">
-                  <h2 class="collection-detail__selected-image-title">
+                <button
+                  type="button"
+                  class="collection-detail__selected-image-button"
+                  @click="goToImageDetail(selectedMapImage.id)"
+                >
+                  <span class="collection-detail__selected-image-title">
                     {{ selectedMapImage.title || "Sem título" }}
-                  </h2>
-                  <p
-                    v-if="selectedMapImage.location"
-                    class="collection-detail__selected-image-location"
+                  </span>
+                  <span
+                    class="collection-detail__selected-image-arrow"
+                    aria-hidden="true"
                   >
-                    {{ selectedMapImage.location }}
-                  </p>
-                </div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        clip-rule="evenodd"
+                        d="M1.5 12.0009C1.5 11.802 1.57902 11.6113 1.71967 11.4706C1.86032 11.33 2.05109 11.2509 2.25 11.2509H19.9395L15.219 6.53195C15.0782 6.39112 14.9991 6.20011 14.9991 6.00095C14.9991 5.80178 15.0782 5.61078 15.219 5.46995C15.3598 5.32912 15.5508 5.25 15.75 5.25C15.9492 5.25 16.1402 5.32912 16.281 5.46995L22.281 11.4699C22.3508 11.5396 22.4063 11.6224 22.4441 11.7135C22.4819 11.8046 22.5013 11.9023 22.5013 12.0009C22.5013 12.0996 22.4819 12.1973 22.4441 12.2884C22.4063 12.3795 22.3508 12.4623 22.281 12.5319L16.281 18.5319C16.1402 18.6728 15.9492 18.7519 15.75 18.7519C15.5508 18.7519 15.3598 18.6728 15.219 18.5319C15.0782 18.3911 14.9991 18.2001 14.9991 18.0009C14.9991 17.8018 15.0782 17.6108 15.219 17.4699L19.9395 12.7509H2.25C2.05109 12.7509 1.86032 12.6719 1.71967 12.5313C1.57902 12.3906 1.5 12.1999 1.5 12.0009Z"
+                        fill="#2F2F2F"
+                      />
+                    </svg>
+                  </span>
+                </button>
               </section>
 
               <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
@@ -720,22 +744,40 @@ watch(
                 class="collection-detail__selected-image"
                 aria-label="Imagem selecionada no mapa"
               >
-                <img
-                  :src="selectedMapImage.imageUrl"
-                  :alt="selectedMapImage.title || 'Imagem da coleção'"
+                <div
                   class="collection-detail__selected-image-media"
+                  role="img"
+                  :aria-label="selectedMapImage.title || 'Imagem da coleção'"
+                  :style="{ backgroundImage: `url(${selectedMapImage.imageUrl})` }"
                 />
-                <div class="collection-detail__selected-image-caption">
-                  <h2 class="collection-detail__selected-image-title">
+                <button
+                  type="button"
+                  class="collection-detail__selected-image-button"
+                  @click="goToImageDetail(selectedMapImage.id)"
+                >
+                  <span class="collection-detail__selected-image-title">
                     {{ selectedMapImage.title || "Sem título" }}
-                  </h2>
-                  <p
-                    v-if="selectedMapImage.location"
-                    class="collection-detail__selected-image-location"
+                  </span>
+                  <span
+                    class="collection-detail__selected-image-arrow"
+                    aria-hidden="true"
                   >
-                    {{ selectedMapImage.location }}
-                  </p>
-                </div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        clip-rule="evenodd"
+                        d="M1.5 12.0009C1.5 11.802 1.57902 11.6113 1.71967 11.4706C1.86032 11.33 2.05109 11.2509 2.25 11.2509H19.9395L15.219 6.53195C15.0782 6.39112 14.9991 6.20011 14.9991 6.00095C14.9991 5.80178 15.0782 5.61078 15.219 5.46995C15.3598 5.32912 15.5508 5.25 15.75 5.25C15.9492 5.25 16.1402 5.32912 16.281 5.46995L22.281 11.4699C22.3508 11.5396 22.4063 11.6224 22.4441 11.7135C22.4819 11.8046 22.5013 11.9023 22.5013 12.0009C22.5013 12.0996 22.4819 12.1973 22.4441 12.2884C22.4063 12.3795 22.3508 12.4623 22.281 12.5319L16.281 18.5319C16.1402 18.6728 15.9492 18.7519 15.75 18.7519C15.5508 18.7519 15.3598 18.6728 15.219 18.5319C15.0782 18.3911 14.9991 18.2001 14.9991 18.0009C14.9991 17.8018 15.0782 17.6108 15.219 17.4699L19.9395 12.7509H2.25C2.05109 12.7509 1.86032 12.6719 1.71967 12.5313C1.57902 12.3906 1.5 12.1999 1.5 12.0009Z"
+                        fill="#2F2F2F"
+                      />
+                    </svg>
+                  </span>
+                </button>
               </section>
 
               <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
@@ -995,47 +1037,71 @@ watch(
 }
 
 .collection-detail__gallery--map {
-  min-height: 600px;
-  height: 75vh;
+  min-height: 560px;
+  height: 70vh;
 }
 
 .collection-detail__selected-image {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  width: 338px;
+  max-width: 100%;
+  height: 450px;
   padding: 0 12px;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .collection-detail__selected-image-media {
-  width: 100%;
-  height: auto;
-  max-height: 320px;
-  object-fit: cover;
+  height: 314px;
+  flex-shrink: 0;
+  align-self: stretch;
   border-radius: 8px;
-  display: block;
+  border-top: 0.25px solid var(--Cinza_C, #a6a6a6);
+  border-right: 0.25px solid var(--Cinza_C, #a6a6a6);
+  border-left: 0.25px solid var(--Cinza_C, #a6a6a6);
+  background-color: lightgray;
+  background-position: 50%;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
-.collection-detail__selected-image-caption {
+.collection-detail__selected-image-button {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  height: 60px;
+  padding-top: 24px;
+  padding-left: 0;
+  padding-right: 0;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 100%;
+  box-sizing: border-box;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
 .collection-detail__selected-image-title {
   margin: 0;
-  color: var(--Preto, #1f1f1f);
-  font-family: "DM Sans", sans-serif;
-  font-size: 18px;
+  color: var(--Cinza_E, #2f2f2f);
+  font-family: "DM Sans";
+  font-size: 20px;
+  font-style: normal;
   font-weight: 500;
-  line-height: 140%;
+  line-height: 150%;
+  text-align: left;
 }
 
-.collection-detail__selected-image-location {
-  margin: 0;
+.collection-detail__selected-image-arrow {
+  display: flex;
+  padding: 6px;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
   color: var(--Cinza_E, #2f2f2f);
-  font-family: "DM Sans", sans-serif;
-  font-size: 14px;
-  line-height: 150%;
 }
 
 .collection-detail__gallery--with-title {
@@ -1309,7 +1375,7 @@ watch(
   .collection-detail__image-wrapper--mobile.collection-detail__image-wrapper--grid-collapsed:has(
       .collection-detail__gallery--map
     ) {
-    max-height: 70dvh;
+    max-height: 66dvh;
   }
 
   .collection-detail__image-wrapper--grid-expanded {
