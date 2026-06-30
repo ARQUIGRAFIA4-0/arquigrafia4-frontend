@@ -236,6 +236,11 @@ const fetchImages = async (page = 1, filters = {}) => {
       params.user_id = filters.userId;
     }
 
+    // Filtro por collective_id
+    if (filters.collectiveId) {
+      params.collective_id = filters.collectiveId;
+    }
+    
     // Filtro por assuntos (tags de sujeito por ID)
     if (filters.subjects?.length) {
       params['subject[]'] = filters.subjects.length === 1 ? filters.subjects[0] : filters.subjects;
@@ -297,7 +302,7 @@ const fetchImages = async (page = 1, filters = {}) => {
  */
 const getTotalImages = async () => {
   const apiBaseUrl = "https://api-dev.arquigrafia.org.br";
-  const apiUrl = `${apiBaseUrl}/api/images?per_page=-1`;
+  const apiUrl = `${apiBaseUrl}/api/images?per_page=1`;
 
   try {
     const response = await fetch(apiUrl);
@@ -370,6 +375,292 @@ const deleteImage = async (authHeader, imageId) => {
   }
 };
 
+/**
+ * Cria um novo coletivo
+ * @param {string} authHeader - Header de autorização (Bearer token)
+ * @param {FormData} formData - Dados do coletivo (name, description)
+ * @returns {Promise<object>} Dados do coletivo criado
+ */
+const createCollective = async (authHeader, formData) => {
+  try {
+    const response = await axios.post("/api/collectives", formData, {
+      headers: {
+        "Authorization": authHeader,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.errors?.name?.[0] ||
+      "Não foi possível criar o coletivo.";
+    throw new Error(message);
+  }
+};
+
+/**
+ * Busca os dados de um coletivo pelo ID (sem autenticação)
+ * @param {string} id - UUID do coletivo
+ * @returns {Promise<object>} Dados do coletivo
+ */
+const getCollective = async (id) => {
+  try {
+    const response = await axios.get(`/api/collectives/${id}`, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return response.data.data;
+  } catch (error) {
+    throw new Error("Não foi possível carregar os dados do coletivo.");
+  }
+};
+
+/**
+ * Envia uma solicitação de entrada no coletivo
+ * @param {string} authHeader - Header de autorização (Bearer token)
+ * @param {string} id - UUID do coletivo
+ * @returns {Promise<void>}
+ */
+const requestJoinCollective = async (authHeader, id) => {
+  try {
+    await axios.post(`/api/collectives/${id}/join-requests`, null, {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authHeader,
+      },
+    });
+  } catch (error) {
+    const status = error.response?.status;
+    let message;
+    if (status === 422) {
+      message = error.response?.data?.message || "Não foi possível realizar esta ação.";
+    } else {
+      message = "Não foi possível enviar a solicitação.";
+    }
+    const err = new Error(message);
+    err.status = status;
+    throw err;
+  }
+};
+
+/**
+ * Remove o próprio usuário do coletivo
+ * @param {string} authHeader - Header de autorização (Bearer token)
+ * @param {string} collectiveId - UUID do coletivo
+ * @param {string} userId - UUID do usuário
+ * @returns {Promise<void>}
+ */
+const leaveCollective = async (authHeader, collectiveId, userId) => {
+  try {
+    await axios.delete(`/api/collectives/${collectiveId}/members/${userId}`, {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authHeader,
+      },
+    });
+  } catch (error) {
+    const status = error.response?.status;
+    let message;
+    if (status === 422) {
+      message = error.response?.data?.message || "Não foi possível realizar esta ação.";
+    } else if (status === 403) {
+      message = "Você não tem permissão para realizar esta ação.";
+    } else {
+      message = "Não foi possível sair do coletivo. Tente novamente.";
+    }
+    const err = new Error(message);
+    err.status = status;
+    throw err;
+  }
+};
+
+/**
+ * Busca todos os subjects disponíveis
+ * @returns {Promise<Array<{id: string, term: string}>>}
+ */
+const getAllSubjects = async () => {
+  try {
+    const response = await axios.get("/api/vrac-subjects", {
+      headers: { "Content-Type": "application/json" },
+      params: { per_page: -1 },
+    });
+    return response.data.data || [];
+  } catch (error) {
+    console.error("Error fetching all subjects:", error);
+    return [];
+  }
+};
+
+/**
+ * Atualiza os dados de um coletivo
+ * @param {string} authHeader - Header de autorização (Bearer token)
+ * @param {string} id - UUID do coletivo
+ * @param {FormData} formData - Dados do formulário
+ * @returns {Promise<object>} Dados atualizados do coletivo
+ */
+const updateCollective = async (authHeader, id, formData) => {
+  // Laravel não suporta multipart/form-data em PATCH/PUT via PHP.
+  // Usamos POST com _method=PATCH (method spoofing do Laravel).
+  formData.append("_method", "PATCH");
+  try {
+    const response = await axios.post(`/api/collectives/${id}`, formData, {
+      headers: {
+        "Authorization": authHeader,
+      },
+    });
+    return response.data.data;
+  } catch (error) {
+    const errors = error.response?.data?.errors;
+    const message = errors
+      ? Object.values(errors)[0]?.[0]
+      : (error.response?.data?.message || "Não foi possível atualizar o coletivo.");
+    throw new Error(message);
+  }
+};
+
+/**
+ * Remove um membro do coletivo (ação de admin)
+ * @param {string} authHeader
+ * @param {string} collectiveId
+ * @param {string} userId
+ * @returns {Promise<object>} Dados atualizados do coletivo
+ */
+const removeMember = async (authHeader, collectiveId, userId) => {
+  try {
+    const response = await axios.delete(`/api/collectives/${collectiveId}/members/${userId}`, {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": authHeader,
+      },
+    });
+    return response.data.data;
+  } catch (error) {
+    const status = error.response?.status;
+    let message;
+    if (status === 404) {
+      message = "Este participante não faz mais parte do coletivo.";
+    } else if (status === 422) {
+      message = error.response?.data?.message || "Não foi possível realizar esta ação.";
+    } else if (status === 403) {
+      message = "Você não tem permissão para realizar esta ação.";
+    } else {
+      message = "Não foi possível remover o membro. Tente novamente.";
+    }
+    const err = new Error(message);
+    err.status = status;
+    throw err;
+  }
+};
+
+/**
+ * Promove um membro para admin do coletivo
+ * @param {string} authHeader
+ * @param {string} collectiveId
+ * @param {string} userId
+ * @returns {Promise<object>} Dados atualizados do coletivo
+ */
+const promoteMemberToAdmin = async (authHeader, collectiveId, userId) => {
+  try {
+    const response = await axios.put(
+      `/api/collectives/${collectiveId}/members/${userId}`,
+      { role: "admin" },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authHeader,
+        },
+      }
+    );
+    return response.data.data;
+  } catch (error) {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || "Não foi possível atualizar o papel do membro.";
+    const err = new Error(message);
+    err.status = status;
+    throw err;
+  }
+};
+
+/**
+ * Atualiza o papel (role) de um membro no coletivo.
+ * @param {string} authHeader
+ * @param {string} collectiveId
+ * @param {string} userId
+ * @param {"admin"|"member"} role
+ * @returns {Promise<void>}
+ */
+const updateMemberRole = async (authHeader, collectiveId, userId, role) => {
+  try {
+    await axios.put(
+      `/api/collectives/${collectiveId}/members/${userId}`,
+      { role },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authHeader,
+        },
+      }
+    );
+  } catch (error) {
+    const status = error.response?.status;
+    let message;
+    if (status === 422) {
+      message = error.response?.data?.message || "Não foi possível realizar esta ação.";
+    } else if (status === 403) {
+      message = "Você não tem permissão para realizar esta ação.";
+    } else {
+      message = error.response?.data?.message || "Não foi possível atualizar o papel do membro.";
+    }
+    const err = new Error(message);
+    err.status = status;
+    throw err;
+  }
+};
+
+/**
+ * Busca as solicitações de entrada pendentes de um coletivo
+ */
+const getJoinRequests = async (authHeader, collectiveId) => {
+  try {
+    const response = await axios.get(`/api/collectives/${collectiveId}/join-requests`, {
+      headers: { "Authorization": authHeader },
+    });
+    return response.data.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Não foi possível carregar as solicitações pendentes."
+    );
+  }
+};
+
+/**
+ * Aprova ou recusa uma solicitação de entrada no coletivo.
+ * @param {"approve"|"reject"} action
+ */
+const handleJoinRequest = async (authHeader, collectiveId, userId, action) => {
+  try {
+    const response = await axios.put(
+      `/api/collectives/${collectiveId}/join-requests/${userId}`,
+      { action },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authHeader,
+        },
+      }
+    );
+    return { alreadyProcessed: false, data: response.data?.data ?? null };
+  } catch (error) {
+    if (error.response?.status === 404) {
+      // A solicitação já foi processada (ex: solicitante cancelou). Trata como sucesso.
+      return { alreadyProcessed: true, data: null };
+    }
+    throw new Error(
+      error.response?.data?.message || "Não foi possível processar a solicitação."
+    );
+  }
+};
+
 export const api = {
   getImages: fetchImages,
   getGeoJSON,
@@ -378,5 +669,16 @@ export const api = {
   searchImages,
   getTotalImages,
   getSubjectById,
+  getAllSubjects,
   deleteImage,
+  createCollective,
+  getCollective,
+  requestJoinCollective,
+  leaveCollective,
+  updateCollective,
+  removeMember,
+  promoteMemberToAdmin,
+  updateMemberRole,
+  getJoinRequests,
+  handleJoinRequest,
 };

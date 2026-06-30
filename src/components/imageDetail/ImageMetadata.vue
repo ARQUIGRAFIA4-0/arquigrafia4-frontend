@@ -2,10 +2,17 @@
   <div>
     <div class="d-flex align-items-start justify-content-between mb-4">
       <h1 class="h1 mb-4">{{ props.image?.title || "Carregando..." }}</h1>
+
       <button v-if="canEdit" type="button" class="btn edit-btn" title="Editar informações"
         aria-label="Editar informações da imagem" @click="enterEditMode">
         <i class="bi bi-pencil-square" aria-hidden="true"></i>
       </button>
+
+      <button v-else-if="canSuggest" type="button" class="btn edit-btn" title="Sugerir alterações"
+        aria-label="Sugerir alterações na imagem" @click="enterSuggestMode">
+        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+      </button>
+
     </div>
 
     <div v-if="displayName" class="metadata-section">
@@ -17,7 +24,7 @@
         <div v-else class="metadata-person-avatar metadata-person-avatar--placeholder">
           <span>{{ displayInitial }}</span>
         </div>
-        <RouterLink v-if="collectiveId" :to="`/collective/${collectiveId}`" class="metadata-uploader-link">
+        <RouterLink v-if="collectiveId" :to="`/coletivos/${collectiveId}`" class="metadata-uploader-link">
           {{ displayName }}
         </RouterLink>
         <RouterLink v-else-if="uploaderUserId" :to="`/profile/${uploaderUserId}`" class="metadata-uploader-link">
@@ -99,11 +106,16 @@ const props = defineProps({
 const isOwner = computed(() => {
   return loggedUser.value?.id === props.image?.uploader?.id;
 });
-
 const isEditing = computed(() => route.query.edit === "true");
+const isSuggesting = computed(() => route.query.suggest === "true");
+const isLoggedIn = computed(() => !!loggedUser.value);
 
 const canEdit = computed(() => {
   return isOwner.value && !isEditing.value;
+});
+
+const canSuggest = computed(() => {
+  return !isOwner.value && isLoggedIn.value && !isSuggesting.value;
 });
 
 function enterEditMode() {
@@ -111,6 +123,16 @@ function enterEditMode() {
     query: {
       ...route.query,
       edit: "true",
+    },
+  });
+}
+
+//ToDo: alterar sugestion para suggestions
+function enterSuggestMode() {
+  router.push({
+    path: `/explore/sugestoes/image/${props.image.id}`,
+    query: {
+      suggest: "true",
     },
   });
 }
@@ -135,7 +157,8 @@ const displayName = computed(() =>
 );
 const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 const displayAvatar = computed(() => {
-  const path = props.image?.collective?.avatar_path ?? props.image?.uploader?.avatar_path;
+  const entity = props.image?.collective ?? props.image?.uploader;
+  const path = entity?.avatar_path;
   return path ? `${API_BASE_URL}/storage/${path}` : null;
 });
 

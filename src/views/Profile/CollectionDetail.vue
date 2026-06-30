@@ -9,6 +9,7 @@ import CollectionPeriodsChart from "@/components/CollectionPeriodsChart.vue";
 import UiField from "../../components/ui/UiField.vue";
 import CollectionImagesGrid from "@/components/collection/CollectionImagesGrid.vue";
 import CollectionImagesMosaic from "@/components/collection/CollectionImagesMosaic.vue";
+import CollectionImagesMap from "@/components/collection/CollectionImagesMap.vue";
 import {
   viewRouteToSelection,
   selectionToViewRoute,
@@ -145,6 +146,16 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
       ordered.map((img) => api.getImageDetails(img.id))
     );
 
+    selectedMapImageId.value = null;
+
+    const plainImages = JSON.parse(JSON.stringify(collectionImages.value));
+    console.log("[CollectionDetail] imagens da coleção:", plainImages);
+    console.log("[CollectionDetail] primeira imagem:", plainImages[0]);
+    console.log(
+      "[CollectionDetail] chaves da primeira imagem:",
+      plainImages[0] ? Object.keys(plainImages[0]) : []
+    );
+
   } catch (err) {
     console.error("Erro ao carregar imagens da coleção:", err);
     collectionImages.value = [];
@@ -152,56 +163,6 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
   }
 
 }
-
-/**
-* Start: Remover imagem
-**/
-const selectedImageId = ref(null);
-const removingImageId = ref(null);
-
-// Ativa a imagem (seleciona ou desseleciona)
-function onCardActivate(item, event) {
-  // evita que clique em botão interno dispare toggle duas vezes
-  const target = event?.target;
-  if (target?.closest?.("button,a")) return;
-
-  selectedImageId.value = selectedImageId.value === item.id ? null : item.id; // Toggle seleção
-}
-
-// Remove a imagem da coleção
-async function removeImageFromCollection(imageId) {
-  if (!collectionId.value || !imageId) return; // Verifica se a coleção e a imagem existem. Para evitar bugs;
-
-  removingImageId.value = imageId; // Define o ID da imagem que está sendo removida
-  
-  try {
-    await albumsStore.removeImagesFromAlbum(
-      authStore.authHeader,
-      collectionId.value,
-      imageId
-    );
-
-    // Controle de estado: Remove a imagem da lista de imagens da coleção
-    collectionImages.value = collectionImages.value.filter((img) => img.id !== imageId);
-
-    if (selectedImageId.value === imageId) {
-      selectedImageId.value = null;
-    }
-
-    if (albumData.value?.images?.length) {
-      albumData.value.images = albumData.value.images.filter(
-        (img) => img.id !== imageId
-      );
-    }
-  } catch (err) {
-    console.error(err);
-  } finally {
-    removingImageId.value = null;
-  }
-}
-/**
-* End: Remover imagem
-*/
 
 /**
  * Start: Toolbar
@@ -212,6 +173,27 @@ const viewSelection = computed(() =>
 const collectionViewMode = computed(() =>
   selectionToViewMode(viewSelection.value)
 );
+
+const selectedMapImageId = ref(null);
+
+const selectedMapImage = computed(() =>
+  collectionImages.value.find((img) => img.id === selectedMapImageId.value) || null
+);
+
+function handleMapSelect(id) {
+  selectedMapImageId.value = id;
+}
+
+// Redireciona para a página de detalhes da imagem.
+function goToImageDetail(id) {
+  if (!id) return;
+  router.push(`/explore/dados/image/${id}`);
+}
+
+watch(collectionViewMode, (mode) => {
+  if (mode !== "map") selectedMapImageId.value = null;
+});
+
 const isInfoActive = ref(true);
 const isGridReflowing = ref(false);
 const isMobileGridExpanded = ref(false);
@@ -334,6 +316,22 @@ function handleDownloadCollection() {
 
 }
 
+// Edita a coleção.
+function handleEditCollection() {
+  if (!collectionId.value) return;
+
+  router.push({
+    name: "my-collection-edit",
+    params: {
+      collectionId: collectionId.value,
+    },
+    query: {
+      viewMode: route.params.viewMode || "grid",
+    },
+  });
+
+}
+
 // Baixa a coleção como ZIP.
 async function handleCollectionDownloadConfirm() {
   downloadingCollection.value = true;
@@ -403,10 +401,11 @@ watch(
       class="collection-detail__floating-toolbar"
       :view-selection="viewSelection"
       :is-info-active="isInfoActive"
-      :allowed-views="['grid', 'mosaic']"
+      :allowed-views="['grid', 'mosaic', 'map']"
       @view-change="handleCollectionViewChange"
       @toggle-info="handleToggleCollectionInfo"
       @download="handleDownloadCollection"
+      @edit="handleEditCollection"
     />
 
     <DownloadModal
@@ -462,7 +461,9 @@ watch(
               class="collection-detail__gallery"
               :class="{
                 'collection-detail__gallery--with-title':
-                  !isInfoActive && !isLoadingCollection,
+                  isInfoActive && !isMobile,
+                'collection-detail__gallery--map':
+                  collectionViewMode === 'map',
               }"
             >
               <CollectionImagesGrid
@@ -470,11 +471,8 @@ watch(
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
                 :is-grid-reflowing="isGridReflowing"
-                :selected-image-id="selectedImageId"
-                :removing-image-id="removingImageId"
                 :is-info-active="isInfoActive"
-                @activate="onCardActivate"
-                @remove="removeImageFromCollection"
+                :allow-remove="false"
               />
 
               <CollectionImagesMosaic
@@ -483,6 +481,13 @@ watch(
                 :is-loading="isLoadingCollection"
                 :is-info-active="isInfoActive"
               />
+
+              <CollectionImagesMap
+                v-else-if="collectionViewMode === 'map'"
+                :images="collectionImages"
+                :is-loading="isLoadingCollection"
+                @select="handleMapSelect"
+              />              
             </section>
           </div>
         </template>
@@ -500,15 +505,25 @@ watch(
               'collection-detail__image-wrapper--grid-expanded': isMobileGridExpanded,
             }"
           >
-            <section class="collection-detail__gallery">
+            <section
+              class="collection-detail__gallery"
+              :class="{
+                'collection-detail__gallery--map': collectionViewMode === 'map',
+              }"
+            >
               <CollectionImagesGrid
+                v-if="collectionViewMode !== 'map'"
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
-                :selected-image-id="selectedImageId"
-                :removing-image-id="removingImageId"
                 :is-info-active="false"
-                @activate="onCardActivate"
-                @remove="removeImageFromCollection"
+                :allow-remove="false"
+              />
+
+              <CollectionImagesMap
+                v-else
+                :images="collectionImages"
+                :is-loading="isLoadingCollection"
+                @select="handleMapSelect"
               />
             </section>
           </div>
@@ -566,6 +581,48 @@ watch(
                 <p class="collection-detail__description">{{ collectionDescription }}</p>
               </aside>
 
+              <section
+                v-if="collectionViewMode === 'map' && selectedMapImage"
+                class="collection-detail__selected-image"
+                aria-label="Imagem selecionada no mapa"
+              >
+                <div
+                  class="collection-detail__selected-image-media"
+                  role="img"
+                  :aria-label="selectedMapImage.title || 'Imagem da coleção'"
+                  :style="{ backgroundImage: `url(${selectedMapImage.imageUrl})` }"
+                />
+                <button
+                  type="button"
+                  class="collection-detail__selected-image-button"
+                  @click="goToImageDetail(selectedMapImage.id)"
+                >
+                  <span class="collection-detail__selected-image-title">
+                    {{ selectedMapImage.title || "Sem título" }}
+                  </span>
+                  <span
+                    class="collection-detail__selected-image-arrow"
+                    aria-hidden="true"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        clip-rule="evenodd"
+                        d="M1.5 12.0009C1.5 11.802 1.57902 11.6113 1.71967 11.4706C1.86032 11.33 2.05109 11.2509 2.25 11.2509H19.9395L15.219 6.53195C15.0782 6.39112 14.9991 6.20011 14.9991 6.00095C14.9991 5.80178 15.0782 5.61078 15.219 5.46995C15.3598 5.32912 15.5508 5.25 15.75 5.25C15.9492 5.25 16.1402 5.32912 16.281 5.46995L22.281 11.4699C22.3508 11.5396 22.4063 11.6224 22.4441 11.7135C22.4819 11.8046 22.5013 11.9023 22.5013 12.0009C22.5013 12.0996 22.4819 12.1973 22.4441 12.2884C22.4063 12.3795 22.3508 12.4623 22.281 12.5319L16.281 18.5319C16.1402 18.6728 15.9492 18.7519 15.75 18.7519C15.5508 18.7519 15.3598 18.6728 15.219 18.5319C15.0782 18.3911 14.9991 18.2001 14.9991 18.0009C14.9991 17.8018 15.0782 17.6108 15.219 17.4699L19.9395 12.7509H2.25C2.05109 12.7509 1.86032 12.6719 1.71967 12.5313C1.57902 12.3906 1.5 12.1999 1.5 12.0009Z"
+                        fill="#2F2F2F"
+                      />
+                    </svg>
+                  </span>
+                </button>
+              </section>
+
+              <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
               <section class="collection-detail__actors">
               <div class="collection-detail__actors-title-area">
                 <h2 class="collection-detail__actors-title">Coleção criada por</h2>
@@ -649,6 +706,18 @@ watch(
               </div>
               <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
             </section>
+            </template>
+
+            <div class="collection-detail__mobile-edit">
+              <button
+                type="button"
+                class="collection-detail__mobile-edit-btn"
+                @click="handleEditCollection"
+              >
+                <i class="bi bi-pencil-square" aria-hidden="true" />
+                <span>Editar</span>
+              </button>
+            </div>
             </div>
           </div>
         </div>
@@ -670,6 +739,48 @@ watch(
                 <p class="collection-detail__description">{{ collectionDescription }}</p>
               </aside>
 
+              <section
+                v-if="collectionViewMode === 'map' && selectedMapImage"
+                class="collection-detail__selected-image"
+                aria-label="Imagem selecionada no mapa"
+              >
+                <div
+                  class="collection-detail__selected-image-media"
+                  role="img"
+                  :aria-label="selectedMapImage.title || 'Imagem da coleção'"
+                  :style="{ backgroundImage: `url(${selectedMapImage.imageUrl})` }"
+                />
+                <button
+                  type="button"
+                  class="collection-detail__selected-image-button"
+                  @click="goToImageDetail(selectedMapImage.id)"
+                >
+                  <span class="collection-detail__selected-image-title">
+                    {{ selectedMapImage.title || "Sem título" }}
+                  </span>
+                  <span
+                    class="collection-detail__selected-image-arrow"
+                    aria-hidden="true"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        clip-rule="evenodd"
+                        d="M1.5 12.0009C1.5 11.802 1.57902 11.6113 1.71967 11.4706C1.86032 11.33 2.05109 11.2509 2.25 11.2509H19.9395L15.219 6.53195C15.0782 6.39112 14.9991 6.20011 14.9991 6.00095C14.9991 5.80178 15.0782 5.61078 15.219 5.46995C15.3598 5.32912 15.5508 5.25 15.75 5.25C15.9492 5.25 16.1402 5.32912 16.281 5.46995L22.281 11.4699C22.3508 11.5396 22.4063 11.6224 22.4441 11.7135C22.4819 11.8046 22.5013 11.9023 22.5013 12.0009C22.5013 12.0996 22.4819 12.1973 22.4441 12.2884C22.4063 12.3795 22.3508 12.4623 22.281 12.5319L16.281 18.5319C16.1402 18.6728 15.9492 18.7519 15.75 18.7519C15.5508 18.7519 15.3598 18.6728 15.219 18.5319C15.0782 18.3911 14.9991 18.2001 14.9991 18.0009C14.9991 17.8018 15.0782 17.6108 15.219 17.4699L19.9395 12.7509H2.25C2.05109 12.7509 1.86032 12.6719 1.71967 12.5313C1.57902 12.3906 1.5 12.1999 1.5 12.0009Z"
+                        fill="#2F2F2F"
+                      />
+                    </svg>
+                  </span>
+                </button>
+              </section>
+
+              <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
               <section class="collection-detail__actors">
                 <div class="collection-detail__actors-title-area">
                   <h2 class="collection-detail__actors-title">Coleção criada por</h2>
@@ -753,6 +864,7 @@ watch(
                 </div>
                 <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
               </section>
+              </template>
             </div>
           </div>
         </div>
@@ -922,6 +1034,74 @@ watch(
   transition:
     transform 320ms ease,
     opacity 260ms ease;
+}
+
+.collection-detail__gallery--map {
+  min-height: 560px;
+  height: 70vh;
+}
+
+.collection-detail__selected-image {
+  display: flex;
+  width: 338px;
+  max-width: 100%;
+  height: 450px;
+  padding: 0 12px;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.collection-detail__selected-image-media {
+  height: 314px;
+  flex-shrink: 0;
+  align-self: stretch;
+  border-radius: 8px;
+  border-top: 0.25px solid var(--Cinza_C, #a6a6a6);
+  border-right: 0.25px solid var(--Cinza_C, #a6a6a6);
+  border-left: 0.25px solid var(--Cinza_C, #a6a6a6);
+  background-color: lightgray;
+  background-position: 50%;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.collection-detail__selected-image-button {
+  display: flex;
+  height: 60px;
+  padding-top: 24px;
+  padding-left: 0;
+  padding-right: 0;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 100%;
+  box-sizing: border-box;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.collection-detail__selected-image-title {
+  margin: 0;
+  color: var(--Cinza_E, #2f2f2f);
+  font-family: "DM Sans";
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 150%;
+  text-align: left;
+}
+
+.collection-detail__selected-image-arrow {
+  display: flex;
+  padding: 6px;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  color: var(--Cinza_E, #2f2f2f);
 }
 
 .collection-detail__gallery--with-title {
@@ -1192,6 +1372,12 @@ watch(
     max-height: 38dvh;
   }
 
+  .collection-detail__image-wrapper--mobile.collection-detail__image-wrapper--grid-collapsed:has(
+      .collection-detail__gallery--map
+    ) {
+    max-height: 66dvh;
+  }
+
   .collection-detail__image-wrapper--grid-expanded {
     max-height: none;
     overflow: visible;
@@ -1233,6 +1419,36 @@ watch(
 
   .metadata-tags {
     max-width: 100%;
+  }
+
+  .collection-detail__mobile-edit {
+    width: 100%;
+    padding: 24px 0;
+    box-sizing: border-box;
+  }
+
+  .collection-detail__mobile-edit-btn {
+    display: inline-flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 5px;
+    background: var(--Laranja_E, #aa4f28);
+    color: var(--Branco, #fff);
+    font-family: "DM Sans", sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 150%;
+    cursor: pointer;
+    box-sizing: border-box;
+  }
+
+  .collection-detail__mobile-edit-btn i {
+    font-size: 16px;
+    line-height: 1;
   }
 }
 

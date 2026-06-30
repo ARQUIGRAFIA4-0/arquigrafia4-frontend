@@ -14,6 +14,23 @@ const authStore = useAuthStore();
 const albumsStore = useAlbumsStore();
 const { isLoggedIn, authHeader, loggedUser } = storeToRefs(authStore);
 
+const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
+
+const getInitials = (name) => name?.charAt(0).toUpperCase() || "?";
+
+const resolveAvatarUrl = (entity) => {
+  if (!entity) return null;
+  if (entity.avatar_url) {
+    return entity.avatar_url.startsWith("http")
+      ? entity.avatar_url
+      : `${API_BASE_URL}${entity.avatar_url}`;
+  }
+  if (entity.avatar_path) {
+    return `${API_BASE_URL}/storage/${entity.avatar_path}`;
+  }
+  return null;
+};
+
 const props = defineProps({
   image: {
     type: Object,
@@ -58,28 +75,75 @@ function openIiifManifest() {
  */
 const showAlbumPicker = ref(false);
 const loadedAlbums = ref([]);
+const loadingAlbums = ref(false);
 
-// Função para buscar os álbuns do usuário
-async function loadMyAlbums() {
-  const userId = loggedUser.value?.id;
+// Escopos de coleção: o usuário + os coletivos dos quais ele faz parte
+const collectionScopes = computed(() => {
+  if (!loggedUser.value) return [];
+  const u = loggedUser.value;
+  const scopes = [
+    {
+      id: u.id,
+      type: "user",
+      name: u.name || u.username,
+      avatar: resolveAvatarUrl(u),
+      initials: u.initials || getInitials(u.name || u.username),
+    },
+  ];
+  for (const c of u.collectives ?? []) {
+    scopes.push({
+      id: c.id,
+      type: "collective",
+      name: c.name,
+      avatar: resolveAvatarUrl(c),
+      initials: getInitials(c.name),
+    });
+  }
+  return scopes;
+});
 
-  if (!isLoggedIn.value || !userId) {
+const selectedScopeId = ref(null);
+const selectedScope = computed(
+  () =>
+    collectionScopes.value.find((s) => s.id === selectedScopeId.value) ??
+    collectionScopes.value[0] ??
+    null
+);
+
+// Busca os álbuns do escopo (usuário ou coletivo)
+async function loadAlbumsForScope(scope) {
+  if (!scope) return;
+  loadingAlbums.value = true;
+  try {
+    const response =
+      scope.type === "collective"
+        ? await albumsStore.getCollectiveAlbums(authHeader.value, scope.id)
+        : await albumsStore.getUserAlbums(authHeader.value, scope.id);
+    loadedAlbums.value = Array.isArray(response) ? response : response?.data ?? [];
+  } catch (e) {
+    console.error("Erro ao buscar álbuns:", e);
+    loadedAlbums.value = [];
+  } finally {
+    loadingAlbums.value = false;
+  }
+}
+
+// Abre o seletor de coleção no escopo do usuário
+async function openAlbumPicker() {
+  if (!isLoggedIn.value || !loggedUser.value?.id) {
     console.warn("Sem usuário logado ou sem id:", { isLoggedIn: isLoggedIn.value, loggedUser: loggedUser.value });
     return;
   }
+  selectedScopeId.value = collectionScopes.value[0]?.id ?? null;
+  await loadAlbumsForScope(selectedScope.value);
+  showAlbumPicker.value = true;
+}
 
-  try {
-    const response = await albumsStore.getUserAlbums(authHeader.value, userId);
-    const list = Array.isArray(response) ? response : response?.data ?? [];
-    loadedAlbums.value = list;
-    showAlbumPicker.value = true;
-
-  } catch (e) {
-    console.error("Erro ao buscar álbuns:", e);
-    showAlbumPicker.value = false;
-
-  }
-
+// Troca o escopo selecionado e recarrega os álbuns
+async function onScopeChange(scope) {
+  if (!scope) return;
+  selectedScopeId.value = scope.id;
+  await loadAlbumsForScope(scope);
 }
 
 // Toast após salvar alterações nas coleções da imagem
@@ -150,8 +214,8 @@ async function onAlbumPickerConfirmAdd({ albumIds }) {
       ),
     ]);
 
-    // recarrega coleções do usuário para atualizar a lista de álbuns
-    await loadMyAlbums();
+    // recarrega coleções do escopo atual para atualizar a lista de álbuns
+    await loadAlbumsForScope(selectedScope.value);
 
     // fecha o modal de seleção de álbuns
     showAlbumPicker.value = false;
@@ -199,13 +263,13 @@ function onCollectionCreateModalOpen() {
   });
 }
 
-// Após criar coleção, buscar os álbuns do usuário
+// Após criar coleção, buscar os álbuns do escopo atual
 async function onCollectionCreated() {
   // fecha modal de criação (nome correto da ref)
   showCollectionCreateModal.value = false;
 
-  // recarrega coleções do usuário
-  await loadMyAlbums();
+  // recarrega coleções do escopo atual
+  await loadAlbumsForScope(selectedScope.value);
 
   // mantém/abre o picker de coleção
   showAlbumPicker.value = true;
@@ -257,7 +321,7 @@ async function onCollectionCreated() {
         type="button"
         class="menu-button"
         aria-label="Adicionar a coleção"
-        @click="loadMyAlbums"
+        @click="openAlbumPicker"
       >
         <i class="bi bi-images" aria-hidden="true" />
       </button>      
@@ -314,13 +378,18 @@ async function onCollectionCreated() {
         v-model="showAlbumPicker"
         :albums="loadedAlbums"
         :preselected-album-ids="preselectedAlbumIds"
+        :scopes="collectionScopes"
+        :selected-scope-id="selectedScope?.id"
+        :loading-albums="loadingAlbums"
+        @change-scope="onScopeChange"
         @open-create-collection="onCollectionCreateModalOpen"
         @confirm-add="onAlbumPickerConfirmAdd"
       />
 
       <CollectionCreateModal
         v-model="showCollectionCreateModal"
-        :user-data="loggedUser"
+        :user-data="selectedScope?.type === 'user' ? loggedUser : null"
+        :collective-id="selectedScope?.type === 'collective' ? selectedScope.id : null"
         @created="onCollectionCreated"
       />
 

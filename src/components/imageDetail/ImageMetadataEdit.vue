@@ -196,11 +196,11 @@
         <section id="geral" class="py-4">
           <h2 class="mb-4">Dados gerais</h2>
 
-          <div class="mb-4 px-3">
+          <!-- <div class="mb-4 px-3">
             <UiField label="Obra" explain="Informe a obra relacionada">
               <input type="text" class="form-control" placeholder="Texto exemplo" v-model="form.work" />
             </UiField>
-          </div>
+          </div> -->
 
           <div class="mb-4 px-3">
             <UiField label="Tags da imagem" explain="Adicione tags para classificar a imagem">
@@ -214,7 +214,7 @@
                 " class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
                   style="z-index: 1000; max-height: 300px; overflow-y: auto">
                   <button v-for="(suggestion, index) in filteredTagSuggestions" :key="index" type="button"
-                    class="dropdown-item" @click="selectTagSuggestion(suggestion.term)">
+                    class="dropdown-item" @click="selectTagSuggestion(suggestion)">
                     {{ suggestion.term }}
                   </button>
                   <button v-if="canCreateSubject" type="button"
@@ -233,7 +233,7 @@
             <div class="d-flex flex-wrap gap-2 mt-2">
               <div v-for="(tag, index) in form.tags" :key="tag"
                 class="btn btn-outline-secondary btn-sm btn-tag d-inline-flex align-items-center">
-                {{ tag }}
+                {{ tag.term || tag }}
                 <button type="button" class="btn-close ms-2" aria-label="Remover" @click="removeTag(index)" />
               </div>
             </div>
@@ -512,6 +512,7 @@ const handleSubmit = async () => {
         Authorization: authStore.authHeader,
       },
     });
+
 
     showSuccess("Imagem atualizada com sucesso!");
     isSaved.value = true;
