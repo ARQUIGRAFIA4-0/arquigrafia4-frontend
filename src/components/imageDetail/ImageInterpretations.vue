@@ -9,7 +9,7 @@
 
     <div class="arch-reads__header">
       <h2 class="arch-reads__title">
-        Quais <strong>qualidades da arquitetura</strong> são <strong>visíveis nesta imagem</strong>?
+        Quais <strong>qualidades da arquitetura</strong> são visíveis nesta imagem?
       </h2>
     </div>
 
@@ -56,10 +56,19 @@
 
     <div class="arch-reads__footer">
 
+      <div class="arch-reads__caption">
+        <div class="arch-reads__caption--wrapper"><span class="my"></span>
+          <p>Minha interpretação</p>
+        </div>
+        <div class="arch-reads__caption--wrapper"><span class="other"></span>
+          <p>Interpretações de outros usuários</p>
+        </div>
+      </div>
+
       <span v-if="error" class="arch-reads__error"><i class="bi bi-exclamation-lg"></i>{{ error }}</span>
 
       <span v-if="submitted && pairs.some(p => p.myValue !== null)" class="arch-reads__submit--success">
-        <i class="bi bi-check-all"></i> Avaliação enviada
+        <i class="bi bi-check-all"></i> Você já avaliou esta imagem
       </span>
 
       <button v-if="!submitted" class="arch-reads__submit btn w-100" :disabled="submitting || loading"
@@ -334,7 +343,6 @@ $breakpoint-md: 770px;
     display: flex;
     flex-direction: column;
     gap: 40px;
-    margin-bottom: 64px;
     margin-top: 28px;
 
     @include md {
@@ -410,14 +418,6 @@ $breakpoint-md: 770px;
     background: var(--Cinza_C);
     border-radius: 999px;
 
-    input[type="range"] {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      margin: 0;
-    }
-
     &--submitted {
       background: var(--Azul_C);
     }
@@ -448,11 +448,13 @@ $breakpoint-md: 770px;
   }
 
   &__range {
+    position: absolute;
+    top: -11px;
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 6px;
-    background: var(--Cinza_C);
+    height: 28px;
+    background: transparent;
     border-radius: 10px;
     outline: none;
     cursor: pointer;
@@ -461,7 +463,7 @@ $breakpoint-md: 770px;
 
     &::-webkit-slider-runnable-track {
       height: 6px;
-      background: transparent;
+      background: var(--Cinza_C);
       border-radius: 999px;
     }
 
@@ -472,13 +474,14 @@ $breakpoint-md: 770px;
       border-radius: 50%;
       background: var(--Preto);
       border: none;
-      margin-top: calc((#{6px} - #{14px}) / 2);
+      margin-top: calc((6px - 14px) / 2);
       transition: transform 0.15s ease;
     }
 
     &::-moz-range-track {
       height: 6px;
-      background: transparent;
+      background: var(--Cinza_C);
+
       border-radius: 999px;
     }
 
@@ -557,6 +560,47 @@ $breakpoint-md: 770px;
         background: var(--Positivo_E);
       }
     }
+  }
+
+  &__caption {
+    margin: 2.25rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    &--wrapper {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+
+
+      p {
+        margin: 0;
+        display: flex;
+        align-items: center;
+      }
+
+      span {
+        content: "";
+        display: block;
+        border-radius: 50px;
+      }
+
+      .my {
+        width: 16px;
+        height: 16px;
+        background-color: var(--Laranja_M);
+      }
+
+      .other {
+        width: 11px;
+        height: 11px;
+        background-color: var(--Azul_C);
+        margin: .1563rem;
+      }
+    }
+
+
   }
 
   &__error {
