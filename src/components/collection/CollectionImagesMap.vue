@@ -33,6 +33,8 @@ const selectedColor = "#D27D30"; // Laranja_M
 
 const DEFAULT_CENTER = [-46.6333, -23.5505]; // São Paulo
 const DEFAULT_ZOOM = 3;
+const SELECTED_ICON_ZOOM = 8;
+const SELECTED_ICON_ANIMATION_MS = 700;
 
 // SVG do ícone (preto = normal, laranja = selecionado)
 const cameraIconSvg = (fill) =>
@@ -55,16 +57,13 @@ const geoJsonData = computed(() => {
 
 const hasLocatedImages = computed(() => geoJsonData.value.features.length > 0);
 
-// Define o centro do mapa com base na primeira imagem localizada.
-const mapCenter = computed(() => {
-  const first = geoJsonData.value.features[0];
-  return first?.geometry?.coordinates ?? DEFAULT_CENTER;
+const initialMapOptions = computed(() => {
+  const fc = createCollectionImagesFeatureCollection(props.images);
+  return {
+    center: fc.features[0]?.geometry?.coordinates ?? DEFAULT_CENTER,
+    zoom: fc.features.length === 1 ? 14 : DEFAULT_ZOOM,
+  };
 });
-
-// Zoom inicial: 14 se houver apenas uma imagem, senão o padrão.
-const mapZoom = computed(() =>
-  geoJsonData.value.features.length === 1 ? 14 : DEFAULT_ZOOM
-);
 
 /* ----------------------- HOVER: miniatura circular ----------------------- */
 // Cria o conteúdo HTML do popup circular com a miniatura da imagem.
@@ -152,14 +151,37 @@ const setCursor = (value) => {
   if (map) map.getCanvas().style.cursor = value;
 };
 
+// Aproxima o zoom para exibir o ícone selecionado.
+const focusOnCoordinates = (coordinates) => {
+  const map = mapInstance.value;
+  if (!map || !coordinates?.length) return;
+
+  const currentZoom = map.getZoom();
+  const targetZoom = Math.max(currentZoom, SELECTED_ICON_ZOOM);
+
+  map.easeTo({
+    center: coordinates,
+    zoom: targetZoom,
+    duration: SELECTED_ICON_ANIMATION_MS,
+    essential: true,
+  });
+
+};
+
 // Manipulador de evento para quando o usuário clica em um ponto no mapa.
 const handlePointClick = (event) => {
   const feature = event.features?.[0];
   if (!feature) return;
 
-  selectedId.value = feature.properties?.id ?? null;
-  emit("select", selectedId.value);
+  const coordinates = feature.geometry.coordinates.slice();
+  const id = feature.properties?.id ?? null;
 
+  selectedId.value = id;
+  emit("select", id);
+
+  requestAnimationFrame(() => {
+    focusOnCoordinates(coordinates);
+  });
 };
 
 // Limpa a seleção e emite o evento de seleção.
@@ -185,7 +207,14 @@ const handleClusterClick = async (event) => {
 
   try {
     const zoom = await source.getClusterExpansionZoom(clusterId);
-    map.easeTo({ center: features[0].geometry.coordinates, zoom });
+    
+    map.easeTo({
+      center: features[0].geometry.coordinates,
+      zoom,
+      duration: SELECTED_ICON_ANIMATION_MS,
+      essential: true,
+    });
+
   } catch {
     // Fazer nada
   }
@@ -369,8 +398,7 @@ onUnmounted(() => {
       <MapLibreMap
         class="collection-images-map__canvas"
         :style-url="styleUrl"
-        :center="mapCenter"
-        :zoom="mapZoom"
+        :map-options="initialMapOptions"
         @map-ready="handleMapReady"
         @map-error="handleMapError"
       />
