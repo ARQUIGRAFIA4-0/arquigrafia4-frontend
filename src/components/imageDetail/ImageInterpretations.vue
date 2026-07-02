@@ -136,10 +136,10 @@ watch(
   { immediate: true }
 )
 
-async function fetchBinomials() {
+async function fetchBinomials(silent = false) {
   if (!props.imageId) return
 
-  loading.value = true
+  if (!silent) loading.value = true
   error.value = null
 
   try {
@@ -189,7 +189,7 @@ async function fetchBinomials() {
     console.error('Erro ao buscar binômios:', err)
     error.value = 'Não foi possível carregar os binômios.'
   } finally {
-    loading.value = false
+    if (!silent) loading.value = false
   }
 }
 
@@ -217,7 +217,8 @@ async function handleSubmit() {
     }
     )
 
-    pairs.value = pairs.value.map(p => ({ ...p, myValue: p.value }))
+    // pairs.value = pairs.value.map(p => ({ ...p, myValue: p.value }))
+    await fetchBinomials(true)
 
     submitted.value = true
     justUpdated.value = true
