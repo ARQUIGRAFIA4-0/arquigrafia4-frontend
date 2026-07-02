@@ -23,6 +23,9 @@ export function normalizeCoordinates(latlng) {
   if (typeof lat !== "number" || typeof lng !== "number") {
     return null;
   }
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
 
   return [lng, lat];
 }

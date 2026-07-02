@@ -18,6 +18,21 @@ const emit = defineEmits(["select"]);
 const mapInstance = shallowRef(null);
 const selectedId = ref(null);
 let activePopup = null;
+let initialView = null;
+
+/* ------------------------------- Validação ---------------------------------- */
+// Verifica se as coordenadas são válidas.
+const isValidCoordinate = (coordinates) =>
+  Array.isArray(coordinates) &&
+  coordinates.length >= 2 &&
+  Number.isFinite(coordinates[0]) &&
+  Number.isFinite(coordinates[1]);
+
+// Obtém as features localizadas.
+const getLocatedFeatures = () =>
+  createCollectionImagesFeatureCollection(props.images).features.filter((feature) =>
+    isValidCoordinate(feature.geometry?.coordinates)
+  );
 
 const styleUrl = "https://tiles.openfreemap.org/styles/positron";
 const sourceId = "collection-images";
@@ -33,6 +48,8 @@ const selectedColor = "#D27D30"; // Laranja_M
 
 const DEFAULT_CENTER = [-46.6333, -23.5505]; // São Paulo
 const DEFAULT_ZOOM = 3;
+const SELECTED_ICON_ZOOM = 8;
+const SELECTED_ICON_ANIMATION_MS = 700;
 
 // SVG do ícone (preto = normal, laranja = selecionado)
 const cameraIconSvg = (fill) =>
@@ -53,18 +70,18 @@ const geoJsonData = computed(() => {
   };
 });
 
+// Verifica se há imagens localizadas.
 const hasLocatedImages = computed(() => geoJsonData.value.features.length > 0);
 
-// Define o centro do mapa com base na primeira imagem localizada.
-const mapCenter = computed(() => {
-  const first = geoJsonData.value.features[0];
-  return first?.geometry?.coordinates ?? DEFAULT_CENTER;
-});
+// Obtém as opções iniciais do mapa.
+const initialMapOptions = computed(() => {
+  const fc = createCollectionImagesFeatureCollection(props.images);
+  return {
+    center: fc.features[0]?.geometry?.coordinates ?? DEFAULT_CENTER,
+    zoom: fc.features.length === 1 ? 14 : DEFAULT_ZOOM,
+  };
 
-// Zoom inicial: 14 se houver apenas uma imagem, senão o padrão.
-const mapZoom = computed(() =>
-  geoJsonData.value.features.length === 1 ? 14 : DEFAULT_ZOOM
-);
+});
 
 /* ----------------------- HOVER: miniatura circular ----------------------- */
 // Cria o conteúdo HTML do popup circular com a miniatura da imagem.
@@ -117,9 +134,12 @@ const showPopupForFeature = (event) => {
     .addTo(map);
 
   activePopup = popup;
+
+  // Fecha o popup quando o usuário clica fora dele.
   popup.on("close", () => {
     if (activePopup === popup) activePopup = null;
   });
+
 };
 
 /* ------------------------- CLIQUE: seleção laranja ------------------------ */
@@ -147,9 +167,27 @@ const registerIcon = (map, id, svg) =>
 });
 
 /* ------------------------------- Seleção ---------------------------------- */
+// Define o cursor do mapa.
 const setCursor = (value) => {
   const map = mapInstance.value;
   if (map) map.getCanvas().style.cursor = value;
+};
+
+// Aproxima o zoom para exibir o ícone selecionado.
+const focusOnCoordinates = (coordinates) => {
+  const map = mapInstance.value;
+  if (!map || !isValidCoordinate(coordinates)) return;
+
+  const currentZoom = map.getZoom();
+  const targetZoom = Math.max(currentZoom, SELECTED_ICON_ZOOM);
+
+  map.easeTo({
+    center: coordinates,
+    zoom: targetZoom,
+    duration: SELECTED_ICON_ANIMATION_MS,
+    essential: true,
+  });
+
 };
 
 // Manipulador de evento para quando o usuário clica em um ponto no mapa.
@@ -157,16 +195,99 @@ const handlePointClick = (event) => {
   const feature = event.features?.[0];
   if (!feature) return;
 
-  selectedId.value = feature.properties?.id ?? null;
-  emit("select", selectedId.value);
+  const coordinates = feature.geometry.coordinates.slice();
+  const id = feature.properties?.id ?? null;
+
+  selectedId.value = id;
+  emit("select", id);
+
+  requestAnimationFrame(() => {
+    focusOnCoordinates(coordinates);
+  });
+};
+
+// Constroi a view inicial do mapa.
+const buildInitialView = () => {
+  const features = getLocatedFeatures();
+  if (!features.length) {
+    return { type: "point", center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM };
+  }
+
+  if (features.length === 1) {
+    return {
+      type: "point",
+      center: features[0].geometry.coordinates,
+      zoom: 14,
+    };
+  }
+
+  const bounds = new LngLatBounds();
+  features.forEach((feature) => {
+    bounds.extend(feature.geometry.coordinates);
+  });
+
+  return { type: "bounds", bounds };
 
 };
 
-// Limpa a seleção e emite o evento de seleção.
-const clearSelection = () => {
+const saveInitialView = () => {
+  initialView = buildInitialView();
+};
+
+/* ------------------------------- Restauração ---------------------------------- */
+// Restaura a view inicial do mapa.
+const restoreInitialView = () => {
+  const map = mapInstance.value;
+  if (!map) return;
+
+  const view = initialView ?? buildInitialView();
+  if (!view) return;
+
+  map.stop();
+
+  if (view.type === "point") {
+    map.easeTo({
+      center: view.center,
+      zoom: view.zoom,
+      duration: SELECTED_ICON_ANIMATION_MS,
+      essential: true,
+    });
+    return;
+  }
+
+  map.fitBounds(view.bounds, {
+    padding: 56,
+    maxZoom: 14,
+    duration: SELECTED_ICON_ANIMATION_MS,
+    essential: true,
+  });
+
+};
+
+// Limpa a seleção e restaura a view inicial.
+const resetToInitial = () => {
   if (selectedId.value === null) return;
+
   selectedId.value = null;
   emit("select", null);
+  closeActivePopup();
+
+  const map = mapInstance.value;
+  if (!map) return;
+
+  let restored = false;
+  const run = () => {
+    if (restored) return;
+    restored = true;
+    restoreInitialView();
+  };
+
+  map.once("idle", run);
+  window.setTimeout(run, 80);
+};
+
+const clearSelection = () => {
+  resetToInitial();
 };
 
 // Clique em um cluster -> aproxima o zoom para expandi-lo.
@@ -175,7 +296,7 @@ const handleClusterClick = async (event) => {
   if (!map) return;
 
   const features = map.queryRenderedFeatures(event.point, {
-    layers: [clusterLayerId],
+    layers: [clusterLayerId, clusterCountLayerId],
   });
   const clusterId = features[0]?.properties?.cluster_id;
   if (clusterId == null) return;
@@ -185,7 +306,14 @@ const handleClusterClick = async (event) => {
 
   try {
     const zoom = await source.getClusterExpansionZoom(clusterId);
-    map.easeTo({ center: features[0].geometry.coordinates, zoom });
+    
+    map.easeTo({
+      center: features[0].geometry.coordinates,
+      zoom,
+      duration: SELECTED_ICON_ANIMATION_MS,
+      essential: true,
+    });
+
   } catch {
     // Fazer nada
   }
@@ -205,27 +333,12 @@ const handleClusterEnter = () => setCursor("pointer");
 const handleClusterLeave = () => setCursor("");
 
 /* ------------------------------- Mapa ------------------------------------- */
-// Ajusta o mapa para exibir todos os features visíveis.
+// Ajusta o mapa para exibir todas as features visíveis.
 const fitMapToFeatures = () => {
-  const map = mapInstance.value;
-  const features = geoJsonData.value.features;
-  if (!map || !features.length) return;
-
-  if (features.length === 1) {
-    map.easeTo({
-      center: features[0].geometry.coordinates,
-      zoom: 14,
-      duration: 500,
-    });
-    return;
-  }
-
-  const bounds = new LngLatBounds();
-  features.forEach((feature) => bounds.extend(feature.geometry.coordinates));
-  map.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: 500 });
-
+  restoreInitialView();
 };
 
+// Configura as camadas do mapa.
 const setupLayers = async (map) => {
   await registerIcon(map, iconId, cameraIconSvg(baseColor));
   await registerIcon(map, selectedIconId, cameraIconSvg(selectedColor));
@@ -292,11 +405,14 @@ const setupLayers = async (map) => {
   }
 
   map.on("click", clusterLayerId, handleClusterClick);
+  map.on("click", clusterCountLayerId, handleClusterClick);
   map.on("click", unclusteredLayerId, handlePointClick);
   map.on("mouseenter", unclusteredLayerId, handleUnclusteredEnter);
   map.on("mouseleave", unclusteredLayerId, handleUnclusteredLeave);
   map.on("mouseenter", clusterLayerId, handleClusterEnter);
   map.on("mouseleave", clusterLayerId, handleClusterLeave);
+  map.on("mouseenter", clusterCountLayerId, handleClusterEnter);
+  map.on("mouseleave", clusterCountLayerId, handleClusterLeave);
 };
 
 // Manipulador de evento para quando o mapa estiver pronto.
@@ -307,13 +423,17 @@ const handleMapReady = async (map) => {
   // Registrado antes dos awaits para garantir que sempre exista.
   map.on("click", (event) => {
     if (!map.getLayer(unclusteredLayerId)) return;
+    if (selectedId.value === null) return;
+
     const hits = map.queryRenderedFeatures(event.point, {
-      layers: [unclusteredLayerId],
+      layers: [unclusteredLayerId, clusterLayerId, clusterCountLayerId],
     });
+
     if (!hits.length) clearSelection();
   });
 
   await setupLayers(map);
+  saveInitialView();
   fitMapToFeatures();
 };
 
@@ -329,12 +449,19 @@ watch(geoJsonData, (data) => {
 
 // Reposiciona o mapa quando a quantidade de imagens muda.
 watch(
-  () => geoJsonData.value.features.length,
+  () => props.images,
   () => {
-    clearSelection();
+    if (!mapInstance.value) return;
+
+    selectedId.value = null;
+    emit("select", null);
+    saveInitialView();
     fitMapToFeatures();
-  }
+  },
+  { deep: true }
 );
+
+defineExpose({ resetToInitial });
 
 onUnmounted(() => {
   const map = mapInstance.value;
@@ -369,8 +496,7 @@ onUnmounted(() => {
       <MapLibreMap
         class="collection-images-map__canvas"
         :style-url="styleUrl"
-        :center="mapCenter"
-        :zoom="mapZoom"
+        :map-options="initialMapOptions"
         @map-ready="handleMapReady"
         @map-error="handleMapError"
       />
