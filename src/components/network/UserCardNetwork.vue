@@ -5,8 +5,7 @@
     </div>
     <div class="user-card__body">
       <h3 class="user-card__name">{{ user.name }}</h3>
-      <!-- <FitTags :subjects="user.tags ?? []" /> -->
-      <FitTags :subjects="visibleTagsTeste ?? []" />
+      <FitTags :subjects="user.tags ?? []" />
     </div>
   </a>
 </template>
@@ -40,26 +39,6 @@ const userImage = computed(() => {
     ? `${API_BASE_URL}${props.user.avatar_url}`
     : randomDefaultImage;
 });
-
-
-//tags de exemplo em forma de objeto'
-const visibleTagsTeste = [{
-  id: 1,
-  term: "arquitetura",
-}, {
-  id: 2,
-  term: "design",
-}, {
-  id: 3,
-  term: "urbanismo",
-}, {
-  id: 4,
-  term: "artista",
-}, {
-  id: 5,
-  term: "Paisagismo",
-}]
-
 
 </script>
 

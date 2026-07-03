@@ -14,10 +14,6 @@
           <UiField id="network-offcanvas-help" class="network-offcanvas__help-field" label=" "
             explain="Busque por um nome específico ou pelo nome de um coletivo." />
         </div>
-        <button v-if="inputText" class="btn search-modal__clear-btn" type="button" @click="clearInput">
-          <i class="bi bi-x-lg" />
-          Limpar busca
-        </button>
       </div>
 
       <div class="search-modal__input-row">
@@ -28,7 +24,7 @@
       <div class="network-offcanvas__actions">
         <button class="btn network-offcanvas__btn-voltar" type="button" data-bs-dismiss="offcanvas"
           @click="clearSearch">
-          Voltar
+          Limpar
         </button>
         <button class="btn network-offcanvas__btn-salvar" type="button" data-bs-dismiss="offcanvas"
           @click="confirm">Buscar</button>
@@ -91,10 +87,6 @@ function closeModal() {
 function closeMobile() {
   const el = offcanvasEl.value;
   if (el) Offcanvas.getInstance(el)?.hide();
-}
-
-function clearInput() {
-  inputText.value = "";
 }
 
 function clearSearch() {
