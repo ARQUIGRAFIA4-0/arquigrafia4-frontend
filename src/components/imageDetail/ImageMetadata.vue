@@ -9,11 +9,12 @@
       </button>
 
       <button v-else-if="canSuggest" type="button" class="btn edit-btn" title="Sugerir alterações"
-        aria-label="Sugerir alterações na imagem" @click="enterSuggestMode">
+        aria-label="Sugerir alterações na imagem" @click="openSuggestModal">
         <i class="bi bi-pencil-square" aria-hidden="true"></i>
       </button>
-
     </div>
+
+    <SuggestionEditModal v-model="isSuggestModalOpen" @confirm="enterSuggestMode" />
 
     <div v-if="displayName" class="metadata-section">
       <h2 class="h5 metadata-title">Imagem enviada por</h2>
@@ -76,13 +77,14 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import LicenseInfoBlock from "@/components/imageDetail/LicenseInfoBlock.vue";
 import { DEFAULT_VIEW_ROUTE } from "@/constants/viewModes";
 import { useAuthStore } from "@/store/auth";
 import { storeToRefs } from "pinia";
+import SuggestionEditModal from "./suggestions/SuggestionEditModal.vue";
 
 
 const authStore = useAuthStore();
@@ -117,6 +119,12 @@ const canEdit = computed(() => {
 const canSuggest = computed(() => {
   return !isOwner.value && isLoggedIn.value && !isSuggesting.value;
 });
+
+const isSuggestModalOpen = ref(false);
+
+function openSuggestModal() {
+  isSuggestModalOpen.value = true;
+}
 
 function enterEditMode() {
   router.push({
