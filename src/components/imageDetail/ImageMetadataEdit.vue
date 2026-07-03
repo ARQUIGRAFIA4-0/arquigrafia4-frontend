@@ -20,17 +20,6 @@
     </transition>
 
     <div class="row align-items-start gy-4 metadata-upload__layout">
-      <div
-        class="d-flex flex-column flex-md-row justify-content-start align-items-start align-items-md-center gap-3 bg-white py-2">
-        <ul class="nav nav-underline">
-          <li v-for="tab in tabs" :key="tab.section" class="nav-item">
-            <a class="nav-link" :href="`#${tab.section}`" :class="{ active: currentSection === tab.section }"
-              @click="selectTab(tab.section)">
-              {{ tab.label }}
-            </a>
-          </li>
-        </ul>
-      </div>
 
       <div v-if="loadingImage" class="d-flex flex-column gap-4 mt-3">
         <div class="bg-off-white p-4 rounded shadow-sm">
@@ -415,9 +404,6 @@ const buildPayload = async () => {
 
 // ─── Composable 
 const {
-  tabs,
-  currentSection,
-  selectTab,
   showAlert,
   alertMessage,
   alertType,
