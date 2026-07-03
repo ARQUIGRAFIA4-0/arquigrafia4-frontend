@@ -290,7 +290,7 @@ onMounted(async () => {
   // ===== EMPTY =====
 
   &__empty {
-    // padding: 1rem 0;
+    padding: 0 1rem;
     width: 100%;
     height: 57px;
     background-color: var(--Off_white);
@@ -305,6 +305,10 @@ onMounted(async () => {
     display: block;
     font-size: 1.5rem;
     color: var(--Cinza_M);
+
+    @media (max-width: 768px) {
+      font-size: 1.25rem;
+    }
   }
 
   &__empty-text {
@@ -315,6 +319,10 @@ onMounted(async () => {
     font-weight: 400;
     line-height: 150%;
     justify-self: center;
+
+    @media (max-width: 768px) {
+      font-size: .75rem;
+    }
   }
 
   // ===== ALERT =====
