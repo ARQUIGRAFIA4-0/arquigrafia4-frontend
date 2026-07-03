@@ -46,6 +46,7 @@ const collectionTitle = computed(() => {
   return albumData.value?.title?.trim() || "Sem título";
 });
 
+// descrição reais vindos da API
 const collectionDescription = computed(() => {
   return albumData.value?.description?.trim() || "Sem descrição.";
 });
@@ -170,6 +171,7 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
 const viewSelection = computed(() =>
   viewRouteToSelection(route.params.viewMode)
 );
+
 const collectionViewMode = computed(() =>
   selectionToViewMode(viewSelection.value)
 );
@@ -182,6 +184,15 @@ const selectedMapImage = computed(() =>
 
 function handleMapSelect(id) {
   selectedMapImageId.value = id;
+}
+
+function handleOutsideMapClick(event) {
+  if (collectionViewMode.value !== "map") return;
+  if (!selectedMapImageId.value) return;
+  if (event.target.closest(".collection-images-map")) return;
+  if (event.target.closest("button, a, [role='button']")) return;
+
+  collectionMapRef.value?.resetToInitial?.();
 }
 
 // Redireciona para a página de detalhes da imagem.
@@ -198,6 +209,7 @@ const isInfoActive = ref(true);
 const isGridReflowing = ref(false);
 const isMobileGridExpanded = ref(false);
 const galleryRef = ref(null);
+const collectionMapRef = ref(null);
 
 const MOBILE_BREAKPOINT = 768;
 const isMobile = ref(
@@ -358,10 +370,12 @@ onMounted(() => {
   fetchCollectionData();
   updateIsMobile();
   window.addEventListener("resize", updateIsMobile);
+  document.addEventListener("click", handleOutsideMapClick);
 });
 
 onUnmounted(() => {
   window.removeEventListener("resize", updateIsMobile);
+  document.removeEventListener("click", handleOutsideMapClick);
 });
 
 watch(
@@ -440,6 +454,7 @@ watch(
         :class="{
           'collection-detail__row--mobile': isMobile,
           'collection-detail__row--grid-expanded': isMobile && isMobileGridExpanded,
+          'collection-detail__row--map': collectionViewMode === 'map',
         }"
       >
         <template v-if="!isMobile">
@@ -483,6 +498,7 @@ watch(
               />
 
               <CollectionImagesMap
+                ref="collectionMapRef"
                 v-else-if="collectionViewMode === 'map'"
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
@@ -520,6 +536,7 @@ watch(
               />
 
               <CollectionImagesMap
+                ref="collectionMapRef"
                 v-else
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
@@ -581,6 +598,10 @@ watch(
                 <p class="collection-detail__description">{{ collectionDescription }}</p>
               </aside>
 
+              <div
+                class="collection-detail__map-panel-body"
+                :class="{ 'collection-detail__map-panel-body--map': collectionViewMode === 'map' }"
+              >
               <section
                 v-if="collectionViewMode === 'map' && selectedMapImage"
                 class="collection-detail__selected-image"
@@ -707,6 +728,7 @@ watch(
               <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
             </section>
             </template>
+            </div>
 
             <div class="collection-detail__mobile-edit">
               <button
@@ -739,6 +761,10 @@ watch(
                 <p class="collection-detail__description">{{ collectionDescription }}</p>
               </aside>
 
+              <div
+                class="collection-detail__map-panel-body"
+                :class="{ 'collection-detail__map-panel-body--map': collectionViewMode === 'map' }"
+              >
               <section
                 v-if="collectionViewMode === 'map' && selectedMapImage"
                 class="collection-detail__selected-image"
@@ -865,6 +891,7 @@ watch(
                 <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
               </section>
               </template>
+              </div>
             </div>
           </div>
         </div>
@@ -1037,8 +1064,21 @@ watch(
 }
 
 .collection-detail__gallery--map {
+  min-height: 620px;
+  height: 75vh;
+}
+
+.collection-detail__row--map {
+  align-items: stretch;
+}
+
+.collection-detail__row--map:not(.collection-detail__row--mobile) .collection-detail__info-inner {
+  min-height: 620px;
+}
+
+.collection-detail__map-panel-body--map {
   min-height: 560px;
-  height: 70vh;
+  flex-shrink: 0;
 }
 
 .collection-detail__selected-image {
@@ -1375,7 +1415,7 @@ watch(
   .collection-detail__image-wrapper--mobile.collection-detail__image-wrapper--grid-collapsed:has(
       .collection-detail__gallery--map
     ) {
-    max-height: 66dvh;
+    max-height: 70dvh;
   }
 
   .collection-detail__image-wrapper--grid-expanded {
