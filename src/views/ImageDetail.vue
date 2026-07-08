@@ -1,8 +1,10 @@
 <template>
   <div class="container-fluid image-detail__container">
+
     <!-- Image -->
-    <div class="row align-items-start gy-4 image-detail__layout">
-      <div class="col-12 col-md-7 image-detail__image-box">
+    <div class="image-detail__grid">
+
+      <div class="image-detail__image-box">
         <button type="button" class="btn btn-link p-0 d-inline-flex align-items-center text-decoration-none back-link"
           @click="goBack">
           <i class="bi bi-arrow-left-square back-link__icon" aria-hidden="true"></i>
@@ -13,7 +15,8 @@
       </div>
 
       <!-- Metadata -->
-      <div class="col-12 col-md-5">
+      <div class="image-detail__metadata-box">
+
         <div class="col-12 image-detail__navbar">
           <div
             class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-4">
@@ -63,12 +66,18 @@
           <!--  -->
         </div>
       </div>
+
+      <!-- Imagens relacionadas -->
+      <div class="image-detail__related-box">
+        <ImageRelated v-if="image?.id" :image-id="image.id" />
+      </div>
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, onBeforeUnmount } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { api } from "@/services/api";
 import { useAuthStore } from "@/store/auth";
@@ -81,8 +90,9 @@ import ImageMetadataEdit from "@/components/imageDetail/ImageMetadataEdit.vue";
 import ImageSuggestion from "@/components/imageDetail/ImageSuggestion.vue";
 import ImageSuggestionEdit from "../components/imageDetail/ImageSuggestionEdit.vue";
 import ImageSuggestionView from "../components/imageDetail/ImageSuggestionView.vue";
-
 import ImageInterpretations from "@/components/imageDetail/ImageInterpretations.vue";
+import ImageRelated from "@/components/imageDetail/ImageRelated.vue";
+
 defineOptions({ name: "ImageDetail" });
 
 const router = useRouter();
@@ -93,6 +103,13 @@ const loading = ref(true);
 const loadingComments = ref(false);
 const authStore = useAuthStore();
 const { loggedUser } = storeToRefs(authStore);
+
+
+const desktopQuery = window.matchMedia("(min-width: 768px)");
+const isDesktop = ref(desktopQuery.matches);
+const handleDesktopChange = (e) => {
+  isDesktop.value = e.matches;
+};
 
 const tabs = [
   {
@@ -177,6 +194,8 @@ const handleReportSubmit = (payload) => {
 // };
 
 onMounted(async () => {
+  desktopQuery.addEventListener("change", handleDesktopChange);
+
   try {
     const imageId = route.params.id;
     image.value = await api.getImageDetails(imageId);
@@ -185,6 +204,9 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+});
+onBeforeUnmount(() => {
+  desktopQuery.removeEventListener("change", handleDesktopChange);
 });
 </script>
 
@@ -202,6 +224,44 @@ $breakpoint-md: 768px;
   @include md {
     padding: 24px 50px;
   }
+}
+
+.image-detail__grid {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+  grid-template-areas:
+    "image"
+    "metadata"
+    "related";
+
+  @include md {
+    grid-template-columns: 7fr 5fr;
+    grid-template-areas:
+      "image    metadata"
+      "related  metadata";
+  }
+}
+
+.image-detail__image-box {
+  grid-area: image;
+}
+
+.image-detail__metadata-box {
+  grid-area: metadata;
+
+  @include md {
+    position: sticky;
+    top: 20px;
+    align-self: start;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+}
+
+.image-detail__related-box {
+  grid-area: related;
 }
 
 .back-link {
@@ -261,12 +321,37 @@ $breakpoint-md: 768px;
   --bs-gutter-x: 1.5rem;
 }
 
-.image-detail__image-box {
+// .image-detail__image-box {
+//   @include md {
+//     position: sticky;
+//     top: 20px;
+//     align-self: flex-start;
+//   }
+// }
+
+//---------
+.image-detail__metadata {
   @include md {
     position: sticky;
     top: 20px;
     align-self: flex-start;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    scrollbar-width: thin;
   }
+}
+
+.image-detail__metadata::-webkit-scrollbar {
+  width: 6px;
+}
+
+.image-detail__metadata::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.image-detail__metadata::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 @media (max-width: 767.98px) {
