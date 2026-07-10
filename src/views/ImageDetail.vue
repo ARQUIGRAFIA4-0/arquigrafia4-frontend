@@ -5,10 +5,11 @@
     <div class="image-detail__grid">
 
       <div class="image-detail__image-box">
-        <button type="button" class="btn btn-link p-0 d-inline-flex align-items-center text-decoration-none back-link"
+        <button type="button"
+          class="back-link"
           @click="goBack">
-          <i class="bi bi-arrow-left-square back-link__icon" aria-hidden="true"></i>
-          <span class="back-link__label">Voltar</span>
+          <i class="bi bi-arrow-left back__icon" aria-hidden="true"></i>
+          <span class="back-link__label">voltar</span>
         </button>
         <ImageDisplay :image="image" :license-info="licenseInfo" :loading="loading" @load="loading = false"
           @download="handleDownload" @share="handleShare" @report-submit="handleReportSubmit" />
@@ -62,9 +63,9 @@
         <ImageInterpretations v-else-if="currentSection === 'interpretacoes'" @submit="handleSpecSubmit"
           :image-id="image?.id" />
 
-        <div v-else class="text-muted small">
-          <!--  -->
-        </div>
+        <!-- <div v-else class="text-muted small">
+          
+        </div> -->
       </div>
 
       <!-- Imagens relacionadas -->
@@ -212,23 +213,40 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
-$breakpoint-md: 768px;
+$breakpoint-sm: 768px;
+$breakpoint-md: 1024px;
+$breakpoint-lg: 1440px;
 
+
+@mixin sm {
+  @media (min-width: #{$breakpoint-sm}) {
+    @content;
+  }
+}
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
     @content;
   }
 }
+@mixin lg {
+  @media (min-width: #{$breakpoint-lg}) {
+    @content;
+  }
+}
 
 .image-detail__container {
-  @include md {
+  box-sizing: border-box;
+  width: 100%;
+
+  @include sm {
     padding: 24px 50px;
   }
 }
 
 .image-detail__grid {
+ 
   display: grid;
-  gap: 1.5rem;
+  gap: 1.875rem;  
   align-items: start;
   grid-template-areas:
     "image"
@@ -241,41 +259,82 @@ $breakpoint-md: 768px;
       "image    metadata"
       "related  metadata";
   }
+  @include lg {
+    grid-template-columns: minmax(768px, 1fr) minmax(542px, 1fr);
+  }
+
 }
 
 .image-detail__image-box {
   grid-area: image;
+
+  .back-link {
+    width: 87px;
+    height: 25px;
+    background-color: var(--Off_white);
+    border: 1px solid var(--Cinza_E);
+    border-radius: 5px;
+    padding: 2px 14px;
+    gap: .4375rem;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+
+    &:hover {
+      background-color: var(--Branco);
+    }
+
+    & .bi {
+      font-size: .875rem;
+    }
+    &__label {
+      font-weight: 400;
+      font-size: .875rem;
+      line-height: 150%;
+    }
+  }
 }
 
 .image-detail__metadata-box {
   grid-area: metadata;
+  
+  scrollbar-color: #eaeaea transparent;
+  scrollbar-width: thin;
 
   @include md {
     position: sticky;
     top: 20px;
     align-self: start;
-    max-height: calc(100vh - 40px);
+    max-height: calc(100vh - 20px);
     overflow-y: auto;
     scrollbar-width: thin;
   }
 }
 
+
+.image-detail__metadata-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.image-detail__metadata-box::-webkit-scrollbar-thumb {
+  // background: #d1d5db;
+  // border-radius: 4px;
+  background: rgba(0, 0, 0, 0.014);
+    border-radius: 999px;
+    transition: background .2s;
+}
+
+.image-detail__metadata-box:hover::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,.30);
+}
+
+.image-detail__metadata-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+//-----------
+
 .image-detail__related-box {
   grid-area: related;
-}
-
-.back-link {
-  gap: 0.5rem;
-  margin-bottom: 16px;
-}
-
-.back-link__icon {
-  color: var(--Cinza_M);
-}
-
-.back-link__label {
-  color: var(--Preto);
-  text-decoration: underline;
 }
 
 .image-detail__navbar {
@@ -319,39 +378,6 @@ $breakpoint-md: 768px;
 
 .image-detail__layout {
   --bs-gutter-x: 1.5rem;
-}
-
-// .image-detail__image-box {
-//   @include md {
-//     position: sticky;
-//     top: 20px;
-//     align-self: flex-start;
-//   }
-// }
-
-//---------
-.image-detail__metadata {
-  @include md {
-    position: sticky;
-    top: 20px;
-    align-self: flex-start;
-    max-height: calc(100vh - 40px);
-    overflow-y: auto;
-    scrollbar-width: thin;
-  }
-}
-
-.image-detail__metadata::-webkit-scrollbar {
-  width: 6px;
-}
-
-.image-detail__metadata::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
-}
-
-.image-detail__metadata::-webkit-scrollbar-track {
-  background: transparent;
 }
 
 @media (max-width: 767.98px) {
