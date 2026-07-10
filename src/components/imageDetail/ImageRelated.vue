@@ -276,14 +276,17 @@ onBeforeUnmount(() => {
 .related-images__title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 16px;
+  gap: 5px;
+  font-weight: 500;
+  font-size: 1.25rem;
+  margin-bottom: 13px;
+  color: var(--Preto);
 }
 
 .related-images__title-icon {
-  color: var(--Cinza_M, #6c757d);
+  color: var(--Cinza_E);
+  font-size: 1rem;
+  -webkit-text-stroke: 0.8px;
 }
 
 .masonry-grid {
