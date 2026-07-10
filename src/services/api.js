@@ -22,6 +22,14 @@ export const mapImageListItem = (image) => ({
 });
 
 /**
+ * GeoJSON com localizações de todas as imagens do acervo.
+ */
+const getLocationsGeoJSON = async () => {
+  const response = await axios.get("/api/locations/geojson");
+  return response.data;
+};
+
+/**
  * Obtém os detalhes completos de uma imagem pelo ID
  */
 const getImageDetails = async (id) => {
@@ -664,6 +672,7 @@ const handleJoinRequest = async (authHeader, collectiveId, userId, action) => {
 export const api = {
   getImages: fetchImages,
   getGeoJSON,
+  getLocationsGeoJSON,
   getImageDetails,
   getImageComments,
   searchImages,
