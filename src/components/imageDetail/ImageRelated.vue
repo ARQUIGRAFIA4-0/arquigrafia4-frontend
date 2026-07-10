@@ -26,9 +26,10 @@
           <div v-if="activeCardId === slotProps.item.id" class="related-card__overlay"
             @click="toggleCard(slotProps.item.id)">
             <span class="related-card__overlay-title">Relacionada por:</span>
-            <div class="related-card__tags">
+            <!-- <div class="related-card__tags">
               <span v-for="tag in RELATION_CATEGORIES" :key="tag" class="related-card__tag">{{ tag }}</span>
-            </div>
+            </div> -->
+            <FitTags :subjects="RELATION_CATEGORIES_TAGS ?? []" />
           </div>
         </div>
       </template>
@@ -50,6 +51,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import MosaicCard from "@/components/MosaicCard.vue";
 import MosaicSkeleton from "@/components/MosaicSkeleton.vue";
+import FitTags from "@/views/Profile/FitTags.vue";
 import { api } from "@/services/api";
 import LogoConection from "@/assets/logo-connection.png";
 
@@ -60,13 +62,23 @@ const props = defineProps({
   },
 });
 
-// Lista estática — a API não informa quais categorias geraram o match,
-// então exibimos sempre a lista completa de critérios possíveis.
-const RELATION_CATEGORIES = [
-  "assuntos", "período", "localização", "materiais", "estilos",
-  "interpretações", "autoria da imagem", "obra", "autoria da obra",
-  "aspectos estéticos", "contexto cultural", "tipologia", "técnicas",
-];
+
+// Lista estatica só que com id e term, para o FitTags funcionar
+const RELATION_CATEGORIES_TAGS = [
+  { id: 1, term: "assuntos" },
+  { id: 2, term: "período" },
+  { id: 3, term: "localização" },
+  { id: 4, term: "materiais" },
+  { id: 5, term: "estilos" },
+  { id: 6, term: "interpretações" },
+  { id: 7, term: "autoria da imagem" },
+  { id: 8, term: "obra" },
+  { id: 9, term: "autoria da obra" },
+  { id: 10, term: "aspectos estéticos" },
+  { id: 11, term: "contexto cultural" },
+  { id: 12, term: "tipologia" },
+  { id: 13, term: "técnicas" }
+]
 
 const activeCardId = ref(null);
 const toggleCard = (id) => {
@@ -294,10 +306,11 @@ onBeforeUnmount(() => {
 
 .related-card__logo {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 0px;
+  right: 0px;
   width: 24px;
   height: 24px;
+  margin: 12px 14px 0 0;
   z-index: 4;
 }
 
@@ -311,18 +324,32 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: rgba(176, 66, 31, 0.85);
+  background: rgba(176, 66, 31, 0.82);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: end;
   padding: 16px;
   color: #fff;
   border-radius: inherit;
+
+  .fit-tags{
+    margin-top: .5rem;
+    padding-top: 0;
+  }
+
+  :deep(.fit-tags__tag) {
+    background: transparent;
+    border: 1px solid var(--Branco);
+    color: var(--Branco);
+    border-radius: 2px;
+    padding: .25rem .5rem;
+    font-weight: 400;
+  }
+
 }
 
 .related-card__overlay-title {
   font-weight: 700;
-  margin-bottom: 12px;
 }
 
 .related-card__tags {
