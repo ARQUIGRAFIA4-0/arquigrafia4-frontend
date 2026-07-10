@@ -13,6 +13,8 @@ const props = defineProps({
   isLoading: { type: Boolean, default: false },
   /** 'collection' | 'explore' */
   context: { type: String, default: "collection" },
+  /** Inclinação do mapa em graus (0 = 2D, 60 = 3D). */
+  pitch: { type: Number, default: 0 },
 });
 
 const emit = defineEmits(["select"]);
@@ -87,8 +89,16 @@ const initialMapOptions = computed(() => {
   return {
     center: features[0]?.geometry?.coordinates ?? DEFAULT_CENTER,
     zoom: features.length === 1 ? 14 : DEFAULT_ZOOM,
+    pitch: props.pitch,
   };
 });
+
+const applyMapPitch = (pitch = 0) => {
+  const map = mapInstance.value;
+  if (!map) return;
+
+  map.easeTo({ pitch, duration: 500 });
+};
 
 /* ----------------------- HOVER: miniatura circular ----------------------- */
 // Cria o conteúdo HTML do popup circular com a miniatura da imagem.
@@ -206,6 +216,13 @@ const handlePointClick = (event) => {
 
   const coordinates = feature.geometry.coordinates.slice();
   const id = feature.properties?.id ?? null;
+  if (!id) return;
+
+  if (props.context === "explore") {
+    closeActivePopup();
+    emit("select", id);
+    return;
+  }
 
   selectedId.value = id;
   emit("select", id);
@@ -213,6 +230,7 @@ const handlePointClick = (event) => {
   requestAnimationFrame(() => {
     focusOnCoordinates(coordinates);
   });
+
 };
 
 // Constroi a view inicial do mapa.
@@ -448,6 +466,7 @@ const handleMapReady = async (map) => {
   await setupLayers(map);
   saveInitialView();
   fitMapToFeatures();
+  applyMapPitch(props.pitch);
 };
 
 const handleMapError = (error) => {
@@ -474,6 +493,13 @@ watch(
   { deep: true }
 );
 
+watch(
+  () => props.pitch,
+  (pitch) => {
+    applyMapPitch(pitch ?? 0);
+  }
+);
+
 defineExpose({ resetToInitial });
 
 onUnmounted(() => {
@@ -496,7 +522,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="collection-images-map" aria-label="Mapa das imagens da coleção">
+  <div
+    class="locations-map"
+    :aria-label="context === 'explore' ? 'Mapa do acervo' : 'Mapa das imagens da coleção'"
+  >
     <div
       v-if="isLoading"
       class="locations-map__state"
@@ -521,7 +550,7 @@ onUnmounted(() => {
         {{ emptyMessage }}
       </p>
 
-      <div v-if="selectedId" class="locations-map__hint">
+      <div v-if="selectedId && context === 'collection'" class="locations-map__hint">
         <span class="locations-map__hint-icon" aria-hidden="true">
           <svg
             xmlns="http://www.w3.org/2000/svg"
