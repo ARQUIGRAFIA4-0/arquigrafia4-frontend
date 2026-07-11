@@ -680,15 +680,25 @@
       </label>
     </div>
     <div class="d-flex gap-3">
-      <button class="btn btn-outline-secondary" @click="handleCancel">
+      <button
+        class="btn btn-outline-secondary"
+        :disabled="isSubmitting"
+        @click="handleCancel"
+      >
         Cancelar
       </button>
       <button
         class="btn btn-primary"
-        :disabled="!canSubmit"
+        :disabled="!canSubmit || isSubmitting"
         @click="handleSubmit"
       >
-        Enviar imagens
+        <span
+          v-if="isSubmitting"
+          class="spinner-border spinner-border-sm me-2"
+          role="status"
+          aria-hidden="true"
+        />
+        {{ isSubmitting ? "Enviando..." : "Enviar imagens" }}
       </button>
     </div>
   </div>
@@ -697,10 +707,30 @@
     v-model="showWorkCreateModal"
     @created="onWorkCreated"
   />
+
+  <transition name="fade">
+    <div
+      v-if="isSubmitting"
+      class="upload-overlay"
+      role="alertdialog"
+      aria-live="assertive"
+      aria-busy="true"
+    >
+      <div class="upload-overlay__box">
+        <div class="spinner-border text-light mb-3" role="status">
+          <span class="visually-hidden">Enviando...</span>
+        </div>
+        <p class="upload-overlay__text mb-0">
+          Enviando {{ uploadProgress.current }} de {{ uploadProgress.total }}...
+        </p>
+        <p class="upload-overlay__hint mb-0">Não feche esta janela.</p>
+      </div>
+    </div>
+  </transition>
 </template>
 
 <script setup>
-import { ref, markRaw, computed, watch, onMounted } from "vue";
+import { ref, markRaw, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import axios from "@/axios";
 import ImagePreviewPanel from "@/components/imageMetadaUpload/ImagePreviewPanel.vue";
 import UiField from "@/components/ui/UiField.vue";
@@ -817,6 +847,18 @@ const currentSection = ref("essenciais");
 const showAlert = ref(false);
 const alertMessage = ref("");
 const alertType = ref("error"); // 'error' | 'success'
+
+const isSubmitting = ref(false);
+const uploadProgress = ref({ current: 0, total: 0 });
+
+// Trava o scroll do body enquanto o overlay de envio está ativo
+watch(isSubmitting, (active) => {
+  document.body.style.overflow = active ? "hidden" : "";
+});
+
+onBeforeUnmount(() => {
+  document.body.style.overflow = "";
+});
 
 const isTitleTouched = ref(false);
 const isTitleInvalid = computed(
@@ -1530,6 +1572,10 @@ const handleSubmit = async () => {
     return;
   }
 
+  if (isSubmitting.value) return; // cinto de segurança contra duplo-envio
+  isSubmitting.value = true;
+  uploadProgress.value = { current: 0, total: pendingImages.value.length };
+
   try {
     const successfulUploads = [];
     const failedUploads = [];
@@ -1538,6 +1584,11 @@ const handleSubmit = async () => {
     for (let index = 0; index < pendingImages.value.length; index++) {
       const image = pendingImages.value[index];
       const metadata = image.metadata || {};
+
+      uploadProgress.value = {
+        current: index + 1,
+        total: pendingImages.value.length,
+      };
 
       try {
         // Mapeia as tags selecionadas para seus UUIDs em allSubjects
@@ -1698,6 +1749,8 @@ const handleSubmit = async () => {
         router.push({ name: "my-profile-images" });
       }, 2500);
     } else if (failedUploads.length > 0) {
+      // Reabilita a UI para permitir correção e reenvio
+      isSubmitting.value = false;
       alertType.value = "error";
       const message =
         successfulUploads.length > 0
@@ -1737,6 +1790,7 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     console.error("Erro ao enviar imagens:", error);
+    isSubmitting.value = false;
     alertType.value = "error";
     alertMessage.value =
       error.response?.data?.message ||
@@ -1768,6 +1822,39 @@ $breakpoint-md: 768px;
   @media (min-width: 768px) {
     max-width: 50%;
   }
+}
+
+.upload-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.upload-overlay__box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: #fff;
+  padding: 2rem;
+}
+
+.upload-overlay__text {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.upload-overlay__hint {
+  color: #fff;
+  font-size: 0.875rem;
+  opacity: 0.75;
+  margin-top: 0.25rem;
 }
 
 .fade-enter-active,
