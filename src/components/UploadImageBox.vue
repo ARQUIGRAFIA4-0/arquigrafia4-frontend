@@ -217,10 +217,6 @@ $breakpoint-md: 768px;
     border: 1px solid #2f2f2f;
     cursor: pointer;
 
-    @include md {
-      width: 150px;
-    }
-
     &:hover {
       background-color: color.scale(#faf9f9, $lightness: -2%);
     }
@@ -245,10 +241,6 @@ $breakpoint-md: 768px;
     height: 100px;
     object-fit: cover;
     border-radius: 8px;
-
-    @include md {
-      width: 150px;
-    }
   }
 
   &__remove-btn {
