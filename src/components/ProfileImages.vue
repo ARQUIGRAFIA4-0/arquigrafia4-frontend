@@ -8,13 +8,33 @@ import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
 import { useAuthStore } from "@/store/auth";
+import { useImageUploadStore } from "@/store/imageUploads";
 import { useQueryClient } from "@tanstack/vue-query";
 import { api } from "@/services/api";
+import { convertFilesIfHeic, isHeicFile } from "@/helpers/convertHeic";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const uploadStore = useImageUploadStore();
 const authHeader = computed(() => authStore.authHeader);
 const queryClient = useQueryClient();
+
+const fileInputRef = ref(null);
+
+function openFileDialog() {
+  fileInputRef.value?.click();
+}
+
+async function handleFileSelect(event) {
+  const files = Array.from(event.target.files);
+  const filtered = files.filter((f) => f.type.startsWith("image/") || isHeicFile(f));
+  event.target.value = null;
+  if (!filtered.length) return;
+
+  const converted = await convertFilesIfHeic(filtered);
+  const result = await uploadStore.setImages(converted);
+  if (!result.success) displayAlert(result.message, "error");
+}
 
 const props = defineProps({
   isCurrentUser: { type: Boolean, default: false },
@@ -175,6 +195,10 @@ onBeforeUnmount(() => {
     <ProfileGridSkeleton v-if="!shouldFetch || !hasLoadedImages" />
 
     <UploadImageBox
+      v-else-if="isCurrentUser && uploadStore.pendingImages.length > 0"
+    />
+
+    <UploadImageBox
       v-else-if="hasLoadedImages && !loading && items.length === 0 && isCurrentUser"
     />
 
@@ -189,6 +213,40 @@ onBeforeUnmount(() => {
 
     <div v-else-if="hasLoadedImages && items.length > 0">
       <div class="row g-4">
+        <div v-if="isCurrentUser" class="col-6 col-md-3 profile-images__add-col">
+          <button
+            type="button"
+            class="profile-images__add-btn h-100"
+            title="Adicionar imagem"
+            aria-label="Adicionar imagem"
+            @click="openFileDialog"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="50"
+              height="50"
+              viewBox="0 0 50 50"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M50 25C50 31.6304 47.3661 37.9893 42.6777 42.6777C37.9893 47.3661 31.6304 50 25 50C18.3696 50 12.0107 47.3661 7.32233 42.6777C2.63392 37.9893 0 31.6304 0 25C0 18.3696 2.63392 12.0107 7.32233 7.32233C12.0107 2.63392 18.3696 0 25 0C31.6304 0 37.9893 2.63392 42.6777 7.32233C47.3661 12.0107 50 18.3696 50 25ZM26.5625 14.0625C26.5625 13.6481 26.3979 13.2507 26.1049 12.9576C25.8118 12.6646 25.4144 12.5 25 12.5C24.5856 12.5 24.1882 12.6646 23.8951 12.9576C23.6021 13.2507 23.4375 13.6481 23.4375 14.0625V23.4375H14.0625C13.6481 23.4375 13.2507 23.6021 12.9576 23.8951C12.6646 24.1882 12.5 24.5856 12.5 25C12.5 25.4144 12.6646 25.8118 12.9576 26.1049C13.2507 26.3979 13.6481 26.5625 14.0625 26.5625H23.4375V35.9375C23.4375 36.3519 23.6021 36.7493 23.8951 37.0424C24.1882 37.3354 24.5856 37.5 25 37.5C25.4144 37.5 25.8118 37.3354 26.1049 37.0424C26.3979 36.7493 26.5625 36.3519 26.5625 35.9375V26.5625H35.9375C36.3519 26.5625 36.7493 26.3979 37.0424 26.1049C37.3354 25.8118 37.5 25.4144 37.5 25C37.5 24.5856 37.3354 24.1882 37.0424 23.8951C36.7493 23.6021 36.3519 23.4375 35.9375 23.4375H26.5625V14.0625Z"
+                fill="#636262"
+              />
+            </svg>
+          </button>
+          <input
+            ref="fileInputRef"
+            type="file"
+            multiple
+            accept="image/*,.heic,.heif"
+            class="d-none"
+            @change="handleFileSelect"
+          />
+        </div>
+
         <div v-for="item in items" :key="item.id" class="col-6 col-md-3">
           <div
             v-if="isCurrentUser"
@@ -266,6 +324,35 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 @use "@/scss/profile-grid-card.scss";
+
+.profile-images__add-col {
+  display: flex;
+}
+
+.profile-images__add-btn {
+  width: 100%;
+  // Sem altura fixa: a coluna (flex) estica o botão até a altura exata dos
+  // cards vizinhos, então o botão nunca deforma a linha do grid.
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0.3px solid #636262;
+  border-radius: 5px;
+  background: #faf9f9;
+  box-shadow: 1px 1px 3px 0 rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  padding: 20px 16px;
+  box-sizing: border-box;
+
+  svg {
+    flex-shrink: 0;
+    display: block;
+  }
+
+  &:hover {
+    background: darken(#faf9f9, 2%);
+  }
+}
 
 .profile-images__alert {
   position: fixed;
