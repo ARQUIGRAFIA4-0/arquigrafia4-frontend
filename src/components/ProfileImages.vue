@@ -135,6 +135,16 @@ function handleScroll() {
 }
 
 onMounted(async () => {
+  const uploadSuccess = window.history.state?.uploadSuccess;
+  if (uploadSuccess) {
+    displayAlert(uploadSuccess, "success");
+    // Limpa o state para não reexibir o alerta em refresh/navegação
+    window.history.replaceState(
+      { ...window.history.state, uploadSuccess: undefined },
+      ""
+    );
+  }
+
   if (items.value.length === 0 && hasNextPage.value) await fetchNextPage();
   window.addEventListener("scroll", handleScroll, { passive: true });
   nextTick(() => document.addEventListener("click", handleClickOutside));

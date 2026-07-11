@@ -1733,21 +1733,21 @@ const handleSubmit = async () => {
 
     // Exibe os resultados
     if (successfulUploads.length > 0 && failedUploads.length === 0) {
-      alertType.value = "success";
-      alertMessage.value = `${successfulUploads.length} ${
+      const successMessage = `${successfulUploads.length} ${
         successfulUploads.length === 1 ? "imagem enviada" : "imagens enviadas"
       } com sucesso!`;
-      showAlert.value = true;
 
-      // Invalida o cache de imagens e redireciona após um breve atraso
-      setTimeout(async () => {
-        imageUploadStore.clearImages();
-        await queryClient.invalidateQueries({
-          queryKey: ["images"],
-          refetchType: "all",
-        });
-        router.push({ name: "my-profile-images" });
-      }, 2500);
+      // Invalida o cache e redireciona, levando a mensagem de sucesso para o
+      // perfil (o overlay cobriria o alerta se ele fosse exibido aqui).
+      imageUploadStore.clearImages();
+      await queryClient.invalidateQueries({
+        queryKey: ["images"],
+        refetchType: "all",
+      });
+      router.push({
+        name: "my-profile-images",
+        state: { uploadSuccess: successMessage },
+      });
     } else if (failedUploads.length > 0) {
       // Reabilita a UI para permitir correção e reenvio
       isSubmitting.value = false;
