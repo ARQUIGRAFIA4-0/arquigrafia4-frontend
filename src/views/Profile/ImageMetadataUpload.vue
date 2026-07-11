@@ -744,6 +744,7 @@ import { storeToRefs } from "pinia";
 import { useRouter, useRoute } from "vue-router";
 import { useQueryClient } from "@tanstack/vue-query";
 import { formatDate, parseYearFromDateString } from "@/helpers/dateUtils";
+import { isMetadataValid } from "@/helpers/imageMetadata";
 import Fuse from "fuse.js";
 defineOptions({ name: "ImageMetadataUpload" });
 
@@ -1506,30 +1507,6 @@ const handleUploadError = (message) => {
   alertType.value = "error";
   alertMessage.value = message;
   showAlert.value = true;
-};
-
-const isMetadataValid = (metadata) => {
-  if (!metadata.title?.trim()) {
-    return false;
-  }
-
-  if (metadata.isAuthor || metadata.isPublicDomain) {
-    return true;
-  }
-
-  if (!metadata.hasAuthorization && !metadata.unknownAuthor) {
-    return false;
-  }
-
-  if (
-    metadata.hasAuthorization &&
-    !metadata.unknownAuthor &&
-    !metadata.authorName?.trim()
-  ) {
-    return false;
-  }
-
-  return true;
 };
 
 const canSubmit = computed(() => {
