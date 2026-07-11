@@ -1691,7 +1691,10 @@ const handleSubmit = async () => {
       // Invalida o cache de imagens e redireciona após um breve atraso
       setTimeout(async () => {
         imageUploadStore.clearImages();
-        await queryClient.invalidateQueries({ queryKey: ["images"] });
+        await queryClient.invalidateQueries({
+          queryKey: ["images"],
+          refetchType: "all",
+        });
         router.push({ name: "my-profile-images" });
       }, 2500);
     } else if (failedUploads.length > 0) {
@@ -1723,7 +1726,10 @@ const handleSubmit = async () => {
 
           if (remainingImages.length === 0) {
             imageUploadStore.clearImages();
-            await queryClient.invalidateQueries({ queryKey: ["images"] });
+            await queryClient.invalidateQueries({
+              queryKey: ["images"],
+              refetchType: "all",
+            });
             router.push({ name: "my-profile-images" });
           }
         }, 2000);
