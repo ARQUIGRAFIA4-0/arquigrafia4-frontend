@@ -789,6 +789,16 @@ function postUploadTarget() {
   }
   return { name: "my-profile-images" };
 }
+
+// Invalida os caches das listagens de imagens. Cobre o grid do usuário/home
+// (["images"]) e o grid do coletivo (["collective-images"]), já que o upload
+// pode ter sido publicado em qualquer um dos contextos.
+async function invalidateImageCaches() {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["images"], refetchType: "all" }),
+    queryClient.invalidateQueries({ queryKey: ["collective-images"], refetchType: "all" }),
+  ]);
+}
 const imageUploadStore = useImageUploadStore();
 const { pendingImages, selectedIndex } = storeToRefs(imageUploadStore);
 const authStore = useAuthStore();
@@ -1773,10 +1783,7 @@ const handleSubmit = async () => {
       // Invalida o cache e redireciona, levando a mensagem de sucesso para o
       // perfil (o overlay cobriria o alerta se ele fosse exibido aqui).
       imageUploadStore.clearImages();
-      await queryClient.invalidateQueries({
-        queryKey: ["images"],
-        refetchType: "all",
-      });
+      await invalidateImageCaches();
       router.push({
         ...postUploadTarget(),
         state: { uploadSuccess: successMessage },
@@ -1812,10 +1819,7 @@ const handleSubmit = async () => {
 
           if (remainingImages.length === 0) {
             imageUploadStore.clearImages();
-            await queryClient.invalidateQueries({
-              queryKey: ["images"],
-              refetchType: "all",
-            });
+            await invalidateImageCaches();
             router.push(postUploadTarget());
           }
         }, 2000);
