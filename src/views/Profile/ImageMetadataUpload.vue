@@ -779,6 +779,16 @@ const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 const router = useRouter();
 const route = useRoute();
 const queryClient = useQueryClient();
+
+// Destino pós-upload: se a publicação foi para um coletivo, volta para a página
+// inicial daquele coletivo; caso contrário, para o grid de imagens do usuário.
+function postUploadTarget() {
+  const { publishAs, publishAsId } = route.query;
+  if (publishAs === "collective" && publishAsId) {
+    return { name: "collective-detail", params: { id: String(publishAsId) } };
+  }
+  return { name: "my-profile-images" };
+}
 const imageUploadStore = useImageUploadStore();
 const { pendingImages, selectedIndex } = storeToRefs(imageUploadStore);
 const authStore = useAuthStore();
@@ -1768,7 +1778,7 @@ const handleSubmit = async () => {
         refetchType: "all",
       });
       router.push({
-        name: "my-profile-images",
+        ...postUploadTarget(),
         state: { uploadSuccess: successMessage },
       });
     } else if (failedUploads.length > 0) {
@@ -1806,7 +1816,7 @@ const handleSubmit = async () => {
               queryKey: ["images"],
               refetchType: "all",
             });
-            router.push({ name: "my-profile-images" });
+            router.push(postUploadTarget());
           }
         }, 2000);
       }
