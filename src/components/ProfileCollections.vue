@@ -13,7 +13,7 @@
 
   const showCreateModal = ref(false);
 
-  import { useRouter } from "vue-router";
+  import { RouterLink, useRouter } from "vue-router";
   const router = useRouter();
 
   // Props
@@ -221,6 +221,7 @@
         class="col-6 col-md-3"
       >
         <div
+          v-if="props.isCurrentUser"
           class="profile-grid-card__link"
           @click="toggleCardExpanded(album.id)"
         >
@@ -242,33 +243,67 @@
               <h3 class="ui-card__title">
                 {{ album.title || "Sem título" }}
               </h3>
-              <p class="ui-card__subtitle">{{ "\u00A0" }}</p>
-              <div
-                v-if="expandedAlbumId === album.id"
-                class="profile-grid-card__actions"
-              >
-                <button
-                  type="button"
-                  class="btn btn-outline-primary btn-sm profile-grid-card__action-btn profile-grid-card__action-btn--delete"
-                  title="Excluir coleção"
-                  @click.stop="handleDeleteAlbum(album.id)"
+              <div class="profile-grid-card__meta">
+                <div
+                  v-if="expandedAlbumId !== album.id"
+                  class="profile-grid-card__collapsed"
+                  @click.stop="toggleCardExpanded(album.id)"
                 >
-                  <i class="bi bi-trash"></i>
-                  <span class="d-none d-md-inline">Excluir</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-primary btn-sm profile-grid-card__action-btn"
-                  title="Abrir coleção"
-                  @click.stop="fetchAlbumData(album.id)"
-                >
-                  <i class="bi bi-arrow-right"></i>
-                  <span class="d-none d-md-inline">Abrir</span>
-                </button>
+                  <span
+                    v-if="album.is_private"
+                    class="profile-grid-card__lock"
+                    title="Coleção privada"
+                    aria-label="Coleção privada"
+                  >
+                    <i class="bi bi-lock-fill" aria-hidden="true"></i>
+                  </span>
+                </div>
+                <div v-else class="profile-grid-card__actions">
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary btn-sm btn-icon profile-grid-card__action-btn profile-grid-card__action-btn--delete"
+                    title="Excluir coleção"
+                    @click.stop="handleDeleteAlbum(album.id)"
+                  >
+                    <i class="bi bi-trash"></i>
+                    <span class="d-none d-md-inline">Excluir</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-sm btn-icon profile-grid-card__action-btn"
+                    title="Abrir coleção"
+                    @click.stop="fetchAlbumData(album.id)"
+                  >
+                    <i class="bi bi-arrow-right"></i>
+                    <span class="d-none d-md-inline">Abrir</span>
+                  </button>
+                </div>
               </div>
             </div>
           </UiCard>
         </div>
+
+        <RouterLink
+          v-else
+          class="profile-grid-card__link"
+          :to="{ name: 'collection-detail', params: { collectionId: album.id, viewMode: 'grid' } }"
+        >
+          <UiCard class="h-100 profile-grid-card">
+            <template #image>
+              <div class="profile-grid-card__image-wrapper">
+                <img
+                  :src="resolveAlbumCover(album)"
+                  class="profile-grid-card__image"
+                  :alt="album.title || 'Capa da coleção'"
+                  @error="handleCoverError"
+                />
+              </div>
+            </template>
+            <div class="ui-card__header">
+              <h3 class="ui-card__title">{{ album.title || "Sem título" }}</h3>
+            </div>
+          </UiCard>
+        </RouterLink>
       </div>
     </div>
 
@@ -285,6 +320,31 @@
 
 <style lang="scss" scoped>
 @use "@/scss/profile-grid-card.scss";
+
+// Estado colapsado do slot reservado (__meta): ocupa a mesma altura que os
+// botões ocupam quando o card é selecionado, mantendo o grid estável.
+.profile-grid-card__collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 36px;
+}
+
+// Cadeado de coleção privada: apenas o ícone, na cor do título da coleção.
+.profile-grid-card__lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin-right: 5px;
+  color: var(--Preto, #1f1f1f);
+  flex-shrink: 0;
+
+  i {
+    font-size: 14px;
+    line-height: 1;
+  }
+}
 
 .profile-collections {
   width: 100%;

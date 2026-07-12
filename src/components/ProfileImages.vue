@@ -269,24 +269,30 @@ onBeforeUnmount(() => {
               </template>
               <div class="ui-card__header">
                 <h3 class="ui-card__title">{{ item.title }}</h3>
-                <p class="ui-card__subtitle">{{ formatDate(item.dates) || "\u00A0" }}</p>
-                <div v-if="expandedCardId === item.id" class="profile-grid-card__actions">
-                  <button
-                    type="button"
-                    class="btn btn-outline-primary btn-sm profile-grid-card__action-btn profile-grid-card__action-btn--delete"
-                    @click.stop="handleDelete(item.id)"
-                  >
-                    <i class="bi bi-trash"></i>
-                    <span class="d-none d-md-inline">Apagar</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-primary btn-sm profile-grid-card__action-btn"
-                    @click.stop="router.push(`/explore/dados/image/${item.id}`)"
-                  >
-                    <i class="bi bi-arrow-right"></i>
-                    <span class="d-none d-md-inline">Ver</span>
-                  </button>
+                <div class="profile-grid-card__meta">
+                  <p
+                    v-if="expandedCardId !== item.id"
+                    class="ui-card__subtitle"
+                    @click.stop="toggleCardExpanded(item.id)"
+                  >{{ formatDate(item.dates) || "\u00A0" }}</p>
+                  <div v-else class="profile-grid-card__actions">
+                    <button
+                      type="button"
+                      class="btn btn-outline-primary btn-sm btn-icon profile-grid-card__action-btn profile-grid-card__action-btn--delete"
+                      @click.stop="handleDelete(item.id)"
+                    >
+                      <i class="bi bi-trash"></i>
+                      <span class="d-none d-md-inline">Apagar</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-primary btn-sm btn-icon profile-grid-card__action-btn"
+                      @click.stop="router.push(`/explore/dados/image/${item.id}`)"
+                    >
+                      <i class="bi bi-arrow-right"></i>
+                      <span class="d-none d-md-inline">Ver</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </UiCard>
