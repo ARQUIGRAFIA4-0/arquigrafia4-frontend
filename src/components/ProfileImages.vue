@@ -333,20 +333,6 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 @use "@/scss/profile-grid-card.scss";
 
-// Data da imagem: exibida abaixo do título, alinhada à esquerda e ao topo do
-// slot reservado (__meta). Classe dedicada para não afetar o .ui-card__subtitle
-// compartilhado com os cards de coletivo e da home.
-.profile-grid-card__date {
-  margin: 0;
-  text-align: left;
-  font-family: "DM Sans", sans-serif;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 115%;
-  color: var(--Preto, #1f1f1f);
-}
-
 .profile-images__add-col {
   display: flex;
 }
