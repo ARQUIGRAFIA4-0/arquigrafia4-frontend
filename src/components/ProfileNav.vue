@@ -12,6 +12,7 @@ const props = defineProps({
 const navItems = computed(() => {
   const publicNavItems = [
     { label: 'Imagens', value: 'Imagens' },
+    { label: 'Coleções', value: 'Coleções' },
     // { label: 'Álbuns', value: 'Álbuns' },
     // { label: 'Percursos', value: 'Percursos' },
     // { label: 'Obras', value: 'Obras' },

@@ -30,6 +30,12 @@
   const isLoadingAlbums = ref(false);
   const albumsError = ref(null);
 
+  // Para visitantes (perfil público) só exibimos coleções públicas.
+  // O próprio dono continua vendo todas as suas coleções.
+  const visibleAlbums = computed(() =>
+    props.isCurrentUser ? albums.value : albums.value.filter((album) => !album.is_private)
+  );
+
   const showTutorialModal = ref(false);
   const expandedAlbumId = ref(null);
 
@@ -60,6 +66,15 @@
 
   // Acesso aos dados do álbum selecionado
   async function fetchAlbumData(albumId) {
+    // Visitante (perfil público): abre a visualização pública da coleção.
+    if (!props.isCurrentUser) {
+      router.push({
+        name: "collection-detail",
+        params: { collectionId: albumId, viewMode: "grid" },
+      });
+      return;
+    }
+
     try {
       const albumData = await albumsStore.getDataAlbumByAlbumId(
         userAuthHeader.value,
@@ -170,8 +185,15 @@
 
     <ProfileGridSkeleton v-else-if="!hasLoadedAlbums" />
 
+    <div
+      v-else-if="!props.isCurrentUser && hasLoadedAlbums && !isLoadingAlbums && visibleAlbums.length === 0"
+      class="profile-collections__state"
+    >
+      Este usuário ainda não tem coleções públicas.
+    </div>
+
     <UploadColectionBox
-      v-else-if="hasLoadedAlbums && !isLoadingAlbums && albums.length === 0"
+      v-else-if="hasLoadedAlbums && !isLoadingAlbums && visibleAlbums.length === 0"
       :is-current-user="props.isCurrentUser"
       :user-data="props.userData"
       variant="empty"
@@ -194,7 +216,7 @@
       </div>
 
       <div
-        v-for="album in albums"
+        v-for="album in visibleAlbums"
         :key="album.id"
         class="col-6 col-md-3"
       >
