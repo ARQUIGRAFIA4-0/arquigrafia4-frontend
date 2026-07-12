@@ -272,7 +272,7 @@ onBeforeUnmount(() => {
                 <div class="profile-grid-card__meta">
                   <p
                     v-if="expandedCardId !== item.id"
-                    class="ui-card__subtitle"
+                    class="profile-grid-card__date"
                     @click.stop="toggleCardExpanded(item.id)"
                   >{{ formatDate(item.dates) || "\u00A0" }}</p>
                   <div v-else class="profile-grid-card__actions">
@@ -312,7 +312,9 @@ onBeforeUnmount(() => {
               </template>
               <div class="ui-card__header">
                 <h3 class="ui-card__title">{{ item.title }}</h3>
-                <p v-if="formatDate(item.dates)" class="ui-card__subtitle">{{ formatDate(item.dates) }}</p>
+                <div class="profile-grid-card__meta">
+                  <p v-if="formatDate(item.dates)" class="profile-grid-card__date">{{ formatDate(item.dates) }}</p>
+                </div>
               </div>
             </UiCard>
           </RouterLink>
@@ -330,6 +332,20 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 @use "@/scss/profile-grid-card.scss";
+
+// Data da imagem: exibida abaixo do título, alinhada à esquerda e ao topo do
+// slot reservado (__meta). Classe dedicada para não afetar o .ui-card__subtitle
+// compartilhado com os cards de coletivo e da home.
+.profile-grid-card__date {
+  margin: 0;
+  text-align: left;
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 115%;
+  color: var(--Preto, #1f1f1f);
+}
 
 .profile-images__add-col {
   display: flex;
