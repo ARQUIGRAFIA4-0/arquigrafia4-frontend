@@ -589,7 +589,11 @@ watch(
 
               <div
                 class="collection-detail__map-panel-body"
-                :class="{ 'collection-detail__map-panel-body--map': collectionViewMode === 'map' }"
+                :class="{
+                  'collection-detail__map-panel-body--map': collectionViewMode === 'map',
+                  'collection-detail__map-panel-body--selected':
+                    collectionViewMode === 'map' && selectedMapImage,
+                }"
               >
               <section
                 v-if="collectionViewMode === 'map' && selectedMapImage"
@@ -607,7 +611,10 @@ watch(
                   class="collection-detail__selected-image-button"
                   @click="goToImageDetail(selectedMapImage.id)"
                 >
-                  <span class="collection-detail__selected-image-title">
+                  <span
+                    class="collection-detail__selected-image-title"
+                    :title="selectedMapImage.title || 'Sem título'"
+                  >
                     {{ selectedMapImage.title || "Sem título" }}
                   </span>
                   <span
@@ -752,7 +759,11 @@ watch(
 
               <div
                 class="collection-detail__map-panel-body"
-                :class="{ 'collection-detail__map-panel-body--map': collectionViewMode === 'map' }"
+                :class="{
+                  'collection-detail__map-panel-body--map': collectionViewMode === 'map',
+                  'collection-detail__map-panel-body--selected':
+                    collectionViewMode === 'map' && selectedMapImage,
+                }"
               >
               <section
                 v-if="collectionViewMode === 'map' && selectedMapImage"
@@ -770,7 +781,10 @@ watch(
                   class="collection-detail__selected-image-button"
                   @click="goToImageDetail(selectedMapImage.id)"
                 >
-                  <span class="collection-detail__selected-image-title">
+                  <span
+                    class="collection-detail__selected-image-title"
+                    :title="selectedMapImage.title || 'Sem título'"
+                  >
                     {{ selectedMapImage.title || "Sem título" }}
                   </span>
                   <span
@@ -1078,15 +1092,19 @@ watch(
   flex-shrink: 0;
 }
 
+.collection-detail__map-panel-body--selected {
+  min-height: 0;
+}
+
 .collection-detail__selected-image {
   display: flex;
   width: 338px;
   max-width: 100%;
-  height: 450px;
-  padding: 0 12px;
+  padding: 16px 12px 0;
   flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 16px;
   box-sizing: border-box;
 }
 
@@ -1106,12 +1124,11 @@ watch(
 
 .collection-detail__selected-image-button {
   display: flex;
-  height: 60px;
-  padding-top: 24px;
-  padding-left: 0;
-  padding-right: 0;
+  min-height: 60px;
+  padding: 0;
+  gap: 8px;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   flex-shrink: 0;
   align-self: stretch;
   width: 100%;
@@ -1119,17 +1136,25 @@ watch(
   background: none;
   border: none;
   cursor: pointer;
+  text-align: left;
 }
 
 .collection-detail__selected-image-title {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   color: var(--Cinza_E, #2f2f2f);
   font-family: "DM Sans";
-  font-size: 20px;
+  font-size: 16px;
   font-style: normal;
   font-weight: 500;
-  line-height: 150%;
+  line-height: 140%;
   text-align: left;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
 }
 
 .collection-detail__selected-image-arrow {
