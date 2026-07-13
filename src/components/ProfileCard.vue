@@ -230,7 +230,7 @@ function checkSocials(socials) {
           </div>
         </div>
         <div v-if="props.isOwnProfile" class="profile-card__toggle-profile-visibility">
-          <a :href="`/profile/${userData?.id}`" target="_blank" class="btn btn-secondary btn-sm btn-icon">
+          <a :href="`/perfil/${userData?.id}`" target="_blank" class="btn btn-secondary btn-sm btn-icon">
             <i class="bi bi-eye" /> Ver perfil público
           </a>
         </div>

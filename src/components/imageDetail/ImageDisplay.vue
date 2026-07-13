@@ -53,6 +53,34 @@ const showDownloadModal = ref(false);
 const showReportModal = ref(false);
 const showShareModal = ref(false);
 
+/**
+ * Start: Lightbox (visualização em tamanho grande)
+ * Placeholder até a futura implementação de viewer IIIF.
+ */
+const showLightbox = ref(false);
+
+function onLightboxKeydown(event) {
+  if (event.key === "Escape") {
+    closeLightbox();
+  }
+}
+
+function openLightbox() {
+  if (!props.image) return;
+  showLightbox.value = true;
+  document.addEventListener("keydown", onLightboxKeydown);
+  document.body.style.overflow = "hidden";
+}
+
+function closeLightbox() {
+  showLightbox.value = false;
+  document.removeEventListener("keydown", onLightboxKeydown);
+  document.body.style.overflow = "";
+}
+/**
+ * End: Lightbox
+ */
+
 const handleDownloadConfirm = async (image) => {
   await downloadImageFile(image);
   emit("download", image);
@@ -187,6 +215,8 @@ onUnmounted(() => {
   if (addToAlbumToastTimeout) {
     clearTimeout(addToAlbumToastTimeout);
   }
+  document.removeEventListener("keydown", onLightboxKeydown);
+  document.body.style.overflow = "";
 });
 
 // Confirmar adicionar imagem ao álbum
@@ -349,7 +379,12 @@ async function onCollectionCreated() {
       >
         <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
       </button>
-      <button type="button" class="menu-button" aria-label="Modo tela cheia">
+      <button
+        type="button"
+        class="menu-button"
+        aria-label="Ver imagem em tamanho grande"
+        @click="openLightbox"
+      >
         <i class="bi bi-arrows-fullscreen"></i>
       </button>
     </div>
@@ -392,6 +427,31 @@ async function onCollectionCreated() {
         :collective-id="selectedScope?.type === 'collective' ? selectedScope.id : null"
         @created="onCollectionCreated"
       />
+
+      <transition name="lightbox-fade">
+        <div
+          v-if="showLightbox && props.image"
+          class="image-lightbox"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="props.image.title || 'Imagem em tamanho grande'"
+          @click.self="closeLightbox"
+        >
+          <button
+            type="button"
+            class="image-lightbox__close"
+            aria-label="Fechar"
+            @click="closeLightbox"
+          >
+            <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
+          </button>
+          <img
+            :src="props.image.imageUrl"
+            :alt="props.image.title"
+            class="image-lightbox__img"
+          />
+        </div>
+      </transition>
 
       <transition name="copy-toast-fade">
         <div
@@ -555,6 +615,61 @@ $breakpoint-md: 768px;
   text-align: left;
   min-width: 0;
   max-width: 100%;
+}
+
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: rgba(0, 0, 0, 0.85);
+  cursor: zoom-out;
+}
+
+.image-lightbox__img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+  cursor: default;
+}
+
+.image-lightbox__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--Branco, #fff);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.image-lightbox__close .bi {
+  font-size: 2rem;
+}
+
+.image-lightbox__close:focus-visible {
+  outline: 2px solid var(--Branco, #fff);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+.lightbox-fade-enter-active,
+.lightbox-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.lightbox-fade-enter-from,
+.lightbox-fade-leave-to {
+  opacity: 0;
 }
 
 .copy-toast-fade-enter-active,

@@ -484,7 +484,7 @@ watch(
                 id="ccd-tags-help"
                 class="ccd__help-field"
                 label="Ajuda"
-                explain="Estas etiquetas são geradas automaticamente a partir do texto da descrição da coleção."
+                explain="Estas etiquetas são coletadas de cada imagem presente na coleção."
               />
             </div>
             <div v-if="isLoadingCollectionTags" class="ccd__tags-list ccd__tags-list--skeleton">

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useImageUploadStore } from "@/store/imageUploads";
 import { convertFilesIfHeic, isHeicFile } from "@/helpers/convertHeic";
@@ -28,6 +28,20 @@ const imagePreviews = computed(() =>
     url: URL.createObjectURL(image.file),
   }))
 );
+
+onMounted(() => {
+  // Aviso vindo do guard da rota de metadados quando o fluxo foi reiniciado
+  // (ex.: refresh na etapa de metadados perde o estado em memória).
+  const uploadReset = window.history.state?.uploadReset;
+  if (uploadReset) {
+    alertMessage.value = uploadReset;
+    showAlert.value = true;
+    window.history.replaceState(
+      { ...window.history.state, uploadReset: undefined },
+      ""
+    );
+  }
+});
 
 onUnmounted(() => {
   imagePreviews.value.forEach((preview) => URL.revokeObjectURL(preview.url));
@@ -217,10 +231,6 @@ $breakpoint-md: 768px;
     border: 1px solid #2f2f2f;
     cursor: pointer;
 
-    @include md {
-      width: 150px;
-    }
-
     &:hover {
       background-color: color.scale(#faf9f9, $lightness: -2%);
     }
@@ -245,10 +255,6 @@ $breakpoint-md: 768px;
     height: 100px;
     object-fit: cover;
     border-radius: 8px;
-
-    @include md {
-      width: 150px;
-    }
   }
 
   &__remove-btn {

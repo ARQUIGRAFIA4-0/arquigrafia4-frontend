@@ -687,7 +687,7 @@ watch(
                   id="collection-tags-help"
                   class="collection-detail__help-field"
                   label="Ajuda"
-                  explain="Estas etiquetas são geradas automaticamente a partir do texto da descrição da coleção."
+                  explain="Estas etiquetas são coletadas de cada imagem presente na coleção."
                 />
               </div>
               <div v-if="isLoadingCollectionTags" class="metadata-tags metadata-tags--skeleton">
@@ -850,7 +850,7 @@ watch(
                     id="collection-tags-help-desktop"
                     class="collection-detail__help-field"
                     label="Ajuda"
-                    explain="Estas etiquetas são geradas automaticamente a partir do texto da descrição da coleção."
+                    explain="Estas etiquetas são coletadas de cada imagem presente na coleção."
                   />
                 </div>
                 <div v-if="isLoadingCollectionTags" class="metadata-tags metadata-tags--skeleton">

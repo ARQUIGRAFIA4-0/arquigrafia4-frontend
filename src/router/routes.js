@@ -2,6 +2,7 @@ import {
   DEFAULT_VIEW_ROUTE,
   resolveViewOptionByRoute,
 } from "@/constants/viewModes";
+import { useImageUploadStore } from "@/store/imageUploads";
 
 const redirectToDefaultView = (to) => ({
   name: "explore",
@@ -216,7 +217,22 @@ export default [
     path: "/eu/imagens/metadados",
     name: "image-metadata",
     component: () => import("../views/Profile/ImageMetadataUpload.vue"),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
+    // Sem imagens pendentes (ex.: refresh nesta rota), o estado em memória é
+    // perdido e a tela fica inutilizável. Reinicia o fluxo em /colabore.
+    beforeEnter: () => {
+      const uploadStore = useImageUploadStore();
+      if (uploadStore.pendingImages.length === 0) {
+        return {
+          name: "colabore",
+          state: {
+            uploadReset:
+              "O processo de upload foi reiniciado, selecione as imagens novamente.",
+          },
+        };
+      }
+      return true;
+    },
   },
   {
     path: "/eu/editar",
@@ -267,10 +283,10 @@ export default [
   },
   {
     path: "/profile",
-    redirect: "/",
+    redirect: "/perfil",
   },
   {
-    path: "/profile/:id",
+    path: "/perfil/:id",
     name: "view-profile",
     component: () => import("../views/Profile/ViewPublicProfile.vue")
   },
