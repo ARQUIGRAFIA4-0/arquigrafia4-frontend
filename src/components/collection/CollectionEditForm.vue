@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from "vue";
 import UiField from "@/components/ui/UiField.vue";
 
 defineOptions({ name: "CollectionEditForm" });
@@ -12,6 +13,9 @@ const props = defineProps({
 const emit = defineEmits(["update:title", "update:description"]);
 
 const DESCRIPTION_MAX_LENGTH = 500;
+
+const descriptionLength = computed(() => props.description.length);
+const isDescriptionOverLimit = computed(() => descriptionLength.value > DESCRIPTION_MAX_LENGTH);
 
 // Função para atualizar o título da coleção.
 function onTitleInput(event) {
@@ -60,15 +64,18 @@ function onDescriptionInput(event) {
             class="collection-edit-form__textarea"
             rows="6"
             :value="description"
+:disabled="disabled"
             :maxlength="DESCRIPTION_MAX_LENGTH"
-            :disabled="disabled"
             placeholder="Esse conjunto de imagens mostra como o distrito do Brás passou por diversas transformações ao longo do tempo..."
             @input="onDescriptionInput"
           />
         </UiField>
 
-        <p class="collection-edit-form__hint collection-edit-form__hint--right">
-          Máximo {{ DESCRIPTION_MAX_LENGTH }} caracteres
+        <p
+          class="collection-edit-form__hint collection-edit-form__hint--right"
+          :class="{ 'collection-edit-form__hint--over-limit': isDescriptionOverLimit }"
+        >
+          {{ descriptionLength }} / {{ DESCRIPTION_MAX_LENGTH }} caracteres
         </p>
       </div>
     </div>
@@ -196,6 +203,11 @@ function onDescriptionInput(event) {
 .collection-edit-form__hint--right {
   align-self: stretch;
   text-align: right;
+}
+
+.collection-edit-form__hint--over-limit {
+  color: #bc1518;
+  font-weight: 500;
 }
 
 .collection-edit-form__hint--required {

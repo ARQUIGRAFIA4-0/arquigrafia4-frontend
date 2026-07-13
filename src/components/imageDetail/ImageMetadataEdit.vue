@@ -358,6 +358,7 @@ import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
 import { useAuthStore } from "@/store/auth";
 import { useRouter } from "vue-router";
+import { useQueryClient } from "@tanstack/vue-query";
 import { useImageForm } from "@/composables/useImageForm";
 
 defineOptions({ name: "ImageMetadataEdit" });
@@ -373,6 +374,7 @@ const emit = defineEmits(["updated"]);
 
 const router = useRouter();
 const authStore = useAuthStore();
+const queryClient = useQueryClient();
 const isSaved = ref(false);
 
 const buildPayload = async () => {
@@ -499,6 +501,11 @@ const handleSubmit = async () => {
       },
     });
 
+
+    // Invalida o cache da listagem de imagens para que o grid (perfil/home)
+    // reflita a edição sem depender de refresh. refetchType "all" força o
+    // refetch mesmo com a query inativa (usuário está na tela de detalhes).
+    await queryClient.invalidateQueries({ queryKey: ["images"], refetchType: "all" });
 
     showSuccess("Imagem atualizada com sucesso!");
     isSaved.value = true;

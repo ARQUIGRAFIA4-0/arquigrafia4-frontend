@@ -1,5 +1,5 @@
 <template>
-  <a class="user-card" :href="`/profile/${user.id}`">
+  <a class="user-card" :href="`/perfil/${user.id}`">
     <div class="user-card__media">
       <img class="user-card__image" :src="userImage" :alt="`foto de ${user.name}`" />
     </div>
