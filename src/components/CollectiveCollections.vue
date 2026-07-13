@@ -10,6 +10,7 @@
   import albumDefaultImage from "@/assets/album-default.png";
   import { resolveAlbumCover } from "@/helpers/collectionCover";
   import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
+  import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
 
   // Props
   const props = defineProps({
@@ -40,6 +41,7 @@
     props.isMember ? albums.value : albums.value.filter((album) => !album.is_private)
   );
   const showCreateModal = ref(false);
+  const showTutorialModal = ref(false);
   const expandedAlbumId = ref(null);
 
   const { hasLoaded: hasLoadedAlbums, finishInitialLoad, reset: resetInitialSkeleton } =
@@ -51,15 +53,31 @@
     expandedAlbumId.value = expandedAlbumId.value === albumId ? null : albumId;
   }
 
-  // Abre o detalhe da coleção (rota canônica pública).
-  function openCollection(albumId) {
-    router.push({
-      name: "collection-detail",
-      params: {
-        collectionId: albumId,
-        viewMode: "grid",
-      },
-    });
+  // Abre o detalhe da coleção (rota canônica pública). Se a coleção estiver
+  // vazia, exibe o modal de instrução em vez de navegar (mesmo comportamento
+  // das coleções de usuário).
+  async function openCollection(albumId) {
+    try {
+      const albumData = await albumsStore.getDataAlbumByAlbumId(
+        userAuthHeader.value,
+        albumId
+      );
+
+      if (albumData.images.length === 0) {
+        showTutorialModal.value = true;
+        return;
+      }
+
+      router.push({
+        name: "collection-detail",
+        params: {
+          collectionId: albumId,
+          viewMode: "grid",
+        },
+      });
+    } catch (error) {
+      albumsError.value = error?.message || "Não foi possível carregar os dados da coleção.";
+    }
   }
 
   // Trata erro de carregamento da capa da coleção
@@ -285,6 +303,8 @@
       :collective-id="props.collectiveId"
       @created="fetchAlbums({ silent: true })"
     />
+
+    <TutorialModalCollections v-model="showTutorialModal" />
   </section>
 </template>
 
