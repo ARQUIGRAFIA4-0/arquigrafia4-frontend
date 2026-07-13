@@ -183,9 +183,9 @@ export default [
   {
     path: "/colecoes/:collectionId/:viewMode",
     name: "collection-detail",
-    component: () => import("../views/CollectionDetailPublic.vue"),
+    component: () => import("../views/CollectionDetail.vue"),
     beforeEnter: (to) => {
-      const allowed = ["grid", "mosaic"];
+      const allowed = ["grid", "mosaic", "map"];
       if (!allowed.includes(to.params.viewMode)) {
         return {
           name: "collection-detail",
@@ -255,7 +255,7 @@ export default [
   {
     path: "/eu/colecoes/:collectionId/:viewMode",
     name: "my-collection-detail",
-    component: () => import("../views/Profile/CollectionDetail.vue"),
+    component: () => import("../views/CollectionDetail.vue"),
     beforeEnter: (to) => {
       const allowed = ["grid", "mosaic", "map"];
       const option = resolveViewOptionByRoute(to.params.viewMode);
