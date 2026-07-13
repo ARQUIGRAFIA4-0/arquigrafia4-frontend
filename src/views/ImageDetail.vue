@@ -5,14 +5,23 @@
     <div class="image-detail__grid">
 
       <div class="image-detail__image-box">
-        <button type="button"
-          class="back-link"
-          @click="goBack">
+        <button type="button" class="back-link" @click="goBack">
           <i class="bi bi-arrow-left back__icon" aria-hidden="true"></i>
           <span class="back-link__label">voltar</span>
         </button>
-        <ImageDisplay :image="image" :license-info="licenseInfo" :loading="loading" @load="loading = false"
-          @download="handleDownload" @share="handleShare" @report-submit="handleReportSubmit" />
+
+        <div class="image-detail__image-wrapper" :class="{ 'is-loading': loading }">
+          <ImageDisplay :image="image" :license-info="licenseInfo" @load="loading = false"
+            @download="handleDownload" @share="handleShare" @report-submit="handleReportSubmit" />
+          <!-- <ImageDisplay :image="image" :license-info="licenseInfo" :loading="loading" @load="loading = false"
+            @download="handleDownload" @share="handleShare" @report-submit="handleReportSubmit" /> -->
+
+          <div v-if="loading" class="image-detail__loading-overlay">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Carregando...</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Metadata -->
@@ -78,7 +87,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onBeforeUnmount } from "vue";
+import { ref, onMounted, computed, onBeforeUnmount, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { api } from "@/services/api";
 import { useAuthStore } from "@/store/auth";
@@ -161,11 +170,23 @@ const licenseInfo = computed(() => {
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const fetchImageData = async () => {
   try {
+    loading.value = true;
     image.value = await api.getImageDetails(route.params.id);
   } catch (error) {
     console.error("Erro ao carregar imagem:", error);
+  } finally {
+    loading.value = false;
   }
 };
+
+watch(
+  () => route.params.id,
+  (newId, oldId) => {
+    if (newId && newId !== oldId) {
+      fetchImageData();
+    }
+  }
+);
 
 // ─── Handlers ─────────────────────────────────────────────────────────────────
 const goBack = () => router.back();
@@ -196,15 +217,7 @@ const handleReportSubmit = (payload) => {
 
 onMounted(async () => {
   desktopQuery.addEventListener("change", handleDesktopChange);
-
-  try {
-    const imageId = route.params.id;
-    image.value = await api.getImageDetails(imageId);
-  } catch (error) {
-    console.error("Error fetching data:", error);
-  } finally {
-    loading.value = false;
-  }
+  await fetchImageData();
 });
 onBeforeUnmount(() => {
   desktopQuery.removeEventListener("change", handleDesktopChange);
@@ -223,11 +236,13 @@ $breakpoint-lg: 1440px;
     @content;
   }
 }
+
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
     @content;
   }
 }
+
 @mixin lg {
   @media (min-width: #{$breakpoint-lg}) {
     @content;
@@ -244,9 +259,9 @@ $breakpoint-lg: 1440px;
 }
 
 .image-detail__grid {
- 
+
   display: grid;
-  gap: 1.875rem;  
+  gap: 1.875rem;
   align-items: start;
   grid-template-areas:
     "image"
@@ -259,6 +274,7 @@ $breakpoint-lg: 1440px;
       "image    metadata"
       "related  metadata";
   }
+
   @include lg {
     grid-template-columns: minmax(768px, 1fr) minmax(542px, 1fr);
   }
@@ -287,6 +303,7 @@ $breakpoint-lg: 1440px;
     & .bi {
       font-size: .875rem;
     }
+
     &__label {
       font-weight: 400;
       font-size: .875rem;
@@ -295,9 +312,30 @@ $breakpoint-lg: 1440px;
   }
 }
 
+.image-detail__image-wrapper {
+  position: relative;
+
+  :deep(img) {
+    transition: opacity 0.25s ease;
+  }
+
+  &.is-loading :deep(img) {
+    opacity: 0.4;
+  }
+}
+
+.image-detail__loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
 .image-detail__metadata-box {
   grid-area: metadata;
-  
+
   scrollbar-color: #eaeaea transparent;
   scrollbar-width: thin;
 
@@ -320,17 +358,18 @@ $breakpoint-lg: 1440px;
   // background: #d1d5db;
   // border-radius: 4px;
   background: rgba(0, 0, 0, 0.014);
-    border-radius: 999px;
-    transition: background .2s;
+  border-radius: 999px;
+  transition: background .2s;
 }
 
 .image-detail__metadata-box:hover::-webkit-scrollbar-thumb {
-    background: rgba(0,0,0,.30);
+  background: rgba(0, 0, 0, .30);
 }
 
 .image-detail__metadata-box::-webkit-scrollbar-track {
   background: transparent;
 }
+
 //-----------
 
 .image-detail__related-box {
@@ -380,7 +419,7 @@ $breakpoint-lg: 1440px;
   --bs-gutter-x: 1.5rem;
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 767.9808px) {
   .col-md-4 {
     margin-top: 2rem;
   }

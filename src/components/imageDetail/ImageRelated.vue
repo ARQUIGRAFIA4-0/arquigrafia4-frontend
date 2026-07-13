@@ -16,7 +16,12 @@
       <template #default="slotProps">
 
         <div v-if="slotProps && slotProps.item" class="related-card" :data-card-id="slotProps.item.id">
-          <img :src="LogoConection" alt="" class="related-card__logo" />
+
+          <img v-if="activeCardId !== slotProps.item.id" :src="LogoConection" alt="" class="related-card__logo" />
+          <span v-else @click.stop="toggleCard(slotProps.item.id)" class="related-card__close-button">
+            <i class="bi bi-x" aria-hidden="true"></i>
+          </span>
+
 
           <mosaic-card :id="slotProps.item.id" :title="slotProps.item.title" :image-url="slotProps.item.src"
             :aspect-ratio="slotProps.item.aspectRatio" />
@@ -30,6 +35,9 @@
               <span v-for="tag in RELATION_CATEGORIES" :key="tag" class="related-card__tag">{{ tag }}</span>
             </div> -->
             <FitTags :subjects="RELATION_CATEGORIES_TAGS ?? []" />
+            <router-link :to="`/explore/dados/image/${slotProps.item.id}`" class="related-card__open-image">
+              <i class="bi bi-arrow-right-circle-fill"></i>
+            </router-link>
           </div>
         </div>
       </template>
@@ -267,7 +275,7 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .related-images {
   margin-top: 40px;
   width: 100%;
@@ -305,22 +313,56 @@ onBeforeUnmount(() => {
 .related-card {
   position: relative;
   cursor: pointer;
-}
 
-.related-card__logo {
-  position: absolute;
-  top: 0px;
-  right: 0px;
-  width: 24px;
-  height: 24px;
-  margin: 12px 14px 0 0;
-  z-index: 4;
+  &:hover {
+    .related-card__logo {
+      opacity: 1;
+    }
+  }
+
+  &__close-button {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    width: 24px;
+    height: 24px;
+    margin: 20px 23px 0 0;
+    z-index: 4;
+    color: var(--Branco);
+  }
+
+  &__logo {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    width: 24px;
+    height: 24px;
+    margin: 20px 23px 0 0;
+    z-index: 4;
+    opacity: 0;
+  }
+
+  &__open-image {
+    width: 100%;
+    height: 24px;
+    display: flex;
+    justify-content: end;
+    align-items: center;
+    color: var(--Branco);
+    margin-bottom: 8px;
+    padding-right: 8px;
+  }
+
 }
 
 .related-card__click-catcher {
   position: absolute;
   inset: 0;
   z-index: 1;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
 }
 
 .related-card__overlay {
@@ -335,7 +377,7 @@ onBeforeUnmount(() => {
   color: #fff;
   border-radius: inherit;
 
-  .fit-tags{
+  .fit-tags {
     margin-top: .5rem;
     padding-top: 0;
   }
