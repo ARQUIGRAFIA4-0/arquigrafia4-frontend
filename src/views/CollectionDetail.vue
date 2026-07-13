@@ -971,7 +971,7 @@ watch(
                     <img
                       v-else
                       :src="ownerAvatarSrc"
-                      :alt="`Avatar de ${ownerUser?.name?.trim() || 'usuário'}`"
+                      :alt="`Avatar de ${ownerName}`"
                       class="collection-detail__actor-image"
                     />
                   </div>
@@ -984,7 +984,7 @@ watch(
                       class="collection-detail__actor-name"
                       :class="{ 'collection-detail__actor-name--visible': !isLoadingOwner }"
                     >
-                      {{ ownerUser?.name?.trim() || "Usuário desconhecido" }}
+                      {{ ownerName }}
                     </component>
                   </div>
                 </div>
