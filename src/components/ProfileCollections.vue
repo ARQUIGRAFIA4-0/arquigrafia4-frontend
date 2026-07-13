@@ -321,31 +321,6 @@
 <style lang="scss" scoped>
 @use "@/scss/profile-grid-card.scss";
 
-// Estado colapsado do slot reservado (__meta): ocupa a mesma altura que os
-// botões ocupam quando o card é selecionado, mantendo o grid estável.
-.profile-grid-card__collapsed {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  height: 36px;
-}
-
-// Cadeado de coleção privada: apenas o ícone, na cor do título da coleção.
-.profile-grid-card__lock {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  margin-right: 5px;
-  color: var(--Preto, #1f1f1f);
-  flex-shrink: 0;
-
-  i {
-    font-size: 14px;
-    line-height: 1;
-  }
-}
-
 .profile-collections {
   width: 100%;
 }

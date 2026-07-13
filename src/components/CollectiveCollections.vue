@@ -1,6 +1,6 @@
 <script setup>
   import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
-  import { useRouter } from "vue-router";
+  import { RouterLink, useRouter } from "vue-router";
   import { useAuthStore } from "@/store/auth";
   import { useAlbumsStore } from "@/store/albums";
   import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
@@ -32,6 +32,13 @@
   const albums = ref([]);
   const isLoadingAlbums = ref(false);
   const albumsError = ref("");
+
+  // Membros veem todas as coleções (públicas e privadas); visitantes/não-membros
+  // veem apenas as públicas. O backend já filtra, mas mantemos o filtro no
+  // cliente como camada de UX (evita exibir dado que não deveria aparecer).
+  const visibleAlbums = computed(() =>
+    props.isMember ? albums.value : albums.value.filter((album) => !album.is_private)
+  );
   const showCreateModal = ref(false);
   const expandedAlbumId = ref(null);
 
@@ -39,8 +46,8 @@
     useInitialSkeleton();
 
   function toggleCardExpanded(albumId) {
-    // Todos podem expandir o card: "Abrir" para qualquer visitante e,
-    // adicionalmente, "Excluir" para membros do coletivo.
+    // Apenas membros expandem o card (Excluir/Abrir). Visitantes usam um
+    // RouterLink que navega direto para a coleção.
     expandedAlbumId.value = expandedAlbumId.value === albumId ? null : albumId;
   }
 
@@ -151,7 +158,7 @@
 
     <!-- Coletivo sem coleções: membro vê a caixa de criar a primeira coleção -->
     <UploadColectionBox
-      v-else-if="hasLoadedAlbums && !isLoadingAlbums && albums.length === 0 && isMember"
+      v-else-if="hasLoadedAlbums && !isLoadingAlbums && visibleAlbums.length === 0 && isMember"
       instructions-title="Seu coletivo ainda não<br />tem coleções."
       variant="empty"
       @open-create="showCreateModal = true"
@@ -159,7 +166,7 @@
 
     <!-- Coletivo sem coleções: não-membro vê apenas um aviso -->
     <div
-      v-else-if="hasLoadedAlbums && !isLoadingAlbums && albums.length === 0"
+      v-else-if="hasLoadedAlbums && !isLoadingAlbums && visibleAlbums.length === 0"
       class="alert alert-dark bg-off-white alert-light border border-dark border-start-3 d-inline-flex align-items-center px-3 py-2"
       role="status"
     >
@@ -182,11 +189,12 @@
       </div>
 
       <div
-        v-for="album in albums"
+        v-for="album in visibleAlbums"
         :key="album.id"
         class="col-6 col-md-3"
       >
         <div
+          v-if="isMember"
           class="profile-grid-card__link"
           @click="toggleCardExpanded(album.id)"
         >
@@ -208,34 +216,67 @@
               <h3 class="ui-card__title">
                 {{ album.title || "Sem título" }}
               </h3>
-              <p class="ui-card__subtitle">{{ "\u00A0" }}</p>
-              <div
-                v-if="expandedAlbumId === album.id"
-                class="profile-grid-card__actions"
-              >
-                <button
-                  v-if="isMember"
-                  type="button"
-                  class="btn btn-outline-primary btn-sm profile-grid-card__action-btn profile-grid-card__action-btn--delete"
-                  title="Excluir coleção"
-                  @click.stop="handleDeleteAlbum(album.id)"
+              <div class="profile-grid-card__meta">
+                <div
+                  v-if="expandedAlbumId !== album.id"
+                  class="profile-grid-card__collapsed"
+                  @click.stop="toggleCardExpanded(album.id)"
                 >
-                  <i class="bi bi-trash"></i>
-                  <span class="d-none d-md-inline">Excluir</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-primary btn-sm profile-grid-card__action-btn"
-                  title="Abrir coleção"
-                  @click.stop="openCollection(album.id)"
-                >
-                  <i class="bi bi-arrow-right"></i>
-                  <span class="d-none d-md-inline">Abrir</span>
-                </button>
+                  <span
+                    v-if="album.is_private"
+                    class="profile-grid-card__lock"
+                    title="Coleção privada"
+                    aria-label="Coleção privada"
+                  >
+                    <i class="bi bi-lock-fill" aria-hidden="true"></i>
+                  </span>
+                </div>
+                <div v-else class="profile-grid-card__actions">
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary btn-sm btn-icon profile-grid-card__action-btn profile-grid-card__action-btn--delete"
+                    title="Excluir coleção"
+                    @click.stop="handleDeleteAlbum(album.id)"
+                  >
+                    <i class="bi bi-trash"></i>
+                    <span class="d-none d-md-inline">Excluir</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-sm btn-icon profile-grid-card__action-btn"
+                    title="Abrir coleção"
+                    @click.stop="openCollection(album.id)"
+                  >
+                    <i class="bi bi-arrow-right"></i>
+                    <span class="d-none d-md-inline">Abrir</span>
+                  </button>
+                </div>
               </div>
             </div>
           </UiCard>
         </div>
+
+        <RouterLink
+          v-else
+          class="profile-grid-card__link"
+          :to="{ name: 'collection-detail', params: { collectionId: album.id, viewMode: 'grid' } }"
+        >
+          <UiCard class="h-100 profile-grid-card">
+            <template #image>
+              <div class="profile-grid-card__image-wrapper">
+                <img
+                  :src="resolveAlbumCover(album)"
+                  class="profile-grid-card__image"
+                  :alt="album.title || 'Capa da coleção'"
+                  @error="handleCoverError"
+                />
+              </div>
+            </template>
+            <div class="ui-card__header">
+              <h3 class="ui-card__title">{{ album.title || "Sem título" }}</h3>
+            </div>
+          </UiCard>
+        </RouterLink>
       </div>
     </div>
 

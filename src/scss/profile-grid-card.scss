@@ -165,6 +165,32 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
   gap: 8px;
 }
 
+// Estado colapsado do slot reservado (__meta): ocupa a mesma altura que os
+// botões ocupam quando o card é selecionado, mantendo o grid estável. Usado
+// pelos cards de coleção (usuário e coletivo) para posicionar o cadeado.
+.profile-grid-card__collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 36px;
+}
+
+// Cadeado de coleção privada: apenas o ícone, na cor do título da coleção.
+.profile-grid-card__lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin-right: 5px;
+  color: var(--Preto, #1f1f1f);
+  flex-shrink: 0;
+
+  i {
+    font-size: 14px;
+    line-height: 1;
+  }
+}
+
 // Largura igual; a altura vem do `.btn-sm .btn-icon` (mesmo padrão dos botões
 // das sidebars de perfil/coletivo), garantindo consistência com o resto do site.
 .profile-grid-card__action-btn {
