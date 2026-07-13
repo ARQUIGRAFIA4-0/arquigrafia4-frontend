@@ -51,6 +51,9 @@ const collectionDescription = computed(() => {
   return albumData.value?.description?.trim() || "Sem descrição.";
 });
 
+// status de visibilidade da coleção (pública/privada)
+const isPrivate = computed(() => !!albumData.value?.is_private);
+
 // avatar do proprietário da coleção
 const ownerAvatarSrc = computed(() => {
   const avatarUrl = ownerUser.value?.avatar_url;
@@ -595,6 +598,19 @@ watch(
               </aside>
               <aside v-else class="collection-detail__info-summary">
                 <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
+                <span
+                  class="collection-detail__visibility"
+                  :class="isPrivate
+                    ? 'collection-detail__visibility--private'
+                    : 'collection-detail__visibility--public'"
+                >
+                  <i
+                    class="bi"
+                    :class="isPrivate ? 'bi-lock-fill' : 'bi-globe2'"
+                    aria-hidden="true"
+                  ></i>
+                  {{ isPrivate ? "Coleção privada" : "Coleção pública" }}
+                </span>
                 <p class="collection-detail__description">{{ collectionDescription }}</p>
               </aside>
 
@@ -758,6 +774,19 @@ watch(
               </aside>
               <aside v-else class="collection-detail__info-summary">
                 <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
+                <span
+                  class="collection-detail__visibility"
+                  :class="isPrivate
+                    ? 'collection-detail__visibility--private'
+                    : 'collection-detail__visibility--public'"
+                >
+                  <i
+                    class="bi"
+                    :class="isPrivate ? 'bi-lock-fill' : 'bi-globe2'"
+                    aria-hidden="true"
+                  ></i>
+                  {{ isPrivate ? "Coleção privada" : "Coleção pública" }}
+                </span>
                 <p class="collection-detail__description">{{ collectionDescription }}</p>
               </aside>
 
@@ -1278,8 +1307,38 @@ watch(
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
-  line-height: 125%; /* 17.5px */  
+  line-height: 125%; /* 17.5px */
   padding-block: 8px;
+}
+
+/* Selo de visibilidade (pública/privada), entre o título e a descrição */
+.collection-detail__visibility {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: "DM Sans";
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.collection-detail__visibility i {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.collection-detail__visibility--private {
+  color: var(--Laranja_E, #aa4f28);
+  background: var(--Laranja_C, #f6ddc6);
+}
+
+.collection-detail__visibility--public {
+  color: var(--Cinza_E, #2f2f2f);
+  background: rgba(47, 47, 47, 0.08);
 }
 
 .collection-detail__actor-name-skeleton {
