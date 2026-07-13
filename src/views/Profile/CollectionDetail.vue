@@ -186,15 +186,6 @@ function handleMapSelect(id) {
   selectedMapImageId.value = id;
 }
 
-function handleOutsideMapClick(event) {
-  if (collectionViewMode.value !== "map") return;
-  if (!selectedMapImageId.value) return;
-  if (event.target.closest(".locations-map, .collection-images-map")) return;
-  if (event.target.closest("button, a, [role='button']")) return;
-
-  collectionMapRef.value?.resetToInitial?.();
-}
-
 // Redireciona para a página de detalhes da imagem.
 function goToImageDetail(id) {
   if (!id) return;
@@ -370,12 +361,10 @@ onMounted(() => {
   fetchCollectionData();
   updateIsMobile();
   window.addEventListener("resize", updateIsMobile);
-  document.addEventListener("click", handleOutsideMapClick);
 });
 
 onUnmounted(() => {
   window.removeEventListener("resize", updateIsMobile);
-  document.removeEventListener("click", handleOutsideMapClick);
 });
 
 watch(

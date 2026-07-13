@@ -315,12 +315,6 @@ const resetToInitial = () => {
 
 };
 
-/* ------------------------------- Limpeza ---------------------------------- */
-// Limpa a seleção e restaura a view inicial.
-const clearSelection = () => {
-  resetToInitial();
-};
-
 // Clique em um cluster -> aproxima o zoom para expandi-lo.
 const handleClusterClick = async (event) => {
   const map = mapInstance.value;
@@ -450,23 +444,11 @@ const setupLayers = async (map) => {
 const handleMapReady = async (map) => {
   mapInstance.value = markRaw(map);
 
-  // Clique fora dos ícones -> limpa a seleção.
-  // Registrado antes dos awaits para garantir que sempre exista.
-  map.on("click", (event) => {
-    if (!map.getLayer(unclusteredLayerId)) return;
-    if (selectedId.value === null) return;
-
-    const hits = map.queryRenderedFeatures(event.point, {
-      layers: [unclusteredLayerId, clusterLayerId, clusterCountLayerId],
-    });
-
-    if (!hits.length) clearSelection();
-  });
-
   await setupLayers(map);
   saveInitialView();
   fitMapToFeatures();
   applyMapPitch(props.pitch);
+
 };
 
 const handleMapError = (error) => {
@@ -550,7 +532,13 @@ onUnmounted(() => {
         {{ emptyMessage }}
       </p>
 
-      <div v-if="selectedId && context === 'collection'" class="locations-map__hint">
+      <button
+        v-if="selectedId && context === 'collection'"
+        type="button"
+        class="locations-map__hint"
+        aria-label="Clique aqui para voltar ao estado original do mapa"
+        @click="resetToInitial"
+      >
         <span class="locations-map__hint-icon" aria-hidden="true">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -562,13 +550,13 @@ onUnmounted(() => {
             <path
               fill-rule="evenodd"
               clip-rule="evenodd"
-              d="M0.118945 12.8394C0.195128 12.9156 0.29844 12.9584 0.406163 12.9584C0.513886 12.9584 0.617199 12.9156 0.693382 12.8394L4.02138 9.51145V11.7604C4.02138 11.8682 4.06418 11.9715 4.14037 12.0477C4.21656 12.1239 4.31989 12.1667 4.42763 12.1667C4.53538 12.1667 4.63871 12.1239 4.71489 12.0477C4.79108 11.9715 4.83388 11.8682 4.83388 11.7604V8.53076C4.83388 8.42301 4.79108 8.31968 4.71489 8.2435C4.63871 8.16731 4.53538 8.12451 4.42763 8.12451H1.19794C1.0902 8.12451 0.986869 8.16731 0.910682 8.2435C0.834496 8.31968 0.791695 8.42301 0.791695 8.53076C0.791695 8.6385 0.834496 8.74183 0.910682 8.81802C0.986869 8.89421 1.0902 8.93701 1.19794 8.93701H3.44694L0.118945 12.265C0.0427844 12.3412 0 12.4445 0 12.5522C0 12.6599 0.0427844 12.7633 0.118945 12.8394V12.8394ZM12.8394 0.118945C12.7633 0.0427844 12.6599 0 12.5522 0C12.4445 0 12.3412 0.0427844 12.265 0.118945L8.93701 3.44694V1.19794C8.93701 1.0902 8.89421 0.986869 8.81802 0.910682C8.74183 0.834496 8.6385 0.791695 8.53076 0.791695C8.42301 0.791695 8.31968 0.834496 8.2435 0.910682C8.16731 0.986869 8.12451 1.0902 8.12451 1.19794V4.42763C8.12451 4.53538 8.16731 4.63871 8.2435 4.71489C8.31968 4.79108 8.42301 4.83388 8.53076 4.83388H11.7604C11.8682 4.83388 11.9715 4.79108 12.0477 4.71489C12.1239 4.63871 12.1667 4.53538 12.1667 4.42763C12.1667 4.31989 12.1239 4.21656 12.0477 4.14037C11.9715 4.06418 11.8682 4.02138 11.7604 4.02138H9.51145L12.8394 0.693382C12.9156 0.617199 12.9584 0.513886 12.9584 0.406163C12.9584 0.29844 12.9156 0.195128 12.8394 0.118945V0.118945Z"
+              d="M0.118945 12.8394C0.195128 12.9156 0.29844 12.9584 0.406163 12.9584C0.513886 12.9584 0.617199 12.9156 0.693382 12.8394L4.02138 9.51145V11.7604C4.02138 11.8682 4.06418 11.9715 4.14037 12.0477C4.21656 12.1239 4.31989 12.1667 4.42763 12.1667C4.53538 12.1667 4.63871 12.1239 4.71489 12.0477C4.79108 11.9715 4.83388 11.8682 4.83388 11.7604V8.53076C4.83388 8.42301 4.79108 8.31968 4.71489 8.2435C4.63871 8.16731 4.53538 8.12451 4.42763 8.12451H1.19794C1.0902 8.12451 0.986869 8.16731 0.910682 8.2435C0.834496 8.31968 0.791695 8.42301 0.791695 8.53076C0.791695 8.6385 0.834496 8.74183 0.910682 8.81802C0.986869 8.89421 1.0902 8.93701 1.19794 8.93701H3.44694L0.118945 12.265C0.0427844 12.3412 0 12.4445 0 12.5522C0 12.6599 0.0427844 12.7633 0.118945 12.8394V12.8394ZM12.8394 0.118945C12.7633 0.0427844 12.6599 0 12.5522 0C12.4445 0 12.3412 0.0427844 12.265 0.118945L8.93701 3.44694V1.19794C8.93701 1.0902 8.89421 0.986869 8.81802 0.910682C8.74183 0.834496 8.6385 0.791695 8.53076 0.791695C8.42301 0.791695 8.31968 0.834496 8.2435 0.910682C8.16731 0.986869 8.12451 1.0902 8.12451 1.19794V4.42763C8.12451 4.53538 8.16731 4.63871 8.2435 4.71489C8.31968 4.79108 8.42301 4.83388 8.53076 4.83388H11.7604C11.8682 4.83388 11.9715 4.79108 12.0477 4.71489C12.1239 4.63871 12.1667 4.53538 12.1667 4.42763C12.1667 4.31989 12.1239 4.21656 12.0477 4.14037C11.9715 4.06418 11.8682 4.02138 11.7604 4.02138H9.51145L12.8394 0.693382C12.9156 0.617199 12.9584 0.513886 12.9584 0.406163C12.9584 0.29844 12.9156 0.195128 12.8394 0.118945V12.8394Z"
               fill="white"
             />
           </svg>
         </span>
-        <span class="locations-map__hint-text">Clique fora para voltar</span>
-      </div>
+        <span class="locations-map__hint-text">Clique aqui para voltar ao estado original</span>
+      </button>
     </template>
   </div>
 </template>
@@ -624,9 +612,20 @@ onUnmounted(() => {
   padding: var(--pp, 8px) var(--p, 12px) var(--pp, 8px) var(--m, 16px);
   align-items: center;
   gap: 24px;
+  border: none;
   border-radius: 4px;
   background: var(--Cinza_E, #2f2f2f);
-  pointer-events: none;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.locations-map__hint:hover {
+  background: #3f3f3f;
+}
+
+.locations-map__hint:focus-visible {
+  outline: 2px solid var(--Laranja_C, #d27d30);
+  outline-offset: 2px;
 }
 
 .locations-map__hint-icon {
