@@ -54,6 +54,24 @@ const collectionDescription = computed(() => {
 // status de visibilidade da coleção (pública/privada)
 const isPrivate = computed(() => !!albumData.value?.is_private);
 
+// Destino do link do dono da coleção (perfil público). Usa o user_id do álbum,
+// sempre disponível quando a coleção carrega.
+const ownerProfileTo = computed(() => {
+  const ownerId = albumData.value?.user_id;
+  return ownerId ? { name: "view-profile", params: { id: ownerId } } : null;
+});
+
+// Navega para a busca filtrada por subject na home, em modo grid:
+// /explore/acervo/grid?subject[]=<id>
+function goToSubject(subjectId) {
+  if (!subjectId) return;
+  router.push({
+    name: "explore",
+    params: { viewMode: "grid" },
+    query: { "subject[]": subjectId },
+  });
+}
+
 // avatar do proprietário da coleção
 const ownerAvatarSrc = computed(() => {
   const avatarUrl = ownerUser.value?.avatar_url;
@@ -280,9 +298,10 @@ function handleToggleCollectionInfo() {
 const collectionTags = ref([]);
 const isLoadingCollectionTags = ref(true);
 
-// Normaliza as tags da coleção
+// Normaliza as tags da coleção, preservando o id do subject (necessário para
+// o filtro de busca ao clicar na tag).
 function normalizeCollectionTags(tags = []) {
-  return tags.map((tag) => tag.term).slice(0, 8);
+  return tags.map((tag) => ({ id: tag.id, term: tag.term }));
 }
 
 // Carrega as tags da coleção
@@ -680,13 +699,15 @@ watch(
                 </div>
                 <div class="collection-detail__actor-name-wrapper">
                   <div v-if="isLoadingOwner" class="collection-detail__actor-name-skeleton" />
-                  <p
+                  <component
+                    :is="ownerProfileTo ? 'RouterLink' : 'p'"
                     v-else
+                    :to="ownerProfileTo || undefined"
                     class="collection-detail__actor-name"
                     :class="{ 'collection-detail__actor-name--visible': !isLoadingOwner }"
                   >
                     {{ ownerUser?.name?.trim() || "Usuário desconhecido" }}
-                  </p>
+                  </component>
                 </div>
               </div>
             </section>
@@ -717,11 +738,12 @@ watch(
               <div v-else-if="collectionTags.length" class="metadata-tags">
                 <button
                   v-for="(tag, index) in collectionTags"
-                  :key="`${tag}-${index}`"
+                  :key="`${tag.id}-${index}`"
                   type="button"
                   class="btn btn-outline-primary btn-sm btn-tag"
+                  @click="goToSubject(tag.id)"
                 >
-                  {{ tag }}
+                  {{ tag.term }}
                 </button>
               </div>
             </section>
@@ -856,13 +878,15 @@ watch(
                   </div>
                   <div class="collection-detail__actor-name-wrapper">
                     <div v-if="isLoadingOwner" class="collection-detail__actor-name-skeleton" />
-                    <p
+                    <component
+                      :is="ownerProfileTo ? 'RouterLink' : 'p'"
                       v-else
+                      :to="ownerProfileTo || undefined"
                       class="collection-detail__actor-name"
                       :class="{ 'collection-detail__actor-name--visible': !isLoadingOwner }"
                     >
                       {{ ownerUser?.name?.trim() || "Usuário desconhecido" }}
-                    </p>
+                    </component>
                   </div>
                 </div>
               </section>
@@ -893,11 +917,12 @@ watch(
                 <div v-else-if="collectionTags.length" class="metadata-tags">
                   <button
                     v-for="(tag, index) in collectionTags"
-                    :key="`desktop-${tag}-${index}`"
+                    :key="`desktop-${tag.id}-${index}`"
                     type="button"
                     class="btn btn-outline-primary btn-sm btn-tag"
+                    @click="goToSubject(tag.id)"
                   >
-                    {{ tag }}
+                    {{ tag.term }}
                   </button>
                 </div>
               </section>
@@ -1023,6 +1048,18 @@ watch(
 .collection-detail__actor-name--visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Quando o nome do dono é um link (RouterLink → <a>), mantém a mesma aparência
+   do texto e indica que é clicável. */
+a.collection-detail__actor-name {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a.collection-detail__actor-name:hover {
+  text-decoration: underline;
 }
 
 .collection-detail__container {
@@ -1676,6 +1713,7 @@ watch(
   font-style: normal;
   font-weight: 400;
   line-height: 115%;
+  cursor: pointer;
 }
 
 .collection-detail__periods-block {
