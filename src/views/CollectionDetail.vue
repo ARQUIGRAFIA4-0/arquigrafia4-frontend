@@ -1464,6 +1464,7 @@ a.collection-detail__actor-name:hover {
   gap: 6px;
   align-self: flex-start;
   margin-top: 6px;
+  margin-bottom: 6px;
   padding: 3px 10px;
   border-radius: 999px;
   font-family: "DM Sans";
