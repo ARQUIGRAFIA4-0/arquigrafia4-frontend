@@ -69,7 +69,7 @@ async function handleRequestApproved() {
 </script>
 
 <template>
-  <div class="container-fluid">
+  <div>
     <div v-if="loadError" class="alert alert-danger m-4" role="alert">
       {{ loadError }}
     </div>
