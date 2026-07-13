@@ -15,14 +15,14 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
   border: 0.25px solid var(--Cinza_C, #a6a6a6);
   box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
   border-radius: 5px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease;
   overflow: hidden;
 
   &:deep(.ui-card__content) {
     flex: 1;
     overflow: visible;
-    min-height: 112px;
     box-sizing: border-box;
+    padding: 8px;
   }
 
   &:deep(.ui-card__body) {
@@ -32,59 +32,42 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
 
   &:deep(.ui-card__title) {
     margin: 0;
-    white-space: normal;
-    overflow: visible;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-    text-overflow: unset;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--Preto, #1f1f1f);
 
     @include md {
       font-weight: 700;
       font-size: 14px;
       line-height: 125%;
-      padding-bottom: 4px;
     }
   }
 
   &:deep(.ui-card__subtitle) {
     margin: 0;
-    flex: 1;
-    font-size: 14px;
-    line-height: 125%;
-    color: var(--Cinza_E);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 115%;
+    color: var(--Preto, #1f1f1f);
   }
 
+  // Sem flutuação: anula o translateY do hover global (.ui-card:hover) sem
+  // mover o card. O cursor pointer no link já sinaliza que é clicável.
   @media (hover: hover) {
     &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+      transform: none;
     }
   }
 
   &--expanded {
-    transform: translateY(-4px);
+    // Sem transform: o card não "flutua" ao ser selecionado.
     border-color: var(--Laranja_E, #aa4f28);
     box-shadow: 0 4px 12px rgba(170, 79, 40, 0.2);
 
-    &:deep(.ui-card__title),
-    &:deep(.ui-card__subtitle) {
-      visibility: hidden;
-    }
-
-    .ui-card__header {
-      min-height: 80px;
-      padding-bottom: 0;
-      justify-content: center;
-      align-items: stretch;
-    }
-
-    .profile-grid-card__actions {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      width: 100%;
-      padding: 0;
+    // Fundo laranja na área de conteúdo quando o card está selecionado
+    &:deep(.ui-card__content) {
+      background-color: var(--Laranja_C, #f6ddc6);
     }
   }
 
@@ -154,39 +137,73 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
   }
 }
 
-.profile-grid-card__actions {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  gap: 8px;
-  padding: 8px 0;
-  background: #fff;
-  z-index: 1;
+// Slot de altura fixa logo abaixo do título. A data (não-selecionado) e os
+// botões (selecionado) ocupam exatamente o mesmo espaço, então selecionar o
+// card NUNCA altera sua altura — independentemente do tamanho do título — e o
+// grid não se desloca.
+.profile-grid-card__meta {
+  min-height: 36px;
+  margin-top: 12px;
 }
 
-.profile-grid-card__action-btn {
-  width: calc(50% - 4px);
+// Data da imagem: exibida abaixo do título, alinhada à esquerda e ao topo do
+// slot reservado (__meta). Classe dedicada para não afetar o .ui-card__subtitle
+// compartilhado com os cards de coletivo e da home.
+.profile-grid-card__date {
+  margin: 0;
+  text-align: left;
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 115%;
+  color: var(--Preto, #1f1f1f);
+}
+
+.profile-grid-card__actions {
+  display: flex;
+  gap: 8px;
+}
+
+// Estado colapsado do slot reservado (__meta): ocupa a mesma altura que os
+// botões ocupam quando o card é selecionado, mantendo o grid estável. Usado
+// pelos cards de coleção (usuário e coletivo) para posicionar o cadeado.
+.profile-grid-card__collapsed {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-width: 0;
-  padding: 8px;
-  font-size: 14px;
+  justify-content: flex-end;
+  height: 36px;
+}
 
-  @include md {
-    padding: 8px 14px;
+// Cadeado de coleção privada: apenas o ícone, na cor do título da coleção.
+.profile-grid-card__lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin-right: 5px;
+  color: var(--Preto, #1f1f1f);
+  flex-shrink: 0;
+
+  i {
+    font-size: 14px;
+    line-height: 1;
+  }
+}
+
+// Largura igual; a altura vem do `.btn-sm .btn-icon` (mesmo padrão dos botões
+// das sidebars de perfil/coletivo), garantindo consistência com o resto do site.
+.profile-grid-card__action-btn {
+  flex: 1;
+  min-width: 0;
+
+  i {
+    font-size: 12px;
   }
 
   &--delete:hover {
     background-color: #dc3545;
     color: #fff;
-  }
-
-  i {
-    font-size: 14px;
   }
 }
 
@@ -194,8 +211,9 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
   position: relative;
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 80px;
-  padding-bottom: 8px;
+  // Sem flex:1 / min-height: o header ocupa só o necessário (título + slot),
+  // deixando o conteúdo enxuto — termina logo após o slot + padding inferior.
+  // gap 0: a distância título→data é controlada só pela margem do __meta (8px)
+  gap: 0;
   box-sizing: border-box;
 }

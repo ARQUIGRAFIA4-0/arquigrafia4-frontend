@@ -28,7 +28,7 @@
         <RouterLink v-if="collectiveId" :to="`/coletivos/${collectiveId}`" class="metadata-uploader-link">
           {{ displayName }}
         </RouterLink>
-        <RouterLink v-else-if="uploaderUserId" :to="`/profile/${uploaderUserId}`" class="metadata-uploader-link">
+        <RouterLink v-else-if="uploaderUserId" :to="`/perfil/${uploaderUserId}`" class="metadata-uploader-link">
           {{ displayName }}
         </RouterLink>
         <p v-else class="metadata-text">{{ displayName }}</p>

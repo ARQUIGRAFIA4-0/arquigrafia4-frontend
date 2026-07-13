@@ -189,7 +189,7 @@ function handleMapSelect(id) {
 function handleOutsideMapClick(event) {
   if (collectionViewMode.value !== "map") return;
   if (!selectedMapImageId.value) return;
-  if (event.target.closest(".collection-images-map")) return;
+  if (event.target.closest(".locations-map, .collection-images-map")) return;
   if (event.target.closest("button, a, [role='button']")) return;
 
   collectionMapRef.value?.resetToInitial?.();
@@ -687,7 +687,7 @@ watch(
                   id="collection-tags-help"
                   class="collection-detail__help-field"
                   label="Ajuda"
-                  explain="Estas etiquetas são geradas automaticamente a partir do texto da descrição da coleção."
+                  explain="Estas etiquetas são coletadas de cada imagem presente na coleção."
                 />
               </div>
               <div v-if="isLoadingCollectionTags" class="metadata-tags metadata-tags--skeleton">
@@ -850,7 +850,7 @@ watch(
                     id="collection-tags-help-desktop"
                     class="collection-detail__help-field"
                     label="Ajuda"
-                    explain="Estas etiquetas são geradas automaticamente a partir do texto da descrição da coleção."
+                    explain="Estas etiquetas são coletadas de cada imagem presente na coleção."
                   />
                 </div>
                 <div v-if="isLoadingCollectionTags" class="metadata-tags metadata-tags--skeleton">
@@ -1064,8 +1064,16 @@ watch(
 }
 
 .collection-detail__gallery--map {
+  display: flex;
+  flex-direction: column;
   min-height: 620px;
   height: 75vh;
+}
+
+.collection-detail__gallery--map > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
 }
 
 .collection-detail__row--map {

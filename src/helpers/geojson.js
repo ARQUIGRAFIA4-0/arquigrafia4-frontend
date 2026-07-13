@@ -109,3 +109,50 @@ export function createCollectionImagesFeatureCollection(images = []) {
     features,
   };
 }
+
+/**
+ * Resolve thumb_url absoluta ou relativa (iiif/...).
+ */
+export function resolveMediaUrl(path, baseUrl = "") {
+  if (typeof path !== "string") return null;
+
+  const trimmed = path.trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+
+  const base = typeof baseUrl === "string" ? baseUrl.replace(/\/$/, "") : "";
+  const normalizedPath = trimmed.replace(/^\//, "");
+  return base ? `${base}/${normalizedPath}` : normalizedPath;
+  
+}
+
+/**
+ * Converte FeatureCollection da API de localizações
+ * para o formato usado pelo LocationsMap (locationCoordinates em [lat, lng]).
+ */
+export function mapLocationsGeoJsonToImages(featureCollection, baseUrl = "") {
+  const features = Array.isArray(featureCollection?.features)
+    ? featureCollection.features
+    : [];
+
+  return features
+    .map((feature) => {
+      const coords = feature?.geometry?.coordinates;
+      if (!Array.isArray(coords) || coords.length < 2) return null;
+
+      const [lng, lat] = coords;
+      if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
+
+      const props = feature.properties ?? {};
+
+      return {
+        id: props.image_id ?? null,
+        title: props.title ?? "",
+        thumbUrl: resolveMediaUrl(props.thumb_url, baseUrl),
+        imageUrl: resolveMediaUrl(props.thumb_url, baseUrl),
+        locationCoordinates: [lat, lng],
+      };
+    })
+    .filter((image) => image?.id && image.locationCoordinates);
+
+}
