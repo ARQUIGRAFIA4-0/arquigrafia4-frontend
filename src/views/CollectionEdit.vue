@@ -121,7 +121,7 @@ function goToCollectionDetail() {
   if (!collectionId.value) return;
 
   router.push({
-    name: "my-collection-detail",
+    name: "collection-detail",
     params: {
       collectionId: String(collectionId.value),
       viewMode: String(route.query.viewMode || "grid"),

@@ -413,7 +413,7 @@ function handleEditCollection() {
   if (!collectionId.value) return;
 
   router.push({
-    name: "my-collection-edit",
+    name: "collection-edit",
     params: {
       collectionId: collectionId.value,
     },

@@ -180,6 +180,16 @@ export default [
       params: { collectionId: to.params.collectionId, viewMode: "grid" },
     }),
   },
+  // Edição canônica de coleção (usuário ou coletivo). O backend autoriza:
+  // dono do álbum de usuário ou qualquer membro do coletivo. Declarada antes
+  // da rota :viewMode para que o segmento estático "edit" não seja tratado
+  // como um modo de visualização.
+  {
+    path: "/colecoes/:collectionId/edit",
+    name: "collection-edit",
+    component: () => import("../views/CollectionEdit.vue"),
+    meta: { requiresAuth: true, showFooter: false },
+  },
   {
     path: "/colecoes/:collectionId/:viewMode",
     name: "collection-detail",
@@ -249,7 +259,7 @@ export default [
   {
     path: "/eu/colecoes/:collectionId/edit",
     name: "my-collection-edit",
-    component: () => import("../views/Profile/CollectionEdit.vue"),
+    component: () => import("../views/CollectionEdit.vue"),
     meta: { requiresAuth: true, showFooter: false },
   },
   {
