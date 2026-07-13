@@ -468,7 +468,7 @@ function showBulkCollectionsToast(albumIds) {
 function onAddToAlbumToastVisualizar() {
   if (addToAlbumToastCollectionId.value) {
     router.push({
-      name: "my-collection-detail",
+      name: "collection-detail",
       params: {
         collectionId: addToAlbumToastCollectionId.value,
         viewMode: "grid",
