@@ -191,8 +191,7 @@ const createExploreCardPopupContent = ({
 }) => {
   const safeId = encodeURIComponent(id);
   const safeTitle = escapeHtml(title || "Imagem sem título");
-  const safeImageUrl =
-    typeof imageUrl === "string" ? escapeHtml(imageUrl) : "";
+  const safeImageUrl = typeof imageUrl === "string" ? escapeHtml(imageUrl) : "";
 
   return `
     <article class="locations-map-card">
@@ -242,6 +241,7 @@ const createExploreCardPopupContent = ({
       </div>
     </article>
   `;
+
 };
 
 const showExploreCardPopup = async (feature) => {
@@ -294,6 +294,10 @@ const showExploreCardPopup = async (feature) => {
     if (activeCardPopup === popup) {
       activeCardPopup = null;
       activeCardImageId = null;
+    }
+
+    if (props.context === "explore" && selectedId.value === id) {
+      selectedId.value = null;
     }
   });
 
@@ -404,18 +408,30 @@ const handlePointClick = (event) => {
   const feature = event.features?.[0];
   if (!feature) return;
 
+  const map = mapInstance.value;
   const coordinates = feature.geometry.coordinates.slice();
   const id = feature.properties?.id ?? null;
 
-  if (!id) return;
+  if (!map || !id) return;
+
+  closeActivePopup();
 
   if (props.context === "explore") {
-    showExploreCardPopup(feature);
-    return;
+    closeActiveCardPopup();
   }
 
+  // Seleção e zoom são compartilhados entre coleção e acervo.
   selectedId.value = id;
-  emit("select", id);
+
+  if (props.context === "collection") {
+    emit("select", id);
+  }
+
+  if (props.context === "explore") {
+    map.once("moveend", () => {
+      showExploreCardPopup(feature);
+    });
+  }
 
   requestAnimationFrame(() => {
     focusOnCoordinates(coordinates);
