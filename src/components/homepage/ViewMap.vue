@@ -5,21 +5,19 @@
       :images="locatedImages"
       :is-loading="isLoading"
       :pitch="mapPitch"
-      @select="handleMapSelect"
+      :load-image-details="api.getImageDetails"
     />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
 import { useRouteQuery } from "@vueuse/router";
 
 import LocationsMap from "@/components/map/LocationsMap.vue";
 import { mapLocationsGeoJsonToImages } from "@/helpers/geojson.js";
 import { api } from "@/services/api.js";
 
-const router = useRouter();
 const mapSettingsQuery = useRouteQuery("map-settings", "2d");
 
 const MAP_PITCH_2D = 0;
@@ -50,12 +48,6 @@ const loadLocatedImages = async () => {
     isLoading.value = false;
 
   }
-};
-
-// Redireciona para a página de detalhes da imagem selecionada.
-const handleMapSelect = (imageId) => {
-  if (!imageId) return;
-  router.push(`/explore/dados/image/${imageId}`);
 };
 
 onMounted(() => {

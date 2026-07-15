@@ -11,10 +11,18 @@ defineOptions({ name: "LocationsMap" });
 const props = defineProps({
   images: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
+
   /** 'collection' | 'explore' */
   context: { type: String, default: "collection" },
+
   /** Inclinação do mapa em graus (0 = 2D, 60 = 3D). */
   pitch: { type: Number, default: 0 },
+
+  /** Busca os detalhes de uma imagem ao abrir o popup. */
+  loadImageDetails: {
+    type: Function,
+    default: null,
+  },
 });
 
 const emit = defineEmits(["select"]);
@@ -23,6 +31,9 @@ const mapInstance = shallowRef(null);
 const selectedId = ref(null);
 let activePopup = null;
 let initialView = null;
+
+let activeCardPopup = null;
+let activeCardImageId = null;
 
 const styleUrl = "https://tiles.openfreemap.org/styles/positron";
 const sourceId = "locations-images";
@@ -40,6 +51,7 @@ const DEFAULT_CENTER = [-46.6333, -23.5505];
 const DEFAULT_ZOOM = 3;
 const SELECTED_ICON_ZOOM = 8;
 const SELECTED_ICON_ANIMATION_MS = 700;
+const POPUP_CLOSE_ZOOM_DELTA = 0.1;
 
 const cameraIconSvg = (fill) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="${fill}"/><g transform="translate(8 8) scale(0.75) translate(-8 -8)"><path fill="#FFFFFF" d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/><path fill="#FFFFFF" d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4Zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0"/></g></svg>`;
@@ -123,12 +135,190 @@ const createCircularPopupContent = ({ thumbUrl, title }) => {
 
 };
 
-// Fecha o popup ativo.
+// Fecha o popup circular exibido no hover.
 const closeActivePopup = () => {
   if (!activePopup) return;
 
   activePopup.remove();
   activePopup = null;
+};
+
+// Fecha o popup com o card da imagem.
+const closeActiveCardPopup = () => {
+  if (!activeCardPopup) return;
+
+  activeCardPopup.remove();
+  activeCardPopup = null;
+  activeCardImageId = null;
+};
+
+const formatPopupDate = (dates = []) => {
+  if (!Array.isArray(dates) || dates.length === 0) return "";
+
+  const dateInfo =
+    dates.find((item) => item?.type === "creation") ?? dates[0];
+
+  if (!dateInfo) return "";
+
+  const earliest = dateInfo.earliest_date
+    ? new Date(dateInfo.earliest_date).getUTCFullYear()
+    : null;
+
+  const latest = dateInfo.latest_date
+    ? new Date(dateInfo.latest_date).getUTCFullYear()
+    : null;
+
+  if (!earliest) return "";
+
+  const circa =
+    dateInfo.circa_earliest_date || dateInfo.circa_latest_date;
+
+  const prefix = circa ? "c." : "";
+
+  if (!latest || earliest === latest) {
+    return `${prefix}${earliest}`;
+  }
+
+  return `${prefix}${earliest}-${latest}`;
+
+};
+
+const createExploreCardPopupContent = ({
+  id,
+  title,
+  imageUrl,
+  date = "",
+}) => {
+  const safeId = encodeURIComponent(id);
+  const safeTitle = escapeHtml(title || "Imagem sem título");
+  const safeImageUrl =
+    typeof imageUrl === "string" ? escapeHtml(imageUrl) : "";
+
+  return `
+    <article class="locations-map-card">
+      <div class="locations-map-card__media">
+        ${
+          safeImageUrl
+            ? `<img src="${safeImageUrl}" alt="${safeTitle}" loading="lazy" />`
+            : ""
+        }
+      </div>
+
+      <div class="locations-map-card__content">
+        <h3 class="locations-map-card__title" title="${safeTitle}">
+          ${safeTitle}
+        </h3>
+
+        ${
+          date
+            ? `<p class="locations-map-card__date">${escapeHtml(date)}</p>`
+            : ""
+        }
+
+        <a
+          class="locations-map-card__button"
+          href="/explore/dados/image/${safeId}"
+          aria-label="Ver detalhes da imagem ${safeTitle}"
+        >
+          <span>Ver imagem</span>
+
+          <svg
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <path
+              d="M5 12h14M13 6l6 6-6 6"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </a>
+      </div>
+    </article>
+  `;
+};
+
+const showExploreCardPopup = async (feature) => {
+  const map = mapInstance.value;
+  const coordinates = feature?.geometry?.coordinates?.slice();
+  const properties = feature?.properties ?? {};
+  const id = properties.id;
+
+  if (!map || !id || !isValidCoordinate(coordinates)) return;
+
+  closeActivePopup();
+  closeActiveCardPopup();
+
+  const popup = new Popup({
+    anchor: "bottom",
+    offset: [0, -14],
+    closeButton: true,
+    closeOnClick: true,
+    closeOnMove: false,
+    className: "locations-map-card-popup-container",
+  })
+    .setLngLat(coordinates)
+    .setHTML(
+      createExploreCardPopupContent({
+        id,
+        title: properties.title,
+        imageUrl: properties.thumbUrl ?? properties.imageUrl,
+      })
+    )
+    .addTo(map);
+
+  activeCardPopup = popup;
+  activeCardImageId = id;
+
+  const initialZoom = map.getZoom();
+
+  const handlePopupZoomEnd = () => {
+    const zoomDelta = initialZoom - map.getZoom();
+
+    if (zoomDelta >= POPUP_CLOSE_ZOOM_DELTA) {
+      popup.remove();
+    }
+  };
+
+  map.on("zoomend", handlePopupZoomEnd);
+
+  popup.on("close", () => {
+    map.off("zoomend", handlePopupZoomEnd);
+
+    if (activeCardPopup === popup) {
+      activeCardPopup = null;
+      activeCardImageId = null;
+    }
+  });
+
+  if (!props.loadImageDetails) return;
+
+  try {
+    const details = await props.loadImageDetails(id);
+
+    if (activeCardPopup !== popup || activeCardImageId !== id) return;
+
+    popup.setHTML(
+      createExploreCardPopupContent({
+        id,
+        title: details?.title ?? properties.title,
+        imageUrl:
+          details?.imageUrl ??
+          properties.thumbUrl ??
+          properties.imageUrl,
+        date: formatPopupDate(details?.dates),
+      })
+    );
+  } catch (error) {
+    console.error("Erro ao carregar detalhes da imagem do mapa", error);
+
+  }
 
 };
 
@@ -216,11 +406,11 @@ const handlePointClick = (event) => {
 
   const coordinates = feature.geometry.coordinates.slice();
   const id = feature.properties?.id ?? null;
+
   if (!id) return;
 
   if (props.context === "explore") {
-    closeActivePopup();
-    emit("select", id);
+    showExploreCardPopup(feature);
     return;
   }
 
@@ -487,6 +677,7 @@ defineExpose({ resetToInitial });
 onUnmounted(() => {
   const map = mapInstance.value;
   closeActivePopup();
+  closeActiveCardPopup();
 
   // O MapLibreMap (filho) desmonta antes e já chama map.remove(),
   // destruindo o style. Só mexemos nas camadas se o style ainda existir.
@@ -684,5 +875,116 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.locations-map-card-popup-container.maplibregl-popup {
+  z-index: 6;
+  width: 280px;
+  max-width: calc(100vw - 32px);
+}
+
+.locations-map-card-popup-container .maplibregl-popup-content {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--Branco, #fff);
+  box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
+}
+
+.locations-map-card-popup-container .maplibregl-popup-tip {
+  border-top-color: var(--Branco, #fff);
+}
+
+.locations-map-card-popup-container .maplibregl-popup-close-button {
+  z-index: 2;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--Cinza_E, #2f2f2f);
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 20px;
+  line-height: 28px;
+}
+
+.locations-map-card {
+  overflow: hidden;
+  border: 0.25px solid var(--Cinza_C, #a6a6a6);
+  border-radius: 5px;
+  background: var(--Branco, #fff);
+}
+
+.locations-map-card__media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+
+.locations-map-card__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.locations-map-card__content {
+  padding: 16px;
+}
+
+.locations-map-card__title {
+  margin: 0 0 4px;
+  overflow: hidden;
+  color: var(--Cinza_E, #2f2f2f);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 125%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.locations-map-card__date {
+  margin: 0;
+  color: var(--Cinza_E, #2f2f2f);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 125%;
+}
+
+.locations-map-card__button {
+  display: flex;
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px 14px;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  border: 1px solid #d27d30;
+  border-radius: 4px;
+  color: #d27d30;
+  background: transparent;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 125%;
+  text-decoration: none;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.locations-map-card__button:hover {
+  color: var(--Branco, #fff);
+  background: #d27d30;
+  text-decoration: none;
+}
+
+.locations-map-card__button:focus-visible {
+  outline: 2px solid #d27d30;
+  outline-offset: 2px;
 }
 </style>
