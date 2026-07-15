@@ -23,6 +23,9 @@ const props = defineProps({
     type: Function,
     default: null,
   },
+
+  /** Id da imagem a ser selecionada/focada ao carregar (restauração). */
+  initialSelectedId: { type: String, default: null },
 });
 
 const emit = defineEmits(["select"]);
@@ -34,6 +37,7 @@ let initialView = null;
 
 let activeCardPopup = null;
 let activeCardImageId = null;
+let isUnmounting = false;
 
 const styleUrl = "https://tiles.openfreemap.org/styles/positron";
 const sourceId = "locations-images";
@@ -298,6 +302,10 @@ const showExploreCardPopup = async (feature) => {
 
     if (props.context === "explore" && selectedId.value === id) {
       selectedId.value = null;
+
+      if (!isUnmounting) {
+        emit("select", null);
+      }
     }
   });
 
@@ -423,7 +431,7 @@ const handlePointClick = (event) => {
   // Seleção e zoom são compartilhados entre coleção e acervo.
   selectedId.value = id;
 
-  if (props.context === "collection") {
+  if (props.context === "collection" || props.context === "explore") {
     emit("select", id);
   }
 
@@ -467,6 +475,39 @@ const saveInitialView = () => {
   initialView = buildInitialView();
 };
 
+/* ------------------------------- Seleção ---------------------------------- */
+// Serve para restaurar a seleção inicial após voltar da página da imagem. Ou seja, voltando a imagem que estava selecionada.
+
+let hasAppliedInitialSelection = false;
+
+// Busca uma feature localizada pelo id.
+const getFeatureById = (id) =>
+  getLocatedFeatures().find((feature) => feature.properties?.id === id) || null;
+
+// Restaura a seleção inicial (após voltar da página da imagem).
+const applyInitialSelection = () => {
+  if (hasAppliedInitialSelection) return;
+  if (!props.initialSelectedId || !mapInstance.value) return;
+
+  const feature = getFeatureById(props.initialSelectedId);
+  if (!feature) return;
+
+  const map = mapInstance.value;
+
+  selectedId.value = props.initialSelectedId;
+  hasAppliedInitialSelection = true;
+
+  if (props.context === "explore") {
+    map.once("moveend", () => {
+      showExploreCardPopup(feature);
+    });
+  }
+
+  requestAnimationFrame(() => {
+    focusOnCoordinates(feature.geometry.coordinates.slice());
+  });
+};
+
 /* ------------------------------- Restauração ---------------------------------- */
 // Restaura a view inicial do mapa.
 const restoreInitialView = () => {
@@ -504,6 +545,7 @@ const resetToInitial = () => {
   selectedId.value = null;
   emit("select", null);
   closeActivePopup();
+  closeActiveCardPopup();
 
   const map = mapInstance.value;
   if (!map) return;
@@ -652,7 +694,13 @@ const handleMapReady = async (map) => {
 
   await setupLayers(map);
   saveInitialView();
-  fitMapToFeatures();
+
+  if (props.initialSelectedId && getFeatureById(props.initialSelectedId)) {
+    applyInitialSelection();
+  } else {
+    fitMapToFeatures();
+  }
+
   applyMapPitch(props.pitch);
 
 };
@@ -673,10 +721,24 @@ watch(
   () => {
     if (!mapInstance.value) return;
 
+    saveInitialView();
+
+    // Se há uma seleção a restaurar e a imagem já existe, foca nela.
+    if (
+      !hasAppliedInitialSelection &&
+      props.initialSelectedId &&
+      getFeatureById(props.initialSelectedId)
+
+    ) {
+      applyInitialSelection();
+      return;
+
+    }
+
     selectedId.value = null;
     emit("select", null);
-    saveInitialView();
     fitMapToFeatures();
+
   },
   { deep: true }
 );
@@ -691,6 +753,8 @@ watch(
 defineExpose({ resetToInitial });
 
 onUnmounted(() => {
+  isUnmounting = true;
+
   const map = mapInstance.value;
   closeActivePopup();
   closeActiveCardPopup();
@@ -740,7 +804,7 @@ onUnmounted(() => {
       </p>
 
       <button
-        v-if="selectedId && context === 'collection'"
+        v-if="selectedId"
         type="button"
         class="locations-map__hint"
         aria-label="Clique aqui para voltar ao estado original do mapa"

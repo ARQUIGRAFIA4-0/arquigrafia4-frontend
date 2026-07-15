@@ -147,8 +147,6 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
       ordered.map((img) => api.getImageDetails(img.id))
     );
 
-    selectedMapImageId.value = null;
-
     const plainImages = JSON.parse(JSON.stringify(collectionImages.value));
     console.log("[CollectionDetail] imagens da coleção:", plainImages);
     console.log("[CollectionDetail] primeira imagem:", plainImages[0]);
@@ -176,7 +174,9 @@ const collectionViewMode = computed(() =>
   selectionToViewMode(viewSelection.value)
 );
 
-const selectedMapImageId = ref(null);
+const selectedMapImageId = ref(
+  typeof route.query.image === "string" ? route.query.image : null
+);
 
 const selectedMapImage = computed(() =>
   collectionImages.value.find((img) => img.id === selectedMapImageId.value) || null
@@ -184,6 +184,16 @@ const selectedMapImage = computed(() =>
 
 function handleMapSelect(id) {
   selectedMapImageId.value = id;
+
+  const query = { ...route.query };
+
+  if (id) {
+    query.image = id;
+  } else {
+    delete query.image;
+  }
+
+  router.replace({ query });
 }
 
 // Redireciona para a página de detalhes da imagem.
@@ -193,7 +203,16 @@ function goToImageDetail(id) {
 }
 
 watch(collectionViewMode, (mode) => {
-  if (mode !== "map") selectedMapImageId.value = null;
+  if (mode !== "map") {
+    selectedMapImageId.value = null;
+    // Remove a query de imagem da URL.
+    if (route.query.image) {
+      const query = { ...route.query };
+      delete query.image;
+      router.replace({ query });
+    }
+  }
+
 });
 
 const isInfoActive = ref(true);
@@ -491,8 +510,9 @@ watch(
                 v-else-if="collectionViewMode === 'map'"
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
+                :initial-selected-id="selectedMapImageId"
                 @select="handleMapSelect"
-              />              
+              />            
             </section>
           </div>
         </template>

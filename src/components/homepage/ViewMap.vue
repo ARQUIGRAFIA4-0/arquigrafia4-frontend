@@ -6,6 +6,8 @@
       :is-loading="isLoading"
       :pitch="mapPitch"
       :load-image-details="api.getImageDetails"
+      :initial-selected-id="selectedImageId"
+      @select="handleMapSelect"
     />
   </div>
 </template>
@@ -19,6 +21,17 @@ import { mapLocationsGeoJsonToImages } from "@/helpers/geojson.js";
 import { api } from "@/services/api.js";
 
 const mapSettingsQuery = useRouteQuery("map-settings", "2d");
+const selectedImageQuery = useRouteQuery("image", null);
+
+const selectedImageId = computed(() =>
+  typeof selectedImageQuery.value === "string"
+    ? selectedImageQuery.value
+    : null
+);
+
+const handleMapSelect = (id) => {
+  selectedImageQuery.value = id || null;
+};
 
 const MAP_PITCH_2D = 0;
 const MAP_PITCH_3D = 60;
