@@ -15,7 +15,8 @@
       @redraw="handleMasonryRedraw">
       <template #default="slotProps">
 
-        <div v-if="slotProps && slotProps.item" class="related-card" :data-card-id="slotProps.item.id">
+        <div v-if="slotProps && slotProps.item" class="related-card"
+          :class="getCardSizeClass(slotProps.item.aspectRatio)" :data-card-id="slotProps.item.id">
 
           <img v-if="activeCardId !== slotProps.item.id" :src="LogoConection" alt="" class="related-card__logo" />
           <span v-else @click.stop="toggleCard(slotProps.item.id)" class="related-card__close-button">
@@ -31,13 +32,10 @@
           <div v-if="activeCardId === slotProps.item.id" class="related-card__overlay"
             @click="toggleCard(slotProps.item.id)">
             <span class="related-card__overlay-title">Relacionada por:</span>
-            <!-- <div class="related-card__tags">
-              <span v-for="tag in RELATION_CATEGORIES" :key="tag" class="related-card__tag">{{ tag }}</span>
-            </div> -->
             <FitTags :subjects="RELATION_CATEGORIES_TAGS ?? []" />
-            <router-link :to="`/explore/dados/image/${slotProps.item.id}`" class="related-card__open-image">
-              <i class="bi bi-arrow-right-circle-fill"></i>
-            </router-link>
+            <span class="related-card__open-image">
+              <a :href="`/explore/dados/image/${slotProps.item.id}`" class="bi bi-arrow-right-circle-fill"></a>
+            </span>
           </div>
         </div>
       </template>
@@ -103,7 +101,6 @@ const handleClickOutside = (event) => {
 };
 
 
-
 const columnWidths = [320, 200, 280, 260, 210, 220, 300];
 
 // ─── Colunas responsivas ────────────────────────────────────────────────────────
@@ -131,6 +128,23 @@ const maxColumns = computed(() => {
   if (windowWidth.value <= 768) return 2;
   return 7;
 });
+
+//----
+// Limiar de aspectRatio
+// const SHORT_CARD_ASPECT_RATIO = 2.0;
+// const VERY_SHORT_CARD_ASPECT_RATIO = 1.9;
+
+const NORMAL_ASPECT_RATIO = 1.0;
+const SHORT_ASPECT_RATIO = 2.5;
+const VERY_SHORT_ASPECT_RATIO = 3.2;
+
+const getCardSizeClass = (aspectRatio) => {
+  if (!aspectRatio) return "";
+  if (aspectRatio >= VERY_SHORT_ASPECT_RATIO) return "related-card--very-short";
+  if (aspectRatio >= SHORT_ASPECT_RATIO) return "related-card--short";
+  if (aspectRatio >= NORMAL_ASPECT_RATIO) return "related-card--normal";
+  return "";
+};
 
 
 const mosaicItems = ref([]);
@@ -276,6 +290,15 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
+
+$breakpoint-sm: 425px;
+
+@mixin sm {
+  @media (max-width: #{$breakpoint-sm}) {
+    @content;
+  }
+}
+
 .related-images {
   margin-top: 40px;
   width: 100%;
@@ -311,6 +334,8 @@ onBeforeUnmount(() => {
 }
 
 .related-card {
+  container-type: inline-size;
+  container-name: related-card;
   position: relative;
   cursor: pointer;
 
@@ -348,11 +373,125 @@ onBeforeUnmount(() => {
     display: flex;
     justify-content: end;
     align-items: center;
-    color: var(--Branco);
     margin-bottom: 8px;
     padding-right: 8px;
+
+    a {
+      color: var(--Branco);
+    }
   }
 
+}
+
+.related-card--short {
+  .related-card__overlay-title {
+    display: none;
+  }
+
+  .related-card__close-button {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    margin: 20px 27px 20px 0;
+  }
+
+  .related-card__open-image {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    margin: 20px 23px 20px 0;
+  }
+
+  .related-card__overlay {
+    .fit-tags {
+      margin-bottom: 6px;
+      width: 70%;
+    }
+  }
+}
+
+
+@include sm {
+  .related-card--very-short {
+  
+    .related-card__overlay-title {
+      display: none;
+    }
+  
+    .related-card__close-button {
+      display: none;
+    }
+  
+    .related-card__open-image {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      margin: 0px 6px 8px 0;
+    }
+  
+    .related-card__overlay {
+      .fit-tags {
+        display: none;
+      }
+    }
+  } 
+}
+
+
+.related-card--normal {
+  .related-card__overlay-title {
+    
+  }
+
+  .related-card__open-image {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    margin: 20px 23px 20px 0;
+  }
+
+  .related-card__overlay {
+    .fit-tags {
+      // margin-bottom: 23px;
+      width: 70%;
+    }
+  } 
+}
+
+@container related-card (max-width: 220px) {
+  :deep(.related-card__overlay-title) {
+    display: none;
+  }
+
+  .related-card__open-image {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    margin: 20px 23px 20px 0;
+  }
+
+  .related-card__overlay {
+    .fit-tags {
+      margin-bottom: 23px;
+      width: 70%;
+    }
+  }
+}
+
+@container related-card (max-width: 233px) {
+  .related-card__open-image {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    margin: 20px 23px 20px 0;
+  }
+
+  .related-card__overlay {
+    .fit-tags {
+      margin-bottom: 23px;
+      width: 70%;
+    }
+  }
 }
 
 .related-card__click-catcher {
@@ -379,6 +518,7 @@ onBeforeUnmount(() => {
 
   .fit-tags {
     margin-top: .5rem;
+    margin-bottom: .5625rem;
     padding-top: 0;
   }
 
