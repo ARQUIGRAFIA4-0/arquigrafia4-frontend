@@ -1,28 +1,33 @@
 <template>
   <div v-if="isLoading || hasItems" class="related-images">
-    <h2 class="related-images__title">
-      Continue explorando
-      <i class="bi bi-arrow-down related-images__title-icon" aria-hidden="true"></i>
-    </h2>
+    <div class="related-images__header">
+      <div class="related-images__header-content">
+        <h2 class="title">
+          Continue explorando
+        </h2>
+        <i class="bi bi-arrow-down title-icon" aria-hidden="true"></i>
+      </div>
+      <UiField label=" " explain="Clique nas imagens para descobrir como se relacionam com a imagem principal.">
+      </UiField>
+    </div>
 
-    <!-- Skeleton Masonry -->
-    <mosaic-skeleton v-if="showSkeleton" :gap="5" :column-widths="columnWidths" :min-columns="minColumns"
-      :max-columns="maxColumns" />
+    <!-- Skeleton Masonry (desktop/tablet) -->
+    <mosaic-skeleton v-if="showSkeleton && !isMobileGrid" :gap="5" :column-widths="columnWidths"
+      :min-columns="minColumns" :max-columns="maxColumns" />
 
-    <!-- Masonry Wall -->
-    <masonry-wall v-show="mosaicItems.length > 0" :items="mosaicItems" :column-width="columnWidths" :gap="5"
-      :min-columns="minColumns" :max-columns="maxColumns" :class="['masonry-grid', { 'masonry-ready': isMasonryReady }]"
-      @redraw="handleMasonryRedraw">
+    <!-- Masonry Wall (desktop/tablet) -->
+    <masonry-wall v-if="!isMobileGrid" v-show="mosaicItems.length > 0" :items="mosaicItems" :column-width="columnWidths"
+      :gap="5" :min-columns="minColumns" :max-columns="maxColumns"
+      :class="['masonry-grid', { 'masonry-ready': isMasonryReady }]" @redraw="handleMasonryRedraw">
       <template #default="slotProps">
 
-        <div v-if="slotProps && slotProps.item" class="related-card"
-          :class="getCardSizeClass(slotProps.item.aspectRatio)" :data-card-id="slotProps.item.id">
+        <div v-if="slotProps && slotProps.item" class="related-card" :ref="(el) => setCardRef(el, slotProps.item.id)"
+          :class="[cardSizeClasses[slotProps.item.id]]" :data-card-id="slotProps.item.id">
 
           <img v-if="activeCardId !== slotProps.item.id" :src="LogoConection" alt="" class="related-card__logo" />
           <span v-else @click.stop="toggleCard(slotProps.item.id)" class="related-card__close-button">
             <i class="bi bi-x" aria-hidden="true"></i>
           </span>
-
 
           <mosaic-card :id="slotProps.item.id" :title="slotProps.item.title" :image-url="slotProps.item.src"
             :aspect-ratio="slotProps.item.aspectRatio" />
@@ -40,6 +45,29 @@
         </div>
       </template>
     </masonry-wall>
+
+    <!-- Grid simples (mobile), igual ViewGrid: cards quadrados, sem masonry -->
+    <div v-else class="related-grid">
+      <div v-for="item in mosaicItems" :key="item.id" class="related-card related-grid__item" :data-card-id="item.id">
+
+        <img v-if="activeCardId !== item.id" :src="LogoConection" alt="" class="related-card__logo" />
+        <span v-else @click.stop="toggleCard(item.id)" class="related-card__close-button">
+          <i class="bi bi-x" aria-hidden="true"></i>
+        </span>
+
+        <mosaic-card :id="item.id" :title="item.title" :image-url="item.src" :aspect-ratio="1" />
+
+        <div class="related-card__click-catcher" @click="toggleCard(item.id)"></div>
+
+        <div v-if="activeCardId === item.id" class="related-card__overlay" @click="toggleCard(item.id)">
+          <span class="related-card__overlay-title">Relacionada por:</span>
+          <FitTags :subjects="RELATION_CATEGORIES_TAGS ?? []" />
+          <span class="related-card__open-image">
+            <a :href="`/explore/dados/image/${item.id}`" class="bi bi-arrow-right-circle-fill"></a>
+          </span>
+        </div>
+      </div>
+    </div>
 
     <!-- Sentinela para o scroll infinito -->
     <div ref="sentinel" class="related-images__sentinel"></div>
@@ -60,6 +88,7 @@ import MosaicSkeleton from "@/components/MosaicSkeleton.vue";
 import FitTags from "@/views/Profile/FitTags.vue";
 import { api } from "@/services/api";
 import LogoConection from "@/assets/logo-connection.png";
+import UiField from "@/components/ui/UiField.vue";
 
 const props = defineProps({
   imageId: {
@@ -71,7 +100,7 @@ const props = defineProps({
 
 // Lista estatica só que com id e term, para o FitTags funcionar
 const RELATION_CATEGORIES_TAGS = [
-  { id: 1, term: "assuntos" },
+  { id: 1, term: `Assunto` },
   { id: 2, term: "período" },
   { id: 3, term: "localização" },
   { id: 4, term: "materiais" },
@@ -129,23 +158,43 @@ const maxColumns = computed(() => {
   return 7;
 });
 
+// Abaixo de 768px vira grid simples (igual ViewGrid), não masonry
+const isMobileGrid = computed(() => windowWidth.value <= 768);
+
 //----
-// Limiar de aspectRatio
-// const SHORT_CARD_ASPECT_RATIO = 2.0;
-// const VERY_SHORT_CARD_ASPECT_RATIO = 1.9;
+// Medição de altura dos cards (baseada em layout, não em click)
+const SHORT_HEIGHT_THRESHOLD = 132.99;
+const NARROWLY_LOW_HEIGHT_THRESHOLD = 89;
 
-const NORMAL_ASPECT_RATIO = 1.0;
-const SHORT_ASPECT_RATIO = 2.5;
-const VERY_SHORT_ASPECT_RATIO = 3.2;
+// Guarda a referência de cada card pelo id (não precisa ser reativo)
+const cardRefs = new Map();
 
-const getCardSizeClass = (aspectRatio) => {
-  if (!aspectRatio) return "";
-  if (aspectRatio >= VERY_SHORT_ASPECT_RATIO) return "related-card--very-short";
-  if (aspectRatio >= SHORT_ASPECT_RATIO) return "related-card--short";
-  if (aspectRatio >= NORMAL_ASPECT_RATIO) return "related-card--normal";
-  return "";
+// Classes calculadas por card: { [cardId]: 'related-card--short' | '' }
+const cardSizeClasses = ref({});
+
+const setCardRef = (el, id) => {
+  if (el) {
+    cardRefs.set(id, el);
+  } else {
+    cardRefs.delete(id);
+  }
 };
 
+const updateAllCardSizeClasses = () => {
+  const updated = { ...cardSizeClasses.value };
+  cardRefs.forEach((el, id) => {
+    const height = el.getBoundingClientRect().height;
+    if (height <= NARROWLY_LOW_HEIGHT_THRESHOLD) {
+      updated[id] = "related-card--short related-card--very-short"
+    }
+    else if (height <= SHORT_HEIGHT_THRESHOLD) {
+      updated[id] = "related-card--short"
+    }
+
+    // updated[id] = height <= SHORT_HEIGHT_THRESHOLD ? "related-card--short" : "";
+  });
+  cardSizeClasses.value = updated;
+};
 
 const mosaicItems = ref([]);
 const processedIds = new Set();
@@ -195,6 +244,7 @@ const processItems = (sourceItems) => {
 
 const showSkeleton = computed(() => {
   if (isPending.value) return true;
+  if (isMobileGrid.value) return false; // grid simples não usa a animação/skeleton do masonry
   if (mosaicItems.value.length > 0 && !isMasonryReady.value) return true;
   return false;
 });
@@ -205,6 +255,12 @@ const handleMasonryRedraw = () => {
       isMasonryReady.value = true;
     });
   }
+
+  // Recalcula as classes de tamanho depois que o DOM
+  // já refletiu o novo layout do masonry (nova qtd de colunas, etc.)
+  nextTick(() => {
+    updateAllCardSizeClasses();
+  });
 };
 
 // ─── Busca paginada em /images/{id}/related ────────────────────────────────────
@@ -290,11 +346,32 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
+$breakpoint-sm-mobile: 320px;
+$breakpoint-sm: 768px;
+$breakpoint-md: 1024px;
+$breakpoint-lg: 1440px;
 
-$breakpoint-sm: 425px;
+
+@mixin sm-mobile {
+  @media (min-width: #{$breakpoint-sm-mobile}) {
+    @content;
+  }
+}
 
 @mixin sm {
-  @media (max-width: #{$breakpoint-sm}) {
+  @media (min-width: #{$breakpoint-sm}) {
+    @content;
+  }
+}
+
+@mixin md {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
+@mixin lg {
+  @media (min-width: #{$breakpoint-lg}) {
     @content;
   }
 }
@@ -304,21 +381,35 @@ $breakpoint-sm: 425px;
   width: 100%;
 }
 
-.related-images__title {
+.related-images__header {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-weight: 500;
-  font-size: 1.25rem;
   margin-bottom: 13px;
-  color: var(--Preto);
+
+  &-content {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 0px;
+
+    .title {
+      font-weight: 500;
+      font-size: 1.25rem;
+      color: var(--Preto);
+      margin-bottom: 0px;
+    }
+
+    .title-icon {
+      color: var(--Cinza_E);
+      font-size: 1rem;
+      -webkit-text-stroke: .8px;
+    }
+  }
+
+
 }
 
-.related-images__title-icon {
-  color: var(--Cinza_E);
-  font-size: 1rem;
-  -webkit-text-stroke: 0.8px;
-}
 
 .masonry-grid {
   opacity: 0;
@@ -333,11 +424,28 @@ $breakpoint-sm: 425px;
   height: 1px;
 }
 
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.related-grid__item {
+  border: .2496px solid var(--Cinza_C, #A6A6A6);
+  box-shadow: 1px 1px 3px 2px #0000001A;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
 .related-card {
   container-type: inline-size;
   container-name: related-card;
   position: relative;
   cursor: pointer;
+
+  .related-card__logo {
+    pointer-events: none;
+  }
 
   &:hover {
     .related-card__logo {
@@ -380,119 +488,91 @@ $breakpoint-sm: 425px;
       color: var(--Branco);
     }
   }
-
 }
 
 .related-card--short {
-  .related-card__overlay-title {
-    display: none;
-  }
 
   .related-card__close-button {
+    // display: none;
     position: absolute;
     right: 0;
-    bottom: 0;
-    margin: 20px 27px 20px 0;
+    top: 0;
+    margin: 15px 10px 0 0;
   }
 
   .related-card__open-image {
     position: absolute;
     right: 0;
     bottom: 0;
-    margin: 20px 23px 20px 0;
+    margin: 20px 6px 15px 0;
   }
 
   .related-card__overlay {
     .fit-tags {
-      margin-bottom: 6px;
+      margin-bottom: 0px;
+      width: 75%;
+    }
+  }
+}
+
+.related-card--very-short {
+  .related-card__overlay-title {
+    display: none;
+  }
+}
+
+@container related-card (max-width: 190px) {
+  .related-card__overlay {
+    .fit-tags {
+      // margin-bottom: 0px;
       width: 70%;
     }
   }
 }
 
 
-@include sm {
-  .related-card--very-short {
-  
+@include sm-mobile {
+  @container related-card (max-width: 146px) {
     .related-card__overlay-title {
       display: none;
     }
-  
-    .related-card__close-button {
-      display: none;
-    }
-  
+
     .related-card__open-image {
       position: absolute;
       right: 0;
       bottom: 0;
-      margin: 0px 6px 8px 0;
+      margin: 20px 0px 20px 0;
     }
-  
+
+
+    .related-card__close-button {
+      display: none;
+    }
+
     .related-card__overlay {
+
       .fit-tags {
-        display: none;
+        width: 85%;
+        margin-bottom: .7625rem;
+
+        :deep(.fit-tags__tag) {
+          font-size: .6rem;
+        }
       }
     }
-  } 
-}
-
-
-.related-card--normal {
-  .related-card__overlay-title {
-    
   }
 
-  .related-card__open-image {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    margin: 20px 23px 20px 0;
-  }
-
-  .related-card__overlay {
-    .fit-tags {
-      // margin-bottom: 23px;
-      width: 70%;
-    }
-  } 
-}
-
-@container related-card (max-width: 220px) {
-  :deep(.related-card__overlay-title) {
-    display: none;
-  }
-
-  .related-card__open-image {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    margin: 20px 23px 20px 0;
-  }
-
-  .related-card__overlay {
-    .fit-tags {
-      margin-bottom: 23px;
-      width: 70%;
+  @container related-card (max-width: 233px) {
+    .related-card__overlay {
+      .fit-tags {
+        :deep(.fit-tags__tag) {
+          font-size: .6rem;
+        }
+      }
     }
   }
 }
 
-@container related-card (max-width: 233px) {
-  .related-card__open-image {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    margin: 20px 23px 20px 0;
-  }
-
-  .related-card__overlay {
-    .fit-tags {
-      margin-bottom: 23px;
-      width: 70%;
-    }
-  }
-}
 
 .related-card__click-catcher {
   position: absolute;
@@ -535,6 +615,7 @@ $breakpoint-sm: 425px;
 
 .related-card__overlay-title {
   font-weight: 700;
+  font-size: .75rem;
 }
 
 .related-card__tags {
@@ -547,7 +628,7 @@ $breakpoint-sm: 425px;
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 20px;
   padding: 4px 12px;
-  font-size: 0.8rem;
+  font-size: .8rem;
   white-space: nowrap;
 }
 </style>
