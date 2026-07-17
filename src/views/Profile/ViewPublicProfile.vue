@@ -10,6 +10,7 @@ import ProfileAlbums from "@/components/ProfileAlbums.vue";
 import ProfileRoutes from "@/components/ProfileRoutes.vue";
 import ProfileReviews from "@/components/ProfileReviews.vue";
 import ProfileImages from "@/components/ProfileImages.vue";
+import ProfileCollections from "@/components/ProfileCollections.vue";
 
 const route = useRoute();
 const usersStore = useUsersStore();
@@ -48,6 +49,7 @@ function handleResize() {
             <div class="profile-container__content">
                 <ProfileNav :selected="selectedTab" @select="selectedTab = $event" :isCurrentUser="false" />
                 <ProfileImages v-if="selectedTab === 'Imagens'" :isCurrentUser="false" :userData="userData" />
+                <ProfileCollections v-else-if="selectedTab === 'Coleções'" :isCurrentUser="false" :userData="userData" />
             </div>
         </div>
     </div>

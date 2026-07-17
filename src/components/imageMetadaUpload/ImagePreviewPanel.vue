@@ -1,113 +1,54 @@
 <template>
   <div class="image-preview-panel">
     <div v-if="hasPreviewItems" class="image-preview-panel__content">
-      <input
-        ref="fileInput"
-        type="file"
-        multiple
-        accept="image/*"
-        class="visually-hidden"
-        @change="handleFilesAdded"
-      />
+      <input ref="fileInput" type="file" multiple accept="image/*" class="visually-hidden" @change="handleFilesAdded" />
       <div class="preview-stage">
         <figure class="preview-stage__viewport mb-0">
-          <img
-            :src="activePreviewUrl"
-            :alt="activePreviewAlt"
-            class="preview-stage__image"
-          />
+          <img :src="activePreviewUrl" :alt="activePreviewAlt" class="preview-stage__image" />
 
-          <button
-            type="button"
-            class="preview-stage__nav preview-stage__nav--prev"
-            aria-label="Imagem anterior"
-            :disabled="isFirstItem"
-            @click="prevImage"
-          >
+          <button type="button" class="preview-stage__nav preview-stage__nav--prev" aria-label="Imagem anterior"
+            :disabled="isFirstItem" @click="prevImage">
             <i class="bi bi-chevron-left" aria-hidden="true"></i>
           </button>
 
-          <button
-            type="button"
-            class="preview-stage__nav preview-stage__nav--next"
-            aria-label="Próxima imagem"
-            :disabled="isLastItem"
-            @click="nextImage"
-          >
+          <button type="button" class="preview-stage__nav preview-stage__nav--next" aria-label="Próxima imagem"
+            :disabled="isLastItem" @click="nextImage">
             <i class="bi bi-chevron-right" aria-hidden="true"></i>
           </button>
         </figure>
 
-        <div
-          class="preview-stage__floating-menu"
-          aria-label="Ações disponíveis"
-        >
-          <button
-            type="button"
-            class="preview-action-btn"
-            aria-label="Excluir imagem"
-            @click="removeImage"
-          >
+        <div class="preview-stage__floating-menu" aria-label="Ações disponíveis">
+          <button type="button" class="preview-action-btn" aria-label="Excluir imagem" @click="removeImage">
             <i class="bi bi-trash3-fill" aria-hidden="true"></i>
           </button>
-          <button
-            type="button"
-            class="preview-action-btn"
-            aria-label="Recarregar imagem"
-            @click="rotateImage"
-          >
+          <button type="button" class="preview-action-btn" aria-label="Recarregar imagem" @click="rotateImage">
             <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
           </button>
         </div>
       </div>
 
-      <div
-        class="preview-pagination"
-        role="tablist"
-        aria-label="Seleção de imagens carregadas"
-      >
-        <button
-          v-for="(preview, index) in previewItems"
-          :key="`indicator-${preview.id}`"
-          type="button"
-          class="preview-pagination__item"
-          :class="{ 'is-active': index === selectedIndex }"
-          :aria-current="index === selectedIndex ? 'true' : undefined"
-          @click="selectImage(index)"
-        >
+      <div class="preview-pagination" role="tablist" aria-label="Seleção de imagens carregadas">
+        <button v-for="(preview, index) in previewItems" :key="`indicator-${preview.id}`" type="button"
+          class="preview-pagination__item" :class="{ 'is-active': index === selectedIndex }"
+          :aria-current="index === selectedIndex ? 'true' : undefined" @click="selectImage(index)">
           {{ index + 1 }}
         </button>
       </div>
 
-      <div
-        class="preview-thumbnails"
-        aria-label="Miniaturas das imagens selecionadas"
-      >
+      <div class="preview-thumbnails" aria-label="Miniaturas das imagens selecionadas">
         <div class="preview-thumbnails__track" role="listbox">
-          <button
-            v-if="pendingImages.length < imageUploadStore.MAX_FILES"
-            type="button"
-            class="preview-thumb preview-thumb--add"
-            aria-label="Adicionar novas imagens"
-            @click="triggerAddImage"
-          >
+          <button v-if="pendingImages.length < imageUploadStore.MAX_FILES" type="button"
+            class="preview-thumb preview-thumb--add" aria-label="Adicionar novas imagens" @click="triggerAddImage">
             <i class="bi bi-plus-circle-fill" aria-hidden="true"></i>
           </button>
 
-          <button
-            v-for="(preview, index) in previewItems"
-            :key="preview.id"
-            type="button"
-            class="preview-thumb"
-            :class="{ 'is-active': index === selectedIndex }"
-            :aria-label="`Pré-visualização ${index + 1}`"
-            :aria-current="index === selectedIndex ? 'true' : undefined"
-            @click="selectImage(index)"
-          >
-            <img
-              :src="preview.url"
-              :alt="preview.file?.name || `Imagem ${index + 1}`"
-            />
+          <button v-for="(preview, index) in previewItems" :key="preview.id" type="button" class="preview-thumb"
+            :class="{ 'is-active': index === selectedIndex }" :aria-label="`Pré-visualização ${index + 1}`"
+            :aria-current="index === selectedIndex ? 'true' : undefined" @click="selectImage(index)">
+            <img :src="preview.url" :alt="preview.file?.name || `Imagem ${index + 1}`" />
+            <span v-if="isImageComplete(index)" class="preview-thumb__check" aria-label="Metadados completos">
+              <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+            </span>
           </button>
         </div>
       </div>
@@ -119,6 +60,7 @@
 import { computed, ref, watch, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useImageUploadStore } from "@/store/imageUploads";
+import { isMetadataValid } from "@/helpers/imageMetadata";
 
 defineOptions({ name: "ImagePreviewPanel" });
 
@@ -152,6 +94,11 @@ watch(
   },
   { immediate: true, deep: true }
 );
+
+// Indica se a imagem no índice já tem os metadados mínimos preenchidos.
+// Lê direto da store para manter reatividade conforme o formulário grava.
+const isImageComplete = (index) =>
+  isMetadataValid(pendingImages.value[index]?.metadata || {});
 
 const hasPreviewItems = computed(() => previewItems.value.length > 0);
 const activePreview = computed(() =>
@@ -380,7 +327,8 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  /* Folga para o outline do thumbnail selecionado não ser cortado */
+  padding: 6px;
   flex-wrap: nowrap;
 }
 
@@ -398,10 +346,11 @@ onUnmounted(() => {
 }
 
 .preview-thumb {
+  position: relative;
   width: 90px;
   height: 70px;
   border-radius: 12px;
-  border: 2px solid transparent;
+  border: none;
   background-color: #f6f6f6;
   display: inline-flex;
   align-items: center;
@@ -410,16 +359,14 @@ onUnmounted(() => {
   flex-shrink: 0;
   cursor: pointer;
   padding: 0;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: outline-color 0.2s ease;
 }
 
 .preview-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: inherit;
 }
 
 .preview-thumb--add {
@@ -437,8 +384,26 @@ onUnmounted(() => {
 }
 
 .preview-thumb.is-active {
-  border-color: #0f59a5;
-  box-shadow: 0 0 0 2px rgba(15, 89, 165, 0.2);
+  outline: 5px solid var(--Azul_M, #0f89e1);
+  outline-offset: 0;
+}
+
+.preview-thumb__check {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(102, 157, 59, 0.5);
+  /* #669D3B 50% */
+  pointer-events: none;
+}
+
+.preview-thumb__check i {
+  font-size: 31px;
+  /* ~45% da altura do thumbnail (70px) */
+  line-height: 1;
+  color: #fff;
 }
 
 .preview-pagination {
@@ -480,6 +445,11 @@ onUnmounted(() => {
   .preview-thumb {
     width: 60px;
     height: 60px;
+  }
+
+  .preview-thumb__check i {
+    font-size: 27px;
+    /* ~45% da altura do thumbnail mobile (60px) */
   }
 }
 </style>

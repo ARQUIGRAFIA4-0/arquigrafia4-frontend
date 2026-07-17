@@ -27,6 +27,8 @@ const collectionId = computed(() => route.params.collectionId);
 
 const selectedImageId = ref(null);
 const removingImageId = ref(null);
+const pendingRemovals = ref([]);
+const initialImageOrder = ref([]);
 
 function onCardActivate(item, event) {
   const target = event?.target;
@@ -36,29 +38,23 @@ function onCardActivate(item, event) {
     selectedImageId.value === item.id ? null : item.id;
 }
 
-async function removeImageFromCollection(imageId) {
-  if (!collectionId.value || !imageId) return;
+function handleReorder(newImages) {
+  collectionImages.value = newImages;
+}
 
-  removingImageId.value = imageId;
+function removeImageFromCollection(imageId) {
+  if (!imageId) return;
 
-  try {
-    await albumsStore.removeImagesFromAlbum(
-      authStore.authHeader,
-      collectionId.value,
-      imageId
-    );
+  if (!pendingRemovals.value.includes(imageId)) {
+    pendingRemovals.value = [...pendingRemovals.value, imageId];
+  }
 
-    collectionImages.value = collectionImages.value.filter(
-      (img) => img.id !== imageId
-    );
+  collectionImages.value = collectionImages.value.filter(
+    (img) => img.id !== imageId
+  );
 
-    if (selectedImageId.value === imageId) {
-      selectedImageId.value = null;
-    }
-  } catch (error) {
-    console.error("Erro ao remover imagem da coleção:", error);
-  } finally {
-    removingImageId.value = null;
+  if (selectedImageId.value === imageId) {
+    selectedImageId.value = null;
   }
 }
 
@@ -103,6 +99,7 @@ async function fetchCollectionImages() {
     initialDescription.value = collectionDescription.value;
 
     await loadCollectionImageDetails(data?.images || []);
+    initialImageOrder.value = collectionImages.value.map((img) => img.id);
   } catch (error) {
     console.error("Erro ao carregar coleção:", error);
     collectionImages.value = [];
@@ -146,10 +143,23 @@ const isSaving = ref(false);
 
 const DESCRIPTION_MAX_LENGTH = 500;
 
+const hasReorder = computed(() => {
+  const current = collectionImages.value.map((img) => img.id);
+  const initial = initialImageOrder.value.filter(
+    (id) => !pendingRemovals.value.includes(id)
+  );
+  return (
+    current.length !== initial.length ||
+    current.some((id, i) => id !== initial[i])
+  );
+});
+
 const hasChanges = computed(() => {
   return (
     collectionTitle.value.trim() !== initialTitle.value ||
-    collectionDescription.value.trim() !== initialDescription.value
+    collectionDescription.value.trim() !== initialDescription.value ||
+    pendingRemovals.value.length > 0 ||
+    hasReorder.value
   );
 });
 
@@ -184,6 +194,14 @@ async function handleSave() {
       payload
     );
 
+    if (pendingRemovals.value.length > 0 || hasReorder.value) {
+      await albumsStore.syncImages(
+        authStore.authHeader,
+        collectionId.value,
+        collectionImages.value
+      );
+    }
+
     goToCollectionDetail();
   } catch (error) {
     console.error("Erro ao salvar coleção:", error);
@@ -201,6 +219,8 @@ watch(collectionId, () => {
   collectionImages.value = [];
   selectedImageId.value = null;
   removingImageId.value = null;
+  pendingRemovals.value = [];
+  initialImageOrder.value = [];
   collectionTitle.value = "";
   collectionDescription.value = "";
   initialTitle.value = "";
@@ -225,6 +245,7 @@ watch(collectionId, () => {
               :removing-image-id="removingImageId"
               @activate="onCardActivate"
               @remove="removeImageFromCollection"
+              @reorder="handleReorder"
             />
           </section>
 

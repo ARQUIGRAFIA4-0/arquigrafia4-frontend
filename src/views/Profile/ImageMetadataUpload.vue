@@ -1,30 +1,13 @@
 <template>
   <div class="container py-4 position-relative">
-    <transition name="fade">
-      <div class="upload-box__alert" v-if="showAlert">
-        <div
-          class="alert h-auto fs-6 border border-start-3"
-          :class="alertType === 'success'
-            ? 'alert-success bg-positivo-c text-positivo-e border-success'
-            : 'alert-danger bg-negativo-c text-negativo-e border-danger'"
-          role="alert"
-        >
-          <i
-            :class="alertType === 'success'
-              ? 'bi bi-check-circle-fill text-positivo-e'
-              : 'bi bi-exclamation-triangle-fill text-negativo-e'"
-          />
-          <span>{{ alertMessage }}</span>
-          <button
-            type="button"
-            :class="['btn-close', alertType === 'success' ? 'text-positivo-e' : 'text-negativo-e']"
-            data-bs-dismiss="alert"
-            aria-label="Close"
-            @click="showAlert = false"
-          />
-        </div>
-      </div>
-    </transition>
+    <AppToast
+      class="upload-box__alert"
+      variant="soft"
+      :toasts="toast.toasts.value"
+      @close="toast.hide"
+      @pause="toast.pause"
+      @resume="toast.resume"
+    />
 
     <div class="row align-items-start gy-4 metadata-upload__layout">
       <div class="col-12 col-md-6 order-1 order-md-1 sticky-preview-panel">
@@ -678,17 +661,52 @@
       <label class="form-check-label" for="sameDataToggle">
         Usar mesmos dados para todos os arquivos enviados
       </label>
+      <button
+        type="button"
+        class="btn p-0 border-0 bg-transparent ms-2"
+        style="vertical-align: middle; transform: translateY(-2px)"
+        data-bs-toggle="popover"
+        data-bs-placement="top"
+        data-bs-trigger="hover focus"
+        aria-label="Enquanto marcada, qualquer alteração nos metadados é aplicada a todas as imagens."
+        ref="sameDataInfoRef"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+        >
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M12 6C12 7.5913 11.3679 9.11742 10.2426 10.2426C9.11742 11.3679 7.5913 12 6 12C4.4087 12 2.88258 11.3679 1.75736 10.2426C0.632141 9.11742 0 7.5913 0 6C0 4.4087 0.632141 2.88258 1.75736 1.75736C2.88258 0.632141 4.4087 0 6 0C7.5913 0 9.11742 0.632141 10.2426 1.75736C11.3679 2.88258 12 4.4087 12 6ZM4.122 4.52475C4.09782 4.52508 4.07384 4.52047 4.0515 4.51121C4.02917 4.50195 4.00896 4.48823 3.99211 4.47089C3.97526 4.45354 3.96213 4.43295 3.95351 4.41036C3.94489 4.38777 3.94098 4.36366 3.942 4.3395C4.0125 3.06825 5.05275 2.625 6.00375 2.625C7.05075 2.625 8.00775 3.1725 8.00775 4.305C8.00775 5.115 7.5315 5.5005 7.07475 5.84775C6.522 6.267 6.31725 6.42375 6.31725 6.96225V7.041C6.31725 7.09073 6.2975 7.13842 6.26233 7.17358C6.22717 7.20875 6.17948 7.2285 6.12975 7.2285H5.52225C5.47304 7.22851 5.4258 7.20916 5.39072 7.17465C5.35564 7.14013 5.33554 7.09321 5.33475 7.044L5.33175 6.88125C5.30325 6.186 5.703 5.75775 6.20775 5.391C6.65025 5.058 6.9315 4.839 6.9315 4.36275C6.9315 3.744 6.4605 3.48675 5.946 3.48675C5.34375 3.48675 5.00625 3.84525 4.9395 4.33725C4.926 4.44 4.8435 4.52475 4.74 4.52475H4.12125H4.122ZM5.86575 9.357C5.42775 9.357 5.109 9.0615 5.109 8.66175C5.109 8.24775 5.42775 7.95675 5.8665 7.95675C6.32325 7.95675 6.6375 8.24775 6.6375 8.66175C6.6375 9.0615 6.3225 9.357 5.86575 9.357Z"
+            fill="#2F2F2F"
+          />
+        </svg>
+      </button>
     </div>
     <div class="d-flex gap-3">
-      <button class="btn btn-outline-secondary" @click="handleCancel">
+      <button
+        class="btn btn-outline-secondary"
+        :disabled="isSubmitting"
+        @click="handleCancel"
+      >
         Cancelar
       </button>
       <button
         class="btn btn-primary"
-        :disabled="!canSubmit"
+        :disabled="!canSubmit || isSubmitting"
         @click="handleSubmit"
       >
-        Enviar imagens
+        <span
+          v-if="isSubmitting"
+          class="spinner-border spinner-border-sm me-2"
+          role="status"
+          aria-hidden="true"
+        />
+        {{ isSubmitting ? "Enviando..." : "Enviar imagens" }}
       </button>
     </div>
   </div>
@@ -697,12 +715,34 @@
     v-model="showWorkCreateModal"
     @created="onWorkCreated"
   />
+
+  <transition name="fade">
+    <div
+      v-if="isSubmitting"
+      class="upload-overlay"
+      role="alertdialog"
+      aria-live="assertive"
+      aria-busy="true"
+    >
+      <div class="upload-overlay__box">
+        <div class="spinner-border text-light mb-3" role="status">
+          <span class="visually-hidden">Enviando...</span>
+        </div>
+        <p class="upload-overlay__text mb-0">
+          Enviando {{ uploadProgress.current }} de {{ uploadProgress.total }}...
+        </p>
+        <p class="upload-overlay__hint mb-0">Não feche esta janela.</p>
+      </div>
+    </div>
+  </transition>
 </template>
 
 <script setup>
-import { ref, markRaw, computed, watch, onMounted } from "vue";
+import { ref, markRaw, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import axios from "@/axios";
 import ImagePreviewPanel from "@/components/imageMetadaUpload/ImagePreviewPanel.vue";
+import AppToast from "@/components/ui/AppToast.vue";
+import { useToast } from "@/composables/useToast";
 import UiField from "@/components/ui/UiField.vue";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
@@ -712,14 +752,38 @@ import { useAuthStore } from "@/store/auth";
 import { useVracStore } from "@/store/vrac";
 import { storeToRefs } from "pinia";
 import { useRouter, useRoute } from "vue-router";
+import { useQueryClient } from "@tanstack/vue-query";
 import { formatDate, parseYearFromDateString } from "@/helpers/dateUtils";
+import { isMetadataValid } from "@/helpers/imageMetadata";
 import Fuse from "fuse.js";
+import { Popover } from "bootstrap";
 defineOptions({ name: "ImageMetadataUpload" });
 
 const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 
 const router = useRouter();
 const route = useRoute();
+const queryClient = useQueryClient();
+
+// Destino pós-upload: se a publicação foi para um coletivo, volta para a página
+// inicial daquele coletivo; caso contrário, para o grid de imagens do usuário.
+function postUploadTarget() {
+  const { publishAs, publishAsId } = route.query;
+  if (publishAs === "collective" && publishAsId) {
+    return { name: "collective-detail", params: { id: String(publishAsId) } };
+  }
+  return { name: "my-profile-images" };
+}
+
+// Invalida os caches das listagens de imagens. Cobre o grid do usuário/home
+// (["images"]) e o grid do coletivo (["collective-images"]), já que o upload
+// pode ter sido publicado em qualquer um dos contextos.
+async function invalidateImageCaches() {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["images"], refetchType: "all" }),
+    queryClient.invalidateQueries({ queryKey: ["collective-images"], refetchType: "all" }),
+  ]);
+}
 const imageUploadStore = useImageUploadStore();
 const { pendingImages, selectedIndex } = storeToRefs(imageUploadStore);
 const authStore = useAuthStore();
@@ -812,9 +876,39 @@ const selectIdentity = (identity) => {
 };
 
 const currentSection = ref("essenciais");
-const showAlert = ref(false);
-const alertMessage = ref("");
-const alertType = ref("error"); // 'error' | 'success'
+const toast = useToast();
+
+const isSubmitting = ref(false);
+const uploadProgress = ref({ current: 0, total: 0 });
+
+// Trava o scroll do body enquanto o overlay de envio está ativo
+watch(isSubmitting, (active) => {
+  document.body.style.overflow = active ? "hidden" : "";
+});
+
+// Popover de ajuda do checkbox "usar mesmos dados"
+const sameDataInfoRef = ref(null);
+let sameDataPopover = null;
+
+onMounted(() => {
+  if (sameDataInfoRef.value) {
+    sameDataPopover = new Popover(sameDataInfoRef.value, {
+      trigger: "hover focus",
+      placement: "top",
+      container: "body",
+      content:
+        "Enquanto marcada, qualquer alteração nos metadados é aplicada a todas as imagens.",
+    });
+  }
+});
+
+onBeforeUnmount(() => {
+  document.body.style.overflow = "";
+  if (sameDataPopover) {
+    sameDataPopover.dispose();
+    sameDataPopover = null;
+  }
+});
 
 const isTitleTouched = ref(false);
 const isTitleInvalid = computed(
@@ -1192,9 +1286,7 @@ const createAndAddSubject = async (term) => {
     filteredTagSuggestions.value = [];
     showTagSuggestions.value = false;
   } catch {
-    alertType.value = "error";
-    alertMessage.value = "Não foi possível criar o assunto. Tente novamente.";
-    showAlert.value = true;
+    toast.show("Não foi possível criar o assunto. Tente novamente.", "error");
   } finally {
     isCreatingSubject.value = false;
   }
@@ -1459,33 +1551,7 @@ const selectTab = (section) => {
 };
 
 const handleUploadError = (message) => {
-  alertType.value = "error";
-  alertMessage.value = message;
-  showAlert.value = true;
-};
-
-const isMetadataValid = (metadata) => {
-  if (!metadata.title?.trim()) {
-    return false;
-  }
-
-  if (metadata.isAuthor || metadata.isPublicDomain) {
-    return true;
-  }
-
-  if (!metadata.hasAuthorization && !metadata.unknownAuthor) {
-    return false;
-  }
-
-  if (
-    metadata.hasAuthorization &&
-    !metadata.unknownAuthor &&
-    !metadata.authorName?.trim()
-  ) {
-    return false;
-  }
-
-  return true;
+  toast.show(message, "error");
 };
 
 const canSubmit = computed(() => {
@@ -1521,12 +1587,16 @@ const handleCancel = () => {
 
 const handleSubmit = async () => {
   if (!canSubmit.value) {
-    alertType.value = "error";
-    alertMessage.value =
-      "Por favor, preencha todos os dados obrigatórios de todas as imagens.";
-    showAlert.value = true;
+    toast.show(
+      "Por favor, preencha todos os dados obrigatórios de todas as imagens.",
+      "error"
+    );
     return;
   }
+
+  if (isSubmitting.value) return; // cinto de segurança contra duplo-envio
+  isSubmitting.value = true;
+  uploadProgress.value = { current: 0, total: pendingImages.value.length };
 
   try {
     const successfulUploads = [];
@@ -1536,6 +1606,11 @@ const handleSubmit = async () => {
     for (let index = 0; index < pendingImages.value.length; index++) {
       const image = pendingImages.value[index];
       const metadata = image.metadata || {};
+
+      uploadProgress.value = {
+        current: index + 1,
+        total: pendingImages.value.length,
+      };
 
       try {
         // Mapeia as tags selecionadas para seus UUIDs em allSubjects
@@ -1680,19 +1755,21 @@ const handleSubmit = async () => {
 
     // Exibe os resultados
     if (successfulUploads.length > 0 && failedUploads.length === 0) {
-      alertType.value = "success";
-      alertMessage.value = `${successfulUploads.length} ${
+      const successMessage = `${successfulUploads.length} ${
         successfulUploads.length === 1 ? "imagem enviada" : "imagens enviadas"
       } com sucesso!`;
-      showAlert.value = true;
 
-      // Limpa as imagens e redireciona após um breve atraso
-      setTimeout(() => {
-        imageUploadStore.clearImages();
-        router.push("/profile");
-      }, 2500);
+      // Invalida o cache e redireciona, levando a mensagem de sucesso para o
+      // perfil (o overlay cobriria o alerta se ele fosse exibido aqui).
+      imageUploadStore.clearImages();
+      await invalidateImageCaches();
+      router.push({
+        ...postUploadTarget(),
+        state: { uploadSuccess: successMessage },
+      });
     } else if (failedUploads.length > 0) {
-      alertType.value = "error";
+      // Reabilita a UI para permitir correção e reenvio
+      isSubmitting.value = false;
       const message =
         successfulUploads.length > 0
           ? `${successfulUploads.length} ${
@@ -1706,12 +1783,11 @@ const handleSubmit = async () => {
               failedUploads.length === 1 ? "imagem" : "imagens"
             }.`;
 
-      alertMessage.value = message;
-      showAlert.value = true;
+      toast.show(message, "error");
 
       // Se alguns enviaram com sucesso, remove-os da lista
       if (successfulUploads.length > 0) {
-        setTimeout(() => {
+        setTimeout(async () => {
           // Remove os uploads bem-sucedidos da lista pendente
           const remainingImages = pendingImages.value.filter((img) => {
             const title = img.metadata?.title || "";
@@ -1720,18 +1796,20 @@ const handleSubmit = async () => {
 
           if (remainingImages.length === 0) {
             imageUploadStore.clearImages();
-            router.push("/profile");
+            await invalidateImageCaches();
+            router.push(postUploadTarget());
           }
         }, 2000);
       }
     }
   } catch (error) {
     console.error("Erro ao enviar imagens:", error);
-    alertType.value = "error";
-    alertMessage.value =
+    isSubmitting.value = false;
+    toast.show(
       error.response?.data?.message ||
-      "Erro ao enviar imagens. Por favor, tente novamente.";
-    showAlert.value = true;
+        "Erro ao enviar imagens. Por favor, tente novamente.",
+      "error"
+    );
   }
 };
 </script>
@@ -1758,6 +1836,39 @@ $breakpoint-md: 768px;
   @media (min-width: 768px) {
     max-width: 50%;
   }
+}
+
+.upload-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.upload-overlay__box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: #fff;
+  padding: 2rem;
+}
+
+.upload-overlay__text {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.upload-overlay__hint {
+  color: #fff;
+  font-size: 0.875rem;
+  opacity: 0.75;
+  margin-top: 0.25rem;
 }
 
 .fade-enter-active,

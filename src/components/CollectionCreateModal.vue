@@ -10,6 +10,7 @@
   // Campos de criação de coleção
   const collectionTitle = ref("");
   const collectionDescription = ref("");
+  const collectionIsPrivate = ref(false);
   const isSubmittingCollection = ref(false);
 
   // Toast de criação de coleção
@@ -75,7 +76,7 @@
     }
 
     // Criar o payload para o envio ao backend
-    const payload = { title, description };
+    const payload = { title, description, is_private: collectionIsPrivate.value };
     if (props.collectiveId) {
       payload.collective_id = props.collectiveId;
     }
@@ -112,6 +113,7 @@
           if (open) {
               collectionTitle.value = "";
               collectionDescription.value = "";
+              collectionIsPrivate.value = false;
           }
       }
   );    
@@ -174,6 +176,26 @@
                     rows="6"
                     placeholder="Descreva a nova coleção"
                     />
+                </div>
+
+                <div class="collection-modal__field">
+                    <div class="collection-modal__label-row">
+                      <label class="collection-modal__label" for="collection-visibility">Visibilidade</label>
+                      <span class="collection-modal__label-help" aria-hidden="true">
+                        <i class="bi bi-question-circle-fill"></i>
+                      </span>
+                    </div>
+                    <select
+                    id="collection-visibility"
+                    v-model="collectionIsPrivate"
+                    class="collection-modal__select"
+                    >
+                      <option :value="false">Pública</option>
+                      <option :value="true">Privada</option>
+                    </select>
+                    <p class="collection-modal__hint collection-modal__hint--left">
+                      Coleções privadas só podem ser vistas por você ou pelos membros do coletivo.
+                    </p>
                 </div>
                 </div>
             </div>
@@ -454,6 +476,26 @@
   height: 30px;
 }
 
+.collection-modal__select {
+  width: 100%;
+  height: 30px;
+  border: 0.75px solid var(--preto, #1f1f1f);
+  border-radius: 5px;
+  background: var(--off_white, #faf9f9);
+  box-sizing: border-box;
+  padding: 6px 10px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #212529;
+  cursor: pointer;
+}
+
+.collection-modal__select:focus {
+  outline: none;
+}
+
 .collection-modal__textarea {
   min-height: 120px;
   resize: vertical;
@@ -480,6 +522,10 @@
   font-weight: 400;
   line-height: 16px;
   color: #2f2f2f;
+}
+
+.collection-modal__hint--left {
+  text-align: left;
 }
 
 .collection-modal__footer {
@@ -596,6 +642,12 @@
   .collection-modal__input {
     height: 26px;
     padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .collection-modal__select {
+    height: 26px;
+    padding: 2px 8px;
     font-size: 12px;
   }
 

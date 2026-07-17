@@ -1,7 +1,9 @@
 <script setup>
+import { ref, watch } from "vue";
+import draggable from "vuedraggable";
+
 defineOptions({ name: "CollectionEditImagesGrid" });
 
-// Props
 const props = defineProps({
   images: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
@@ -9,7 +11,18 @@ const props = defineProps({
   removingImageId: { type: [String, Number], default: null },
 });
 
-const emit = defineEmits(["activate", "remove"]);
+const emit = defineEmits(["activate", "remove", "reorder"]);
+
+const localImages = ref([...props.images]);
+
+watch(
+  () => props.images,
+  (val) => { localImages.value = [...val]; }
+);
+
+function onReorder() {
+  emit("reorder", [...localImages.value]);
+}
 
 function isCardSelected(item) {
   return props.selectedImageId === item.id;
@@ -65,77 +78,83 @@ function formatDate(dates) {
     <span class="visually-hidden">Carregando imagens...</span>
   </div>
 
-  <div
-    v-else-if="images.length"
+  <draggable
+    v-else-if="localImages.length"
+    v-model="localImages"
+    tag="div"
     class="collection-edit-images-grid"
     aria-label="Imagens da coleção"
+    item-key="id"
+    handle=".collection-edit-images-grid__btn--reorder"
+    :animation="150"
+    @change="onReorder"
   >
-    <div
-      v-for="item in images"
-      :key="item.id"
-      class="collection-edit-images-grid__link"
-      role="button"
-      tabindex="0"
-      @click="emit('activate', item, $event)"
-      @keydown.enter.prevent="emit('activate', item, $event)"
-      @keydown.space.prevent="emit('activate', item, $event)"
-    >
-      <article
-        class="collection-edit-images-grid__card"
-        :class="{
-          'collection-edit-images-grid__card--selected': isCardSelected(item),
-        }"
+    <template #item="{ element: item }">
+      <div
+        class="collection-edit-images-grid__link"
+        role="button"
+        tabindex="0"
+        @click="emit('activate', item, $event)"
+        @keydown.enter.prevent="emit('activate', item, $event)"
+        @keydown.space.prevent="emit('activate', item, $event)"
       >
-        <div class="collection-edit-images-grid__image-wrap">
-          <img
-            :src="item.imageUrl"
-            :alt="item.title || 'Imagem da coleção'"
-            class="collection-edit-images-grid__image"
-            loading="lazy"
-          />
-        </div>
-
-        <div class="collection-edit-images-grid__body">
-          <div class="collection-edit-images-grid__meta">
-            <h3 class="collection-edit-images-grid__title">
-              {{ item.title || "Sem título" }}
-            </h3>
-            <p class="collection-edit-images-grid__subtitle">
-              {{ formatDate(item.dates) || "\u00a0" }}
-            </p>
+        <article
+          class="collection-edit-images-grid__card"
+          :class="{
+            'collection-edit-images-grid__card--selected': isCardSelected(item),
+          }"
+        >
+          <div class="collection-edit-images-grid__image-wrap">
+            <img
+              :src="item.imageUrl"
+              :alt="item.title || 'Imagem da coleção'"
+              class="collection-edit-images-grid__image"
+              loading="lazy"
+            />
           </div>
 
-          <div
-            class="collection-edit-images-grid__actions"
-            :class="{
-              'collection-edit-images-grid__actions--visible': isCardSelected(item),
-            }"
-          >
-            <button
-              type="button"
-              class="collection-edit-images-grid__btn collection-edit-images-grid__btn--remove"
-              :disabled="removingImageId === item.id"
-              :tabindex="isCardSelected(item) ? 0 : -1"
-              @click.stop="emit('remove', item.id)"
+          <div class="collection-edit-images-grid__body">
+            <div class="collection-edit-images-grid__meta">
+              <h3 class="collection-edit-images-grid__title">
+                {{ item.title || "Sem título" }}
+              </h3>
+              <p class="collection-edit-images-grid__subtitle">
+                {{ formatDate(item.dates) || " " }}
+              </p>
+            </div>
+
+            <div
+              class="collection-edit-images-grid__actions"
+              :class="{
+                'collection-edit-images-grid__actions--visible': isCardSelected(item),
+              }"
             >
-              <i class="bi bi-trash" aria-hidden="true" />
-              <span>Remover</span>
-            </button>
-            <button
-              type="button"
-              class="collection-edit-images-grid__btn collection-edit-images-grid__btn--reorder"
-              disabled
-              aria-disabled="true"
-              tabindex="-1"
-            >
-              <i class="bi bi-arrow-left-right" aria-hidden="true" />
-              <span>Reordenar</span>
-            </button>
+              <button
+                type="button"
+                class="collection-edit-images-grid__btn collection-edit-images-grid__btn--remove"
+                :disabled="removingImageId === item.id"
+                :tabindex="isCardSelected(item) ? 0 : -1"
+                @click.stop="emit('remove', item.id)"
+              >
+                <i class="bi bi-trash" aria-hidden="true" />
+                <span>Remover</span>
+              </button>
+              <button
+                type="button"
+                class="collection-edit-images-grid__btn collection-edit-images-grid__btn--reorder"
+                :tabindex="isCardSelected(item) ? 0 : -1"
+                aria-label="Arrastar para reordenar"
+                @click.stop
+              >
+                <i class="bi bi-arrows-move" aria-hidden="true" />
+                <span>Reordenar</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </article>
-    </div>
-  </div>
+        </article>
+      </div>
+    </template>
+  </draggable>
 
   <p v-else class="collection-edit-images-grid__empty">
     Esta coleção ainda não possui imagens.
@@ -295,6 +314,10 @@ function formatDate(dates) {
   cursor: pointer;
 }
 
+.collection-edit-images-grid__btn i {
+  font-size: 12px;
+}
+
 .collection-edit-images-grid__btn--remove {
   border-color: var(--Laranja_E, #aa4f28);
   background: var(--Branco, #fff);
@@ -310,8 +333,11 @@ function formatDate(dates) {
   border-color: var(--Laranja_E, #aa4f28);
   background: var(--Laranja_E, #aa4f28);
   color: var(--Branco, #fff);
-  opacity: 0.4;
-  cursor: not-allowed;
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
 }
 
 .collection-edit-images-grid__empty {
@@ -371,6 +397,11 @@ function formatDate(dates) {
   100% {
     background-position: -200% 0;
   }
+}
+
+/* Ghost card do SortableJS durante o momento do arraste */
+:deep(.sortable-ghost) {
+  opacity: 0.35;
 }
 
 @media (max-width: 1256px) {
