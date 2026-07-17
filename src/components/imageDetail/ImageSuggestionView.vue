@@ -112,7 +112,7 @@
                   <MapLibreMap :style-url="mapStyleUrl"
                     :center="[suggestion.payload.longitude, suggestion.payload.latitude]" :zoom="14"
                     :marker-position="{ lat: suggestion.payload.latitude, lng: suggestion.payload.longitude }"
-                    marker-color="#0f89e1" />
+                    marker-color="#2F2F2F" />
                 </div>
               </div>
 

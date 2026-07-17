@@ -641,7 +641,7 @@
                   @map-error="handleMapError"
                   @click="handleMapClick"
                   clickable
-                  marker-color="#0f89e1"
+                  marker-color="#2F2F2F"
                 >
                   <MapControls
                     class="position-absolute bottom-0 start-50 translate-middle-x mb-3"
