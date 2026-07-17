@@ -100,19 +100,19 @@ const props = defineProps({
 
 // Lista estatica só que com id e term, para o FitTags funcionar
 const RELATION_CATEGORIES_TAGS = [
-  { id: 1, term: `Assunto` },
-  { id: 2, term: "período" },
-  { id: 3, term: "localização" },
-  { id: 4, term: "materiais" },
-  { id: 5, term: "estilos" },
-  { id: 6, term: "interpretações" },
-  { id: 7, term: "autoria da imagem" },
-  { id: 8, term: "obra" },
-  { id: 9, term: "autoria da obra" },
-  { id: 10, term: "aspectos estéticos" },
-  { id: 11, term: "contexto cultural" },
-  { id: 12, term: "tipologia" },
-  { id: 13, term: "técnicas" }
+    { id: 1, term: "assuntos", icon: "bi bi-bookmark" },
+  { id: 2, term: "período", icon: "bi bi-calendar-range" },
+  { id: 3, term: "localização", icon: "bi bi-geo-alt" },
+  { id: 4, term: "materiais", icon: "bi bi-box-seam" },
+  { id: 5, term: "estilos", icon: "bi bi-palette" },
+  { id: 6, term: "interpretações", icon: "bi bi-chat-square-text" },
+  { id: 7, term: "autoria da imagem", icon: "bi bi-camera" },
+  { id: 8, term: "obra", icon: "bi bi-easel" },
+  { id: 9, term: "autoria da obra", icon: "bi bi-pencil-square" },
+  { id: 10, term: "aspectos estéticos", icon: "bi bi-stars" },
+  { id: 11, term: "contexto cultural", icon: "bi bi-globe2" },
+  { id: 12, term: "tipologia", icon: "bi bi-diagram-3" },
+  { id: 13, term: "técnicas", icon: "bi bi-tools" },
 ]
 
 const activeCardId = ref(null);
@@ -163,8 +163,8 @@ const isMobileGrid = computed(() => windowWidth.value <= 768);
 
 //----
 // Medição de altura dos cards (baseada em layout, não em click)
-const SHORT_HEIGHT_THRESHOLD = 132.99;
-const NARROWLY_LOW_HEIGHT_THRESHOLD = 89;
+const SHORT_HEIGHT_THRESHOLD = 138.79;
+const NARROWLY_LOW_HEIGHT_THRESHOLD = 91.79;
 
 // Guarda a referência de cada card pelo id (não precisa ser reativo)
 const cardRefs = new Map();
