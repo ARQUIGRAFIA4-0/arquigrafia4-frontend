@@ -398,6 +398,7 @@ $breakpoint-lg: 1440px;
       font-size: 1.25rem;
       color: var(--Preto);
       margin-bottom: 0px;
+      white-space: nowrap
     }
 
     .title-icon {
