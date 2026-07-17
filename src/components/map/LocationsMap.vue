@@ -39,6 +39,14 @@ let activeCardPopup = null;
 let activeCardImageId = null;
 let isUnmounting = false;
 
+// Guarda o centro e as folhas atualmente "abertas" para poder re-renderizar/colapsar.
+let spiderContext = null;
+
+const emptyFeatureCollection = () => ({
+  type: "FeatureCollection",
+  features: [],
+});
+
 const styleUrl = "https://tiles.openfreemap.org/styles/positron";
 const sourceId = "locations-images";
 const iconId = "locations-camera-icon";
@@ -47,6 +55,12 @@ const selectedIconId = "locations-camera-icon-active";
 const clusterLayerId = `${sourceId}-clusters`;
 const clusterCountLayerId = `${sourceId}-cluster-count`;
 const unclusteredLayerId = `${sourceId}-unclustered`;
+
+// Spiderfy: hastes (linhas) e folhas (câmeras espalhadas)
+const spiderLegsSourceId = `${sourceId}-spider-legs`;
+const spiderLeavesSourceId = `${sourceId}-spider-leaves`;
+const spiderLegsLayerId = `${sourceId}-spider-legs`;
+const spiderLeavesLayerId = `${sourceId}-spider-leaves`;
 
 const baseColor = "#2F2F2F";
 const selectedColor = "#D27D30";
@@ -422,6 +436,7 @@ const handlePointClick = (event) => {
 
   if (!map || !id) return;
 
+  collapseSpider();
   closeActivePopup();
 
   if (props.context === "explore") {
@@ -544,6 +559,7 @@ const resetToInitial = () => {
 
   selectedId.value = null;
   emit("select", null);
+  collapseSpider();
   closeActivePopup();
   closeActiveCardPopup();
 
@@ -563,7 +579,199 @@ const resetToInitial = () => {
 
 };
 
-// Clique em um cluster -> aproxima o zoom para expandi-lo.
+/* ------------------------------- Spiderfy --------------------------------- */
+
+// Compara coordenadas com tolerância para float.
+const coordKey = (coordinates) => coordinates.map((value) => Number(value).toFixed(6)).join(",");
+
+// Gera as posições (em px) dos ícones em anéis concêntricos compactos.
+// Cada posição carrega o ângulo/raio para desenhar a pétala correspondente.
+const generateSpiderPositions = (count) => {
+  const positions = [];
+  if (count <= 0) return positions;
+
+  const iconSpacing = 38;
+  const ringGap = 54;
+  const singleRingLimit = 20;
+
+  let placed = 0;
+  let ringIndex = 0;
+  let previousRadius = 0;
+
+  while (placed < count) {
+    const remaining = count - placed;
+
+    const radius =
+      ringIndex === 0
+        ? Math.max(
+            50,
+            Math.min(92, (Math.min(count, singleRingLimit) * iconSpacing) / (2 * Math.PI))
+          )
+        : previousRadius + ringGap;
+
+    const capacity =
+      count <= singleRingLimit
+        ? count
+        : Math.max(8, Math.floor((2 * Math.PI * radius) / iconSpacing));
+
+    const inRing = Math.min(capacity, remaining);
+    const angleStep = (2 * Math.PI) / inRing;
+    const angleOffset =
+      -Math.PI / 2 + (ringIndex % 2 === 0 ? 0 : angleStep / 2);
+
+    // Mantém a base da pétala com aproximadamente 28 px de largura.
+    const spread = Math.min(angleStep * 0.38, Math.atan2(14, radius));
+    const innerRadius = ringIndex === 0 ? 0 : previousRadius + 14;
+
+    for (let i = 0; i < inRing; i += 1) {
+      const angle = angleOffset + angleStep * i;
+      positions.push({
+        x: radius * Math.cos(angle),
+        y: radius * Math.sin(angle),
+        angle,
+        radius,
+        spread,
+        innerRadius,
+      });
+    }
+
+    placed += inRing;
+    previousRadius = radius;
+    ringIndex += 1;
+  }
+
+  return positions;
+};
+
+// Constrói as pétalas (polígonos) e as folhas (câmeras) em forma de roseta.
+const buildSpiderFeatures = (map, center, leaves) => {
+  const centerPx = map.project(center);
+  const positions = generateSpiderPositions(leaves.length);
+
+  const petalFeatures = [];
+  const leafFeatures = [];
+
+  const toLngLat = (x, y) => {
+    const point = map.unproject([centerPx.x + x, centerPx.y + y]);
+    return [point.lng, point.lat];
+  };
+
+  leaves.forEach((leaf, index) => {
+    const pos = positions[index] ?? {
+      x: 0,
+      y: 0,
+      angle: 0,
+      radius: 0,
+      spread: 0,
+      innerRadius: 0,
+    };
+    const coordinates = toLngLat(pos.x, pos.y);
+
+    leafFeatures.push({
+      type: "Feature",
+      geometry: { type: "Point", coordinates },
+      properties: {
+        ...leaf.properties,
+        selected: leaf.properties?.id === selectedId.value,
+      },
+    });
+
+    if (pos.radius > 0) {
+      const apex = toLngLat(
+        pos.innerRadius * Math.cos(pos.angle),
+        pos.innerRadius * Math.sin(pos.angle)
+      );
+      const base1 = toLngLat(
+        pos.radius * Math.cos(pos.angle - pos.spread),
+        pos.radius * Math.sin(pos.angle - pos.spread)
+      );
+      const base2 = toLngLat(
+        pos.radius * Math.cos(pos.angle + pos.spread),
+        pos.radius * Math.sin(pos.angle + pos.spread)
+      );
+
+      petalFeatures.push({
+        type: "Feature",
+        geometry: { type: "Polygon", coordinates: [[apex, base1, base2, apex]] },
+        properties: {
+          selected: leaf.properties?.id === selectedId.value,
+        },
+      });
+    }
+  });
+
+  return {
+    legs: { type: "FeatureCollection", features: petalFeatures },
+    leaves: { type: "FeatureCollection", features: leafFeatures },
+  };
+};
+
+// Renderiza (ou re-renderiza) o spider a partir do contexto guardado.
+const renderSpider = () => {
+  const map = mapInstance.value;
+  if (!map || !spiderContext) return;
+
+  const { legs, leaves } = buildSpiderFeatures(
+    map,
+    spiderContext.center,
+    spiderContext.leaves
+  );
+
+  map.getSource(spiderLegsSourceId)?.setData(legs);
+  map.getSource(spiderLeavesSourceId)?.setData(leaves);
+
+};
+
+// Oculta somente o cluster aberto e restaura sua exibição ao fechar o spider.
+const setExplodedCluster = (clusterId = null) => {
+  const map = mapInstance.value;
+  if (!map) return;
+
+  const filter =
+    clusterId == null
+      ? ["has", "point_count"]
+      : [
+          "all",
+          ["has", "point_count"],
+          ["!=", ["get", "cluster_id"], clusterId],
+        ];
+
+  if (map.getLayer(clusterLayerId)) {
+    map.setFilter(clusterLayerId, filter);
+  }
+
+  if (map.getLayer(clusterCountLayerId)) {
+    map.setFilter(clusterCountLayerId, filter);
+  }
+};
+
+// Fecha o spider e limpa as fontes.
+const collapseSpider = () => {
+  const map = mapInstance.value;
+  if (!spiderContext) return;
+
+  spiderContext = null;
+
+  if (!map) return;
+  setExplodedCluster();
+  map.getSource(spiderLegsSourceId)?.setData(emptyFeatureCollection());
+  map.getSource(spiderLeavesSourceId)?.setData(emptyFeatureCollection());
+
+};
+
+// Abre o spider: busca as folhas do cluster e as espalha.
+const spiderfyCluster = async (source, clusterId, center) => {
+  const leaves = await source.getClusterLeaves(clusterId, 10000, 0);
+  if (!leaves?.length) return;
+
+  spiderContext = { center, leaves, clusterId };
+  setExplodedCluster(clusterId);
+  renderSpider();
+
+};
+
+// Clique em um cluster -> se todas as imagens estão no mesmo ponto, abre o spider;
+// caso contrário, aproxima o zoom para expandi-lo.
 const handleClusterClick = async (event) => {
   const map = mapInstance.value;
   if (!map) return;
@@ -577,7 +785,20 @@ const handleClusterClick = async (event) => {
   const source = map.getSource(sourceId);
   if (!source?.getClusterExpansionZoom) return;
 
+  collapseSpider();
+
   try {
+    const leaves = await source.getClusterLeaves(clusterId, 10000, 0);
+    const uniqueCoords = new Set(
+      leaves.map((leaf) => coordKey(leaf.geometry.coordinates))
+    );
+
+    // Todas as imagens no mesmo local -> espalhar em leque.
+    if (uniqueCoords.size === 1) {
+      await spiderfyCluster(source, clusterId, leaves[0].geometry.coordinates);
+      return;
+    }
+
     const zoom = await source.getClusterExpansionZoom(clusterId);
 
     map.easeTo({
@@ -586,10 +807,10 @@ const handleClusterClick = async (event) => {
       duration: SELECTED_ICON_ANIMATION_MS,
       essential: true,
     });
-
   } catch {
     // Fazer nada
   }
+
 };
 
 const handleUnclusteredEnter = (event) => {
@@ -604,6 +825,55 @@ const handleUnclusteredLeave = () => {
 
 const handleClusterEnter = () => setCursor("pointer");
 const handleClusterLeave = () => setCursor("");
+
+// Hover na folha do spider -> miniatura circular.
+const handleSpiderLeafEnter = (event) => {
+  setCursor("pointer");
+  showPopupForFeature(event);
+};
+
+const handleSpiderLeafLeave = () => {
+  setCursor("");
+  closeActivePopup();
+};
+
+// Clique na folha do spider -> seleciona a imagem (sem re-clusterizar).
+const handleSpiderLeafClick = (event) => {
+  const feature = event.features?.[0];
+  const id = feature?.properties?.id ?? null;
+  if (!feature || !id) return;
+
+  closeActivePopup();
+  selectedId.value = id;
+  emit("select", id);
+  if (spiderContext) renderSpider();
+
+  if (props.context === "explore") {
+    closeActiveCardPopup();
+    showExploreCardPopup(feature);
+  }
+};
+
+// Clique fora do spiderfy -> fecha o leque e restaura o agrupamento.
+const handleMapClickOutsideSpider = (event) => {
+  if (!spiderContext) return;
+
+  const map = mapInstance.value;
+  if (!map) return;
+
+  const spiderLayers = [spiderLeavesLayerId, spiderLegsLayerId].filter((id) =>
+    map.getLayer(id)
+  );
+
+  if (spiderLayers.length > 0) {
+    const hits = map.queryRenderedFeatures(event.point, { layers: spiderLayers });
+    if (hits.length > 0) return;
+  }
+
+  collapseSpider();
+  closeActivePopup();
+  closeActiveCardPopup();
+};
 
 /* ------------------------------- Mapa ------------------------------------- */
 // Ajusta o mapa para exibir todas as features visíveis.
@@ -677,6 +947,57 @@ const setupLayers = async (map) => {
     });
   }
 
+  if (!map.getSource(spiderLegsSourceId)) {
+    map.addSource(spiderLegsSourceId, {
+      type: "geojson",
+      data: emptyFeatureCollection(),
+    });
+  }
+
+  if (!map.getSource(spiderLeavesSourceId)) {
+    map.addSource(spiderLeavesSourceId, {
+      type: "geojson",
+      data: emptyFeatureCollection(),
+    });
+  }
+
+  if (!map.getLayer(spiderLegsLayerId)) {
+    map.addLayer({
+      id: spiderLegsLayerId,
+      type: "fill",
+      source: spiderLegsSourceId,
+      paint: {
+        "fill-color": [
+          "case",
+          ["get", "selected"],
+          selectedColor,
+          baseColor,
+        ],
+        "fill-opacity": 1,
+      },
+    });
+  } else {
+    map.setPaintProperty(spiderLegsLayerId, "fill-color", [
+      "case",
+      ["get", "selected"],
+      selectedColor,
+      baseColor,
+    ]);
+  }
+
+  if (!map.getLayer(spiderLeavesLayerId)) {
+    map.addLayer({
+      id: spiderLeavesLayerId,
+      type: "symbol",
+      source: spiderLeavesSourceId,
+      layout: {
+        "icon-image": ["case", ["get", "selected"], selectedIconId, iconId],
+        "icon-size": ["case", ["get", "selected"], 0.95, 0.8],
+        "icon-allow-overlap": true,
+      },
+    });
+  }
+
   map.on("click", clusterLayerId, handleClusterClick);
   map.on("click", clusterCountLayerId, handleClusterClick);
   map.on("click", unclusteredLayerId, handlePointClick);
@@ -686,6 +1007,12 @@ const setupLayers = async (map) => {
   map.on("mouseleave", clusterLayerId, handleClusterLeave);
   map.on("mouseenter", clusterCountLayerId, handleClusterEnter);
   map.on("mouseleave", clusterCountLayerId, handleClusterLeave);
+  map.on("click", spiderLeavesLayerId, handleSpiderLeafClick);
+  map.on("mouseenter", spiderLeavesLayerId, handleSpiderLeafEnter);
+  map.on("mouseleave", spiderLeavesLayerId, handleSpiderLeafLeave);
+  map.on("click", handleMapClickOutsideSpider);
+  map.on("zoomstart", collapseSpider);
+  map.on("dragstart", collapseSpider);
 };
 
 // Manipulador de evento para quando o mapa estiver pronto.
@@ -713,6 +1040,9 @@ const handleMapError = (error) => {
 watch(geoJsonData, (data) => {
   const source = mapInstance.value?.getSource(sourceId);
   if (source?.setData) source.setData(data);
+
+  // Mantém a cor das folhas do spider sincronizada com a seleção.
+  if (spiderContext) renderSpider();
 });
 
 // Reposiciona o mapa quando a quantidade de imagens muda.
@@ -752,20 +1082,31 @@ watch(
 
 defineExpose({ resetToInitial });
 
+/* ------------------------------- Desmontagem ---------------------------------- */
+// Desmonta o mapa e limpa as fontes e camadas.
 onUnmounted(() => {
   isUnmounting = true;
 
   const map = mapInstance.value;
+  collapseSpider();
   closeActivePopup();
   closeActiveCardPopup();
 
-  // O MapLibreMap (filho) desmonta antes e já chama map.remove(),
-  // destruindo o style. Só mexemos nas camadas se o style ainda existir.
   if (map && map.style) {
-    [clusterLayerId, clusterCountLayerId, unclusteredLayerId].forEach((id) => {
+    [
+      clusterLayerId,
+      clusterCountLayerId,
+      unclusteredLayerId,
+      spiderLegsLayerId,
+      spiderLeavesLayerId,
+    ].forEach((id) => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
-    if (map.getSource(sourceId)) map.removeSource(sourceId);
+
+    [sourceId, spiderLegsSourceId, spiderLeavesSourceId].forEach((id) => {
+      if (map.getSource(id)) map.removeSource(id);
+    });
+
     if (map.hasImage(iconId)) map.removeImage(iconId);
     if (map.hasImage(selectedIconId)) map.removeImage(selectedIconId);
   }
