@@ -221,6 +221,16 @@ watch(viewMode, (mode) => {
     isAddToCollectionMode.value = false;
     selectedGridImages.value = [];
   }
+
+  if (
+    route.name === "explore" &&
+    mode !== "map" &&
+    route.query.image
+  ) {
+    const query = { ...route.query };
+    delete query.image;
+    router.replace({ query });
+  }
 });
 
 watch(

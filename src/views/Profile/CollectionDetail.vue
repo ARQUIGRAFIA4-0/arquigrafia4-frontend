@@ -147,8 +147,6 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
       ordered.map((img) => api.getImageDetails(img.id))
     );
 
-    selectedMapImageId.value = null;
-
     const plainImages = JSON.parse(JSON.stringify(collectionImages.value));
     console.log("[CollectionDetail] imagens da coleção:", plainImages);
     console.log("[CollectionDetail] primeira imagem:", plainImages[0]);
@@ -176,7 +174,9 @@ const collectionViewMode = computed(() =>
   selectionToViewMode(viewSelection.value)
 );
 
-const selectedMapImageId = ref(null);
+const selectedMapImageId = ref(
+  typeof route.query.image === "string" ? route.query.image : null
+);
 
 const selectedMapImage = computed(() =>
   collectionImages.value.find((img) => img.id === selectedMapImageId.value) || null
@@ -184,15 +184,16 @@ const selectedMapImage = computed(() =>
 
 function handleMapSelect(id) {
   selectedMapImageId.value = id;
-}
 
-function handleOutsideMapClick(event) {
-  if (collectionViewMode.value !== "map") return;
-  if (!selectedMapImageId.value) return;
-  if (event.target.closest(".locations-map, .collection-images-map")) return;
-  if (event.target.closest("button, a, [role='button']")) return;
+  const query = { ...route.query };
 
-  collectionMapRef.value?.resetToInitial?.();
+  if (id) {
+    query.image = id;
+  } else {
+    delete query.image;
+  }
+
+  router.replace({ query });
 }
 
 // Redireciona para a página de detalhes da imagem.
@@ -202,7 +203,16 @@ function goToImageDetail(id) {
 }
 
 watch(collectionViewMode, (mode) => {
-  if (mode !== "map") selectedMapImageId.value = null;
+  if (mode !== "map") {
+    selectedMapImageId.value = null;
+    // Remove a query de imagem da URL.
+    if (route.query.image) {
+      const query = { ...route.query };
+      delete query.image;
+      router.replace({ query });
+    }
+  }
+
 });
 
 const isInfoActive = ref(true);
@@ -370,12 +380,10 @@ onMounted(() => {
   fetchCollectionData();
   updateIsMobile();
   window.addEventListener("resize", updateIsMobile);
-  document.addEventListener("click", handleOutsideMapClick);
 });
 
 onUnmounted(() => {
   window.removeEventListener("resize", updateIsMobile);
-  document.removeEventListener("click", handleOutsideMapClick);
 });
 
 watch(
@@ -502,8 +510,9 @@ watch(
                 v-else-if="collectionViewMode === 'map'"
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
+                :initial-selected-id="selectedMapImageId"
                 @select="handleMapSelect"
-              />              
+              />            
             </section>
           </div>
         </template>
@@ -600,7 +609,11 @@ watch(
 
               <div
                 class="collection-detail__map-panel-body"
-                :class="{ 'collection-detail__map-panel-body--map': collectionViewMode === 'map' }"
+                :class="{
+                  'collection-detail__map-panel-body--map': collectionViewMode === 'map',
+                  'collection-detail__map-panel-body--selected':
+                    collectionViewMode === 'map' && selectedMapImage,
+                }"
               >
               <section
                 v-if="collectionViewMode === 'map' && selectedMapImage"
@@ -618,7 +631,10 @@ watch(
                   class="collection-detail__selected-image-button"
                   @click="goToImageDetail(selectedMapImage.id)"
                 >
-                  <span class="collection-detail__selected-image-title">
+                  <span
+                    class="collection-detail__selected-image-title"
+                    :title="selectedMapImage.title || 'Sem título'"
+                  >
                     {{ selectedMapImage.title || "Sem título" }}
                   </span>
                   <span
@@ -763,7 +779,11 @@ watch(
 
               <div
                 class="collection-detail__map-panel-body"
-                :class="{ 'collection-detail__map-panel-body--map': collectionViewMode === 'map' }"
+                :class="{
+                  'collection-detail__map-panel-body--map': collectionViewMode === 'map',
+                  'collection-detail__map-panel-body--selected':
+                    collectionViewMode === 'map' && selectedMapImage,
+                }"
               >
               <section
                 v-if="collectionViewMode === 'map' && selectedMapImage"
@@ -781,7 +801,10 @@ watch(
                   class="collection-detail__selected-image-button"
                   @click="goToImageDetail(selectedMapImage.id)"
                 >
-                  <span class="collection-detail__selected-image-title">
+                  <span
+                    class="collection-detail__selected-image-title"
+                    :title="selectedMapImage.title || 'Sem título'"
+                  >
                     {{ selectedMapImage.title || "Sem título" }}
                   </span>
                   <span
@@ -1089,15 +1112,19 @@ watch(
   flex-shrink: 0;
 }
 
+.collection-detail__map-panel-body--selected {
+  min-height: 0;
+}
+
 .collection-detail__selected-image {
   display: flex;
   width: 338px;
   max-width: 100%;
-  height: 450px;
-  padding: 0 12px;
+  padding: 16px 12px 0;
   flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 16px;
   box-sizing: border-box;
 }
 
@@ -1117,12 +1144,11 @@ watch(
 
 .collection-detail__selected-image-button {
   display: flex;
-  height: 60px;
-  padding-top: 24px;
-  padding-left: 0;
-  padding-right: 0;
+  min-height: 60px;
+  padding: 0;
+  gap: 8px;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   flex-shrink: 0;
   align-self: stretch;
   width: 100%;
@@ -1130,17 +1156,25 @@ watch(
   background: none;
   border: none;
   cursor: pointer;
+  text-align: left;
 }
 
 .collection-detail__selected-image-title {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   color: var(--Cinza_E, #2f2f2f);
   font-family: "DM Sans";
-  font-size: 20px;
+  font-size: 16px;
   font-style: normal;
   font-weight: 500;
-  line-height: 150%;
+  line-height: 140%;
   text-align: left;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
 }
 
 .collection-detail__selected-image-arrow {

@@ -7,6 +7,7 @@ defineOptions({ name: "CollectionImagesMap" });
 defineProps({
   images: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
+  initialSelectedId: { type: String, default: null },
 });
 
 defineEmits(["select"]);
@@ -26,6 +27,7 @@ defineExpose({
       context="collection"
       :images="images"
       :is-loading="isLoading"
+      :initial-selected-id="initialSelectedId"
       @select="$emit('select', $event)"
     />
   </div>

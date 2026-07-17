@@ -5,6 +5,8 @@ import UiCard from "@/components/ui/UiCard.vue";
 import UploadImageBox from "@/components/UploadImageBox.vue";
 import DeleteImageModal from "@/components/DeleteImageModal.vue";
 import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
+import AppToast from "@/components/ui/AppToast.vue";
+import { useToast } from "@/composables/useToast";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
 import { useAuthStore } from "@/store/auth";
@@ -57,9 +59,7 @@ const loading = computed(() => isPending.value || isFetchingNextPage.value);
 const { hasLoaded: hasLoadedImages, finishInitialLoad, reset: resetInitialSkeleton } =
   useInitialSkeleton();
 
-const showAlert = ref(false);
-const alertMessage = ref("");
-const alertType = ref("");
+const toast = useToast();
 const showDeleteModal = ref(false);
 const imageToDelete = ref(null);
 const expandedCardId = ref(null);
@@ -82,9 +82,7 @@ function toggleCardExpanded(itemId) {
 }
 
 function displayAlert(message, type = "error") {
-  alertMessage.value = message;
-  alertType.value = type;
-  showAlert.value = true;
+  toast.show(message, type);
 }
 
 function handleDelete(imageId) {
@@ -178,17 +176,14 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <div
-      v-if="showAlert"
-      :class="['alert', 'fs-6', alertType === 'success' ? 'bg-positivo-e' : 'bg-negativo-e', 'text-white', 'mb-3', 'd-flex', 'align-items-center', 'justify-content-between', 'profile-images__alert']"
-      role="alert"
-    >
-      <div class="d-flex align-items-center gap-2">
-        <i :class="alertType === 'success' ? 'bi bi-check-all' : 'bi bi-exclamation-triangle-fill'"></i>
-        <span>{{ alertMessage }}</span>
-      </div>
-      <button type="button" class="btn-close text-white" @click="showAlert = false" aria-label="Close" />
-    </div>
+    <AppToast
+      class="profile-images__alert"
+      variant="solid"
+      :toasts="toast.toasts.value"
+      @close="toast.hide"
+      @pause="toast.pause"
+      @resume="toast.resume"
+    />
 
     <DeleteImageModal v-model="showDeleteModal" :image-data="imageToDelete" @confirm="confirmDelete" />
 

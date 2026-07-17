@@ -321,7 +321,7 @@
             <div class="map-container overflow-hidden border" style="height: 400px">
               <MapLibreMap :style-url="mapStyleUrl" :center="mapCenter" :zoom="mapZoom"
                 :marker-position="form.coordinates" @map-ready="handleMapReady" @map-error="handleMapError"
-                @click="handleMapClick" clickable marker-color="#0f89e1">
+                @click="handleMapClick" clickable marker-color="#2F2F2F">
                 <MapControls class="position-absolute bottom-0 start-50 translate-middle-x mb-3" @zoom-in="zoomIn"
                   @zoom-out="zoomOut" />
                 <button type="button" class="position-absolute top-0 end-0 m-2 btn btn-sm btn-light border"

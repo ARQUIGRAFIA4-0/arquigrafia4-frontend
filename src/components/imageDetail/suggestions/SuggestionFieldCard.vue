@@ -73,7 +73,7 @@
             <input v-if="entry.value.label" class="field-card__input" type="text" :value="entry.value.label" readonly />
             <div v-if="entry.value.lat !== null && entry.value.lng !== null" class="field-card__map">
               <MapLibreMap :style-url="mapStyleUrl" :center="[entry.value.lng, entry.value.lat]" :zoom="14"
-                :marker-position="entry.value" marker-color="#0f89e1" />
+                :marker-position="entry.value" marker-color="#2F2F2F" />
             </div>
           </div>
 
