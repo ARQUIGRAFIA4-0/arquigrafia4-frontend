@@ -95,8 +95,10 @@ async function fetchCollectionImages() {
 
     collectionTitle.value = data?.title?.trim() || "";
     collectionDescription.value = data?.description?.trim() || "";
+    collectionIsPrivate.value = !!data?.is_private;
     initialTitle.value = collectionTitle.value;
     initialDescription.value = collectionDescription.value;
+    initialIsPrivate.value = collectionIsPrivate.value;
 
     await loadCollectionImageDetails(data?.images || []);
     initialImageOrder.value = collectionImages.value.map((img) => img.id);
@@ -105,8 +107,10 @@ async function fetchCollectionImages() {
     collectionImages.value = [];
     collectionTitle.value = "";
     collectionDescription.value = "";
+    collectionIsPrivate.value = false;
     initialTitle.value = "";
     initialDescription.value = "";
+    initialIsPrivate.value = false;
   } finally {
     await finishInitialLoad(loadStartedAt);
   }
@@ -117,7 +121,7 @@ function goToCollectionDetail() {
   if (!collectionId.value) return;
 
   router.push({
-    name: "my-collection-detail",
+    name: "collection-detail",
     params: {
       collectionId: String(collectionId.value),
       viewMode: String(route.query.viewMode || "grid"),
@@ -137,8 +141,10 @@ function handleCancel() {
 
 const collectionTitle = ref("");
 const collectionDescription = ref("");
+const collectionIsPrivate = ref(false);
 const initialTitle = ref("");
 const initialDescription = ref("");
+const initialIsPrivate = ref(false);
 const isSaving = ref(false);
 
 const DESCRIPTION_MAX_LENGTH = 500;
@@ -158,6 +164,7 @@ const hasChanges = computed(() => {
   return (
     collectionTitle.value.trim() !== initialTitle.value ||
     collectionDescription.value.trim() !== initialDescription.value ||
+    collectionIsPrivate.value !== initialIsPrivate.value ||
     pendingRemovals.value.length > 0 ||
     hasReorder.value
   );
@@ -177,6 +184,7 @@ function buildSavePayload() {
   return {
     title: collectionTitle.value.trim(),
     description: collectionDescription.value.trim(),
+    is_private: collectionIsPrivate.value,
   };
 }
 
@@ -223,8 +231,10 @@ watch(collectionId, () => {
   initialImageOrder.value = [];
   collectionTitle.value = "";
   collectionDescription.value = "";
+  collectionIsPrivate.value = false;
   initialTitle.value = "";
   initialDescription.value = "";
+  initialIsPrivate.value = false;
   fetchCollectionImages();
 });
 </script>
@@ -311,6 +321,7 @@ watch(collectionId, () => {
                 <CollectionEditForm
                   v-model:title="collectionTitle"
                   v-model:description="collectionDescription"
+                  v-model:is-private="collectionIsPrivate"
                   :disabled="isSaving"
                 />
               </div>

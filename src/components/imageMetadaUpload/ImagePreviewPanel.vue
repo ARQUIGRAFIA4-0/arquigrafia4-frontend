@@ -205,18 +205,38 @@ onUnmounted(() => {
 .preview-stage {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(140deg, #0f59a5, #1d2231);
+  background-color: var(--Off_white);
+  /* Altura travada: a caixa não se distorce conforme a orientação
+     (horizontal/vertical) da imagem. A imagem se ajusta dentro dela
+     via object-fit: contain, mesma abordagem do ImageDisplay.
+     A reserva de 440px cobre o que fica acima (header) e, diferente
+     da página de detalhe, também a paginação e o carrossel de
+     miniaturas abaixo, para que o conjunto caiba na tela sem scroll. */
+  height: calc(100vh - 440px);
+  height: calc(100dvh - 440px);
+  max-height: calc(100dvh - 440px);
+  /* Piso para não colapsar demais em telas baixas. */
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .preview-stage__viewport {
+  position: relative;
   width: 100%;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .preview-stage__image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
   display: block;
 }
 
@@ -439,7 +459,8 @@ onUnmounted(() => {
   }
 
   .preview-stage {
-    min-height: 260px;
+    height: 260px;
+    max-height: 260px;
   }
 
   .preview-thumb {

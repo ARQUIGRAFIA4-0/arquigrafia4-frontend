@@ -9,9 +9,28 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "pause", "resume"]);
 
-const isSuccess = (toast) => toast.type === "success";
+// Tipos suportados: 'success' | 'error' | 'neutral'.
+// 'neutral' é um estado sem cor semântica (ex.: "link copiado"): fundo claro,
+// texto/borda escuros, igual nas duas variantes (não possui forma "solid").
+const typeOf = (toast) =>
+  toast.type === "success" || toast.type === "neutral" ? toast.type : "error";
+
+const isNeutral = (toast) => typeOf(toast) === "neutral";
+const isSuccess = (toast) => typeOf(toast) === "success";
 
 const boxClass = (toast) => {
+  if (isNeutral(toast)) {
+    return [
+      "h-auto",
+      "fs-6",
+      "border",
+      "border-start-3",
+      "app-toast__card--neutral",
+      "d-flex",
+      "align-items-center",
+      "justify-content-between",
+    ];
+  }
   if (props.variant === "solid") {
     return [
       "fs-6",
@@ -33,7 +52,9 @@ const boxClass = (toast) => {
   ];
 };
 
-const iconClass = (toast) => {
+// Ícone padrão por tipo; pode ser sobrescrito por toast.icon.
+const defaultIcon = (toast) => {
+  if (isNeutral(toast)) return "bi bi-arrow-up-right-circle-fill";
   if (props.variant === "solid") {
     return isSuccess(toast)
       ? "bi bi-check-all"
@@ -44,7 +65,11 @@ const iconClass = (toast) => {
     : "bi bi-exclamation-triangle-fill text-negativo-e";
 };
 
+const iconClass = (toast) =>
+  toast.icon ? `bi ${toast.icon}` : defaultIcon(toast);
+
 const closeClass = (toast) => {
+  if (isNeutral(toast)) return "btn-close";
   if (props.variant === "solid") return "btn-close text-white";
   return isSuccess(toast)
     ? "btn-close text-positivo-e"
@@ -88,6 +113,14 @@ const closeClass = (toast) => {
 .app-toast__card {
   width: max-content;
   max-width: 100%;
+}
+
+// Estado neutro (ex.: "link copiado"): fundo branco, texto/borda escuros.
+.app-toast__card--neutral {
+  background-color: #fff;
+  color: #2f2f2f;
+  border: 0.5px solid #2f2f2f;
+  border-left-width: 4px;
 }
 
 // A opacidade anima no elemento externo (que carrega a centralização

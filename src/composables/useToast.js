@@ -37,10 +37,22 @@ export function useToast({ duration = 5000, errorDuration = 8000, max = 3 } = {}
     timers.set(id, { timeoutId, deadline: Date.now() + ms, remaining: 0 });
   };
 
-  const show = (message, type = "error", durationOverride) => {
+  /**
+   * Exibe um toast.
+   *
+   * @param {string} message
+   * @param {'success'|'error'|'neutral'} [type='error']
+   * @param {number|Object} [options] Duração (número) ou objeto de opções.
+   * @param {number} [options.duration] Sobrescreve a duração do auto-dismiss.
+   * @param {string} [options.icon]     Classe de ícone (bootstrap-icons) para
+   *                                    sobrescrever o ícone padrão do tipo.
+   */
+  const show = (message, type = "error", options) => {
+    const { duration: durationOverride, icon } =
+      typeof options === "number" ? { duration: options } : options ?? {};
     const id = ++counter;
     // Novos toasts entram no topo da pilha.
-    toasts.value = [{ id, message, type }, ...toasts.value];
+    toasts.value = [{ id, message, type, icon }, ...toasts.value];
     // Respeita o máximo visível descartando o mais antigo (fim da lista).
     while (toasts.value.length > max) {
       remove(toasts.value[toasts.value.length - 1].id);

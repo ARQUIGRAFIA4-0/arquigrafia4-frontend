@@ -14,16 +14,6 @@ const redirectToDefaultView = (to) => ({
   hash: to.hash,
 });
 
-const redirectToDefaultCollectionView = (to) => ({
-  name: "my-collection-detail",
-  params: {
-    collectionId: to.params.collectionId,
-    viewMode: "grid",
-  },
-  query: to.query,
-  hash: to.hash,
-});
-
 export default [
   {
     path: "/",
@@ -180,12 +170,22 @@ export default [
       params: { collectionId: to.params.collectionId, viewMode: "grid" },
     }),
   },
+  // Edição canônica de coleção (usuário ou coletivo). O backend autoriza:
+  // dono do álbum de usuário ou qualquer membro do coletivo. Declarada antes
+  // da rota :viewMode para que o segmento estático "edit" não seja tratado
+  // como um modo de visualização.
+  {
+    path: "/colecoes/:collectionId/edit",
+    name: "collection-edit",
+    component: () => import("../views/CollectionEdit.vue"),
+    meta: { requiresAuth: true, showFooter: false },
+  },
   {
     path: "/colecoes/:collectionId/:viewMode",
     name: "collection-detail",
-    component: () => import("../views/CollectionDetailPublic.vue"),
+    component: () => import("../views/CollectionDetail.vue"),
     beforeEnter: (to) => {
-      const allowed = ["grid", "mosaic"];
+      const allowed = ["grid", "mosaic", "map"];
       if (!allowed.includes(to.params.viewMode)) {
         return {
           name: "collection-detail",
@@ -240,46 +240,39 @@ export default [
     component: () => import("../views/Profile/EditProfile.vue"),
     meta: { requiresAuth: true }
   },
-  {
-    path: "/eu/colecoes/:collectionId",
-    name: "my-collection-detail-redirect",
-    redirect: redirectToDefaultCollectionView,
-    meta: { requiresAuth: true }
-  },
+  // Rotas legadas /eu/colecoes/* — redirecionam para as rotas canônicas de coleção.
+  // Mantidas temporariamente para preservar links/bookmarks antigos; a rota /eu/colecoes
+  // (listagem, aba do perfil) permanece ativa. A rota /edit vem antes da rota :viewMode
+  // para o segmento estático "edit" não ser interpretado como modo de visualização.
   {
     path: "/eu/colecoes/:collectionId/edit",
-    name: "my-collection-edit",
-    component: () => import("../views/Profile/CollectionEdit.vue"),
-    meta: { requiresAuth: true, showFooter: false },
+    redirect: (to) => ({
+      name: "collection-edit",
+      params: { collectionId: to.params.collectionId },
+      query: to.query,
+      hash: to.hash,
+    }),
   },
   {
     path: "/eu/colecoes/:collectionId/:viewMode",
-    name: "my-collection-detail",
-    component: () => import("../views/Profile/CollectionDetail.vue"),
-    beforeEnter: (to) => {
-      const allowed = ["grid", "mosaic", "map"];
-      const option = resolveViewOptionByRoute(to.params.viewMode);
-
-      if (!allowed.includes(option.route)) {
-        return redirectToDefaultCollectionView(to);
-      }
-
-      if (option.route !== to.params.viewMode) {
-        return {
-          name: "my-collection-detail",
-          params: {
-            collectionId: to.params.collectionId,
-            viewMode: option.route,
-          },
-          query: to.query,
-          hash: to.hash,
-          replace: true,
-        };
-      }
-
-      return true;
-    },
-    meta: { requiresAuth: true }
+    redirect: (to) => ({
+      name: "collection-detail",
+      params: {
+        collectionId: to.params.collectionId,
+        viewMode: to.params.viewMode,
+      },
+      query: to.query,
+      hash: to.hash,
+    }),
+  },
+  {
+    path: "/eu/colecoes/:collectionId",
+    redirect: (to) => ({
+      name: "collection-detail",
+      params: { collectionId: to.params.collectionId, viewMode: "grid" },
+      query: to.query,
+      hash: to.hash,
+    }),
   },
   {
     path: "/profile",

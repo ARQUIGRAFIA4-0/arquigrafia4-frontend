@@ -7,10 +7,11 @@ defineOptions({ name: "CollectionEditForm" });
 const props = defineProps({
   title: { type: String, default: "" },
   description: { type: String, default: "" },
+  isPrivate: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(["update:title", "update:description"]);
+const emit = defineEmits(["update:title", "update:description", "update:isPrivate"]);
 
 const DESCRIPTION_MAX_LENGTH = 500;
 
@@ -25,6 +26,11 @@ function onTitleInput(event) {
 // Função para atualizar a descrição da coleção.
 function onDescriptionInput(event) {
   emit("update:description", event.target.value);
+}
+
+// Função para alternar a visibilidade (pública/privada) da coleção.
+function onPrivateChange(event) {
+  emit("update:isPrivate", event.target.checked);
 }
 </script>
 
@@ -78,6 +84,25 @@ function onDescriptionInput(event) {
           {{ descriptionLength }} / {{ DESCRIPTION_MAX_LENGTH }} caracteres
         </p>
       </div>
+    </div>
+
+    <div class="collection-edit-form__visibility">
+      <div class="form-check m-0">
+        <input
+          id="collection-edit-private"
+          class="form-check-input"
+          type="checkbox"
+          :checked="isPrivate"
+          :disabled="disabled"
+          @change="onPrivateChange"
+        />
+        <label class="form-check-label" for="collection-edit-private">
+          Coleção privada
+        </label>
+      </div>
+      <p class="collection-edit-form__hint">
+        Coleções privadas só podem ser vistas por você.
+      </p>
     </div>
 
     <p class="collection-edit-form__hint collection-edit-form__hint--required">
@@ -188,6 +213,22 @@ function onDescriptionInput(event) {
 .collection-edit-form__input:focus,
 .collection-edit-form__textarea:focus {
   outline: none;
+}
+
+.collection-edit-form__visibility {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: stretch;
+  padding: 0 12px;
+}
+
+.collection-edit-form__visibility :deep(.form-check-label) {
+  color: var(--Gray-900, #212529);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 150%;
 }
 
 .collection-edit-form__hint {

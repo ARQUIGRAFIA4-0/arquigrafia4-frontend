@@ -87,7 +87,7 @@
 
       } else {
         router.push({
-          name: "my-collection-detail",
+          name: "collection-detail",
           params: {
             collectionId: albumId,
             viewMode: "grid", // Padrão de visualização da coleção
