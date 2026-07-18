@@ -17,6 +17,11 @@ const props = defineProps({
         type: Array,
         default: null,
     },
+    // Controla a exibição do botão de editar (só quem pode gerenciar a coleção).
+    canEdit: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(["view-change", "toggle-info", "download", "edit"]);
@@ -122,6 +127,7 @@ function onSelectView(option) {
             </button>
 
             <button
+                v-if="canEdit"
                 type="button"
                 class="btn btn-icon collection-toolbar__action collection-toolbar__action--light"
                 aria-label="Editar coleção"

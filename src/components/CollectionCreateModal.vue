@@ -179,20 +179,17 @@
                 </div>
 
                 <div class="collection-modal__field">
-                    <div class="collection-modal__label-row">
-                      <label class="collection-modal__label" for="collection-visibility">Visibilidade</label>
-                      <span class="collection-modal__label-help" aria-hidden="true">
-                        <i class="bi bi-question-circle-fill"></i>
-                      </span>
+                    <div class="form-check m-0 collection-modal__checkbox">
+                      <input
+                        id="collection-visibility"
+                        class="form-check-input"
+                        type="checkbox"
+                        v-model="collectionIsPrivate"
+                      />
+                      <label class="form-check-label" for="collection-visibility">
+                        Coleção privada
+                      </label>
                     </div>
-                    <select
-                    id="collection-visibility"
-                    v-model="collectionIsPrivate"
-                    class="collection-modal__select"
-                    >
-                      <option :value="false">Pública</option>
-                      <option :value="true">Privada</option>
-                    </select>
                     <p class="collection-modal__hint collection-modal__hint--left">
                       Coleções privadas só podem ser vistas por você ou pelos membros do coletivo.
                     </p>
@@ -476,24 +473,13 @@
   height: 30px;
 }
 
-.collection-modal__select {
-  width: 100%;
-  height: 30px;
-  border: 0.75px solid var(--preto, #1f1f1f);
-  border-radius: 5px;
-  background: var(--off_white, #faf9f9);
-  box-sizing: border-box;
-  padding: 6px 10px;
+.collection-modal__checkbox .form-check-label {
   font-family: "DM Sans", sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 1.5;
   color: #212529;
   cursor: pointer;
-}
-
-.collection-modal__select:focus {
-  outline: none;
 }
 
 .collection-modal__textarea {
@@ -642,12 +628,6 @@
   .collection-modal__input {
     height: 26px;
     padding: 4px 8px;
-    font-size: 12px;
-  }
-
-  .collection-modal__select {
-    height: 26px;
-    padding: 2px 8px;
     font-size: 12px;
   }
 
