@@ -30,6 +30,16 @@ const getLocationsGeoJSON = async () => {
 };
 
 /**
+ * Retorna o título preferencial de uma obra (VRACWork), com fallback para o
+ * primeiro título disponível. `titles` traz itens no formato { label, type, pref }.
+ */
+const workPrimaryTitle = (work) => {
+  const titles = work?.titles || [];
+  const preferred = titles.find((t) => t.pref);
+  return (preferred || titles[0])?.label || "Obra sem título";
+};
+
+/**
  * Obtém os detalhes completos de uma imagem pelo ID
  */
 const getImageDetails = async (id) => {
@@ -112,6 +122,16 @@ const getImageDetails = async (id) => {
     const subjects = image.subjects || [];
     const rights = image.rights || [];
 
+    // Obras associadas à imagem. O backend inclui `works` com `works.titles` e
+    // `works.location` no GET /images/{id}. Uma imagem pode não ter obra (array vazio).
+    const works = Array.isArray(image.works)
+      ? image.works.map((work) => ({
+          id: work.id,
+          title: workPrimaryTitle(work),
+          locationLabel: work.location?.label || null,
+        }))
+      : [];
+
     return {
       id: image.id,
       title,
@@ -133,6 +153,7 @@ const getImageDetails = async (id) => {
       description,
       subjects,
       rights,
+      works,
     };
   } catch (error) {
     console.error("Error fetching image details:", error);
@@ -143,6 +164,61 @@ const getImageDetails = async (id) => {
 // TODO: implementar endpoint real de comentários
 const getImageComments = async () => {
   return [];
+};
+
+/**
+ * Detalhe de uma obra (VRACWork) pelo ID — GET /api/vrac-works/{id}.
+ * Envelope { data }. Atenção: as relações vêm em camelCase na resposta
+ * (stylePeriods, culturalContexts, workTypes), diferente do snake_case do envio.
+ * `description` e `images_count` podem não existir ainda enquanto o backend não
+ * sobe a migration — por isso são lidos com fallback (null / undefined).
+ */
+const getWorkDetails = async (id) => {
+  const response = await axios.get(`/api/vrac-works/${id}`);
+  const work = response.data.data;
+
+  return {
+    id: work.id,
+    title: workPrimaryTitle(work),
+    titles: work.titles || [],
+    description: work.description ?? null,
+    imagesCount: typeof work.images_count === "number" ? work.images_count : null,
+    location: work.location
+      ? {
+          label: work.location.label || null,
+          latitude: parseFloat(work.location.latitude),
+          longitude: parseFloat(work.location.longitude),
+        }
+      : null,
+    agents: work.agents || [],
+    dates: work.dates || [],
+    materials: work.materials || [],
+    techniques: work.techniques || [],
+    stylePeriods: work.stylePeriods || [],
+    culturalContexts: work.culturalContexts || [],
+    workTypes: work.workTypes || [],
+    subjects: work.subjects || [],
+  };
+};
+
+/**
+ * Imagens associadas a uma obra — GET /api/images?work[]={id}.
+ * `sort_by` é obrigatório: sem ele o backend devolve ordem aleatória (inRandomOrder).
+ * Retorna { items, meta }; `meta.total` serve de fallback para a contagem de imagens
+ * quando o backend ainda não expõe `images_count` no detalhe da obra.
+ */
+const getWorkImages = async (workId, { page = 1, perPage = 24 } = {}) => {
+  const response = await axios.get("/api/images", {
+    params: {
+      "work[]": workId,
+      sort_by: "created_at",
+      sort_order: "asc",
+      page,
+      per_page: perPage,
+    },
+  });
+  const items = (response.data.data || []).map(mapImageListItem);
+  return { items, meta: response.data.meta || null };
 };
 
 // TODO: implementar endpoint real de GeoJSON
@@ -675,6 +751,8 @@ export const api = {
   getLocationsGeoJSON,
   getImageDetails,
   getImageComments,
+  getWorkDetails,
+  getWorkImages,
   searchImages,
   getTotalImages,
   getSubjectById,
