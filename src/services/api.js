@@ -204,8 +204,8 @@ const getWorkDetails = async (id) => {
 /**
  * Imagens associadas a uma obra — GET /api/images?work[]={id}.
  * `sort_by` é obrigatório: sem ele o backend devolve ordem aleatória (inRandomOrder).
- * Retorna { items, meta }; `meta.total` serve de fallback para a contagem de imagens
- * quando o backend ainda não expõe `images_count` no detalhe da obra.
+ * Retorna { items, meta, hasMore }; `meta.total` serve de fallback para a contagem de
+ * imagens quando o backend ainda não expõe `images_count` no detalhe da obra.
  */
 const getWorkImages = async (workId, { page = 1, perPage = 24 } = {}) => {
   const response = await axios.get("/api/images", {
@@ -218,7 +218,14 @@ const getWorkImages = async (workId, { page = 1, perPage = 24 } = {}) => {
     },
   });
   const items = (response.data.data || []).map(mapImageListItem);
-  return { items, meta: response.data.meta || null };
+  const meta = response.data.meta || null;
+  // `links.next` é o sinal usado nas demais listagens; cai no meta quando ausente.
+  const hasMore = response.data.links?.next
+    ? true
+    : meta?.current_page && meta?.last_page
+      ? meta.current_page < meta.last_page
+      : false;
+  return { items, meta, hasMore };
 };
 
 // TODO: implementar endpoint real de GeoJSON
