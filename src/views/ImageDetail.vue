@@ -1,8 +1,8 @@
 <template>
   <div class="container-fluid image-detail__container">
 
-    <!-- Image -->
-    <div class="image-detail__grid">
+
+    <div class="image-detail__wrapper-content">
 
       <div class="image-detail__image-box">
         <button type="button" class="back-link" @click="goBack">
@@ -11,8 +11,8 @@
         </button>
 
         <div class="image-detail__image-wrapper" :class="{ 'is-loading': loading }">
-          <ImageDisplay :image="image" :license-info="licenseInfo" @load="loading = false"
-            @download="handleDownload" @share="handleShare" @report-submit="handleReportSubmit" />
+          <ImageDisplay :image="image" :license-info="licenseInfo" @load="loading = false" @download="handleDownload"
+            @share="handleShare" @report-submit="handleReportSubmit" />
           <!-- <ImageDisplay :image="image" :license-info="licenseInfo" :loading="loading" @load="loading = false"
             @download="handleDownload" @share="handleShare" @report-submit="handleReportSubmit" /> -->
 
@@ -24,7 +24,6 @@
         </div>
       </div>
 
-      <!-- Metadata -->
       <div class="image-detail__metadata-box">
 
         <div class="col-12 image-detail__navbar">
@@ -76,13 +75,12 @@
           
         </div> -->
       </div>
-
-      <!-- Imagens relacionadas -->
-      <div class="image-detail__related-box">
-        <ImageRelated v-if="image?.id" :image-id="image.id" />
-      </div>
-
     </div>
+
+    <div class="image-detail__related-box">
+      <ImageRelated v-if="image?.id" :image-id="image.id" />
+    </div>
+
   </div>
 </template>
 
@@ -141,12 +139,7 @@ const tabs = [
     label: "Sugestões",
     section: "sugestoes",
     routeName: "image-detail-sugestoes",
-  },
-  // {
-  //   label: "Imagens relacionadas",
-  //   section: "relacionadas",
-  //   routeName: "image-detail-relacionadas",
-  // },
+  }
 ];
 
 const isOwner = computed(() => {
@@ -250,7 +243,7 @@ $breakpoint-lg: 1440px;
 }
 
 .image-detail__container {
-  box-sizing: border-box;
+  // box-sizing: border-box;
   width: 100%;
 
   @include sm {
@@ -258,31 +251,19 @@ $breakpoint-lg: 1440px;
   }
 }
 
-.image-detail__grid {
-
-  display: grid;
+.image-detail__wrapper-content {
+  display: flex;
+  flex-direction: column;
   gap: 1.875rem;
-  align-items: start;
-  grid-template-areas:
-    "image"
-    "metadata"
-    "related";
 
   @include md {
-    grid-template-columns: 7fr 5fr;
-    grid-template-areas:
-      "image    metadata"
-      "related  metadata";
+    flex-direction: row;
+    justify-content: center;
   }
-
-  @include lg {
-    grid-template-columns: minmax(768px, 1fr) minmax(542px, 1fr);
-  }
-
 }
 
 .image-detail__image-box {
-  grid-area: image;
+  width: 100%;
 
   .back-link {
     width: 87px;
@@ -310,6 +291,14 @@ $breakpoint-lg: 1440px;
       line-height: 150%;
     }
   }
+
+  @include md {
+    width: 100%;
+    max-width: 807px;
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
+  }
 }
 
 .image-detail__image-wrapper {
@@ -334,46 +323,16 @@ $breakpoint-lg: 1440px;
 }
 
 .image-detail__metadata-box {
-  grid-area: metadata;
-
-  scrollbar-color: #eaeaea transparent;
-  scrollbar-width: thin;
+  width: 100%;
 
   @include md {
-    position: sticky;
-    top: 20px;
-    align-self: start;
-    max-height: calc(100vh - 20px);
-    overflow-y: auto;
-    scrollbar-width: thin;
+    max-width: 576px;
   }
 }
 
-
-.image-detail__metadata-box::-webkit-scrollbar {
-  width: 6px;
-}
-
-.image-detail__metadata-box::-webkit-scrollbar-thumb {
-  // background: #d1d5db;
-  // border-radius: 4px;
-  background: rgba(0, 0, 0, 0.014);
-  border-radius: 999px;
-  transition: background .2s;
-}
-
-.image-detail__metadata-box:hover::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, .30);
-}
-
-.image-detail__metadata-box::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-//-----------
-
 .image-detail__related-box {
   grid-area: related;
+  width: 100%;
 }
 
 .image-detail__navbar {
@@ -413,15 +372,5 @@ $breakpoint-lg: 1440px;
 .image-detail__navbar-links {
   scrollbar-color: #d1d5db transparent;
   scrollbar-width: thin;
-}
-
-.image-detail__layout {
-  --bs-gutter-x: 1.5rem;
-}
-
-@media (max-width: 767.9808px) {
-  .col-md-4 {
-    margin-top: 2rem;
-  }
 }
 </style>

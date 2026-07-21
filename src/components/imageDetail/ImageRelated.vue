@@ -11,11 +11,9 @@
       </UiField>
     </div>
 
-    <!-- Skeleton Masonry (desktop/tablet) -->
     <mosaic-skeleton v-if="showSkeleton && !isMobileGrid" :gap="5" :column-widths="columnWidths"
       :min-columns="minColumns" :max-columns="maxColumns" />
 
-    <!-- Masonry Wall (desktop/tablet) -->
     <masonry-wall v-if="!isMobileGrid" v-show="mosaicItems.length > 0" :items="mosaicItems" :column-width="columnWidths"
       :gap="5" :min-columns="minColumns" :max-columns="maxColumns"
       :class="['masonry-grid', { 'masonry-ready': isMasonryReady }]" @redraw="handleMasonryRedraw">
@@ -24,15 +22,15 @@
         <div v-if="slotProps && slotProps.item" class="related-card" :ref="(el) => setCardRef(el, slotProps.item.id)"
           :class="[cardSizeClasses[slotProps.item.id]]" :data-card-id="slotProps.item.id">
 
-          <img v-if="activeCardId !== slotProps.item.id" :src="LogoConection" alt="" class="related-card__logo" />
+          <!-- <img v-if="activeCardId !== slotProps.item.id" :src="LogoConection" alt="" class="related-card__logo" />
           <span v-else @click.stop="toggleCard(slotProps.item.id)" class="related-card__close-button">
             <i class="bi bi-x" aria-hidden="true"></i>
-          </span>
+          </span> -->
 
           <mosaic-card :id="slotProps.item.id" :title="slotProps.item.title" :image-url="slotProps.item.src"
             :aspect-ratio="slotProps.item.aspectRatio" />
 
-          <div class="related-card__click-catcher" @click="toggleCard(slotProps.item.id)"></div>
+          <!-- <div class="related-card__click-catcher" @click="toggleCard(slotProps.item.id)"></div>
 
           <div v-if="activeCardId === slotProps.item.id" class="related-card__overlay"
             @click="toggleCard(slotProps.item.id)">
@@ -41,23 +39,22 @@
             <span class="related-card__open-image">
               <a :href="`/explore/dados/image/${slotProps.item.id}`" class="bi bi-arrow-right-circle-fill"></a>
             </span>
-          </div>
+          </div> -->
         </div>
       </template>
     </masonry-wall>
 
-    <!-- Grid simples (mobile), igual ViewGrid: cards quadrados, sem masonry -->
     <div v-else class="related-grid">
       <div v-for="item in mosaicItems" :key="item.id" class="related-card related-grid__item" :data-card-id="item.id">
 
-        <img v-if="activeCardId !== item.id" :src="LogoConection" alt="" class="related-card__logo" />
+        <!-- <img v-if="activeCardId !== item.id" :src="LogoConection" alt="" class="related-card__logo" />
         <span v-else @click.stop="toggleCard(item.id)" class="related-card__close-button">
           <i class="bi bi-x" aria-hidden="true"></i>
-        </span>
+        </span> -->
 
         <mosaic-card :id="item.id" :title="item.title" :image-url="item.src" :aspect-ratio="1" />
 
-        <div class="related-card__click-catcher" @click="toggleCard(item.id)"></div>
+        <!-- <div class="related-card__click-catcher" @click="toggleCard(item.id)"></div>
 
         <div v-if="activeCardId === item.id" class="related-card__overlay" @click="toggleCard(item.id)">
           <span class="related-card__overlay-title">Relacionada por:</span>
@@ -65,11 +62,10 @@
           <span class="related-card__open-image">
             <a :href="`/explore/dados/image/${item.id}`" class="bi bi-arrow-right-circle-fill"></a>
           </span>
-        </div>
+        </div> -->
       </div>
     </div>
 
-    <!-- Sentinela para o scroll infinito -->
     <div ref="sentinel" class="related-images__sentinel"></div>
 
     <!-- Loading da próxima página -->
@@ -100,7 +96,7 @@ const props = defineProps({
 
 // Lista estatica só que com id e term, para o FitTags funcionar
 const RELATION_CATEGORIES_TAGS = [
-    { id: 1, term: "assuntos", icon: "bi bi-bookmark" },
+  { id: 1, term: "assuntos", icon: "bi bi-bookmark" },
   { id: 2, term: "período", icon: "bi bi-calendar-range" },
   { id: 3, term: "localização", icon: "bi bi-geo-alt" },
   { id: 4, term: "materiais", icon: "bi bi-box-seam" },
@@ -132,10 +128,6 @@ const handleClickOutside = (event) => {
 
 const columnWidths = [320, 200, 280, 260, 210, 220, 300];
 
-// ─── Colunas responsivas ────────────────────────────────────────────────────────
-// >= 1440px  → fixa em 3 colunas
-// <= 768px   → fixa em 2 colunas
-// entre eles → deixa o masonry-wall decidir (2 a 7, conforme largura disponível)
 const windowWidth = ref(window.innerWidth);
 let resizeTimeout = null;
 
@@ -158,12 +150,12 @@ const maxColumns = computed(() => {
   return 7;
 });
 
-// Abaixo de 768px vira grid simples (igual ViewGrid), não masonry
+
 const isMobileGrid = computed(() => windowWidth.value <= 768);
 
 //----
 // Medição de altura dos cards (baseada em layout, não em click)
-const SHORT_HEIGHT_THRESHOLD = 138.79;
+const SHORT_HEIGHT_THRESHOLD = 178.79;
 const NARROWLY_LOW_HEIGHT_THRESHOLD = 91.79;
 
 // Guarda a referência de cada card pelo id (não precisa ser reativo)
