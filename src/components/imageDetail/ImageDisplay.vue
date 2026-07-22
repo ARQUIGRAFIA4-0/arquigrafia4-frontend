@@ -6,6 +6,7 @@ import { useAlbumsStore } from "@/store/albums";
 import DownloadModal from "./DownloadModal.vue";
 import ReportModal from "./ReportModal.vue";
 import ShareModal from "./ShareModal.vue";
+import FavoriteAddedModal from "./FavoriteAddedModal.vue";
 import AlbumPickerModal from "./AlbumPickerModal.vue";
 import CollectionCreateModal from "../CollectionCreateModal.vue";
 import { downloadImageFile } from "@/helpers/downloadImage";
@@ -52,6 +53,7 @@ const emit = defineEmits(["load", "download", "share", "report-submit"]);
 const showDownloadModal = ref(false);
 const showReportModal = ref(false);
 const showShareModal = ref(false);
+const showFavoriteModal = ref(false);
 
 /**
  * Start: Lightbox (visualização em tamanho grande)
@@ -155,6 +157,116 @@ async function loadAlbumsForScope(scope) {
     loadingAlbums.value = false;
   }
 }
+
+/**
+ * Start: Adicionar imagem a coleção de Favoritos
+ */
+const FAVORITES_COLLECTION_TITLE = "Favoritos";
+
+// Normaliza o título para comparação case-insensitive.
+const normalizeAlbumTitle = (title) => String(title || "").trim().toLocaleLowerCase("pt-BR");
+
+// Verifica se o álbum já contém a imagem atual.
+const albumContainsImage = (album, imageId) => Array.isArray(album?.images) && album.images.some((img) => img?.id === imageId);
+
+// Garante a coleção "Favoritos" e adiciona a imagem nela.
+// Retorna: "created" / "added" / "exists" / null
+async function addImageToFavoritesCollection() {
+
+  // verifica se o usuário está logado
+  if (!isLoggedIn.value || !loggedUser.value?.id) {
+    console.warn("Sem usuário logado ou sem id:", {
+      isLoggedIn: isLoggedIn.value,
+      loggedUser: loggedUser.value,
+    });
+
+    return null;
+
+  }
+
+  if (!props.image?.id) return null;
+
+  const imageId = props.image.id;
+  const userId = loggedUser.value.id;
+
+  try {
+    selectedScopeId.value = collectionScopes.value[0]?.id ?? userId;
+    await loadAlbumsForScope(selectedScope.value);
+
+    // verifica se a coleção de Favoritos existe
+    let favoritesAlbum = loadedAlbums.value.find(
+      (album) => normalizeAlbumTitle(album.title) === normalizeAlbumTitle(FAVORITES_COLLECTION_TITLE)
+    );
+
+    let created = false;
+
+    // cria a coleção de Favoritos se não existir
+    if (!favoritesAlbum) {
+      favoritesAlbum = await albumsStore.createAlbum(authHeader.value, {
+        title: FAVORITES_COLLECTION_TITLE,
+        description: "",
+        is_private: false,
+      });
+      created = true;
+
+      // recarrega as coleções do escopo atual para atualizar a lista de álbuns
+      await loadAlbumsForScope(selectedScope.value);
+
+      favoritesAlbum =
+        loadedAlbums.value.find(
+          (album) => normalizeAlbumTitle(album.title) === normalizeAlbumTitle(FAVORITES_COLLECTION_TITLE)
+        ) ?? favoritesAlbum;
+    }
+
+    // obtém o id da coleção de Favoritos 
+    const albumId = favoritesAlbum?.id;
+
+    // verifica se a coleção de Favoritos existe
+    if (!albumId) {
+      throw new Error("Não foi possível obter a coleção Favoritos.");
+    }
+
+    if (albumContainsImage(favoritesAlbum, imageId)) {
+      return "exists";
+    }
+
+    await albumsStore.addImageToAlbum(authHeader.value, albumId, imageId);
+    await loadAlbumsForScope(selectedScope.value);
+
+    return created ? "created" : "added";
+  } catch (error) {
+    console.error("Erro ao adicionar imagem aos Favoritos:", error);
+    return null;
+  }
+}
+
+// Clique no botão do modal: cria/usa Favoritos e adiciona a imagem.
+async function onFavoriteAddToCollection() {
+  const result = await addImageToFavoritesCollection();
+  if (!result) return;
+
+  if (addToAlbumToastTimeout) {
+    clearTimeout(addToAlbumToastTimeout);
+  }
+
+  if (result === "exists") {
+    addToAlbumToastMessage.value =
+      "A imagem já está na coleção Favoritos.";
+  } else {
+    addToAlbumToastMessage.value =
+      "A imagem foi adicionada à coleção Favoritos.";
+  }
+
+  showAddToAlbumToast.value = true;
+  addToAlbumToastTimeout = setTimeout(() => {
+    showAddToAlbumToast.value = false;
+    addToAlbumToastTimeout = null;
+  }, 4400);
+}
+
+/**
+ * End: Adicionar imagem a coleção de Favoritos
+ */
 
 // Abre o seletor de coleção no escopo do usuário
 async function openAlbumPicker() {
@@ -344,6 +456,7 @@ async function onCollectionCreated() {
         type="button"
         class="menu-button"
         aria-label="Adicionar aos favoritos"
+        @click="showFavoriteModal = true"
       >
         <i class="bi bi-heart" aria-hidden="true" />
       </button>
@@ -401,6 +514,11 @@ async function onCollectionCreated() {
         v-model="showShareModal"
         :image="props.image"
         @confirm="handleShareConfirm"
+      />
+
+      <FavoriteAddedModal
+        v-model="showFavoriteModal"
+        @add-to-collection="onFavoriteAddToCollection"
       />
 
       <ReportModal
