@@ -154,6 +154,16 @@ const getGeoJSON = async () => {
 };
 
 /**
+ * Busca iamgens relacionadas 
+ */
+const getRelatedImages = async (imageId, page = 1) => {
+  return axios
+    .get(`api/images/${imageId}/related`, { params: { page } })
+    .then((res) => res.data); // { data: [...], meta: {...} } vindo do ImageResource::collection paginado
+}
+
+
+/**
  * Busca imagens na API com filtros
  */
 const searchImages = async ({ mode, value, page = 1 } = {}) => {
@@ -248,7 +258,7 @@ const fetchImages = async (page = 1, filters = {}) => {
     if (filters.collectiveId) {
       params.collective_id = filters.collectiveId;
     }
-    
+
     // Filtro por assuntos (tags de sujeito por ID)
     if (filters.subjects?.length) {
       params['subject[]'] = filters.subjects.length === 1 ? filters.subjects[0] : filters.subjects;
@@ -675,6 +685,7 @@ export const api = {
   getLocationsGeoJSON,
   getImageDetails,
   getImageComments,
+  getRelatedImages,
   searchImages,
   getTotalImages,
   getSubjectById,
