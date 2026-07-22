@@ -4,9 +4,11 @@ import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import { useAlbumsStore } from "@/store/albums";
 import { useUsersStore } from "@/store/users";
+import { useCollectivesStore } from "@/store/collectives";
 import defaultProfileImage from "@/assets/profile_image.png";
+import collectiveImageDefault from "@/assets/collective_image.png";
 import CollectionPeriodsChart from "@/components/CollectionPeriodsChart.vue";
-import UiField from "../../components/ui/UiField.vue";
+import UiField from "@/components/ui/UiField.vue";
 import CollectionImagesGrid from "@/components/collection/CollectionImagesGrid.vue";
 import CollectionImagesMosaic from "@/components/collection/CollectionImagesMosaic.vue";
 import CollectionImagesMap from "@/components/collection/CollectionImagesMap.vue";
@@ -24,9 +26,12 @@ import { sanitizeDownloadFilename } from "@/helpers/downloadImage";
 defineOptions({ name: "CollectionDetail" });
 
 const usersStore = useUsersStore();
+const collectivesStore = useCollectivesStore();
 const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 
 const ownerUser = ref(null);
+// Dono do tipo coletivo (quando a coleção pertence a um coletivo).
+const collective = ref(null);
 
 const route = useRoute();
 const router = useRouter();
@@ -37,9 +42,17 @@ const isLoadingOwner = ref(true);
 
 const collectionId = computed(() => route.params.collectionId);
 
+// Para visitantes não logados não enviamos header de autorização
+// (authStore.authHeader resolveria para "Bearer null" sem token).
+const userAuthHeader = computed(() =>
+  authStore.isLoggedIn ? authStore.authHeader : null
+);
+
 const albumData = ref(null);
 const collectionImages = ref([]);
 const isLoadingCollection = ref(true);
+// null = ok | "forbidden" | "notfound" | "error"
+const accessState = ref(null);
 
 // título e descrição reais vindos da API
 const collectionTitle = computed(() => {
@@ -51,10 +64,61 @@ const collectionDescription = computed(() => {
   return albumData.value?.description?.trim() || "Sem descrição.";
 });
 
-// avatar do proprietário da coleção
+// status de visibilidade da coleção (pública/privada)
+const isPrivate = computed(() => !!albumData.value?.is_private);
+
+// O dono do álbum é polimórfico: coletivo (collective_id) ou usuário (user_id).
+const isCollectiveOwned = computed(() => !!albumData.value?.collective_id);
+
+// Destino do link do dono da coleção: página do coletivo ou perfil público do usuário.
+const ownerProfileTo = computed(() => {
+  if (!albumData.value) return null;
+  if (albumData.value.collective_id) {
+    return { name: "collective-detail", params: { id: albumData.value.collective_id } };
+  }
+  if (albumData.value.user_id) {
+    return { name: "view-profile", params: { id: albumData.value.user_id } };
+  }
+  return null;
+});
+
+// Nome exibido do dono (coletivo ou usuário).
+const ownerName = computed(() => {
+  if (isCollectiveOwned.value) return collective.value?.name?.trim() || "Coletivo";
+  return ownerUser.value?.name?.trim() || "Usuário desconhecido";
+});
+
+// Rótulo da seção do dono.
+const ownerTitle = computed(() =>
+  isCollectiveOwned.value ? "Coleção do coletivo" : "Coleção criada por"
+);
+
+// Quem pode gerenciar (editar): membro do coletivo ou o próprio dono usuário.
+const canManage = computed(() => {
+  const user = authStore.loggedUser;
+  if (!authStore.isLoggedIn || !user || !albumData.value) return false;
+  if (albumData.value.collective_id) {
+    return collective.value?.members?.some((m) => m.id === user.id) ?? false;
+  }
+  return albumData.value.user_id === user.id;
+});
+
+// Navega para a busca filtrada por subject na home, em modo grid:
+// /explore/acervo/grid?subject[]=<id>
+function goToSubject(subjectId) {
+  if (!subjectId) return;
+  router.push({
+    name: "explore",
+    params: { viewMode: "grid" },
+    query: { "subject[]": subjectId },
+  });
+}
+
+// avatar do proprietário da coleção (coletivo ou usuário)
 const ownerAvatarSrc = computed(() => {
-  const avatarUrl = ownerUser.value?.avatar_url;
-  const avatarPath = ownerUser.value?.avatar_path;
+  const source = isCollectiveOwned.value ? collective.value : ownerUser.value;
+  const avatarUrl = source?.avatar_url;
+  const avatarPath = source?.avatar_path;
 
   // Caso já venha URL completa da API/CDN
   if (avatarUrl && /^https?:\/\//.test(avatarUrl)) {
@@ -66,63 +130,86 @@ const ownerAvatarSrc = computed(() => {
     return `${API_BASE_URL}${avatarUrl.startsWith("/") ? "" : "/"}${avatarUrl}`;
   }
 
-  // Caso backend retorne avatar_path (apenas pra eu lembra: mesmo padrão do ProfileCard)
+  // Caso backend retorne avatar_path (mesmo padrão do ProfileCard)
   if (avatarPath) {
     return `${API_BASE_URL}/storage/${avatarPath}`;
   }
 
-  return defaultProfileImage;
+  return isCollectiveOwned.value ? collectiveImageDefault : defaultProfileImage;
 
 });
 
-// busca os dados da coleção
+// Busca os dados da coleção, tratando o acesso (403/404). O header de
+// autorização é opcional: visitantes não logados veem coleções públicas.
 async function fetchCollectionData() {
   if (!collectionId.value) return;
 
   isLoadingCollection.value = true;
   isLoadingOwner.value = true;
+  accessState.value = null;
 
-  try {
-    // busca os dados da coleção
-    const data = await albumsStore.getDataAlbumByAlbumId(
-      authStore.authHeader,
-      collectionId.value
-    );
+  const result = await albumsStore.getAlbumDetail(
+    userAuthHeader.value,
+    collectionId.value
+  );
 
-    albumData.value = data;
-
-    // carrega as imagens da coleção
-    await loadCollectionImageDetails(data.images || []);
-
-    // carrega as tags da coleção
-    await loadCollectionTags();
-
-    if (data.user_id) {
-      try {
-        ownerUser.value = await usersStore.getUser(data.user_id);
-      } catch (e) {
-        ownerUser.value = null;
-      } finally {
-        isLoadingOwner.value = false;
-      }
-    } else {
-      ownerUser.value = null;
-      isLoadingOwner.value = false;
-    }
-
-  } catch (error) {
+  if (!result.success) {
     albumData.value = null;
     collectionImages.value = [];
     collectionTags.value = [];
     isLoadingCollectionTags.value = false;
     ownerUser.value = null;
+    collective.value = null;
     isLoadingOwner.value = false;
-
-  } finally {
+    if (result.status === 403) {
+      accessState.value = "forbidden";
+    } else if (result.status === 404) {
+      accessState.value = "notfound";
+    } else {
+      accessState.value = "error";
+    }
     isLoadingCollection.value = false;
-
+    return;
   }
 
+  albumData.value = result.data;
+
+  // carrega as imagens e as tags da coleção
+  await loadCollectionImageDetails(result.data.images || []);
+  await loadCollectionTags();
+  isLoadingCollection.value = false;
+
+  // Resolve o dono conforme o tipo do álbum (coletivo ou usuário).
+  if (result.data.collective_id) {
+    await fetchCollective(result.data.collective_id);
+  } else if (result.data.user_id) {
+    await fetchOwnerUser(result.data.user_id);
+  } else {
+    isLoadingOwner.value = false;
+  }
+}
+
+// Busca os dados do coletivo dono (nome, avatar, membros).
+async function fetchCollective(id) {
+  isLoadingOwner.value = true;
+  try {
+    const result = await collectivesStore.getCollective(id);
+    collective.value = result.success ? result.data : null;
+  } finally {
+    isLoadingOwner.value = false;
+  }
+}
+
+// Busca os dados do usuário dono.
+async function fetchOwnerUser(userId) {
+  isLoadingOwner.value = true;
+  try {
+    ownerUser.value = await usersStore.getUser(userId);
+  } catch (e) {
+    ownerUser.value = null;
+  } finally {
+    isLoadingOwner.value = false;
+  }
 }
 
 // Carrega as imagens da coleção
@@ -149,14 +236,6 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
 
     selectedMapImageId.value = null;
 
-    const plainImages = JSON.parse(JSON.stringify(collectionImages.value));
-    console.log("[CollectionDetail] imagens da coleção:", plainImages);
-    console.log("[CollectionDetail] primeira imagem:", plainImages[0]);
-    console.log(
-      "[CollectionDetail] chaves da primeira imagem:",
-      plainImages[0] ? Object.keys(plainImages[0]) : []
-    );
-
   } catch (err) {
     console.error("Erro ao carregar imagens da coleção:", err);
     collectionImages.value = [];
@@ -176,7 +255,9 @@ const collectionViewMode = computed(() =>
   selectionToViewMode(viewSelection.value)
 );
 
-const selectedMapImageId = ref(null);
+const selectedMapImageId = ref(
+  typeof route.query.image === "string" ? route.query.image : null
+);
 
 const selectedMapImage = computed(() =>
   collectionImages.value.find((img) => img.id === selectedMapImageId.value) || null
@@ -184,15 +265,16 @@ const selectedMapImage = computed(() =>
 
 function handleMapSelect(id) {
   selectedMapImageId.value = id;
-}
 
-function handleOutsideMapClick(event) {
-  if (collectionViewMode.value !== "map") return;
-  if (!selectedMapImageId.value) return;
-  if (event.target.closest(".locations-map, .collection-images-map")) return;
-  if (event.target.closest("button, a, [role='button']")) return;
+  const query = { ...route.query };
 
-  collectionMapRef.value?.resetToInitial?.();
+  if (id) {
+    query.image = id;
+  } else {
+    delete query.image;
+  }
+
+  router.replace({ query });
 }
 
 // Redireciona para a página de detalhes da imagem.
@@ -202,7 +284,16 @@ function goToImageDetail(id) {
 }
 
 watch(collectionViewMode, (mode) => {
-  if (mode !== "map") selectedMapImageId.value = null;
+  if (mode !== "map") {
+    selectedMapImageId.value = null;
+    // Remove a query de imagem da URL.
+    if (route.query.image) {
+      const query = { ...route.query };
+      delete query.image;
+      router.replace({ query });
+    }
+  }
+
 });
 
 const isInfoActive = ref(true);
@@ -243,7 +334,7 @@ function handleCollectionViewChange({ selection }) {
   if (viewMode === route.params.viewMode) return;
 
   router.push({
-    name: "my-collection-detail",
+    name: "collection-detail",
     params: {
       collectionId: collectionId.value,
       viewMode,
@@ -277,9 +368,10 @@ function handleToggleCollectionInfo() {
 const collectionTags = ref([]);
 const isLoadingCollectionTags = ref(true);
 
-// Normaliza as tags da coleção
+// Normaliza as tags da coleção, preservando o id do subject (necessário para
+// o filtro de busca ao clicar na tag).
 function normalizeCollectionTags(tags = []) {
-  return tags.map((tag) => tag.term).slice(0, 8);
+  return tags.map((tag) => ({ id: tag.id, term: tag.term }));
 }
 
 // Carrega as tags da coleção
@@ -333,7 +425,7 @@ function handleEditCollection() {
   if (!collectionId.value) return;
 
   router.push({
-    name: "my-collection-edit",
+    name: "collection-edit",
     params: {
       collectionId: collectionId.value,
     },
@@ -366,16 +458,26 @@ async function handleCollectionDownloadConfirm() {
  * End: Download
  */
 
+// "Voltar": retorna à página anterior se houver histórico interno;
+// senão, cai na página do dono (coletivo/perfil) derivada do álbum.
+function goBack() {
+  if (window.history.state?.back) {
+    router.back();
+    return;
+  }
+  const target = ownerProfileTo.value;
+  if (target) router.push(target);
+  else router.push("/");
+}
+
 onMounted(() => {
   fetchCollectionData();
   updateIsMobile();
   window.addEventListener("resize", updateIsMobile);
-  document.addEventListener("click", handleOutsideMapClick);
 });
 
 onUnmounted(() => {
   window.removeEventListener("resize", updateIsMobile);
-  document.removeEventListener("click", handleOutsideMapClick);
 });
 
 watch(
@@ -391,7 +493,7 @@ watch(
     if (!mobile || viewMode !== "mosaic" || !collectionId.value) return;
 
     router.replace({
-      name: "my-collection-detail",
+      name: "collection-detail",
       params: {
         collectionId: collectionId.value,
         viewMode: "grid",
@@ -411,11 +513,12 @@ watch(
     }"
   >
     <CollectionToolbar
-      v-if="!isMobile"
+      v-if="!isMobile && !accessState"
       class="collection-detail__floating-toolbar"
       :view-selection="viewSelection"
       :is-info-active="isInfoActive"
       :allowed-views="['grid', 'mosaic', 'map']"
+      :can-edit="canManage"
       @view-change="handleCollectionViewChange"
       @toggle-info="handleToggleCollectionInfo"
       @download="handleDownloadCollection"
@@ -433,7 +536,7 @@ watch(
           type="button"
           class="collection-detail__back-btn"
           aria-label="Voltar"
-          @click="router.push({ name: 'my-profile-collections' })"
+          @click="goBack"
         >
             <span class="collection-detail__back-content">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -446,9 +549,37 @@ watch(
                 </svg>
                 <span class="collection-detail__back-text">voltar</span>
             </span>
-        </button>      
+        </button>
     </header>
-    <main class="collection-detail__main container-fluid px-0">
+
+    <!-- Estados de acesso (coleção privada, inexistente ou erro) -->
+    <div
+      v-if="accessState === 'forbidden'"
+      class="collection-detail__state alert alert-dark bg-off-white alert-light border border-dark border-start-3 d-inline-flex align-items-center px-3 py-2"
+      role="status"
+    >
+      <i class="bi bi-lock-fill text-dark me-2"></i>
+      <span>Esta coleção é privada e você não tem permissão para visualizá-la.</span>
+    </div>
+
+    <div
+      v-else-if="accessState === 'notfound'"
+      class="collection-detail__state alert alert-dark bg-off-white alert-light border border-dark border-start-3 d-inline-flex align-items-center px-3 py-2"
+      role="status"
+    >
+      <i class="bi bi-exclamation-circle-fill text-dark me-2"></i>
+      <span>Coleção não encontrada.</span>
+    </div>
+
+    <div
+      v-else-if="accessState === 'error'"
+      class="collection-detail__state collection-detail__state--error"
+      role="alert"
+    >
+      Não foi possível carregar a coleção. Tente novamente.
+    </div>
+
+    <main v-else class="collection-detail__main container-fluid px-0">
       <div
         class="row g-0 collection-detail__row"
         :class="{
@@ -502,8 +633,9 @@ watch(
                 v-else-if="collectionViewMode === 'map'"
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
+                :initial-selected-id="selectedMapImageId"
                 @select="handleMapSelect"
-              />              
+              />            
             </section>
           </div>
         </template>
@@ -595,12 +727,29 @@ watch(
               </aside>
               <aside v-else class="collection-detail__info-summary">
                 <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
+                <span
+                  class="collection-detail__visibility"
+                  :class="isPrivate
+                    ? 'collection-detail__visibility--private'
+                    : 'collection-detail__visibility--public'"
+                >
+                  <i
+                    class="bi"
+                    :class="isPrivate ? 'bi-lock-fill' : 'bi-globe2'"
+                    aria-hidden="true"
+                  ></i>
+                  {{ isPrivate ? "Coleção privada" : "Coleção pública" }}
+                </span>
                 <p class="collection-detail__description">{{ collectionDescription }}</p>
               </aside>
 
               <div
                 class="collection-detail__map-panel-body"
-                :class="{ 'collection-detail__map-panel-body--map': collectionViewMode === 'map' }"
+                :class="{
+                  'collection-detail__map-panel-body--map': collectionViewMode === 'map',
+                  'collection-detail__map-panel-body--selected':
+                    collectionViewMode === 'map' && selectedMapImage,
+                }"
               >
               <section
                 v-if="collectionViewMode === 'map' && selectedMapImage"
@@ -618,7 +767,10 @@ watch(
                   class="collection-detail__selected-image-button"
                   @click="goToImageDetail(selectedMapImage.id)"
                 >
-                  <span class="collection-detail__selected-image-title">
+                  <span
+                    class="collection-detail__selected-image-title"
+                    :title="selectedMapImage.title || 'Sem título'"
+                  >
                     {{ selectedMapImage.title || "Sem título" }}
                   </span>
                   <span
@@ -646,7 +798,7 @@ watch(
               <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
               <section class="collection-detail__actors">
               <div class="collection-detail__actors-title-area">
-                <h2 class="collection-detail__actors-title">Coleção criada por</h2>
+                <h2 class="collection-detail__actors-title">{{ ownerTitle }}</h2>
               </div>
               <div class="collection-detail__actors-list">
                 <div class="collection-detail__actor-image-area">
@@ -658,19 +810,21 @@ watch(
                   <img
                     v-else
                     :src="ownerAvatarSrc"
-                    :alt="`Avatar de ${ownerUser?.name?.trim() || 'usuário'}`"
+                    :alt="`Avatar de ${ownerName}`"
                     class="collection-detail__actor-image"
                   />
                 </div>
                 <div class="collection-detail__actor-name-wrapper">
                   <div v-if="isLoadingOwner" class="collection-detail__actor-name-skeleton" />
-                  <p
+                  <component
+                    :is="ownerProfileTo ? 'RouterLink' : 'p'"
                     v-else
+                    :to="ownerProfileTo || undefined"
                     class="collection-detail__actor-name"
                     :class="{ 'collection-detail__actor-name--visible': !isLoadingOwner }"
                   >
-                    {{ ownerUser?.name?.trim() || "Usuário desconhecido" }}
-                  </p>
+                    {{ ownerName }}
+                  </component>
                 </div>
               </div>
             </section>
@@ -701,11 +855,12 @@ watch(
               <div v-else-if="collectionTags.length" class="metadata-tags">
                 <button
                   v-for="(tag, index) in collectionTags"
-                  :key="`${tag}-${index}`"
+                  :key="`${tag.id}-${index}`"
                   type="button"
                   class="btn btn-outline-primary btn-sm btn-tag"
+                  @click="goToSubject(tag.id)"
                 >
-                  {{ tag }}
+                  {{ tag.term }}
                 </button>
               </div>
             </section>
@@ -730,7 +885,7 @@ watch(
             </template>
             </div>
 
-            <div class="collection-detail__mobile-edit">
+            <div v-if="canManage" class="collection-detail__mobile-edit">
               <button
                 type="button"
                 class="collection-detail__mobile-edit-btn"
@@ -758,12 +913,29 @@ watch(
               </aside>
               <aside v-else class="collection-detail__info-summary">
                 <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
+                <span
+                  class="collection-detail__visibility"
+                  :class="isPrivate
+                    ? 'collection-detail__visibility--private'
+                    : 'collection-detail__visibility--public'"
+                >
+                  <i
+                    class="bi"
+                    :class="isPrivate ? 'bi-lock-fill' : 'bi-globe2'"
+                    aria-hidden="true"
+                  ></i>
+                  {{ isPrivate ? "Coleção privada" : "Coleção pública" }}
+                </span>
                 <p class="collection-detail__description">{{ collectionDescription }}</p>
               </aside>
 
               <div
                 class="collection-detail__map-panel-body"
-                :class="{ 'collection-detail__map-panel-body--map': collectionViewMode === 'map' }"
+                :class="{
+                  'collection-detail__map-panel-body--map': collectionViewMode === 'map',
+                  'collection-detail__map-panel-body--selected':
+                    collectionViewMode === 'map' && selectedMapImage,
+                }"
               >
               <section
                 v-if="collectionViewMode === 'map' && selectedMapImage"
@@ -781,7 +953,10 @@ watch(
                   class="collection-detail__selected-image-button"
                   @click="goToImageDetail(selectedMapImage.id)"
                 >
-                  <span class="collection-detail__selected-image-title">
+                  <span
+                    class="collection-detail__selected-image-title"
+                    :title="selectedMapImage.title || 'Sem título'"
+                  >
                     {{ selectedMapImage.title || "Sem título" }}
                   </span>
                   <span
@@ -809,7 +984,7 @@ watch(
               <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
               <section class="collection-detail__actors">
                 <div class="collection-detail__actors-title-area">
-                  <h2 class="collection-detail__actors-title">Coleção criada por</h2>
+                  <h2 class="collection-detail__actors-title">{{ ownerTitle }}</h2>
                 </div>
                 <div class="collection-detail__actors-list">
                   <div class="collection-detail__actor-image-area">
@@ -821,19 +996,21 @@ watch(
                     <img
                       v-else
                       :src="ownerAvatarSrc"
-                      :alt="`Avatar de ${ownerUser?.name?.trim() || 'usuário'}`"
+                      :alt="`Avatar de ${ownerName}`"
                       class="collection-detail__actor-image"
                     />
                   </div>
                   <div class="collection-detail__actor-name-wrapper">
                     <div v-if="isLoadingOwner" class="collection-detail__actor-name-skeleton" />
-                    <p
+                    <component
+                      :is="ownerProfileTo ? 'RouterLink' : 'p'"
                       v-else
+                      :to="ownerProfileTo || undefined"
                       class="collection-detail__actor-name"
                       :class="{ 'collection-detail__actor-name--visible': !isLoadingOwner }"
                     >
-                      {{ ownerUser?.name?.trim() || "Usuário desconhecido" }}
-                    </p>
+                      {{ ownerName }}
+                    </component>
                   </div>
                 </div>
               </section>
@@ -864,11 +1041,12 @@ watch(
                 <div v-else-if="collectionTags.length" class="metadata-tags">
                   <button
                     v-for="(tag, index) in collectionTags"
-                    :key="`desktop-${tag}-${index}`"
+                    :key="`desktop-${tag.id}-${index}`"
                     type="button"
                     class="btn btn-outline-primary btn-sm btn-tag"
+                    @click="goToSubject(tag.id)"
                   >
-                    {{ tag }}
+                    {{ tag.term }}
                   </button>
                 </div>
               </section>
@@ -996,6 +1174,28 @@ watch(
   transform: translateY(0);
 }
 
+/* Quando o nome do dono é um link (RouterLink → <a>), mantém a mesma aparência
+   do texto e indica que é clicável. */
+a.collection-detail__actor-name {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a.collection-detail__actor-name:hover {
+  text-decoration: underline;
+}
+
+.collection-detail__state {
+  margin-top: 8px;
+}
+
+.collection-detail__state--error {
+  color: #7a1c1c;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+}
+
 .collection-detail__container {
   width: 100%;
   min-height: 0;
@@ -1089,15 +1289,19 @@ watch(
   flex-shrink: 0;
 }
 
+.collection-detail__map-panel-body--selected {
+  min-height: 0;
+}
+
 .collection-detail__selected-image {
   display: flex;
   width: 338px;
   max-width: 100%;
-  height: 450px;
-  padding: 0 12px;
+  padding: 16px 12px 0;
   flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 16px;
   box-sizing: border-box;
 }
 
@@ -1117,12 +1321,11 @@ watch(
 
 .collection-detail__selected-image-button {
   display: flex;
-  height: 60px;
-  padding-top: 24px;
-  padding-left: 0;
-  padding-right: 0;
+  min-height: 60px;
+  padding: 0;
+  gap: 8px;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   flex-shrink: 0;
   align-self: stretch;
   width: 100%;
@@ -1130,17 +1333,25 @@ watch(
   background: none;
   border: none;
   cursor: pointer;
+  text-align: left;
 }
 
 .collection-detail__selected-image-title {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   color: var(--Cinza_E, #2f2f2f);
   font-family: "DM Sans";
-  font-size: 20px;
+  font-size: 16px;
   font-style: normal;
   font-weight: 500;
-  line-height: 150%;
+  line-height: 140%;
   text-align: left;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
 }
 
 .collection-detail__selected-image-arrow {
@@ -1278,8 +1489,39 @@ watch(
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
-  line-height: 125%; /* 17.5px */  
+  line-height: 125%; /* 17.5px */
   padding-block: 8px;
+}
+
+/* Selo de visibilidade (pública/privada), entre o título e a descrição */
+.collection-detail__visibility {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: "DM Sans";
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.collection-detail__visibility i {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.collection-detail__visibility--private {
+  color: var(--Laranja_E, #aa4f28);
+  background: var(--Laranja_C, #f6ddc6);
+}
+
+.collection-detail__visibility--public {
+  color: var(--Cinza_E, #2f2f2f);
+  background: rgba(47, 47, 47, 0.08);
 }
 
 .collection-detail__actor-name-skeleton {
@@ -1617,6 +1859,7 @@ watch(
   font-style: normal;
   font-weight: 400;
   line-height: 115%;
+  cursor: pointer;
 }
 
 .collection-detail__periods-block {

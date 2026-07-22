@@ -3,6 +3,8 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useImageUploadStore } from "@/store/imageUploads";
 import { convertFilesIfHeic, isHeicFile } from "@/helpers/convertHeic";
+import { useToast } from "@/composables/useToast";
+import AppToast from "@/components/ui/AppToast.vue";
 
 const props = defineProps({
   showUploadInstructions: {
@@ -34,8 +36,7 @@ onMounted(() => {
   // (ex.: refresh na etapa de metadados perde o estado em memória).
   const uploadReset = window.history.state?.uploadReset;
   if (uploadReset) {
-    alertMessage.value = uploadReset;
-    showAlert.value = true;
+    toast.show(uploadReset, "error");
     window.history.replaceState(
       { ...window.history.state, uploadReset: undefined },
       ""
@@ -49,8 +50,7 @@ onUnmounted(() => {
 
 const fileInputRef = ref();
 const isDragging = ref(false);
-const showAlert = ref(false);
-const alertMessage = ref("");
+const toast = useToast();
 
 function removeImage(index) {
   uploadStore.removeImageAt(index);
@@ -69,8 +69,7 @@ async function uploadImages(event) {
 
   const result = await uploadStore.setImages(files);
   if (!result.success) {
-    alertMessage.value = result.message;
-    showAlert.value = true;
+    toast.show(result.message, "error");
   }
 
   event.target.value = null;
@@ -81,8 +80,7 @@ async function appendImagesToUpload(event) {
 
   const result = await uploadStore.appendImages(newFiles);
   if (!result.success) {
-    alertMessage.value = result.message;
-    showAlert.value = true;
+    toast.show(result.message, "error");
   }
 
   event.target.value = null;
@@ -107,16 +105,14 @@ async function handleDrop(event) {
   );
 
   if (filteredFiles.length === 0) {
-    alertMessage.value = `Você pode enviar apenas arquivos de imagem.`;
-    showAlert.value = true;
+    toast.show("Você pode enviar apenas arquivos de imagem.", "error");
     return;
   }
 
   const convertedFiles = await convertFilesIfHeic(filteredFiles);
   const result = await uploadStore.setImages(convertedFiles);
   if (!result.success) {
-    alertMessage.value = result.message;
-    showAlert.value = true;
+    toast.show(result.message, "error");
   }
 }
 
@@ -177,17 +173,14 @@ function goToMetadata() {
     </div>
 
     <!-- Alerta de erro -->
-    <transition name="fade">
-      <div class="upload-box__alert" v-if="showAlert">
-        <div class="alert alert-danger h-auto bg-negativo-c fs-6 text-negativo-e border border-danger border-start-3"
-          role="alert">
-          <i class="bi bi-exclamation-triangle-fill text-negativo-e" />
-          <span>{{ alertMessage }}</span>
-          <button type="button" class="btn-close text-negativo-e" data-bs-dismiss="alert" aria-label="Close"
-            @click="showAlert = false" />
-        </div>
-      </div>
-    </transition>
+    <AppToast
+      class="upload-box__alert"
+      variant="soft"
+      :toasts="toast.toasts.value"
+      @close="toast.hide"
+      @pause="toast.pause"
+      @resume="toast.resume"
+    />
   </div>
 </template>
 

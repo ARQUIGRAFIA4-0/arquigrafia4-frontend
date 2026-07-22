@@ -1,30 +1,13 @@
 <template>
   <div class="container py-4 position-relative">
-    <transition name="fade">
-      <div class="upload-box__alert" v-if="showAlert">
-        <div
-          class="alert h-auto fs-6 border border-start-3"
-          :class="alertType === 'success'
-            ? 'alert-success bg-positivo-c text-positivo-e border-success'
-            : 'alert-danger bg-negativo-c text-negativo-e border-danger'"
-          role="alert"
-        >
-          <i
-            :class="alertType === 'success'
-              ? 'bi bi-check-circle-fill text-positivo-e'
-              : 'bi bi-exclamation-triangle-fill text-negativo-e'"
-          />
-          <span>{{ alertMessage }}</span>
-          <button
-            type="button"
-            :class="['btn-close', alertType === 'success' ? 'text-positivo-e' : 'text-negativo-e']"
-            data-bs-dismiss="alert"
-            aria-label="Close"
-            @click="showAlert = false"
-          />
-        </div>
-      </div>
-    </transition>
+    <AppToast
+      class="upload-box__alert"
+      variant="soft"
+      :toasts="toast.toasts.value"
+      @close="toast.hide"
+      @pause="toast.pause"
+      @resume="toast.resume"
+    />
 
     <div class="row align-items-start gy-4 metadata-upload__layout">
       <div class="col-12 col-md-6 order-1 order-md-1 sticky-preview-panel">
@@ -641,7 +624,7 @@
                   @map-error="handleMapError"
                   @click="handleMapClick"
                   clickable
-                  marker-color="#0f89e1"
+                  marker-color="#2F2F2F"
                 >
                   <MapControls
                     class="position-absolute bottom-0 start-50 translate-middle-x mb-3"
@@ -758,6 +741,8 @@
 import { ref, markRaw, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import axios from "@/axios";
 import ImagePreviewPanel from "@/components/imageMetadaUpload/ImagePreviewPanel.vue";
+import AppToast from "@/components/ui/AppToast.vue";
+import { useToast } from "@/composables/useToast";
 import UiField from "@/components/ui/UiField.vue";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
@@ -891,9 +876,7 @@ const selectIdentity = (identity) => {
 };
 
 const currentSection = ref("essenciais");
-const showAlert = ref(false);
-const alertMessage = ref("");
-const alertType = ref("error"); // 'error' | 'success'
+const toast = useToast();
 
 const isSubmitting = ref(false);
 const uploadProgress = ref({ current: 0, total: 0 });
@@ -1303,9 +1286,7 @@ const createAndAddSubject = async (term) => {
     filteredTagSuggestions.value = [];
     showTagSuggestions.value = false;
   } catch {
-    alertType.value = "error";
-    alertMessage.value = "Não foi possível criar o assunto. Tente novamente.";
-    showAlert.value = true;
+    toast.show("Não foi possível criar o assunto. Tente novamente.", "error");
   } finally {
     isCreatingSubject.value = false;
   }
@@ -1570,9 +1551,7 @@ const selectTab = (section) => {
 };
 
 const handleUploadError = (message) => {
-  alertType.value = "error";
-  alertMessage.value = message;
-  showAlert.value = true;
+  toast.show(message, "error");
 };
 
 const canSubmit = computed(() => {
@@ -1608,10 +1587,10 @@ const handleCancel = () => {
 
 const handleSubmit = async () => {
   if (!canSubmit.value) {
-    alertType.value = "error";
-    alertMessage.value =
-      "Por favor, preencha todos os dados obrigatórios de todas as imagens.";
-    showAlert.value = true;
+    toast.show(
+      "Por favor, preencha todos os dados obrigatórios de todas as imagens.",
+      "error"
+    );
     return;
   }
 
@@ -1791,7 +1770,6 @@ const handleSubmit = async () => {
     } else if (failedUploads.length > 0) {
       // Reabilita a UI para permitir correção e reenvio
       isSubmitting.value = false;
-      alertType.value = "error";
       const message =
         successfulUploads.length > 0
           ? `${successfulUploads.length} ${
@@ -1805,8 +1783,7 @@ const handleSubmit = async () => {
               failedUploads.length === 1 ? "imagem" : "imagens"
             }.`;
 
-      alertMessage.value = message;
-      showAlert.value = true;
+      toast.show(message, "error");
 
       // Se alguns enviaram com sucesso, remove-os da lista
       if (successfulUploads.length > 0) {
@@ -1828,11 +1805,11 @@ const handleSubmit = async () => {
   } catch (error) {
     console.error("Erro ao enviar imagens:", error);
     isSubmitting.value = false;
-    alertType.value = "error";
-    alertMessage.value =
+    toast.show(
       error.response?.data?.message ||
-      "Erro ao enviar imagens. Por favor, tente novamente.";
-    showAlert.value = true;
+        "Erro ao enviar imagens. Por favor, tente novamente.",
+      "error"
+    );
   }
 };
 </script>

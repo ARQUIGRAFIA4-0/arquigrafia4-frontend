@@ -99,13 +99,17 @@
           v-model="showAlbumPicker"
           :albums="loadedAlbums"
           :preselected-album-ids="[]"
+          :scopes="collectionScopes"
+          :selected-scope-id="selectedScope?.id"
+          @change-scope="onScopeChange"
           @open-create-collection="onCollectionCreateModalOpen"
           @confirm-add="onGridAlbumPickerConfirmAdd"
         />
 
         <CollectionCreateModal
           v-model="showCollectionCreateModal"
-          :user-data="loggedUser"
+          :user-data="selectedScope?.type === 'user' ? loggedUser : null"
+          :collective-id="selectedScope?.type === 'collective' ? selectedScope.id : null"
           @created="onCollectionCreated"
         />
 
@@ -198,6 +202,56 @@ const addToAlbumToastCollectionId = ref(null);
 const addToAlbumToastMultipleCollections = ref(false);
 let addToAlbumToastTimeout = null;
 
+const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
+
+const getInitials = (name) => name?.charAt(0).toUpperCase() || "?";
+
+const resolveAvatarUrl = (entity) => {
+  if (!entity) return null;
+  if (entity.avatar_url) {
+    return entity.avatar_url.startsWith("http")
+      ? entity.avatar_url
+      : `${API_BASE_URL}${entity.avatar_url}`;
+  }
+  if (entity.avatar_path) {
+    return `${API_BASE_URL}/storage/${entity.avatar_path}`;
+  }
+  return null;
+};
+
+// Escopos de coleção: o usuário + os coletivos dos quais ele faz parte
+const collectionScopes = computed(() => {
+  if (!loggedUser.value) return [];
+  const u = loggedUser.value;
+  const scopes = [
+    {
+      id: u.id,
+      type: "user",
+      name: u.name || u.username,
+      avatar: resolveAvatarUrl(u),
+      initials: u.initials || getInitials(u.name || u.username),
+    },
+  ];
+  for (const c of u.collectives ?? []) {
+    scopes.push({
+      id: c.id,
+      type: "collective",
+      name: c.name,
+      avatar: resolveAvatarUrl(c),
+      initials: getInitials(c.name),
+    });
+  }
+  return scopes;
+});
+
+const selectedScopeId = ref(null);
+const selectedScope = computed(
+  () =>
+    collectionScopes.value.find((s) => s.id === selectedScopeId.value) ??
+    collectionScopes.value[0] ??
+    null
+);
+
 const { searchMode, loadSnapshot, setSearchMode, submitSearch } =
   useSearchQuery();
 
@@ -220,6 +274,16 @@ watch(viewMode, (mode) => {
   if (mode !== "grid") {
     isAddToCollectionMode.value = false;
     selectedGridImages.value = [];
+  }
+
+  if (
+    route.name === "explore" &&
+    mode !== "map" &&
+    route.query.image
+  ) {
+    const query = { ...route.query };
+    delete query.image;
+    router.replace({ query });
   }
 });
 
@@ -419,22 +483,26 @@ function handleAddToCollectionClose() {
   selectedGridImages.value = [];
 }
 
-async function loadMyAlbums() {
-  const userId = loggedUser.value?.id;
-
-  if (!isLoggedIn.value || !userId) {
-    console.warn("Usuário não logado — não é possível adicionar à coleção.");
-    return;
-  }
-
+// Busca os álbuns do escopo (usuário ou coletivo)
+async function loadAlbumsForScope(scope) {
+  if (!scope) return;
   try {
-    const response = await albumsStore.getUserAlbums(authHeader.value, userId);
+    const response =
+      scope.type === "collective"
+        ? await albumsStore.getCollectiveAlbums(authHeader.value, scope.id)
+        : await albumsStore.getUserAlbums(authHeader.value, scope.id);
     loadedAlbums.value = Array.isArray(response) ? response : response?.data ?? [];
-    showAlbumPicker.value = true;
   } catch (error) {
     console.error("Erro ao buscar coleções:", error);
-    showAlbumPicker.value = false;
+    loadedAlbums.value = [];
   }
+}
+
+// Troca o escopo selecionado e recarrega os álbuns
+async function onScopeChange(scope) {
+  if (!scope) return;
+  selectedScopeId.value = scope.id;
+  await loadAlbumsForScope(scope);
 }
 
 function showBulkCollectionsToast(albumIds) {
@@ -468,7 +536,7 @@ function showBulkCollectionsToast(albumIds) {
 function onAddToAlbumToastVisualizar() {
   if (addToAlbumToastCollectionId.value) {
     router.push({
-      name: "my-collection-detail",
+      name: "collection-detail",
       params: {
         collectionId: addToAlbumToastCollectionId.value,
         viewMode: "grid",
@@ -520,13 +588,20 @@ function onCollectionCreateModalOpen() {
 
 async function onCollectionCreated() {
   showCollectionCreateModal.value = false;
-  await loadMyAlbums();
+  await loadAlbumsForScope(selectedScope.value);
   showAlbumPicker.value = true;
 }
 
 async function handleAddToCollectionConfirm() {
   if (selectedGridImages.value.length === 0) return;
-  await loadMyAlbums();
+  if (!isLoggedIn.value || !loggedUser.value?.id) {
+    console.warn("Usuário não logado — não é possível adicionar à coleção.");
+    return;
+  }
+  // Abre sempre no escopo do usuário; o coletivo pode ser trocado no modal.
+  selectedScopeId.value = collectionScopes.value[0]?.id ?? null;
+  await loadAlbumsForScope(selectedScope.value);
+  showAlbumPicker.value = true;
 }
 
 onUnmounted(() => {

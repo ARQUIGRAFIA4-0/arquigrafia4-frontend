@@ -4,6 +4,8 @@ import { useRouter, useRoute } from "vue-router";
 import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
 import { useCollectivesStore } from "@/store/collectives";
+import { useToast } from "@/composables/useToast";
+import AppToast from "@/components/ui/AppToast.vue";
 import profileImageDefault from "@/assets/collective_image.png";
 
 const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
@@ -24,13 +26,11 @@ const collectivesStore = useCollectivesStore();
 const { hasLoaded, finishInitialLoad } = useInitialSkeleton();
 const { loadAllSubjects, getTermById } = useSubjectTerms();
 
+const toast = useToast();
+
 const loadStartedAt = ref(Date.now());
 const showFullProfile = ref(false);
 const joinRequested = ref(false);
-const joinError = ref("");
-const joinSuccess = ref("");
-const inviteCopied = ref(false);
-const actionError = ref("");
 const leaveLoading = ref(false);
 
 const showSkeleton = computed(() => !hasLoaded.value);
@@ -61,43 +61,50 @@ watch(
 
 async function handleJoinRequest() {
   if (joinRequested.value) return;
-  joinError.value = "";
-  joinSuccess.value = "";
   const result = await collectivesStore.requestJoin(props.collectiveData.id);
   if (result.success) {
     joinRequested.value = true;
-    joinSuccess.value = "Solicitação enviada! Aguarde a aprovação de um administrador.";
+    toast.show("Solicitação enviada! Aguarde a aprovação de um administrador.", "success");
   } else {
-    joinError.value = result.message;
+    toast.show(result.message, "error");
   }
 }
 
 async function handleCopyInvite() {
   try {
     await navigator.clipboard.writeText(window.location.href);
-    inviteCopied.value = true;
-    setTimeout(() => (inviteCopied.value = false), 4000);
+    toast.show("Link copiado! Pronto para compartilhar.", "neutral");
   } catch {
-    actionError.value = "Não foi possível copiar o link. Copie manualmente a URL da página.";
+    toast.show("Não foi possível copiar o link. Copie manualmente a URL da página.", "error");
   }
 }
 
 async function handleLeave() {
   if (!confirm("Tem certeza que deseja deixar de participar deste coletivo?")) return;
-  actionError.value = "";
   leaveLoading.value = true;
   const result = await collectivesStore.leaveCollective(props.collectiveData.id);
   leaveLoading.value = false;
   if (result.success) {
     router.push("/coletivos");
   } else {
-    actionError.value = result.message;
+    toast.show(result.message, "error");
   }
 }
 </script>
 
 <template>
   <div class="collective-card">
+    <Teleport to="body">
+      <AppToast
+        class="collective-card__alert"
+        variant="solid"
+        :toasts="toast.toasts.value"
+        @close="toast.hide"
+        @pause="toast.pause"
+        @resume="toast.resume"
+      />
+    </Teleport>
+
     <!-- Skeleton -->
     <div
       v-if="showSkeleton"
@@ -202,38 +209,8 @@ async function handleLeave() {
 
         <!-- Ações condicionais -->
         <div class="collective-card__actions">
-          <!-- Feedbacks globais -->
-          <div v-if="inviteCopied" class="alert collective-card__alert-copied d-flex align-items-center justify-content-between py-2 px-2 small" role="alert">
-            <div class="d-flex align-items-center gap-3">
-              <i class="bi bi-arrow-up-right-circle-fill"></i>
-              <span>Link copiado! Pronto para compartilhar.</span>
-            </div>
-            <button type="button" class="btn-close btn-sm" @click="inviteCopied = false" aria-label="Fechar" />
-          </div>
-          <div v-if="actionError" class="alert alert-negativo d-flex align-items-center justify-content-between py-2 px-2 small" role="alert">
-            <div class="d-flex align-items-center gap-3">
-              <i class="bi bi-exclamation-triangle-fill"></i>
-              <span>{{ actionError }}</span>
-            </div>
-            <button type="button" class="btn-close btn-sm" @click="actionError = ''" aria-label="Fechar" />
-          </div>
-
           <!-- Usuário logado, não membro -->
           <template v-if="isLoggedIn && userRole === null">
-            <div v-if="joinSuccess" class="alert alert-positivo d-flex align-items-center justify-content-between py-2 px-2 small" role="alert">
-              <div class="d-flex align-items-center gap-3">
-                <i class="bi bi-check-all"></i>
-                <span>{{ joinSuccess }}</span>
-              </div>
-              <button type="button" class="btn-close btn-sm" @click="joinSuccess = ''" aria-label="Fechar" />
-            </div>
-            <div v-if="joinError" class="alert alert-negativo d-flex align-items-center justify-content-between py-2 px-2 small" role="alert">
-              <div class="d-flex align-items-center gap-3">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <span>{{ joinError }}</span>
-              </div>
-              <button type="button" class="btn-close btn-sm" @click="joinError = ''" aria-label="Fechar" />
-            </div>
             <button
               class="btn btn-primary btn-sm w-100"
               :disabled="joinRequested"
@@ -552,10 +529,12 @@ $breakpoint-md: 768px;
   }
 }
 
-.collective-card__alert-copied {
-  background-color: #fff;
-  color: #2f2f2f;
-  border: 0.5px solid #2f2f2f;
-  border-left-width: 4px;
+.collective-card__alert {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  max-width: 90%;
 }
 </style>
