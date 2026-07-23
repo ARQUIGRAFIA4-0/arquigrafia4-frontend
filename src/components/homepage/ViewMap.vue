@@ -2,7 +2,7 @@
   <div class="explore-acervo-map">
     <LocationsMap
       context="explore"
-      :images="locatedImages"
+      :images="locatedItems"
       :is-loading="isLoading"
       :pitch="mapPitch"
       :load-image-details="api.getImageDetails"
@@ -17,7 +17,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRouteQuery } from "@vueuse/router";
 
 import LocationsMap from "@/components/map/LocationsMap.vue";
-import { mapLocationsGeoJsonToImages } from "@/helpers/geojson.js";
+import { mapLocationsGeoJsonToMapItems } from "@/helpers/geojson.js";
 import { api } from "@/services/api.js";
 
 const mapSettingsQuery = useRouteQuery("map-settings", "2d");
@@ -41,32 +41,31 @@ const mapPitch = computed(() =>
   mapSettingsQuery.value === "3d" ? MAP_PITCH_3D : MAP_PITCH_2D
 );
 
-const locatedImages = ref([]);
+const locatedItems = ref([]);
 const isLoading = ref(true);
 
-// Carrega as localizações das imagens do acervo.
-const loadLocatedImages = async () => {
+// Carrega as localizações (imagens e obras) do acervo.
+const loadLocatedItems = async () => {
   isLoading.value = true;
 
   try {
     const featureCollection = await api.getLocationsGeoJSON();
     const baseUrl = import.meta.env.VITE_BASE_REQUEST_URL ?? "";
-    locatedImages.value = mapLocationsGeoJsonToImages(featureCollection, baseUrl);
-
+    locatedItems.value = mapLocationsGeoJsonToMapItems(
+      featureCollection,
+      baseUrl
+    );
   } catch (error) {
     console.error("Erro ao carregar localizações do acervo", error);
-    locatedImages.value = [];
-
+    locatedItems.value = [];
   } finally {
     isLoading.value = false;
-
   }
 };
 
 onMounted(() => {
-  loadLocatedImages();
+  loadLocatedItems();
 });
-
 </script>
 
 <style scoped>
