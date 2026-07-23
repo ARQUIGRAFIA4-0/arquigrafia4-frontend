@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <circle cx="32" cy="32" r="32" fill="#2F2F2F"/>
+
+  <!-- Contorno das duas edifica??es -->
+  <path
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="2.4"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+    d="M18 45 V31.5 L28 19.5 L46.5 28.5 V45 H18 Z"
+  />
+  <line
+    x1="28"
+    y1="19.5"
+    x2="28"
+    y2="45"
+    stroke="#FFFFFF"
+    stroke-width="2.4"
+    stroke-linecap="round"
+  />
+
+  <!-- Janelas: bloco baixo (1?2) -->
+  <rect x="21" y="33" width="3.4" height="3.4" rx="0.35" fill="#FFFFFF"/>
+  <rect x="21" y="38.2" width="3.4" height="3.4" rx="0.35" fill="#FFFFFF"/>
+
+  <!-- Janelas: bloco alto (3?5) -->
+  <g fill="#FFFFFF">
+    <rect x="31" y="24.8" width="3.2" height="3.2" rx="0.3"/>
+    <rect x="35.6" y="24.8" width="3.2" height="3.2" rx="0.3"/>
+    <rect x="40.2" y="24.8" width="3.2" height="3.2" rx="0.3"/>
+
+    <rect x="31" y="29" width="3.2" height="3.2" rx="0.3"/>
+    <rect x="35.6" y="29" width="3.2" height="3.2" rx="0.3"/>
+    <rect x="40.2" y="29" width="3.2" height="3.2" rx="0.3"/>
+
+    <rect x="31" y="33.2" width="3.2" height="3.2" rx="0.3"/>
+    <rect x="35.6" y="33.2" width="3.2" height="3.2" rx="0.3"/>
+    <rect x="40.2" y="33.2" width="3.2" height="3.2" rx="0.3"/>
+
+    <rect x="31" y="37.4" width="3.2" height="3.2" rx="0.3"/>
+    <rect x="35.6" y="37.4" width="3.2" height="3.2" rx="0.3"/>
+    <rect x="40.2" y="37.4" width="3.2" height="3.2" rx="0.3"/>
+
+    <rect x="31" y="41.6" width="3.2" height="3.2" rx="0.3"/>
+    <rect x="35.6" y="41.6" width="3.2" height="3.2" rx="0.3"/>
+    <rect x="40.2" y="41.6" width="3.2" height="3.2" rx="0.3"/>
+  </g>
+</svg>
