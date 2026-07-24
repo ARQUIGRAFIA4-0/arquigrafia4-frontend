@@ -45,7 +45,7 @@
     <div v-for="group in vocabGroups" :key="group.key" class="metadata-section">
       <h2 class="h5 metadata-title">{{ group.label }}</h2>
       <div class="metadata-tags">
-        <span v-for="term in group.terms" :key="term.id" class="metadata-term">
+        <span v-for="term in group.terms" :key="term.id" class="work-tag">
           {{ term.label }}
         </span>
       </div>
@@ -55,7 +55,7 @@
       <h2 class="h5 metadata-title">Assuntos</h2>
       <div class="metadata-tags">
         <button v-for="subject in subjects" :key="subject.id" type="button"
-          class="btn btn-outline-primary btn-sm btn-tag" @click="searchBySubject(subject)">
+          class="work-tag" @click="searchBySubject(subject)">
           {{ subject.label }}
         </button>
       </div>
@@ -237,21 +237,28 @@ const markerPosition = computed(() => {
   gap: 0.5rem;
 }
 
-.metadata-tags .btn-tag {
-  min-height: 36px;
-  cursor: pointer;
-}
-
-.metadata-term {
+.work-tag {
   display: inline-flex;
   align-items: center;
   min-height: 36px;
   padding: 0 0.75rem;
-  border: 1px solid #ced4da;
-  border-radius: 5px;
-  color: #495057;
+  border: 1px solid var(--Laranja_E, #aa4f28);
+  border-radius: 2px;
+  background-color: var(--Laranja_E, #aa4f28);
+  color: #fff;
+  font-family: inherit;
   font-size: 0.875rem;
   line-height: 1.6;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.work-tag:hover {
+  background-color: #fff;
+  color: var(--Laranja_E, #aa4f28);
+}
+
+button.work-tag {
+  cursor: pointer;
 }
 
 .metadata-map {
