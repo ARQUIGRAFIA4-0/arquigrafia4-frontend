@@ -50,7 +50,8 @@ const handleMapClick = async ({ lng, lat }) => {
 
 const canAdvance = computed(() => pickedCoords.value !== null && !isReverseGeocoding.value);
 
-const showSearch = ref(false);
+// Começa visível; o botão da lupa continua alternando (mostra/esconde).
+const showSearch = ref(true);
 const searchQuery = ref("");
 const searchSuggestions = ref([]);
 const isForwardGeocoding = ref(false);
@@ -83,7 +84,6 @@ const selectSearchResult = async (result) => {
   const lat = parseFloat(result.lat);
   searchQuery.value = "";
   searchSuggestions.value = [];
-  showSearch.value = false;
   mapInstance.value?.flyTo({ center: [lng, lat], zoom: 16 });
   await handleMapClick({ lng, lat });
 };
@@ -404,6 +404,9 @@ const reset = () => {
   dateYearEndInput.value = "";
   descriptionInput.value = "";
   errorMessage.value = "";
+  showSearch.value = true;
+  searchQuery.value = "";
+  searchSuggestions.value = [];
   for (const { field } of VOCAB_FIELDS) {
     field.input.value = "";
     field.selected.value = [];
