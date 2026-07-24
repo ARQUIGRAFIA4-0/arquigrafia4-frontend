@@ -9,6 +9,9 @@ import axios from "@/axios";
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
+  // Texto para pré-preencher o input de título ao abrir (ex.: vindo da busca que
+  // sugeriu criar a obra). Fica só no input; não é adicionado como título.
+  initialTitle: { type: String, default: "" },
 });
 
 const emit = defineEmits(["update:modelValue", "created"]);
@@ -110,9 +113,14 @@ const titles = ref([]);  // [{ type, label, pref }]
 const addTitle = () => {
   const label = titleLabelInput.value.trim();
   if (!label) return;
-  const pref = titleTypeInput.value === "other";
-  titles.value.push({ type: titleTypeInput.value, label, pref });
+  const isPrincipal = titleTypeInput.value === "other";
+  // Só pode existir UM título principal; um segundo é bloqueado (o dropdown já
+  // impede selecioná-lo quando um existe — isto é a rede de segurança).
+  if (isPrincipal && hasPreferredTitle.value) return;
+  titles.value.push({ type: titleTypeInput.value, label, pref: isPrincipal });
   titleLabelInput.value = "";
+  // Definido o principal, o padrão passa a ser "Alternativo".
+  if (isPrincipal) titleTypeInput.value = "alternate";
 };
 
 const removeTitle = (index) => titles.value.splice(index, 1);
@@ -423,6 +431,11 @@ watch(
   async (open) => {
     if (!open) { reset(); return; }
 
+    // Pré-preenche o input de título com o texto que originou a sugestão de criar.
+    if (props.initialTitle) {
+      titleLabelInput.value = props.initialTitle;
+    }
+
     try {
       const contributors = await vracStore.getVRACContributorNames();
       if (Array.isArray(contributors)) {
@@ -487,6 +500,7 @@ onUnmounted(() => {
                 :zoom="mapZoom"
                 :clickable="true"
                 :marker-position="pickedCoords"
+                marker-variant="building"
                 @map-ready="handleMapReady"
                 @click="handleMapClick"
               />
@@ -589,8 +603,16 @@ onUnmounted(() => {
                   </button>
                   <ul class="dropdown-menu menu-light">
                     <li v-for="t in TITLE_TYPES" :key="t.value">
-                      <button class="dropdown-item" @click.prevent="titleTypeInput = t.value">
+                      <button
+                        class="dropdown-item"
+                        :disabled="t.value === 'other' && hasPreferredTitle"
+                        @click.prevent="titleTypeInput = t.value"
+                      >
                         {{ t.label }}
+                        <span
+                          v-if="t.value === 'other' && hasPreferredTitle"
+                          class="text-muted small ms-1"
+                        >(já definido)</span>
                       </button>
                     </li>
                   </ul>
