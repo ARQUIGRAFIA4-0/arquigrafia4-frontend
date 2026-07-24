@@ -65,7 +65,7 @@
       <h2 class="h5 metadata-title">Localização</h2>
       <div class="metadata-map">
         <MapLibreMap :style-url="mapStyleUrl" :center="mapCenter" :zoom="mapZoom" :marker-position="markerPosition"
-          marker-color="#2F2F2F" />
+          marker-color="#2F2F2F" marker-variant="building" />
       </div>
     </div>
   </div>
