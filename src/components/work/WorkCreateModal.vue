@@ -50,8 +50,7 @@ const handleMapClick = async ({ lng, lat }) => {
 
 const canAdvance = computed(() => pickedCoords.value !== null && !isReverseGeocoding.value);
 
-// Começa visível; o botão da lupa continua alternando (mostra/esconde).
-const showSearch = ref(true);
+const showSearch = ref(true); // Começa visível;
 const searchQuery = ref("");
 const searchSuggestions = ref([]);
 const isForwardGeocoding = ref(false);

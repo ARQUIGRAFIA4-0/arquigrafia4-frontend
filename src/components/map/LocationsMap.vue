@@ -878,7 +878,24 @@ const handleMapClickOutsideSpider = (event) => {
 /* ------------------------------- Mapa ------------------------------------- */
 // Ajusta o mapa para exibir todas as features visíveis.
 const fitMapToFeatures = () => {
-  restoreInitialView();
+  const map = mapInstance.value;
+  if (!map) return;
+
+  // fitBounds calcula o zoom a partir das dimensões do viewport. No primeiro
+  // carregamento (ou ao trocar para o modo mapa), o container pode ainda não ter
+  // a altura final, o que faz o enquadramento sair "afastado". Garante o resize e
+  // adia o fit para quando o mapa estiver ocioso.
+  map.resize();
+
+  let fitted = false;
+  const run = () => {
+    if (fitted) return;
+    fitted = true;
+    restoreInitialView();
+  };
+
+  map.once("idle", run);
+  window.setTimeout(run, 80);
 };
 
 // Configura as camadas do mapa.
