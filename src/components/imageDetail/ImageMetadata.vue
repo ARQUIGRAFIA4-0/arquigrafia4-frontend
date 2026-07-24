@@ -54,6 +54,15 @@
       <p class="metadata-text">{{ props.image?.date || "Data não disponível" }}</p>
     </div>
 
+    <div v-if="props.image?.works?.length" class="metadata-section">
+      <h2 class="h5 metadata-title">Obra</h2>
+      <p v-for="work in props.image.works" :key="work.id" class="metadata-text mb-2">
+        <RouterLink :to="`/obras/${work.id}`" class="metadata-uploader-link">
+          {{ work.title }}
+        </RouterLink>
+      </p>
+    </div>
+
     <div v-if="props.image?.subjects?.length" class="metadata-section">
       <h2 class="h5 metadata-title">Tags da imagem</h2>
       <div class="metadata-tags">
@@ -275,6 +284,11 @@ const markerPosition = computed(() => {
 .metadata-uploader-link:hover {
   text-decoration: underline;
   color: #343a40;
+}
+
+.metadata-work-location {
+  font-size: 0.875rem;
+  color: #6c757d;
 }
 
 .metadata-tags {

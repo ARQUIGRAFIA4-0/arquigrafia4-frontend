@@ -1,19 +1,31 @@
 <template>
   <div class="container-fluid image-detail__container">
-    <!-- Image -->
-    <div class="row align-items-start gy-4 image-detail__layout">
-      <div class="col-12 col-md-7 image-detail__image-box">
-        <button type="button" class="btn btn-link p-0 d-inline-flex align-items-center text-decoration-none back-link"
-          @click="goBack">
-          <i class="bi bi-arrow-left-square back-link__icon" aria-hidden="true"></i>
-          <span class="back-link__label">Voltar</span>
+
+
+    <div class="image-detail__wrapper-content">
+
+      <div class="image-detail__image-box">
+        <button type="button" class="back-link" @click="goBack">
+          <i class="bi bi-arrow-left back__icon" aria-hidden="true"></i>
+          <span class="back-link__label">voltar</span>
         </button>
-        <ImageDisplay :image="image" :license-info="licenseInfo" :loading="loading" @load="loading = false"
-          @download="handleDownload" @share="handleShare" @report-submit="handleReportSubmit" />
+
+        <div class="image-detail__image-wrapper" :class="{ 'is-loading': loading }">
+          <ImageDisplay :image="image" :license-info="licenseInfo" @load="loading = false" @download="handleDownload"
+            @share="handleShare" @report-submit="handleReportSubmit" />
+          <!-- <ImageDisplay :image="image" :license-info="licenseInfo" :loading="loading" @load="loading = false"
+            @download="handleDownload" @share="handleShare" @report-submit="handleReportSubmit" /> -->
+
+          <div v-if="loading" class="image-detail__loading-overlay">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Carregando...</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Metadata -->
-      <div class="col-12 col-md-5">
+      <div class="image-detail__metadata-box">
+
         <div class="col-12 image-detail__navbar">
           <div
             class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-4">
@@ -59,16 +71,21 @@
         <ImageInterpretations v-else-if="currentSection === 'interpretacoes'" @submit="handleSpecSubmit"
           :image-id="image?.id" />
 
-        <div v-else class="text-muted small">
-          <!--  -->
-        </div>
+        <!-- <div v-else class="text-muted small">
+          
+        </div> -->
       </div>
     </div>
+
+    <div class="image-detail__related-box">
+      <ImageRelated v-if="image?.id" :image-id="image.id" />
+    </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, onBeforeUnmount, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { api } from "@/services/api";
 import { useAuthStore } from "@/store/auth";
@@ -81,8 +98,9 @@ import ImageMetadataEdit from "@/components/imageDetail/ImageMetadataEdit.vue";
 import ImageSuggestion from "@/components/imageDetail/ImageSuggestion.vue";
 import ImageSuggestionEdit from "../components/imageDetail/ImageSuggestionEdit.vue";
 import ImageSuggestionView from "../components/imageDetail/ImageSuggestionView.vue";
-
 import ImageInterpretations from "@/components/imageDetail/ImageInterpretations.vue";
+import ImageRelated from "@/components/imageDetail/ImageRelated.vue";
+
 defineOptions({ name: "ImageDetail" });
 
 const router = useRouter();
@@ -93,6 +111,13 @@ const loading = ref(true);
 const loadingComments = ref(false);
 const authStore = useAuthStore();
 const { loggedUser } = storeToRefs(authStore);
+
+
+const desktopQuery = window.matchMedia("(min-width: 768px)");
+const isDesktop = ref(desktopQuery.matches);
+const handleDesktopChange = (e) => {
+  isDesktop.value = e.matches;
+};
 
 const tabs = [
   {
@@ -114,12 +139,7 @@ const tabs = [
     label: "Sugestões",
     section: "sugestoes",
     routeName: "image-detail-sugestoes",
-  },
-  // {
-  //   label: "Imagens relacionadas",
-  //   section: "relacionadas",
-  //   routeName: "image-detail-relacionadas",
-  // },
+  }
 ];
 
 const isOwner = computed(() => {
@@ -143,11 +163,23 @@ const licenseInfo = computed(() => {
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const fetchImageData = async () => {
   try {
+    loading.value = true;
     image.value = await api.getImageDetails(route.params.id);
   } catch (error) {
     console.error("Erro ao carregar imagem:", error);
+  } finally {
+    loading.value = false;
   }
 };
+
+watch(
+  () => route.params.id,
+  (newId, oldId) => {
+    if (newId && newId !== oldId) {
+      fetchImageData();
+    }
+  }
+);
 
 // ─── Handlers ─────────────────────────────────────────────────────────────────
 const goBack = () => router.back();
@@ -177,20 +209,26 @@ const handleReportSubmit = (payload) => {
 // };
 
 onMounted(async () => {
-  try {
-    const imageId = route.params.id;
-    image.value = await api.getImageDetails(imageId);
-  } catch (error) {
-    console.error("Error fetching data:", error);
-  } finally {
-    loading.value = false;
-  }
+  desktopQuery.addEventListener("change", handleDesktopChange);
+  await fetchImageData();
+});
+onBeforeUnmount(() => {
+  desktopQuery.removeEventListener("change", handleDesktopChange);
 });
 </script>
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
-$breakpoint-md: 768px;
+$breakpoint-sm: 768px;
+$breakpoint-md: 1024px;
+$breakpoint-lg: 1440px;
+
+
+@mixin sm {
+  @media (min-width: #{$breakpoint-sm}) {
+    @content;
+  }
+}
 
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
@@ -198,24 +236,103 @@ $breakpoint-md: 768px;
   }
 }
 
+@mixin lg {
+  @media (min-width: #{$breakpoint-lg}) {
+    @content;
+  }
+}
+
 .image-detail__container {
-  @include md {
+  // box-sizing: border-box;
+  width: 100%;
+
+  @include sm {
     padding: 24px 50px;
   }
 }
 
-.back-link {
-  gap: 0.5rem;
-  margin-bottom: 16px;
+.image-detail__wrapper-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.875rem;
+
+  @include md {
+    flex-direction: row;
+    justify-content: center;
+  }
 }
 
-.back-link__icon {
-  color: var(--Cinza_M);
+.image-detail__image-box {
+  width: 100%;
+
+  .back-link {
+    width: 87px;
+    height: 25px;
+    background-color: var(--Off_white);
+    border: 1px solid var(--Cinza_E);
+    border-radius: 5px;
+    padding: 2px 14px;
+    gap: .4375rem;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+
+    &:hover {
+      background-color: var(--Branco);
+    }
+
+    & .bi {
+      font-size: .875rem;
+    }
+
+    &__label {
+      font-weight: 400;
+      font-size: .875rem;
+      line-height: 150%;
+    }
+  }
+
+  @include md {
+    width: 100%;
+    max-width: 807px;
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
+  }
 }
 
-.back-link__label {
-  color: var(--Preto);
-  text-decoration: underline;
+.image-detail__image-wrapper {
+  position: relative;
+
+  :deep(img) {
+    transition: opacity 0.25s ease;
+  }
+
+  &.is-loading :deep(img) {
+    opacity: 0.4;
+  }
+}
+
+.image-detail__loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.image-detail__metadata-box {
+  width: 100%;
+
+  @include md {
+    max-width: 576px;
+  }
+}
+
+.image-detail__related-box {
+  grid-area: related;
+  width: 100%;
 }
 
 .image-detail__navbar {
@@ -255,23 +372,5 @@ $breakpoint-md: 768px;
 .image-detail__navbar-links {
   scrollbar-color: #d1d5db transparent;
   scrollbar-width: thin;
-}
-
-.image-detail__layout {
-  --bs-gutter-x: 1.5rem;
-}
-
-.image-detail__image-box {
-  @include md {
-    position: sticky;
-    top: 20px;
-    align-self: flex-start;
-  }
-}
-
-@media (max-width: 767.98px) {
-  .col-md-4 {
-    margin-top: 2rem;
-  }
 }
 </style>

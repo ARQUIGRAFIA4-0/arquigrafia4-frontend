@@ -29,6 +29,22 @@ const getLocationsGeoJSON = async () => {
   return response.data;
 };
 
+/** Ano de uma data ISO8601 do backend ("1951-01-01T00:00:00.000000Z" → "1951"). */
+const isoYear = (value) => {
+  const year = typeof value === "string" ? value.slice(0, 4) : "";
+  return /^\d{4}$/.test(year) ? year : null;
+};
+
+/**
+ * Retorna o título preferencial de uma obra (VRACWork), com fallback para o
+ * primeiro título disponível. `titles` traz itens no formato { label, type, pref }.
+ */
+const workPrimaryTitle = (work) => {
+  const titles = work?.titles || [];
+  const preferred = titles.find((t) => t.pref);
+  return (preferred || titles[0])?.label || "Obra sem título";
+};
+
 /**
  * Obtém os detalhes completos de uma imagem pelo ID
  */
@@ -112,6 +128,15 @@ const getImageDetails = async (id) => {
     const subjects = image.subjects || [];
     const rights = image.rights || [];
 
+    // Obras associadas à imagem. Uma imagem pode não ter obra (array vazio).
+    const works = Array.isArray(image.works)
+      ? image.works.map((work) => ({
+          id: work.id,
+          title: workPrimaryTitle(work),
+          locationLabel: work.location?.label || null,
+        }))
+      : [];
+
     return {
       id: image.id,
       title,
@@ -133,6 +158,7 @@ const getImageDetails = async (id) => {
       description,
       subjects,
       rights,
+      works,
     };
   } catch (error) {
     console.error("Error fetching image details:", error);
@@ -145,6 +171,88 @@ const getImageComments = async () => {
   return [];
 };
 
+/**
+ * Rótulo de um termo de vocabulário VRAC. Materiais, técnicas, períodos, contextos
+ * culturais e tipos de obra usam `label`; assuntos usam `term`.
+ */
+const vocabTerms = (list, key = "label") =>
+  (list || [])
+    .map((item) => ({ id: item.id, label: item[key] || null }))
+    .filter((item) => item.label);
+
+/**
+ * Detalhe de uma obra (VRACWork) pelo ID — GET /api/vrac-works/{id}.
+ * As relações vêm em snake_case (style_periods, cultural_contexts, work_types).
+ * `description` e `images_count` podem não vir; lidos com fallback null.
+ */
+const getWorkDetails = async (id) => {
+  const response = await axios.get(`/api/vrac-works/${id}`);
+  const work = response.data.data;
+
+  return {
+    id: work.id,
+    title: workPrimaryTitle(work),
+    titles: work.titles || [],
+    description: work.description ?? null,
+    imagesCount: typeof work.images_count === "number" ? work.images_count : null,
+    location: work.location
+      ? {
+          label: work.location.label || null,
+          // Coordenadas chegam como string.
+          latitude: parseFloat(work.location.latitude),
+          longitude: parseFloat(work.location.longitude),
+        }
+      : null,
+    // Nome e papel ficam em relações aninhadas, ambas opcionais.
+    agents: (work.agents || []).map((agent) => ({
+      id: agent.id,
+      name: agent.contributor_name?.name || null,
+      role: agent.role?.label || null,
+      attribution: agent.attribution || null,
+    })),
+    // Datas chegam em ISO8601; extraímos só o ano.
+    dates: (work.dates || []).map((date) => ({
+      id: date.id,
+      type: date.type || null,
+      earliestYear: isoYear(date.earliest_date),
+      latestYear: isoYear(date.latest_date),
+      circa: Boolean(date.circa_earliest_date || date.circa_latest_date),
+    })),
+    materials: vocabTerms(work.materials),
+    techniques: vocabTerms(work.techniques),
+    stylePeriods: vocabTerms(work.style_periods),
+    culturalContexts: vocabTerms(work.cultural_contexts),
+    workTypes: vocabTerms(work.work_types),
+    subjects: vocabTerms(work.subjects, "term"),
+  };
+};
+
+/**
+ * Imagens associadas a uma obra — GET /api/images?work[]={id}.
+ * `sort_by` é obrigatório: sem ele a ordem não é estável.
+ * Retorna { items, meta, hasMore }; `meta.total` serve de fallback para a contagem de imagens.
+ */
+const getWorkImages = async (workId, { page = 1, perPage = 24 } = {}) => {
+  const response = await axios.get("/api/images", {
+    params: {
+      "work[]": workId,
+      sort_by: "created_at",
+      sort_order: "asc",
+      page,
+      per_page: perPage,
+    },
+  });
+  const items = (response.data.data || []).map(mapImageListItem);
+  const meta = response.data.meta || null;
+  // `links.next` é o sinal usado nas demais listagens; cai no meta quando ausente.
+  const hasMore = response.data.links?.next
+    ? true
+    : meta?.current_page && meta?.last_page
+      ? meta.current_page < meta.last_page
+      : false;
+  return { items, meta, hasMore };
+};
+
 // TODO: implementar endpoint real de GeoJSON
 const getGeoJSON = async () => {
   return {
@@ -152,6 +260,16 @@ const getGeoJSON = async () => {
     imagem: createEmptyFeatureCollection(),
   };
 };
+
+/**
+ * Busca iamgens relacionadas 
+ */
+const getRelatedImages = async (imageId, page = 1) => {
+  return axios
+    .get(`api/images/${imageId}/related`, { params: { page } })
+    .then((res) => res.data); // { data: [...], meta: {...} } vindo do ImageResource::collection paginado
+}
+
 
 /**
  * Busca imagens na API com filtros
@@ -248,7 +366,7 @@ const fetchImages = async (page = 1, filters = {}) => {
     if (filters.collectiveId) {
       params.collective_id = filters.collectiveId;
     }
-    
+
     // Filtro por assuntos (tags de sujeito por ID)
     if (filters.subjects?.length) {
       params['subject[]'] = filters.subjects.length === 1 ? filters.subjects[0] : filters.subjects;
@@ -675,6 +793,9 @@ export const api = {
   getLocationsGeoJSON,
   getImageDetails,
   getImageComments,
+  getWorkDetails,
+  getWorkImages,
+  getRelatedImages,
   searchImages,
   getTotalImages,
   getSubjectById,

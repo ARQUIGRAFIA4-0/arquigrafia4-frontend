@@ -713,6 +713,7 @@
 
   <WorkCreateModal
     v-model="showWorkCreateModal"
+    :initial-title="workInput"
     @created="onWorkCreated"
   />
 
