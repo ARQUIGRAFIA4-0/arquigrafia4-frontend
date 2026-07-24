@@ -76,7 +76,7 @@
     <div class="network-toolbar__mobile-block">
       <button class="btn network-toolbar__mobile-btn" type="button" data-bs-toggle="offcanvas"
         data-bs-target="#offcanvasFilters">
-        <i class="bi bi-person-fill" />
+        <i :class="['bi', currentFilterOption.icon]" />
         <i class="bi bi-sort-down" />
       </button>
     </div>

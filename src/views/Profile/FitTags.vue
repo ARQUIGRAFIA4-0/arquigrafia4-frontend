@@ -210,6 +210,7 @@ watch(
             :key="`tooltip-${subject.id || subject.term}-${index}`"
             class="fit-tags__tag fit-tags__tag--mini"
           >
+            <i v-if="subject.icon" :class="['fit-tags__tag-icon', subject.icon]" aria-hidden="true"></i>
             {{ subject.term }}
           </span>
         </div>
@@ -221,6 +222,7 @@ watch(
       :key="subject.id || `${subject.term}-${index}`"
       class="fit-tags__tag"
     >
+      <i v-if="subject.icon" :class="['fit-tags__tag-icon', subject.icon]" aria-hidden="true"></i>
       {{ subject.term }}
     </span>
 
@@ -310,6 +312,12 @@ watch(
   font-size: 10px;
   line-height: 115%;
   white-space: nowrap;
+}
+
+.fit-tags__tag-icon {
+  margin-right: 4px;
+  font-size: 0.85em;
+  vertical-align: -1px;
 }
 
 .fit-tags__tag--overflow {
