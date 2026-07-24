@@ -51,9 +51,17 @@
         </div>
       </div>
 
-      <!-- Lado direito (5 colunas): metadados da obra — em breve -->
+      <!-- Lado direito (5 colunas): metadados da obra -->
       <div class="col-12 col-md-5">
-        <!-- TODO: dados da obra -->
+        <div class="col-12 work-detail__navbar">
+          <ul class="nav nav-underline work-detail__navbar-links">
+            <li class="nav-item">
+              <span class="nav-link active" aria-current="page">Dados</span>
+            </li>
+          </ul>
+        </div>
+
+        <work-metadata v-if="work" :work="work" />
       </div>
     </div>
   </div>
@@ -63,6 +71,7 @@
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import MosaicCard from "@/components/MosaicCard.vue";
+import WorkMetadata from "@/components/work/WorkMetadata.vue";
 import { api } from "@/services/api";
 
 const route = useRoute();
@@ -227,6 +236,27 @@ $breakpoint-md: 768px;
 
 .work-detail__layout {
   --bs-gutter-x: 1.5rem;
+}
+
+// Espelha .image-detail__navbar
+.work-detail__navbar {
+  margin-bottom: 16px;
+
+  @include md {
+    margin-bottom: 28px;
+  }
+}
+
+.work-detail__navbar-links {
+  z-index: auto;
+  gap: 40px;
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+.work-detail__navbar-links .nav-link {
+  cursor: default;
 }
 
 .work-detail__header {

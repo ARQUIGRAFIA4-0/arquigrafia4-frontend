@@ -29,6 +29,12 @@ const getLocationsGeoJSON = async () => {
   return response.data;
 };
 
+/** Ano de uma data ISO8601 do backend ("1951-01-01T00:00:00.000000Z" → "1951"). */
+const isoYear = (value) => {
+  const year = typeof value === "string" ? value.slice(0, 4) : "";
+  return /^\d{4}$/.test(year) ? year : null;
+};
+
 /**
  * Retorna o título preferencial de uma obra (VRACWork), com fallback para o
  * primeiro título disponível. `titles` traz itens no formato { label, type, pref }.
@@ -122,8 +128,7 @@ const getImageDetails = async (id) => {
     const subjects = image.subjects || [];
     const rights = image.rights || [];
 
-    // Obras associadas à imagem. O backend inclui `works` com `works.titles` e
-    // `works.location` no GET /images/{id}. Uma imagem pode não ter obra (array vazio).
+    // Obras associadas à imagem. Uma imagem pode não ter obra (array vazio).
     const works = Array.isArray(image.works)
       ? image.works.map((work) => ({
           id: work.id,
@@ -167,11 +172,18 @@ const getImageComments = async () => {
 };
 
 /**
+ * Rótulo de um termo de vocabulário VRAC. Materiais, técnicas, períodos, contextos
+ * culturais e tipos de obra usam `label`; assuntos usam `term`.
+ */
+const vocabTerms = (list, key = "label") =>
+  (list || [])
+    .map((item) => ({ id: item.id, label: item[key] || null }))
+    .filter((item) => item.label);
+
+/**
  * Detalhe de uma obra (VRACWork) pelo ID — GET /api/vrac-works/{id}.
- * Envelope { data }. Atenção: as relações vêm em camelCase na resposta
- * (stylePeriods, culturalContexts, workTypes), diferente do snake_case do envio.
- * `description` e `images_count` podem não existir ainda enquanto o backend não
- * sobe a migration — por isso são lidos com fallback (null / undefined).
+ * As relações vêm em snake_case (style_periods, cultural_contexts, work_types).
+ * `description` e `images_count` podem não vir; lidos com fallback null.
  */
 const getWorkDetails = async (id) => {
   const response = await axios.get(`/api/vrac-works/${id}`);
@@ -186,26 +198,39 @@ const getWorkDetails = async (id) => {
     location: work.location
       ? {
           label: work.location.label || null,
+          // Coordenadas chegam como string.
           latitude: parseFloat(work.location.latitude),
           longitude: parseFloat(work.location.longitude),
         }
       : null,
-    agents: work.agents || [],
-    dates: work.dates || [],
-    materials: work.materials || [],
-    techniques: work.techniques || [],
-    stylePeriods: work.stylePeriods || [],
-    culturalContexts: work.culturalContexts || [],
-    workTypes: work.workTypes || [],
-    subjects: work.subjects || [],
+    // Nome e papel ficam em relações aninhadas, ambas opcionais.
+    agents: (work.agents || []).map((agent) => ({
+      id: agent.id,
+      name: agent.contributor_name?.name || null,
+      role: agent.role?.label || null,
+      attribution: agent.attribution || null,
+    })),
+    // Datas chegam em ISO8601; extraímos só o ano.
+    dates: (work.dates || []).map((date) => ({
+      id: date.id,
+      type: date.type || null,
+      earliestYear: isoYear(date.earliest_date),
+      latestYear: isoYear(date.latest_date),
+      circa: Boolean(date.circa_earliest_date || date.circa_latest_date),
+    })),
+    materials: vocabTerms(work.materials),
+    techniques: vocabTerms(work.techniques),
+    stylePeriods: vocabTerms(work.style_periods),
+    culturalContexts: vocabTerms(work.cultural_contexts),
+    workTypes: vocabTerms(work.work_types),
+    subjects: vocabTerms(work.subjects, "term"),
   };
 };
 
 /**
  * Imagens associadas a uma obra — GET /api/images?work[]={id}.
- * `sort_by` é obrigatório: sem ele o backend devolve ordem aleatória (inRandomOrder).
- * Retorna { items, meta, hasMore }; `meta.total` serve de fallback para a contagem de
- * imagens quando o backend ainda não expõe `images_count` no detalhe da obra.
+ * `sort_by` é obrigatório: sem ele a ordem não é estável.
+ * Retorna { items, meta, hasMore }; `meta.total` serve de fallback para a contagem de imagens.
  */
 const getWorkImages = async (workId, { page = 1, perPage = 24 } = {}) => {
   const response = await axios.get("/api/images", {
