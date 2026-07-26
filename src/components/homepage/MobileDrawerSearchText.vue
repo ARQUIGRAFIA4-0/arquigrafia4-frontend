@@ -324,7 +324,7 @@ function toggleLicense(label) {
 }
 
 // TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
-// // eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
 const locationSuggestions = ref([
   "São Paulo",
   "Rio de Janeiro",

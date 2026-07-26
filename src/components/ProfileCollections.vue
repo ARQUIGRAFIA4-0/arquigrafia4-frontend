@@ -184,6 +184,7 @@
 <template>
   <section class="profile-collections">
     <AppToast
+      class="profile-collections__alert"
       variant="solid"
       :toasts="toast.toasts.value"
       @close="toast.hide"
@@ -335,6 +336,15 @@
 
 .profile-collections {
   width: 100%;
+}
+
+.profile-collections__alert {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  max-width: 90%;
 }
 
 .profile-collections__state {
