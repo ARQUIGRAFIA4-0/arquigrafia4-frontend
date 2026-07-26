@@ -119,7 +119,7 @@ function formatDate(dates) {
                 {{ item.title || "Sem título" }}
               </h3>
               <p class="collection-edit-images-grid__subtitle">
-                {{ formatDate(item.dates) || " " }}
+                {{ formatDate(item.dates) || "\u00A0" }}
               </p>
             </div>
 

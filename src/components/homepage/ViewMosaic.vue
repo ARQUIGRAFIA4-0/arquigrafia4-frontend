@@ -144,7 +144,7 @@ const {
   fetchNextPage,
   isPending,
   isFetchingNextPage,
-} = useImagesInfiniteQuery({ initialLimit: 100, search: toRef(props, "search"), filters });
+} = useImagesInfiniteQuery({ search: toRef(props, "search"), filters });
 
 watch(rawItems, (val) => {
   if (props.search && !isPending.value && val.length === 0) {
@@ -158,10 +158,6 @@ const showSkeleton = computed(() => {
   if (mosaicItems.value.length > 0 && !isMasonryReady.value) return true;
   return false;
 });
-
-const isLoading = computed(
-  () => isPending.value || isFetchingNextPage.value || isProcessing.value
-);
 
 const tryFetchNextPage = () => {
   if (!hasNextPage.value || isFetchingNextPage.value) {

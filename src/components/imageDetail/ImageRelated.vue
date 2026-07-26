@@ -81,9 +81,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import MosaicCard from "@/components/MosaicCard.vue";
 import MosaicSkeleton from "@/components/MosaicSkeleton.vue";
-import FitTags from "@/views/Profile/FitTags.vue";
 import { api } from "@/services/api";
-import LogoConection from "@/assets/logo-connection.png";
 import UiField from "@/components/ui/UiField.vue";
 
 const props = defineProps({
@@ -93,28 +91,7 @@ const props = defineProps({
   },
 });
 
-
-// Lista estatica só que com id e term, para o FitTags funcionar
-const RELATION_CATEGORIES_TAGS = [
-  { id: 1, term: "assuntos", icon: "bi bi-bookmark" },
-  { id: 2, term: "período", icon: "bi bi-calendar-range" },
-  { id: 3, term: "localização", icon: "bi bi-geo-alt" },
-  { id: 4, term: "materiais", icon: "bi bi-box-seam" },
-  { id: 5, term: "estilos", icon: "bi bi-palette" },
-  { id: 6, term: "interpretações", icon: "bi bi-chat-square-text" },
-  { id: 7, term: "autoria da imagem", icon: "bi bi-camera" },
-  { id: 8, term: "obra", icon: "bi bi-easel" },
-  { id: 9, term: "autoria da obra", icon: "bi bi-pencil-square" },
-  { id: 10, term: "aspectos estéticos", icon: "bi bi-stars" },
-  { id: 11, term: "contexto cultural", icon: "bi bi-globe2" },
-  { id: 12, term: "tipologia", icon: "bi bi-diagram-3" },
-  { id: 13, term: "técnicas", icon: "bi bi-tools" },
-]
-
 const activeCardId = ref(null);
-const toggleCard = (id) => {
-  activeCardId.value = activeCardId.value === id ? null : id;
-};
 
 const handleClickOutside = (event) => {
   if (activeCardId.value === null) return;

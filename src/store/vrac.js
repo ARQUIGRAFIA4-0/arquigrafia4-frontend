@@ -18,7 +18,7 @@ export const useVracStore = defineStore("vrac", () => {
         _subjectsFetchPromise = null;
         return _subjectsCache;
       })
-      .catch((error) => {
+      .catch(() => {
         _subjectsFetchPromise = null;
         throw Error("Não foi possível obter os termos.");
       });

@@ -203,7 +203,7 @@ function checkSocials(socials) {
         <div v-if="currentProfileData?.subjects?.length > 0" class="profile-card__interests">
           <h3>Interesses</h3>
           <ul class="profile-card__interests-list">
-            <li v-for="(subject, index) in currentProfileData.subjects" :key="subject.id"
+            <li v-for="subject in currentProfileData.subjects" :key="subject.id"
               class="btn btn-outline-secondary btn-sm btn-tag d-inline-flex align-items-center">
               {{ subject.term }}
             </li>

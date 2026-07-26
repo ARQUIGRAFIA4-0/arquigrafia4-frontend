@@ -4,6 +4,8 @@ import { useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import UploadImageBox from "@/components/UploadImageBox.vue";
 
+defineOptions({ name: "CollaborateView" });
+
 const router = useRouter();
 const store = useAuthStore();
 const isLoggedIn = computed(() => store.isLoggedIn);
