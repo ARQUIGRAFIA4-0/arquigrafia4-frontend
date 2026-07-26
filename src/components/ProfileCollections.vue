@@ -1,199 +1,227 @@
 <script setup>
-  import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
-  import { useAuthStore } from "@/store/auth";
-  import { useAlbumsStore } from "@/store/albums";
-  import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
-  import UploadColectionBox from "@/components/UploadColectionBox.vue";
-  import UiCard from "@/components/ui/UiCard.vue";
-  import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
-  import albumDefaultImage from "@/assets/album-default.png";
-  import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
-  import { resolveAlbumCover } from "@/helpers/collectionCover";
-  import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
+import {
+  ref,
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+  nextTick,
+} from "vue";
+import { useAuthStore } from "@/store/auth";
+import { useAlbumsStore } from "@/store/albums";
+import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
+import UploadColectionBox from "@/components/UploadColectionBox.vue";
+import UiCard from "@/components/ui/UiCard.vue";
+import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
+// import albumDefaultImage from "@/assets/album-default.png";
+import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
+// import { resolveAlbumCover } from "@/helpers/collectionCover";
+import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
 
-  const showCreateModal = ref(false);
+import AlbumCoverArt from "@/components/AlbumCoverArt.vue";
 
-  import { RouterLink, useRouter } from "vue-router";
-  const router = useRouter();
+const showCreateModal = ref(false);
 
-  // Props
-  const props = defineProps({
-    isCurrentUser: { type: Boolean, default: false },
-    userData: { type: Object, default: null },
-  });
-  const authStore = useAuthStore();
-  const albumsStore = useAlbumsStore();
+import { RouterLink, useRouter } from "vue-router";
+const router = useRouter();
 
-  const userAuthHeader = computed(() => authStore.authHeader);
+// Props
+const props = defineProps({
+  isCurrentUser: { type: Boolean, default: false },
+  userData: { type: Object, default: null },
+});
+const authStore = useAuthStore();
+const albumsStore = useAlbumsStore();
 
-  const albums = ref([]);
-  const isLoadingAlbums = ref(false);
-  const albumsError = ref(null);
+const userAuthHeader = computed(() => authStore.authHeader);
 
-  // Para visitantes (perfil público) só exibimos coleções públicas.
-  // O próprio dono continua vendo todas as suas coleções.
-  const visibleAlbums = computed(() =>
-    props.isCurrentUser ? albums.value : albums.value.filter((album) => !album.is_private)
-  );
+const albums = ref([]);
+const isLoadingAlbums = ref(false);
+const albumsError = ref(null);
 
-  const showTutorialModal = ref(false);
-  const expandedAlbumId = ref(null);
+// Para visitantes (perfil público) só exibimos coleções públicas.
+// O próprio dono continua vendo todas as suas coleções.
+const visibleAlbums = computed(() =>
+  props.isCurrentUser
+    ? albums.value
+    : albums.value.filter((album) => !album.is_private),
+);
 
-  const { hasLoaded: hasLoadedAlbums, finishInitialLoad, reset: resetInitialSkeleton } =
-    useInitialSkeleton();
+const showTutorialModal = ref(false);
+const expandedAlbumId = ref(null);
 
-  function toggleCardExpanded(albumId) {
-    expandedAlbumId.value = expandedAlbumId.value === albumId ? null : albumId;
+const {
+  hasLoaded: hasLoadedAlbums,
+  finishInitialLoad,
+  reset: resetInitialSkeleton,
+} = useInitialSkeleton();
+
+function toggleCardExpanded(albumId) {
+  expandedAlbumId.value = expandedAlbumId.value === albumId ? null : albumId;
+}
+
+// Função para tratar erro de carregamento da capa da coleção
+// function handleCoverError(event) {
+//   const target = event?.target;
+//   if (target && target.tagName === "IMG") {
+//     target.onerror = null;
+//     target.src = albumDefaultImage;
+//   }
+// }
+
+// Função para fechar o card expandido ao clicar fora do card
+function handleClickOutside(event) {
+  if (expandedAlbumId.value === null) return;
+  const expandedCard = event.target.closest(".profile-grid-card--expanded");
+  if (!expandedCard) {
+    expandedAlbumId.value = null;
+  }
+}
+
+// Acesso aos dados do álbum selecionado
+async function fetchAlbumData(albumId) {
+  // Visitante (perfil público): abre a visualização pública da coleção.
+  if (!props.isCurrentUser) {
+    router.push({
+      name: "collection-detail",
+      params: { collectionId: albumId, viewMode: "grid" },
+    });
+    return;
   }
 
-  // Função para tratar erro de carregamento da capa da coleção
-  function handleCoverError(event) {
-    const target = event?.target;
-    if (target && target.tagName === "IMG") {
-      target.onerror = null;
-      target.src = albumDefaultImage;
-    }
-  }
+  try {
+    const albumData = await albumsStore.getDataAlbumByAlbumId(
+      userAuthHeader.value,
+      albumId,
+    );
 
-  // Função para fechar o card expandido ao clicar fora do card
-  function handleClickOutside(event) {
-    if (expandedAlbumId.value === null) return;
-    const expandedCard = event.target.closest(".profile-grid-card--expanded");
-    if (!expandedCard) {
-      expandedAlbumId.value = null;
-    }
-  }
-
-  // Acesso aos dados do álbum selecionado
-  async function fetchAlbumData(albumId) {
-    // Visitante (perfil público): abre a visualização pública da coleção.
-    if (!props.isCurrentUser) {
+    if (albumData.images.length === 0) {
+      showTutorialModal.value = true;
+      return;
+    } else {
       router.push({
         name: "collection-detail",
-        params: { collectionId: albumId, viewMode: "grid" },
+        params: {
+          collectionId: albumId,
+          viewMode: "grid", // Padrão de visualização da coleção
+        },
       });
-      return;
     }
+  } catch (e) {
+    console.error(e);
+    albumsError.value =
+      e?.message || "Não foi possível carregar os dados do álbum.";
+  }
+}
 
-    try {
-      const albumData = await albumsStore.getDataAlbumByAlbumId(
-        userAuthHeader.value,
-        albumId
-      );
-
-      if (albumData.images.length === 0) {
-        showTutorialModal.value = true;
-        return;
-
-      } else {
-        router.push({
-          name: "collection-detail",
-          params: {
-            collectionId: albumId,
-            viewMode: "grid", // Padrão de visualização da coleção
-          },
-        });
-
-      }
-
-    } catch (e) {
-      console.error(e);
-      albumsError.value = e?.message || "Não foi possível carregar os dados do álbum.";
-    }
+// Função para buscar as coleções do usuário
+async function fetchAlbums(options = {}) {
+  // options: { silent: true } para buscar as coleções sem atualizar o estado. Evita piscar a tela.
+  const { silent = false } = options;
+  const shouldHoldInitialSkeleton = !hasLoadedAlbums.value;
+  const requestStartedAt = Date.now();
+  const userId = props.userData?.id ?? null;
+  if (!userId) {
+    albums.value = [];
+    return;
   }
 
-  // Função para buscar as coleções do usuário
-  async function fetchAlbums(options = {}) {
-    // options: { silent: true } para buscar as coleções sem atualizar o estado. Evita piscar a tela.
-    const { silent = false } = options;
-    const shouldHoldInitialSkeleton = !hasLoadedAlbums.value;
-    const requestStartedAt = Date.now();
-    const userId = props.userData?.id ?? null;
-    if (!userId) {
-      albums.value = [];
-      return;
+  try {
+    if (!silent) {
+      isLoadingAlbums.value = true;
     }
+    albumsError.value = "";
 
-    try {
-      if (!silent) {
-        isLoadingAlbums.value = true;
-      }
-      albumsError.value = "";
-
-      // busca as coleções do usuário
-      const response = await albumsStore.getUserAlbums(userAuthHeader.value, userId);
-      albums.value = response;
-      
-    } catch (error) {
-      albumsError.value = error?.message || "Não foi possível carregar as coleções.";
-      albums.value = [];
-
-    } finally {
-      if (shouldHoldInitialSkeleton) {
-        await finishInitialLoad(requestStartedAt);
-      }
-      if (!silent) {
-        isLoadingAlbums.value = false;
-      }
-
+    // busca as coleções do usuário
+    const response = await albumsStore.getUserAlbums(
+      userAuthHeader.value,
+      userId,
+    );
+    albums.value = response;
+  } catch (error) {
+    albumsError.value =
+      error?.message || "Não foi possível carregar as coleções.";
+    albums.value = [];
+  } finally {
+    if (shouldHoldInitialSkeleton) {
+      await finishInitialLoad(requestStartedAt);
     }
-
-  }
-
-  // Função para excluir uma coleção
-  async function handleDeleteAlbum(albumId) {
-    try {
-      const deletedAlbum = await albumsStore.deleteAlbum(userAuthHeader.value, albumId);
-      albums.value = albums.value.filter(album => album.id !== albumId); // remove o álbum deletado da lista, controle de estado.
-      if (expandedAlbumId.value === albumId) {
-        expandedAlbumId.value = null;
-      }
-      openCollectionToast("Coleção excluída com sucesso!", "success", deletedAlbum?.title);
-    } catch (error) {
-      openCollectionToast(error.message || "Erro ao excluir coleção.", "error");
+    if (!silent) {
+      isLoadingAlbums.value = false;
     }
   }
+}
 
-  // Carrega as coleções quando o componente é montado
-  onMounted(() => {
+// Função para excluir uma coleção
+async function handleDeleteAlbum(albumId) {
+  try {
+    const deletedAlbum = await albumsStore.deleteAlbum(
+      userAuthHeader.value,
+      albumId,
+    );
+    albums.value = albums.value.filter((album) => album.id !== albumId); // remove o álbum deletado da lista, controle de estado.
+    if (expandedAlbumId.value === albumId) {
+      expandedAlbumId.value = null;
+    }
+    openCollectionToast(
+      "Coleção excluída com sucesso!",
+      "success",
+      deletedAlbum?.title,
+    );
+  } catch (error) {
+    openCollectionToast(error.message || "Erro ao excluir coleção.", "error");
+  }
+}
+
+// Carrega as coleções quando o componente é montado
+onMounted(() => {
+  fetchAlbums();
+  nextTick(() => {
+    document.addEventListener("click", handleClickOutside);
+  });
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
+
+// se trocar usuário logado/perfil, recarrega
+watch(
+  () => props.userData?.id,
+  () => {
+    resetInitialSkeleton();
     fetchAlbums();
-    nextTick(() => {
-      document.addEventListener("click", handleClickOutside);
-    });
-  });
-
-  onBeforeUnmount(() => {
-    document.removeEventListener("click", handleClickOutside);
-  });
-
-  // se trocar usuário logado/perfil, recarrega
-  watch(
-    () => props.userData?.id,
-    () => {
-      resetInitialSkeleton();
-      fetchAlbums();
-    }
-  );
-
+  },
+);
 </script>
 
 <template>
   <section class="profile-collections">
-    <div v-if="albumsError" class="profile-collections__state profile-collections__state--error">
+    <div
+      v-if="albumsError"
+      class="profile-collections__state profile-collections__state--error"
+    >
       {{ albumsError }}
     </div>
 
     <ProfileGridSkeleton v-else-if="!hasLoadedAlbums" />
 
     <div
-      v-else-if="!props.isCurrentUser && hasLoadedAlbums && !isLoadingAlbums && visibleAlbums.length === 0"
+      v-else-if="
+        !props.isCurrentUser &&
+        hasLoadedAlbums &&
+        !isLoadingAlbums &&
+        visibleAlbums.length === 0
+      "
       class="profile-collections__state"
     >
       Este usuário ainda não tem coleções públicas.
     </div>
 
     <UploadColectionBox
-      v-else-if="hasLoadedAlbums && !isLoadingAlbums && visibleAlbums.length === 0"
+      v-else-if="
+        hasLoadedAlbums && !isLoadingAlbums && visibleAlbums.length === 0
+      "
       :is-current-user="props.isCurrentUser"
       :user-data="props.userData"
       variant="empty"
@@ -227,9 +255,11 @@
         >
           <UiCard
             class="h-100 profile-grid-card"
-            :class="{ 'profile-grid-card--expanded': expandedAlbumId === album.id }"
+            :class="{
+              'profile-grid-card--expanded': expandedAlbumId === album.id,
+            }"
           >
-            <template #image>
+            <!-- <template #image>
               <div class="profile-grid-card__image-wrapper">
                 <img
                   :src="resolveAlbumCover(album)"
@@ -238,7 +268,16 @@
                   @error="handleCoverError"
                 />
               </div>
+            </template> -->
+            <template #image>
+              <div class="profile-grid-card__image-wrapper">
+                <AlbumCoverArt
+                  :album="album"
+                  class="profile-grid-card__image"
+                />
+              </div>
             </template>
+
             <div class="ui-card__header">
               <h3 class="ui-card__title">
                 {{ album.title || "Sem título" }}
@@ -286,16 +325,27 @@
         <RouterLink
           v-else
           class="profile-grid-card__link"
-          :to="{ name: 'collection-detail', params: { collectionId: album.id, viewMode: 'grid' } }"
+          :to="{
+            name: 'collection-detail',
+            params: { collectionId: album.id, viewMode: 'grid' },
+          }"
         >
           <UiCard class="h-100 profile-grid-card">
-            <template #image>
+            <!-- <template #image>
               <div class="profile-grid-card__image-wrapper">
                 <img
                   :src="resolveAlbumCover(album)"
                   class="profile-grid-card__image"
                   :alt="album.title || 'Capa da coleção'"
                   @error="handleCoverError"
+                />
+              </div>
+            </template> -->
+            <template #image>
+              <div class="profile-grid-card__image-wrapper">
+                <AlbumCoverArt
+                  :album="album"
+                  class="profile-grid-card__image"
                 />
               </div>
             </template>
@@ -314,7 +364,6 @@
     />
 
     <TutorialModalCollections v-model="showTutorialModal" />
-
   </section>
 </template>
 
