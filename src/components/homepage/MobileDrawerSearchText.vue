@@ -323,6 +323,8 @@ function toggleLicense(label) {
   emitFiltersUpdate();
 }
 
+// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
+// // eslint-disable-next-line no-unused-vars
 const locationSuggestions = ref([
   "São Paulo",
   "Rio de Janeiro",
@@ -335,6 +337,8 @@ const locationSuggestions = ref([
   "Ouro Preto",
   "Praia Grande",
 ]);
+// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
+// eslint-disable-next-line no-unused-vars
 function toggleLocation(city) {
   toggleArrayItem(selectedLocations.value, city);
   emitFiltersUpdate();
@@ -359,6 +363,8 @@ function toggleTag(id) {
   emitFiltersUpdate();
 }
 
+// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
+// eslint-disable-next-line no-unused-vars
 function setUse(use) {
   selectedUse.value = selectedUse.value === use ? null : use;
   emitFiltersUpdate();

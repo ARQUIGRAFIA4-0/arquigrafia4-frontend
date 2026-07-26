@@ -186,8 +186,6 @@ watch(items, (val) => {
   }
 });
 
-const loading = computed(() => isPending.value || isFetchingNextPage.value);
-
 // Função para formatar data com lógica de circa e intervalo
 const formatDate = (dates) => {
   if (!dates || dates.length === 0) return null;
