@@ -11,6 +11,8 @@
   import { resolveAlbumCover } from "@/helpers/collectionCover";
   import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
   import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
+  import AppToast from "@/components/ui/AppToast.vue";
+  import { useToast } from "@/composables/useToast";
 
   // Props
   const props = defineProps({
@@ -19,6 +21,8 @@
     // Qualquer membro do coletivo pode gerenciar (criar/excluir) as coleções.
     isMember: { type: Boolean, default: false },
   });
+
+  const toast = useToast();
 
   const authStore = useAuthStore();
   const albumsStore = useAlbumsStore();
@@ -135,13 +139,15 @@
   // Exclui uma coleção do coletivo
   async function handleDeleteAlbum(albumId) {
     try {
+      const deletedAlbum = albums.value.find((album) => album.id === albumId);
       await albumsStore.deleteAlbum(userAuthHeader.value, albumId);
       albums.value = albums.value.filter((album) => album.id !== albumId);
       if (expandedAlbumId.value === albumId) {
         expandedAlbumId.value = null;
       }
+      toast.show(`Coleção "${deletedAlbum?.title || "Sem título"}" excluída com sucesso!`, "success");
     } catch (error) {
-      albumsError.value = error?.message || "Erro ao excluir coleção.";
+      toast.show(error?.message || "Erro ao excluir coleção.", "error");
     }
   }
 
@@ -168,6 +174,15 @@
 
 <template>
   <section class="collective-collections">
+    <AppToast
+      class="collective-collections__alert"
+      variant="solid"
+      :toasts="toast.toasts.value"
+      @close="toast.hide"
+      @pause="toast.pause"
+      @resume="toast.resume"
+    />
+
     <div v-if="albumsError" class="collective-collections__state collective-collections__state--error">
       {{ albumsError }}
     </div>
@@ -313,6 +328,15 @@
 
 .collective-collections {
   width: 100%;
+}
+
+.collective-collections__alert {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  max-width: 90%;
 }
 
 .collective-collections__state {
