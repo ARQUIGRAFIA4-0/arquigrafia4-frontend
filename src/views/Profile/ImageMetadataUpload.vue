@@ -715,6 +715,7 @@
     v-model="showWorkCreateModal"
     :initial-title="workInput"
     @created="onWorkCreated"
+    @select-existing="selectWork"
   />
 
   <transition name="fade">
