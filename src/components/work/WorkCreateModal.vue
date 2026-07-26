@@ -612,7 +612,7 @@ onUnmounted(() => {
                         <span
                           v-if="t.value === 'other' && hasPreferredTitle"
                           class="text-muted small ms-1"
-                        >(já definido)</span>
+                        ></span>
                       </button>
                     </li>
                   </ul>

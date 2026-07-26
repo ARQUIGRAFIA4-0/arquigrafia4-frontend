@@ -10,8 +10,12 @@
   import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
   import { resolveAlbumCover } from "@/helpers/collectionCover";
   import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
+  import AppToast from "@/components/ui/AppToast.vue";
+  import { useToast } from "@/composables/useToast";
 
   const showCreateModal = ref(false);
+  const toast = useToast();
+  const openCollectionToast = (message, type = "success") => toast.show(message, type);
 
   import { RouterLink, useRouter } from "vue-router";
   const router = useRouter();
@@ -179,6 +183,14 @@
 
 <template>
   <section class="profile-collections">
+    <AppToast
+      variant="solid"
+      :toasts="toast.toasts.value"
+      @close="toast.hide"
+      @pause="toast.pause"
+      @resume="toast.resume"
+    />
+
     <div v-if="albumsError" class="profile-collections__state profile-collections__state--error">
       {{ albumsError }}
     </div>
