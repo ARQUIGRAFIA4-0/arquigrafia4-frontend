@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, nextTick, onUnmounted } from "vue";
+import { ref, computed, watch, nextTick, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
+import OpenSeadragon from "openseadragon";
 import { useAuthStore } from "@/store/auth";
 import { useAlbumsStore } from "@/store/albums";
 import DownloadModal from "./DownloadModal.vue";
@@ -54,6 +55,80 @@ const showReportModal = ref(false);
 const showShareModal = ref(false);
 
 /**
+ * Start: Visualizador IIIF (OpenSeadragon)
+ * Substitui o <img> estático por deep zoom a partir do manifesto IIIF da imagem.
+ */
+const viewerContainer = ref(null);
+const viewerError = ref(false);
+let viewer = null;
+
+function destroyViewer() {
+  if (viewer) {
+    viewer.destroy();
+    viewer = null;
+  }
+}
+
+async function initViewer(image) {
+  destroyViewer();
+  viewerError.value = false;
+  if (!image?.id || !viewerContainer.value) return;
+
+  try {
+    const manifestUrl = `${API_BASE_URL}/iiif/${image.id}/manifest`;
+    const res = await fetch(manifestUrl);
+    if (!res.ok) throw new Error(`manifest HTTP ${res.status}`);
+    const manifest = await res.json();
+
+    // O serviço de imagem (ImageService3) fica no body da primeira annotation.
+    const service = manifest.items?.[0]?.items?.[0]?.items?.[0]?.body?.service?.[0];
+    const serviceId = service?.id ?? service?.["@id"] ?? null;
+    if (!serviceId) throw new Error("manifesto sem serviço de imagem IIIF");
+
+    viewer = OpenSeadragon({
+      element: viewerContainer.value,
+      tileSources: [`${serviceId}/info.json`],
+      showNavigationControl: false,
+      crossOriginPolicy: "Anonymous",
+      gestureSettingsMouse: { clickToZoom: false },
+    });
+
+    emit("load");
+  } catch (err) {
+    console.error("Erro ao inicializar o visualizador IIIF:", err);
+    viewerError.value = true;
+  }
+}
+
+watch(
+  () => props.image?.id,
+  async (id) => {
+    if (!id) {
+      destroyViewer();
+      return;
+    }
+    await nextTick();
+    initViewer(props.image);
+  },
+  { immediate: true }
+);
+
+function zoomIn() {
+  viewer?.viewport.zoomBy(1.5);
+  viewer?.viewport.applyConstraints();
+}
+function zoomOut() {
+  viewer?.viewport.zoomBy(0.67);
+  viewer?.viewport.applyConstraints();
+}
+function goHome() {
+  viewer?.viewport.goHome();
+}
+/**
+ * End: Visualizador IIIF
+ */
+
+/**
  * Start: Lightbox (visualização em tamanho grande)
  * Placeholder até a futura implementação de viewer IIIF.
  */
@@ -95,7 +170,7 @@ const handleReportSubmit = (payload) => {
 };
 
 function openIiifManifest() {
-  window.open(`https://api-dev.arquigrafia.org.br/iiif/${props.image.id}/manifest`, "_blank");
+  window.open(`${API_BASE_URL}/iiif/${props.image.id}/manifest`, "_blank");
 }
 
 /**
@@ -217,6 +292,7 @@ onUnmounted(() => {
   }
   document.removeEventListener("keydown", onLightboxKeydown);
   document.body.style.overflow = "";
+  destroyViewer();
 });
 
 // Confirmar adicionar imagem ao álbum
@@ -323,13 +399,31 @@ async function onCollectionCreated() {
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
+      <!-- Fallback: se o manifesto/tiles IIIF falharem, mostra a imagem estática -->
       <img
-        v-if="props.image"
+        v-if="props.image && viewerError"
         :src="props.image.imageUrl"
         :alt="props.image.title"
         class="image-display"
         @load="emit('load')"
       />
+      <div
+        v-else-if="props.image"
+        ref="viewerContainer"
+        class="image-display osd-viewer"
+        :aria-label="props.image.title || 'Visualizador de imagem'"
+      />
+      <div v-if="props.image && !viewerError" class="viewer-controls">
+        <button type="button" class="viewer-btn" aria-label="Aproximar" @click="zoomIn">
+          <i class="bi bi-zoom-in" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="viewer-btn" aria-label="Afastar" @click="zoomOut">
+          <i class="bi bi-zoom-out" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="viewer-btn" aria-label="Resetar visualização" @click="goHome">
+          <i class="bi bi-arrows-angle-contract" aria-hidden="true"></i>
+        </button>
+      </div>
     </div>
     <div v-if="props.image" class="image-actions-menu">
       <button
@@ -506,6 +600,48 @@ $breakpoint-md: 768px;
   overflow: hidden;
   width: 100%;
   background-color: var(--Off_white);
+}
+
+/* O visualizador OSD precisa de altura explícita (não colapsa como um <img>). */
+.osd-viewer {
+  width: 100%;
+  height: calc(100vh - 280px);
+  height: calc(100dvh - 280px);
+  max-height: none;
+}
+
+.viewer-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.viewer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.85);
+  color: var(--Cinza_E);
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: background-color 0.2s ease;
+
+  .bi {
+    font-size: 1rem;
+  }
+
+  &:hover {
+    background-color: var(--Laranja_C);
+  }
 }
 
 .loading-overlay {
