@@ -222,18 +222,21 @@ const createExploreCardPopupContent = ({
   title,
   imageUrl,
   date = "",
+  featureType = "image",
 }) => {
   const safeId = encodeURIComponent(id);
   const safeTitle = escapeHtml(title || "Imagem sem título");
   const safeImageUrl = typeof imageUrl === "string" ? escapeHtml(imageUrl) : "";
+  const isWork = featureType === "work";
+  const href = isWork ? `/obras/${safeId}` : `/explore/dados/image/${safeId}`;
+  const ctaLabel = isWork ? "Ver obra" : "Ver imagem";
+  const ctaAria = isWork ? `Ver detalhes da obra ${safeTitle}` : `Ver detalhes da imagem ${safeTitle}`;
 
   return `
     <article class="locations-map-card">
       <div class="locations-map-card__media">
         ${
-          safeImageUrl
-            ? `<img src="${safeImageUrl}" alt="${safeTitle}" loading="lazy" />`
-            : ""
+          safeImageUrl ? `<img src="${safeImageUrl}" alt="${safeTitle}" loading="lazy" />` : ""
         }
       </div>
 
@@ -243,17 +246,15 @@ const createExploreCardPopupContent = ({
         </h3>
 
         ${
-          date
-            ? `<p class="locations-map-card__date">${escapeHtml(date)}</p>`
-            : ""
+          date ? `<p class="locations-map-card__date">${escapeHtml(date)}</p>` : ""
         }
 
         <a
           class="locations-map-card__button"
-          href="/explore/dados/image/${safeId}"
-          aria-label="Ver detalhes da imagem ${safeTitle}"
+          href="${href}"
+          aria-label="${ctaAria}"
         >
-          <span>Ver imagem</span>
+          <span>${ctaLabel}</span>
 
           <svg
             aria-hidden="true"
@@ -275,7 +276,7 @@ const createExploreCardPopupContent = ({
       </div>
     </article>
   `;
-
+  
 };
 
 const showExploreCardPopup = async (feature) => {
@@ -303,6 +304,7 @@ const showExploreCardPopup = async (feature) => {
         id,
         title: properties.title,
         imageUrl: properties.thumbUrl ?? properties.imageUrl,
+        featureType: properties.featureType ?? "image",
       })
     )
     .addTo(map);
@@ -339,7 +341,8 @@ const showExploreCardPopup = async (feature) => {
     }
   });
 
-  if (!props.loadImageDetails) return;
+  // Obras não usam /api/images/:id — o GeoJSON já traz título/thumb.
+  if (!props.loadImageDetails || properties.featureType === "work") return;
 
   try {
     const details = await props.loadImageDetails(id);
@@ -355,6 +358,7 @@ const showExploreCardPopup = async (feature) => {
           properties.thumbUrl ??
           properties.imageUrl,
         date: formatPopupDate(details?.dates),
+        featureType: properties.featureType ?? "image",
       })
     );
   } catch (error) {
@@ -466,7 +470,7 @@ const handlePointClick = (event) => {
     emit("select", id);
   }
 
-  if (props.context === "explore" && feature.properties?.featureType !== "work") {
+  if (props.context === "explore") {
     map.once("moveend", () => {
       showExploreCardPopup(feature);
     });
@@ -528,10 +532,7 @@ const applyInitialSelection = () => {
   selectedId.value = props.initialSelectedId;
   hasAppliedInitialSelection = true;
 
-  if (
-    props.context === "explore" &&
-    feature.properties?.featureType !== "work"
-  ) {
+  if (props.context === "explore") {
     map.once("moveend", () => {
       showExploreCardPopup(feature);
     });
@@ -867,7 +868,7 @@ const handleSpiderLeafClick = (event) => {
   emit("select", id);
   if (spiderContext) renderSpider();
 
-  if (props.context === "explore" && feature.properties?.featureType !== "work") {
+  if (props.context === "explore") {
     closeActiveCardPopup();
     showExploreCardPopup(feature);
   }

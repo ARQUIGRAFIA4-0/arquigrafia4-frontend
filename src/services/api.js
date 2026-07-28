@@ -5,6 +5,21 @@ import {
 
 const baseURL = () => axios.defaults.baseURL;
 
+const isoYear = (value) => {
+  const year = typeof value === "string" ? value.slice(0, 4) : "";
+  return /^\d{4}$/.test(year) ? year : null;
+};
+
+/**
+ * Retorna o título preferencial de uma obra (VRACWork), com fallback para o
+ * primeiro título disponível.
+ */
+const workPrimaryTitle = (work) => {
+  const titles = work?.titles || [];
+  const preferred = titles.find((t) => t.pref);
+  return (preferred || titles[0])?.label || "Obra sem título";
+};
+
 /**
  * Mapeia um item da API de listagem para o formato usado pela aplicação
  */
@@ -143,6 +158,76 @@ const getImageDetails = async (id) => {
 // TODO: implementar endpoint real de comentários
 const getImageComments = async () => {
   return [];
+};
+
+/**
+ * Rótulo de um termo de vocabulário VRAC. Materiais, técnicas, períodos, contextos
+ */
+const vocabTerms = (list, key = "label") => (list || []).map((item) => ({ id: item.id, label: item[key] || null })).filter((item) => item.label);
+
+/**
+ * Detalhe de uma obra (VRACWork) pelo ID — GET /api/vrac-works/{id}.
+ */
+const getWorkDetails = async (id) => {
+  const response = await axios.get(`/api/vrac-works/${id}`);
+  const work = response.data.data;
+
+  return {
+    id: work.id,
+    title: workPrimaryTitle(work),
+    titles: work.titles || [],
+    description: work.description ?? null,
+    imagesCount: typeof work.images_count === "number" ? work.images_count : null,
+    location: work.location
+      ? {
+          label: work.location.label || null,
+          latitude: parseFloat(work.location.latitude),
+          longitude: parseFloat(work.location.longitude),
+        }
+      : null,
+    agents: (work.agents || []).map((agent) => ({
+      id: agent.id,
+      name: agent.contributor_name?.name || null,
+      role: agent.role?.label || null,
+      attribution: agent.attribution || null,
+    })),
+    dates: (work.dates || []).map((date) => ({
+      id: date.id,
+      type: date.type || null,
+      earliestYear: isoYear(date.earliest_date),
+      latestYear: isoYear(date.latest_date),
+      circa: Boolean(date.circa_earliest_date || date.circa_latest_date),
+    })),
+    materials: vocabTerms(work.materials),
+    techniques: vocabTerms(work.techniques),
+    stylePeriods: vocabTerms(work.style_periods),
+    culturalContexts: vocabTerms(work.cultural_contexts),
+    workTypes: vocabTerms(work.work_types),
+    subjects: vocabTerms(work.subjects, "term"),
+  };
+};
+
+/**
+ * Imagens associadas a uma obra — GET /api/images?work[]={id}.
+ */
+const getWorkImages = async (workId, { page = 1, perPage = 24 } = {}) => {
+  const response = await axios.get("/api/images", {
+    params: {
+      "work[]": workId,
+      sort_by: "created_at",
+      sort_order: "asc",
+      page,
+      per_page: perPage,
+    },
+  });
+  const items = (response.data.data || []).map(mapImageListItem);
+  const meta = response.data.meta || null;
+  const hasMore = response.data.links?.next
+    ? true
+    : meta?.current_page && meta?.last_page
+      ? meta.current_page < meta.last_page
+      : false;
+  return { items, meta, hasMore };
 };
 
 // TODO: implementar endpoint real de GeoJSON
@@ -675,6 +760,8 @@ export const api = {
   getLocationsGeoJSON,
   getImageDetails,
   getImageComments,
+  getWorkDetails,
+  getWorkImages,
   searchImages,
   getTotalImages,
   getSubjectById,
