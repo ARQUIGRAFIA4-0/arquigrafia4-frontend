@@ -30,12 +30,12 @@
 // ----- Config -----------------------------------------------------------
 
 // Nomes dos assets de fundo já existentes no projeto (@/assets/fundo-*.png)
-export const BACKGROUND_KEYS = [
-  "fundo-laranja",
-  "fundo-azul",
-  "fundo-verde",
-  "fundo-rosa",
-];
+export const BACKGROUND_KEYS = {
+  VERDE: "fundo-verde",
+  AZUL: "fundo-azul",
+  LARANJA: "fundo-laranja",
+  ROSA: "fundo-rosa",
+};
 
 export const LINE_STYLES = {
   ANOS: "anos", // reta
@@ -55,7 +55,7 @@ export const PROPORTION_BUCKETS = {
  * (baixa/média/alta) muda o estilo do asset, não a quantidade de linhas.
  * Usado só para saber quantos pontos desenhar por cima.
  */
-const LINE_COUNT = 5;
+const LINE_COUNT = 6;
 
 // Limites de anos para decidir o estilo da linha
 const YEARS_THRESHOLD_DECADAS = 10; // >= 10 anos de intervalo -> onda suave
@@ -63,20 +63,20 @@ const YEARS_THRESHOLD_SECULOS = 100; // >= 100 anos de intervalo -> onda fechada
 
 // ----- Fundo --------------------------------------------------------------
 
-/**
- * Escolhe um fundo de forma determinística a partir do id do álbum, para
- * que a capa não fique "piscando"/trocando de cor a cada re-render.
- * @param {string} albumId
- * @returns {string} uma das chaves de BACKGROUND_KEYS
- */
-export function pickBackgroundKey(albumId) {
-  if (!albumId) return BACKGROUND_KEYS[0];
-
-  let hash = 0;
-  for (let i = 0; i < albumId.length; i++) {
-    hash = (hash * 31 + albumId.charCodeAt(i)) >>> 0;
+export function pickBackgroundKey(imageCount = 0) {
+  if (imageCount <= 5) {
+    return BACKGROUND_KEYS.VERDE;
   }
-  return BACKGROUND_KEYS[hash % BACKGROUND_KEYS.length];
+
+  if (imageCount <= 10) {
+    return BACKGROUND_KEYS.AZUL;
+  }
+
+  if (imageCount <= 20) {
+    return BACKGROUND_KEYS.LARANJA;
+  }
+
+  return BACKGROUND_KEYS.ROSA;
 }
 
 // ----- Período (date_range) -> estilo da linha -----------------------------
@@ -171,7 +171,7 @@ export function getTaggedProportion(stats) {
   const weightedSum = up_to_2 * 1 + between_3_and_5 * 2 + more_than_5 * 3;
   const maxPossible = totalImages * 3;
 
-  if (!maxPossible) return 0;
+    if (!maxPossible) return 0;
   return Math.min(1, weightedSum / maxPossible);
 }
 
@@ -186,6 +186,22 @@ export function getProportionBucket(proportion) {
   if (clamped < 2 / 3) return PROPORTION_BUCKETS.MEDIA;
   return PROPORTION_BUCKETS.ALTA;
 }
+
+// export function getRelationBucket(totalTags = 0, totalImages = 0) {
+//   if (!totalImages) {
+//     return PROPORTION_BUCKETS.BAIXA;
+//   }
+
+//   if (totalTags < totalImages) {
+//     return PROPORTION_BUCKETS.BAIXA;
+//   }
+
+//   if (totalTags === totalImages) {
+//     return PROPORTION_BUCKETS.MEDIA;
+//   }
+
+//   return PROPORTION_BUCKETS.ALTA;
+// }
 
 /**
  * Monta a chave do asset de linhas pronto (@/assets/linhas-{estilo}-{balde}.png).
@@ -258,9 +274,10 @@ export function getDotPositions(binomialAverages, lineCount) {
  */
 export function getAlbumCoverArt(album) {
   const stats = album?.stats ?? null;
+  
   const hasContent = Boolean(stats?.total_images);
 
-  const backgroundKey = pickBackgroundKey(album?.id);
+  const backgroundKey = pickBackgroundKey(stats?.total_images)
 
   if (!hasContent) {
     // álbum vazio: só o fundo, sem asset de linhas nem pontos
