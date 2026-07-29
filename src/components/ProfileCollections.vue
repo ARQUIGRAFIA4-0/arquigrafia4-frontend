@@ -13,11 +13,8 @@ import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
 import UploadColectionBox from "@/components/UploadColectionBox.vue";
 import UiCard from "@/components/ui/UiCard.vue";
 import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
-// import albumDefaultImage from "@/assets/album-default.png";
 import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
-// import { resolveAlbumCover } from "@/helpers/collectionCover";
 import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
-
 import AlbumCoverArt from "@/components/AlbumCoverArt.vue";
 
 const showCreateModal = ref(false);
@@ -59,15 +56,6 @@ const {
 function toggleCardExpanded(albumId) {
   expandedAlbumId.value = expandedAlbumId.value === albumId ? null : albumId;
 }
-
-// Função para tratar erro de carregamento da capa da coleção
-// function handleCoverError(event) {
-//   const target = event?.target;
-//   if (target && target.tagName === "IMG") {
-//     target.onerror = null;
-//     target.src = albumDefaultImage;
-//   }
-// }
 
 // Função para fechar o card expandido ao clicar fora do card
 function handleClickOutside(event) {
