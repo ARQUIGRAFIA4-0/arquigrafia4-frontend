@@ -35,6 +35,43 @@ const selectedId = ref(null);
 let activePopup = null;
 let initialView = null;
 
+const isAwayFromInitial = ref(false);
+
+let baselineCenter = null; // [lng, lat]
+let baselineZoom = null;
+
+// Qualquer alteração mínima de zoom/centro já exibe o botão.
+const VIEW_ZOOM_EPSILON = 0.01;
+const VIEW_CENTER_EPSILON = 0.00005;
+
+const captureBaselineView = () => {
+  const map = mapInstance.value;
+  if (!map) return;
+
+  const center = map.getCenter();
+  baselineCenter = [center.lng, center.lat];
+  baselineZoom = map.getZoom();
+  isAwayFromInitial.value = false;
+};
+
+const updateAwayFromInitial = () => {
+  const map = mapInstance.value;
+  if (!map || baselineZoom == null || !baselineCenter) {
+    isAwayFromInitial.value = false;
+    return;
+  }
+
+  const center = map.getCenter();
+  const zoomDiff = Math.abs(map.getZoom() - baselineZoom);
+  const centerDiff = Math.hypot(
+    center.lng - baselineCenter[0],
+    center.lat - baselineCenter[1]
+  );
+
+  isAwayFromInitial.value =
+    zoomDiff > VIEW_ZOOM_EPSILON || centerDiff > VIEW_CENTER_EPSILON;
+};
+
 let activeCardPopup = null;
 let activeCardImageId = null;
 let isUnmounting = false;
@@ -575,8 +612,6 @@ const restoreInitialView = () => {
 
 // Limpa a seleção e restaura a view inicial.
 const resetToInitial = () => {
-  if (selectedId.value === null) return;
-
   selectedId.value = null;
   emit("select", null);
   collapseSpider();
@@ -592,11 +627,13 @@ const resetToInitial = () => {
     if (restored) return;
     restored = true;
     restoreInitialView();
+    map.once("idle", () => {
+      captureBaselineView();
+    });
   };
 
   map.once("idle", run);
   window.setTimeout(run, 80);
-
 };
 
 /* ------------------------------- Spiderfy --------------------------------- */
@@ -1052,6 +1089,12 @@ const handleMapReady = async (map) => {
 
   applyMapPitch(props.pitch);
 
+  map.once("idle", () => {
+    captureBaselineView();
+  });
+
+  map.on("moveend", updateAwayFromInitial);
+  map.on("zoomend", updateAwayFromInitial);
 };
 
 const handleMapError = (error) => {
@@ -1083,6 +1126,9 @@ watch(
 
     ) {
       applyInitialSelection();
+      mapInstance.value?.once("idle", () => {
+        captureBaselineView();
+      });
       return;
 
     }
@@ -1090,6 +1136,10 @@ watch(
     selectedId.value = null;
     emit("select", null);
     fitMapToFeatures();
+
+    mapInstance.value?.once("idle", () => {
+      captureBaselineView();
+    });
 
   },
   { deep: true }
@@ -1110,6 +1160,12 @@ onUnmounted(() => {
   isUnmounting = true;
 
   const map = mapInstance.value;
+
+  if (map) {
+    map.off("moveend", updateAwayFromInitial);
+    map.off("zoomend", updateAwayFromInitial);
+  }
+
   collapseSpider();
   closeActivePopup();
   closeActiveCardPopup();
@@ -1169,10 +1225,10 @@ onUnmounted(() => {
       </p>
 
       <button
-        v-if="selectedId"
+        v-if="isAwayFromInitial"
         type="button"
         class="locations-map__hint"
-        aria-label="Clique aqui para voltar ao estado original do mapa"
+        aria-label="Voltar ao zoom original"
         @click="resetToInitial"
       >
         <span class="locations-map__hint-icon" aria-hidden="true">
@@ -1191,7 +1247,7 @@ onUnmounted(() => {
             />
           </svg>
         </span>
-        <span class="locations-map__hint-text">Clique aqui para voltar ao estado original</span>
+        <span class="locations-map__hint-text">Zoom original</span>
       </button>
     </template>
   </div>
@@ -1245,9 +1301,9 @@ onUnmounted(() => {
   bottom: 16px;
   z-index: 3;
   display: inline-flex;
-  padding: var(--pp, 8px) var(--p, 12px) var(--pp, 8px) var(--m, 16px);
+  padding: 8px 12px;
   align-items: center;
-  gap: 24px;
+  gap: 8px;
   border: none;
   border-radius: 4px;
   background: var(--Cinza_E, #2f2f2f);
