@@ -45,6 +45,15 @@ const getLocationsGeoJSON = async () => {
 };
 
 /**
+ * Retorna um GeoJSON do acervo filtrado aceita os mesmos parâmetros do GET /api/images,
+ * exceto por paginação (page, per_page) e ordenação (sort). Permite filtrar apenas marcadores de obras com works_only.
+ */
+const getFilteredLocationsGeoJSON = async (params = {}) => {
+  const response = await axios.get("/api/locations/geojson/search", { params });
+  return response.data;
+};
+
+/**
  * Obtém os detalhes completos de uma imagem pelo ID
  */
 const getImageDetails = async (id) => {
@@ -758,6 +767,7 @@ export const api = {
   getImages: fetchImages,
   getGeoJSON,
   getLocationsGeoJSON,
+  getFilteredLocationsGeoJSON,
   getImageDetails,
   getImageComments,
   getWorkDetails,

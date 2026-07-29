@@ -666,15 +666,13 @@ const generateSpiderPositions = (count) => {
           )
         : previousRadius + ringGap;
 
-    const capacity =
-      count <= singleRingLimit
+    const capacity = count <= singleRingLimit
         ? count
         : Math.max(8, Math.floor((2 * Math.PI * radius) / iconSpacing));
 
     const inRing = Math.min(capacity, remaining);
     const angleStep = (2 * Math.PI) / inRing;
-    const angleOffset =
-      -Math.PI / 2 + (ringIndex % 2 === 0 ? 0 : angleStep / 2);
+    const angleOffset = -Math.PI / 2 + (ringIndex % 2 === 0 ? 0 : angleStep / 2);
 
     // Mantém a base da pétala com aproximadamente 28 px de largura.
     const spread = Math.min(angleStep * 0.38, Math.atan2(14, radius));
@@ -1200,6 +1198,14 @@ onUnmounted(() => {
     class="locations-map"
     :aria-label="context === 'explore' ? 'Mapa do acervo' : 'Mapa das imagens da coleção'"
   >
+    <MapLibreMap
+      class="locations-map__canvas"
+      :style-url="styleUrl"
+      :map-options="initialMapOptions"
+      @map-ready="handleMapReady"
+      @map-error="handleMapError"
+    />
+
     <div
       v-if="isLoading"
       class="locations-map__state"
@@ -1208,48 +1214,38 @@ onUnmounted(() => {
       Carregando mapa...
     </div>
 
-    <template v-else>
-      <MapLibreMap
-        class="locations-map__canvas"
-        :style-url="styleUrl"
-        :map-options="initialMapOptions"
-        @map-ready="handleMapReady"
-        @map-error="handleMapError"
-      />
+    <p
+      v-if="!isLoading && !hasLocatedImages"
+      class="locations-map__empty"
+    >
+      {{ emptyMessage }}
+    </p>
 
-      <p
-        v-if="!hasLocatedImages"
-        class="locations-map__empty"
-      >
-        {{ emptyMessage }}
-      </p>
-
-      <button
-        v-if="isAwayFromInitial"
-        type="button"
-        class="locations-map__hint"
-        aria-label="Voltar ao zoom original"
-        @click="resetToInitial"
-      >
-        <span class="locations-map__hint-icon" aria-hidden="true">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="13"
-            height="13"
-            viewBox="0 0 13 13"
-            fill="none"
-          >
-            <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M0.118945 12.8394C0.195128 12.9156 0.29844 12.9584 0.406163 12.9584C0.513886 12.9584 0.617199 12.9156 0.693382 12.8394L4.02138 9.51145V11.7604C4.02138 11.8682 4.06418 11.9715 4.14037 12.0477C4.21656 12.1239 4.31989 12.1667 4.42763 12.1667C4.53538 12.1667 4.63871 12.1239 4.71489 12.0477C4.79108 11.9715 4.83388 11.8682 4.83388 11.7604V8.53076C4.83388 8.42301 4.79108 8.31968 4.71489 8.2435C4.63871 8.16731 4.53538 8.12451 4.42763 8.12451H1.19794C1.0902 8.12451 0.986869 8.16731 0.910682 8.2435C0.834496 8.31968 0.791695 8.42301 0.791695 8.53076C0.791695 8.6385 0.834496 8.74183 0.910682 8.81802C0.986869 8.89421 1.0902 8.93701 1.19794 8.93701H3.44694L0.118945 12.265C0.0427844 12.3412 0 12.4445 0 12.5522C0 12.6599 0.0427844 12.7633 0.118945 12.8394V12.8394ZM12.8394 0.118945C12.7633 0.0427844 12.6599 0 12.5522 0C12.4445 0 12.3412 0.0427844 12.265 0.118945L8.93701 3.44694V1.19794C8.93701 1.0902 8.89421 0.986869 8.81802 0.910682C8.74183 0.834496 8.6385 0.791695 8.53076 0.791695C8.42301 0.791695 8.31968 0.834496 8.2435 0.910682C8.16731 0.986869 8.12451 1.0902 8.12451 1.19794V4.42763C8.12451 4.53538 8.16731 4.63871 8.2435 4.71489C8.31968 4.79108 8.42301 4.83388 8.53076 4.83388H11.7604C11.8682 4.83388 11.9715 4.79108 12.0477 4.71489C12.1239 4.63871 12.1667 4.53538 12.1667 4.42763C12.1667 4.31989 12.1239 4.21656 12.0477 4.14037C11.9715 4.06418 11.8682 4.02138 11.7604 4.02138H9.51145L12.8394 0.693382C12.9156 0.617199 12.9584 0.513886 12.9584 0.406163C12.9584 0.29844 12.9156 0.195128 12.8394 0.118945V12.8394Z"
-              fill="white"
-            />
-          </svg>
-        </span>
-        <span class="locations-map__hint-text">Zoom original</span>
-      </button>
-    </template>
+    <button
+      v-if="isAwayFromInitial"
+      type="button"
+      class="locations-map__hint"
+      aria-label="Voltar ao zoom original"
+      @click="resetToInitial"
+    >
+      <span class="locations-map__hint-icon" aria-hidden="true">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="13"
+          height="13"
+          viewBox="0 0 13 13"
+          fill="none"
+        >
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M0.118945 12.8394C0.195128 12.9156 0.29844 12.9584 0.406163 12.9584C0.513886 12.9584 0.617199 12.9156 0.693382 12.8394L4.02138 9.51145V11.7604C4.02138 11.8682 4.06418 11.9715 4.14037 12.0477C4.21656 12.1239 4.31989 12.1667 4.42763 12.1667C4.53538 12.1667 4.63871 12.1239 4.71489 12.0477C4.79108 11.9715 4.83388 11.8682 4.83388 11.7604V8.53076C4.83388 8.42301 4.79108 8.31968 4.71489 8.2435C4.63871 8.16731 4.53538 8.12451 4.42763 8.12451H1.19794C1.0902 8.12451 0.986869 8.16731 0.910682 8.2435C0.834496 8.31968 0.791695 8.42301 0.791695 8.53076C0.791695 8.6385 0.834496 8.74183 0.910682 8.81802C0.986869 8.89421 1.0902 8.93701 1.19794 8.93701H3.44694L0.118945 12.265C0.0427844 12.3412 0 12.4445 0 12.5522C0 12.6599 0.0427844 12.7633 0.118945 12.8394V12.8394ZM12.8394 0.118945C12.7633 0.0427844 12.6599 0 12.5522 0C12.4445 0 12.3412 0.0427844 12.265 0.118945L8.93701 3.44694V1.19794C8.93701 1.0902 8.89421 0.986869 8.81802 0.910682C8.74183 0.834496 8.6385 0.791695 8.53076 0.791695C8.42301 0.791695 8.31968 0.834496 8.2435 0.910682C8.16731 0.986869 8.12451 1.0902 8.12451 1.19794V4.42763C8.12451 4.53538 8.16731 4.63871 8.2435 4.71489C8.31968 4.79108 8.42301 4.83388 8.53076 4.83388H11.7604C11.8682 4.83388 11.9715 4.79108 12.0477 4.71489C12.1239 4.63871 12.1667 4.53538 12.1667 4.42763C12.1667 4.31989 12.1239 4.21656 12.0477 4.14037C11.9715 4.06418 11.8682 4.02138 11.7604 4.02138H9.51145L12.8394 0.693382C12.9156 0.617199 12.9584 0.513886 12.9584 0.406163C12.9584 0.29844 12.9156 0.195128 12.8394 0.118945V12.8394Z"
+            fill="white"
+          />
+        </svg>
+      </span>
+      <span class="locations-map__hint-text">Zoom original</span>
+    </button>
   </div>
 </template>
 
