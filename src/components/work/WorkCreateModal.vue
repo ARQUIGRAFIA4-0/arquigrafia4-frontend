@@ -76,6 +76,10 @@ const renderWorkMarkers = () => {
     const element = createExistingWorkMarkerElement();
     element.addEventListener("click", (event) => {
       event.stopPropagation();
+      // Escolher uma obra existente descarta a localização avulsa que estivesse
+      // marcada no mapa — evita duas seleções competindo (pop-up + endereço).
+      pickedCoords.value = null;
+      pickedAddress.value = "";
       selectedExistingWork.value = work;
     });
     const marker = new Marker({ element, anchor: "center" })
@@ -129,6 +133,9 @@ const handleMapReady = (map) => {
 };
 
 const handleMapClick = async ({ lng, lat }) => {
+  // Escolher outra localização (clicando no mapa ou vindo de um resultado da
+  // busca) descarta a confirmação de obra existente que estivesse aberta.
+  selectedExistingWork.value = null;
   pickedCoords.value = { lng, lat };
   isReverseGeocoding.value = true;
   try {
