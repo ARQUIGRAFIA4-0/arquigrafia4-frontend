@@ -19,11 +19,19 @@ const router = createRouter({
       return { top: 0, behavior: 'instant' };
     }
 
+    // Ao chegar numa imagem de detalhe, sobe-se ao topo instantaneamente.
+    const isImageDetail =
+      typeof to.name === "string" && to.name.startsWith("image-detail");
+    if (isImageDetail) {
+      return { top: 0, behavior: 'instant' };
+    }
+
     // Se o usuário estiver usando os botões "voltar/avançar" do navegador,
     // mantém a posição de scroll salva.
     if (savedPosition) {
       return savedPosition;
     }
+
     // Para todas as outras navegações, vai para o topo da página.
     return { top: 0, behavior: 'smooth' };
   },

@@ -333,6 +333,9 @@ $breakpoint-lg: 1440px;
 .image-detail__related-box {
   grid-area: related;
   width: 100%;
+  // Evita que a remontagem assíncrona do mosaico de relacionadas ancore o
+  // scroll do navegador na posição do card clicado ao trocar de imagem.
+  overflow-anchor: none;
 }
 
 .image-detail__navbar {
