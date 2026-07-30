@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, computed } from "vue";
-import { resolveAlbumCover } from "@/helpers/collectionCover";
+import AlbumCoverArt from "@/components/AlbumCoverArt.vue";
 
 // Options
 defineOptions({
@@ -42,11 +42,11 @@ const selectedScope = computed(
   () =>
     props.scopes.find((s) => s.id === props.selectedScopeId) ??
     props.scopes[0] ??
-    null
+    null,
 );
 
 const availableScopes = computed(() =>
-  props.scopes.filter((s) => s.id !== selectedScope.value?.id)
+  props.scopes.filter((s) => s.id !== selectedScope.value?.id),
 );
 
 function toggleScopeDropdown() {
@@ -58,7 +58,7 @@ function selectScope(scope) {
   if (scope.id === selectedScope.value?.id) return;
   emit("change-scope", scope);
 }
- 
+
 /**
  * Start: Selecionar álbum para inserir imagem
  */
@@ -66,7 +66,7 @@ const selectedAlbumIds = ref([]);
 const hasAlbumSelection = computed(() => selectedAlbumIds.value.length > 0);
 
 const primaryActionLabel = computed(() =>
-  props.preselectedAlbumIds.length ? "Atualizar" : "Adicionar"
+  props.preselectedAlbumIds.length ? "Atualizar" : "Adicionar",
 );
 
 // Todos os álbuns do escopo compartilham o mesmo dono: o subtítulo é o nome do escopo
@@ -76,14 +76,15 @@ function getAlbumAuthorName() {
 
 // Selecionar/desselecionar álbum
 function toggleAlbum(albumId) {
-
-  if (selectedAlbumIds.value.includes(albumId)) {  // se já está selecionado, desseleciona
-    selectedAlbumIds.value = selectedAlbumIds.value.filter((id) => id !== albumId);
+  if (selectedAlbumIds.value.includes(albumId)) {
+    // se já está selecionado, desseleciona
+    selectedAlbumIds.value = selectedAlbumIds.value.filter(
+      (id) => id !== albumId,
+    );
     return;
   }
 
   selectedAlbumIds.value = [...selectedAlbumIds.value, albumId]; // se não está selecionado, seleciona
-
 }
 
 // Confirmar adicionar imagem ao álbum
@@ -93,7 +94,6 @@ function onConfirmAdd() {
   });
 
   emit("update:modelValue", false);
-  
 }
 
 // sempre que abrir o modal, resetar seleção, fechar o dropdown e travar scroll do body
@@ -108,7 +108,7 @@ watch(
 
     document.body.style.overflow = "hidden";
     selectedAlbumIds.value = [...(props.preselectedAlbumIds || [])];
-  }
+  },
 );
 
 // ao trocar de escopo, a lista de álbuns recarrega no pai: sincroniza a seleção
@@ -118,25 +118,19 @@ watch(
     if (props.modelValue) {
       selectedAlbumIds.value = [...(ids || [])];
     }
-  }
+  },
 );
-
 </script>
 
 <template>
   <transition name="album-picker-fade">
-    <div
-      v-if="modelValue"
-      class="album-picker__backdrop"
-      @click.self="close"
-    >
+    <div v-if="modelValue" class="album-picker__backdrop" @click.self="close">
       <div
         class="album-picker__panel"
         role="dialog"
         aria-modal="true"
         aria-labelledby="album-picker-title"
       >
-
         <div class="album-picker__body">
           <header class="album-picker__header">
             <h2 id="album-picker-title" class="album-picker__title">
@@ -157,14 +151,24 @@ watch(
                 fill="none"
                 aria-hidden="true"
               >
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M6.97034 6.96839C7.04001 6.89854 7.12277 6.84313 7.21389 6.80532C7.30501 6.76751 7.40269 6.74805 7.50134 6.74805C7.59999 6.74805 7.69767 6.76751 7.78879 6.80532C7.87991 6.84313 7.96267 6.89854 8.03234 6.96839L12.0013 10.9389L15.9703 6.96839C16.0401 6.89866 16.1229 6.84334 16.214 6.8056C16.3051 6.76786 16.4027 6.74844 16.5013 6.74844C16.6 6.74844 16.6976 6.76786 16.7887 6.8056C16.8798 6.84334 16.9626 6.89866 17.0323 6.96839C17.1021 7.03812 17.1574 7.1209 17.1951 7.21201C17.2329 7.30312 17.2523 7.40077 17.2523 7.49939C17.2523 7.598 17.2329 7.69565 17.1951 7.78676C17.1574 7.87787 17.1021 7.96066 17.0323 8.03039L13.0618 11.9994L17.0323 15.9684C17.1021 16.0381 17.1574 16.1209 17.1951 16.212C17.2329 16.3031 17.2523 16.4008 17.2523 16.4994C17.2523 16.598 17.2329 16.6957 17.1951 16.7868C17.1574 16.8779 17.1021 16.9607 17.0323 17.0304C16.9626 17.1001 16.8798 17.1554 16.7887 17.1932C16.6976 17.2309 16.6 17.2503 16.5013 17.2503C16.4027 17.2503 16.3051 17.2309 16.214 17.1932C16.1229 17.1554 16.0401 17.1001 15.9703 17.0304L12.0013 13.0599L8.03234 17.0304C7.96261 17.1001 7.87982 17.1554 7.78872 17.1932C7.69761 17.2309 7.59996 17.2503 7.50134 17.2503C7.40272 17.2503 7.30507 17.2309 7.21396 17.1932C7.12286 17.1554 7.04007 17.1001 6.97034 17.0304C6.90061 16.9607 6.84529 16.8779 6.80756 16.7868C6.76982 16.6957 6.75039 16.598 6.75039 16.4994C6.75039 16.4008 6.76982 16.3031 6.80756 16.212C6.84529 16.1209 6.90061 16.0381 6.97034 15.9684L10.9408 11.9994L6.97034 8.03039C6.9005 7.96072 6.84508 7.87796 6.80727 7.78684C6.76946 7.69572 6.75 7.59804 6.75 7.49939C6.75 7.40074 6.76946 7.30305 6.80727 7.21194C6.84508 7.12082 6.9005 7.03806 6.97034 6.96839Z" fill="#636262"/>
+                <path
+                  fill-rule="evenodd"
+                  clip-rule="evenodd"
+                  d="M6.97034 6.96839C7.04001 6.89854 7.12277 6.84313 7.21389 6.80532C7.30501 6.76751 7.40269 6.74805 7.50134 6.74805C7.59999 6.74805 7.69767 6.76751 7.78879 6.80532C7.87991 6.84313 7.96267 6.89854 8.03234 6.96839L12.0013 10.9389L15.9703 6.96839C16.0401 6.89866 16.1229 6.84334 16.214 6.8056C16.3051 6.76786 16.4027 6.74844 16.5013 6.74844C16.6 6.74844 16.6976 6.76786 16.7887 6.8056C16.8798 6.84334 16.9626 6.89866 17.0323 6.96839C17.1021 7.03812 17.1574 7.1209 17.1951 7.21201C17.2329 7.30312 17.2523 7.40077 17.2523 7.49939C17.2523 7.598 17.2329 7.69565 17.1951 7.78676C17.1574 7.87787 17.1021 7.96066 17.0323 8.03039L13.0618 11.9994L17.0323 15.9684C17.1021 16.0381 17.1574 16.1209 17.1951 16.212C17.2329 16.3031 17.2523 16.4008 17.2523 16.4994C17.2523 16.598 17.2329 16.6957 17.1951 16.7868C17.1574 16.8779 17.1021 16.9607 17.0323 17.0304C16.9626 17.1001 16.8798 17.1554 16.7887 17.1932C16.6976 17.2309 16.6 17.2503 16.5013 17.2503C16.4027 17.2503 16.3051 17.2309 16.214 17.1932C16.1229 17.1554 16.0401 17.1001 15.9703 17.0304L12.0013 13.0599L8.03234 17.0304C7.96261 17.1001 7.87982 17.1554 7.78872 17.1932C7.69761 17.2309 7.59996 17.2503 7.50134 17.2503C7.40272 17.2503 7.30507 17.2309 7.21396 17.1932C7.12286 17.1554 7.04007 17.1001 6.97034 17.0304C6.90061 16.9607 6.84529 16.8779 6.80756 16.7868C6.76982 16.6957 6.75039 16.598 6.75039 16.4994C6.75039 16.4008 6.76982 16.3031 6.80756 16.212C6.84529 16.1209 6.90061 16.0381 6.97034 15.9684L10.9408 11.9994L6.97034 8.03039C6.9005 7.96072 6.84508 7.87796 6.80727 7.78684C6.76946 7.69572 6.75 7.59804 6.75 7.49939C6.75 7.40074 6.76946 7.30305 6.80727 7.21194C6.84508 7.12082 6.9005 7.03806 6.97034 6.96839Z"
+                  fill="#636262"
+                />
               </svg>
-              <i class="bi bi-x-circle-fill album-picker__close-icon album-picker__close-icon--mobile" aria-hidden="true"></i>
+              <i
+                class="bi bi-x-circle-fill album-picker__close-icon album-picker__close-icon--mobile"
+                aria-hidden="true"
+              ></i>
             </button>
           </header>
 
           <div v-if="scopes.length > 1" class="album-picker__scope">
-            <span class="album-picker__scope-caption">Adicionar nas coleções de</span>
+            <span class="album-picker__scope-caption"
+              >Adicionar nas coleções de</span
+            >
             <div
               class="album-picker__scope-selected"
               role="button"
@@ -175,10 +179,18 @@ watch(
             >
               <span class="album-picker__scope-identity" v-if="selectedScope">
                 <span class="album-picker__scope-avatar">
-                  <img v-if="selectedScope.avatar" :src="selectedScope.avatar" alt="" />
-                  <span v-else class="album-picker__scope-initials">{{ selectedScope.initials }}</span>
+                  <img
+                    v-if="selectedScope.avatar"
+                    :src="selectedScope.avatar"
+                    alt=""
+                  />
+                  <span v-else class="album-picker__scope-initials">{{
+                    selectedScope.initials
+                  }}</span>
                 </span>
-                <span class="album-picker__scope-name">{{ selectedScope.name }}</span>
+                <span class="album-picker__scope-name">{{
+                  selectedScope.name
+                }}</span>
               </span>
               <i
                 class="bi bi-chevron-down album-picker__scope-chevron"
@@ -197,7 +209,9 @@ watch(
               >
                 <span class="album-picker__scope-avatar">
                   <img v-if="scope.avatar" :src="scope.avatar" alt="" />
-                  <span v-else class="album-picker__scope-initials">{{ scope.initials }}</span>
+                  <span v-else class="album-picker__scope-initials">{{
+                    scope.initials
+                  }}</span>
                 </span>
                 <span class="album-picker__scope-name">{{ scope.name }}</span>
               </button>
@@ -214,17 +228,20 @@ watch(
               :key="n"
               class="album-picker__cell album-picker__skeleton-cell"
             >
-              <div class="album-picker__thumb album-picker__skeleton-block"></div>
+              <div
+                class="album-picker__thumb album-picker__skeleton-block"
+              ></div>
               <span class="album-picker__text">
-                <span class="album-picker__skeleton-line album-picker__skeleton-block"></span>
-                <span class="album-picker__skeleton-line album-picker__skeleton-line--short album-picker__skeleton-block"></span>
+                <span
+                  class="album-picker__skeleton-line album-picker__skeleton-block"
+                ></span>
+                <span
+                  class="album-picker__skeleton-line album-picker__skeleton-line--short album-picker__skeleton-block"
+                ></span>
               </span>
             </div>
           </div>
-          <div
-            v-else
-            class="album-picker__list"
-          >
+          <div v-else class="album-picker__list">
             <button
               type="button"
               class="album-picker__cell album-picker__cell--action"
@@ -244,14 +261,16 @@ watch(
               type="button"
               class="album-picker__cell album-picker__cell--action"
               :class="{
-                'album-picker__cell--selected': selectedAlbumIds.includes(album.id),
+                'album-picker__cell--selected': selectedAlbumIds.includes(
+                  album.id,
+                ),
                 'album-picker__cell--dimmed':
                   hasAlbumSelection && !selectedAlbumIds.includes(album.id),
               }"
               @click="toggleAlbum(album.id)"
             >
               <div class="album-picker__thumb">
-                <img :src="resolveAlbumCover(album)" :alt="album.title" />
+                <AlbumCoverArt :album="album" />
               </div>
               <span class="album-picker__text">
                 <span class="album-picker__label">{{ album.title }}</span>
@@ -280,7 +299,7 @@ watch(
             :aria-label="primaryActionLabel"
             @click="onConfirmAdd"
           >
-          {{ primaryActionLabel }}
+            {{ primaryActionLabel }}
           </button>
         </footer>
       </div>
@@ -310,8 +329,8 @@ watch(
   gap: 16px;
   overflow: hidden;
   border-radius: 16px;
-  background: var(--Off_white, #FAF9F9);
-  box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.10);
+  background: var(--Off_white, #faf9f9);
+  box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.1);
 }
 
 .album-picker__header {
@@ -323,7 +342,7 @@ watch(
 }
 
 .album-picker__title {
-  color: #2F2F2F;
+  color: #2f2f2f;
   font-family: "DM Sans";
   font-size: 20px;
   font-style: normal;
@@ -584,7 +603,9 @@ watch(
 
 .album-picker__cell--action {
   border-radius: 4px;
-  transition: opacity 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .album-picker__cell--dimmed {
@@ -607,7 +628,7 @@ watch(
   align-items: center;
   border-radius: 0.909px;
   border: 0.1px solid #ccc;
-  background: var(--Off_white, #FAF9F9);
+  background: var(--Off_white, #faf9f9);
 }
 
 .album-picker__add-circle {
@@ -635,13 +656,6 @@ watch(
   overflow: hidden;
   background: #ddd;
   border: 2px solid var(--Branco, #fff);
-}
-
-.album-picker__thumb img {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
-  display: block;
 }
 
 .album-picker__text {
@@ -779,7 +793,7 @@ watch(
     grid-row: 3;
     margin-top: 0;
     padding: 8px 8px calc(32px + env(safe-area-inset-bottom));
-    background: var(--Off_white, #FAF9F9);
+    background: var(--Off_white, #faf9f9);
   }
 
   .album-picker__btn {
