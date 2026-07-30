@@ -2,7 +2,8 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { extractExif } from "@/helpers/extractExif";
 
-export const MAX_FILE_SIZE_BYTES = 6 * 1024 * 1024; // 6 MB
+export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+export const MAX_FILE_SIZE_MB = MAX_FILE_SIZE_BYTES / (1024 * 1024);
 
 function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;

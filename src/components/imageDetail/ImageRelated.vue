@@ -115,17 +115,9 @@ const handleResize = () => {
   }, 150);
 };
 
-const minColumns = computed(() => {
-  if (windowWidth.value >= 1440) return 3;
-  if (windowWidth.value <= 768) return 2;
-  return 2;
-});
-
-const maxColumns = computed(() => {
-  if (windowWidth.value >= 1440) return 3;
-  if (windowWidth.value <= 768) return 2;
-  return 7;
-});
+// Colunagem adaptativa à largura da tela, igual ao mosaico da home
+const minColumns = 2;
+const maxColumns = 7;
 
 
 const isMobileGrid = computed(() => windowWidth.value <= 768);

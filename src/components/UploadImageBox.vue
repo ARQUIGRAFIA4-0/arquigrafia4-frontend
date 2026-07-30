@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
-import { useImageUploadStore } from "@/store/imageUploads";
+import { useImageUploadStore, MAX_FILE_SIZE_MB } from "@/store/imageUploads";
 import { convertFilesIfHeic, isHeicFile } from "@/helpers/convertHeic";
 import { useToast } from "@/composables/useToast";
 import AppToast from "@/components/ui/AppToast.vue";
@@ -164,7 +164,7 @@ function goToMetadata() {
         <div class="upload-box__instructions">
           <p>Clique aqui ou arraste arquivos para esta área<br /></p>
           <p>
-            Limite aceito: {{ uploadStore.MAX_FILES }} imagens / 6Mb por arquivo
+            Limite aceito: {{ uploadStore.MAX_FILES }} imagens / {{ MAX_FILE_SIZE_MB }}Mb por arquivo
           </p>
         </div>
         <input class="upload-box__input" type="file" ref="fileInputRef" multiple accept="image/*,.heic,.heif"
