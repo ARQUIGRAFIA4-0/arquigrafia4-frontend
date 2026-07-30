@@ -7,20 +7,19 @@
   import UploadColectionBox from "@/components/UploadColectionBox.vue";
   import UiCard from "@/components/ui/UiCard.vue";
   import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
-  import albumDefaultImage from "@/assets/album-default.png";
-  import { resolveAlbumCover } from "@/helpers/collectionCover";
+  import AlbumCoverArt from "@/components/AlbumCoverArt.vue";
   import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
   import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
   import AppToast from "@/components/ui/AppToast.vue";
   import { useToast } from "@/composables/useToast";
 
-  // Props
-  const props = defineProps({
-    collectiveId: { type: String, default: null },
-    collectiveName: { type: String, default: null },
-    // Qualquer membro do coletivo pode gerenciar (criar/excluir) as coleções.
-    isMember: { type: Boolean, default: false },
-  });
+// Props
+const props = defineProps({
+  collectiveId: { type: String, default: null },
+  collectiveName: { type: String, default: null },
+  // Qualquer membro do coletivo pode gerenciar (criar/excluir) as coleções.
+  isMember: { type: Boolean, default: false },
+});
 
   const toast = useToast();
 
@@ -28,148 +27,144 @@
   const albumsStore = useAlbumsStore();
   const router = useRouter();
 
-  // Para visitantes não logados não enviamos header de autorização
-  // (authStore.authHeader resolve para "Bearer null" sem token).
-  const userAuthHeader = computed(() =>
-    authStore.isLoggedIn ? authStore.authHeader : null
-  );
+// Para visitantes não logados não enviamos header de autorização
+// (authStore.authHeader resolve para "Bearer null" sem token).
+const userAuthHeader = computed(() =>
+  authStore.isLoggedIn ? authStore.authHeader : null,
+);
 
-  const albums = ref([]);
-  const isLoadingAlbums = ref(false);
-  const albumsError = ref("");
+const albums = ref([]);
+const isLoadingAlbums = ref(false);
+const albumsError = ref("");
 
-  // Membros veem todas as coleções (públicas e privadas); visitantes/não-membros
-  // veem apenas as públicas. O backend já filtra, mas mantemos o filtro no
-  // cliente como camada de UX (evita exibir dado que não deveria aparecer).
-  const visibleAlbums = computed(() =>
-    props.isMember ? albums.value : albums.value.filter((album) => !album.is_private)
-  );
-  const showCreateModal = ref(false);
-  const showTutorialModal = ref(false);
-  const expandedAlbumId = ref(null);
+// Membros veem todas as coleções (públicas e privadas); visitantes/não-membros
+// veem apenas as públicas. O backend já filtra, mas mantemos o filtro no
+// cliente como camada de UX (evita exibir dado que não deveria aparecer).
+const visibleAlbums = computed(() =>
+  props.isMember
+    ? albums.value
+    : albums.value.filter((album) => !album.is_private),
+);
+const showCreateModal = ref(false);
+const showTutorialModal = ref(false);
+const expandedAlbumId = ref(null);
 
-  const { hasLoaded: hasLoadedAlbums, finishInitialLoad, reset: resetInitialSkeleton } =
-    useInitialSkeleton();
+const {
+  hasLoaded: hasLoadedAlbums,
+  finishInitialLoad,
+  reset: resetInitialSkeleton,
+} = useInitialSkeleton();
 
-  function toggleCardExpanded(albumId) {
-    // Apenas membros expandem o card (Excluir/Abrir). Visitantes usam um
-    // RouterLink que navega direto para a coleção.
-    expandedAlbumId.value = expandedAlbumId.value === albumId ? null : albumId;
-  }
+function toggleCardExpanded(albumId) {
+  // Apenas membros expandem o card (Excluir/Abrir). Visitantes usam um
+  // RouterLink que navega direto para a coleção.
+  expandedAlbumId.value = expandedAlbumId.value === albumId ? null : albumId;
+}
 
-  // Abre o detalhe da coleção (rota canônica pública). Se a coleção estiver
-  // vazia, exibe o modal de instrução em vez de navegar (mesmo comportamento
-  // das coleções de usuário).
-  async function openCollection(albumId) {
-    try {
-      const albumData = await albumsStore.getDataAlbumByAlbumId(
-        userAuthHeader.value,
-        albumId
-      );
+// Abre o detalhe da coleção (rota canônica pública). Se a coleção estiver
+// vazia, exibe o modal de instrução em vez de navegar (mesmo comportamento
+// das coleções de usuário).
+async function openCollection(albumId) {
+  try {
+    const albumData = await albumsStore.getDataAlbumByAlbumId(
+      userAuthHeader.value,
+      albumId,
+    );
 
-      if (albumData.images.length === 0) {
-        showTutorialModal.value = true;
-        return;
-      }
-
-      router.push({
-        name: "collection-detail",
-        params: {
-          collectionId: albumId,
-          viewMode: "grid",
-        },
-      });
-    } catch (error) {
-      albumsError.value = error?.message || "Não foi possível carregar os dados da coleção.";
-    }
-  }
-
-  // Trata erro de carregamento da capa da coleção
-  function handleCoverError(event) {
-    const target = event?.target;
-    if (target && target.tagName === "IMG") {
-      target.onerror = null;
-      target.src = albumDefaultImage;
-    }
-  }
-
-  // Fecha o card expandido ao clicar fora dele
-  function handleClickOutside(event) {
-    if (expandedAlbumId.value === null) return;
-    const expandedCard = event.target.closest(".profile-grid-card--expanded");
-    if (!expandedCard) {
-      expandedAlbumId.value = null;
-    }
-  }
-
-  // Busca as coleções do coletivo
-  async function fetchAlbums(options = {}) {
-    const { silent = false } = options;
-    const shouldHoldInitialSkeleton = !hasLoadedAlbums.value;
-    const requestStartedAt = Date.now();
-    if (!props.collectiveId) {
-      albums.value = [];
+    if (albumData.images.length === 0) {
+      showTutorialModal.value = true;
       return;
     }
 
-    try {
-      if (!silent) {
-        isLoadingAlbums.value = true;
-      }
-      albumsError.value = "";
-
-      const response = await albumsStore.getCollectiveAlbums(
-        userAuthHeader.value,
-        props.collectiveId
-      );
-      albums.value = response;
-    } catch (error) {
-      albumsError.value = error?.message || "Não foi possível carregar as coleções.";
-      albums.value = [];
-    } finally {
-      if (shouldHoldInitialSkeleton) {
-        await finishInitialLoad(requestStartedAt);
-      }
-      if (!silent) {
-        isLoadingAlbums.value = false;
-      }
-    }
-  }
-
-  // Exclui uma coleção do coletivo
-  async function handleDeleteAlbum(albumId) {
-    try {
-      const deletedAlbum = albums.value.find((album) => album.id === albumId);
-      await albumsStore.deleteAlbum(userAuthHeader.value, albumId);
-      albums.value = albums.value.filter((album) => album.id !== albumId);
-      if (expandedAlbumId.value === albumId) {
-        expandedAlbumId.value = null;
-      }
-      toast.show(`Coleção "${deletedAlbum?.title || "Sem título"}" excluída com sucesso!`, "success");
-    } catch (error) {
-      toast.show(error?.message || "Erro ao excluir coleção.", "error");
-    }
-  }
-
-  onMounted(() => {
-    fetchAlbums();
-    nextTick(() => {
-      document.addEventListener("click", handleClickOutside);
+    router.push({
+      name: "collection-detail",
+      params: {
+        collectionId: albumId,
+        viewMode: "grid",
+      },
     });
-  });
+  } catch (error) {
+    albumsError.value =
+      error?.message || "Não foi possível carregar os dados da coleção.";
+  }
+}
 
-  onBeforeUnmount(() => {
-    document.removeEventListener("click", handleClickOutside);
-  });
+// Fecha o card expandido ao clicar fora dele
+function handleClickOutside(event) {
+  if (expandedAlbumId.value === null) return;
+  const expandedCard = event.target.closest(".profile-grid-card--expanded");
+  if (!expandedCard) {
+    expandedAlbumId.value = null;
+  }
+}
 
-  // Se trocar de coletivo, recarrega
-  watch(
-    () => props.collectiveId,
-    () => {
-      resetInitialSkeleton();
-      fetchAlbums();
+// Busca as coleções do coletivo
+async function fetchAlbums(options = {}) {
+  const { silent = false } = options;
+  const shouldHoldInitialSkeleton = !hasLoadedAlbums.value;
+  const requestStartedAt = Date.now();
+  if (!props.collectiveId) {
+    albums.value = [];
+    return;
+  }
+
+  try {
+    if (!silent) {
+      isLoadingAlbums.value = true;
     }
-  );
+    albumsError.value = "";
+
+    const response = await albumsStore.getCollectiveAlbums(
+      userAuthHeader.value,
+      props.collectiveId,
+    );
+    albums.value = response;
+  } catch (error) {
+    albumsError.value =
+      error?.message || "Não foi possível carregar as coleções.";
+    albums.value = [];
+  } finally {
+    if (shouldHoldInitialSkeleton) {
+      await finishInitialLoad(requestStartedAt);
+    }
+    if (!silent) {
+      isLoadingAlbums.value = false;
+    }
+  }
+}
+
+// Exclui uma coleção do coletivo
+async function handleDeleteAlbum(albumId) {
+  try {
+    await albumsStore.deleteAlbum(userAuthHeader.value, albumId);
+    albums.value = albums.value.filter((album) => album.id !== albumId);
+    if (expandedAlbumId.value === albumId) {
+      expandedAlbumId.value = null;
+    }
+  } catch (error) {
+    albumsError.value = error?.message || "Erro ao excluir coleção.";
+  }
+}
+
+onMounted(() => {
+  fetchAlbums();
+  nextTick(() => {
+    document.addEventListener("click", handleClickOutside);
+  });
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
+
+// Se trocar de coletivo, recarrega
+watch(
+  () => props.collectiveId,
+  () => {
+    resetInitialSkeleton();
+    fetchAlbums();
+  },
+);
 </script>
 
 <template>
@@ -191,7 +186,12 @@
 
     <!-- Coletivo sem coleções: membro vê a caixa de criar a primeira coleção -->
     <UploadColectionBox
-      v-else-if="hasLoadedAlbums && !isLoadingAlbums && visibleAlbums.length === 0 && isMember"
+      v-else-if="
+        hasLoadedAlbums &&
+        !isLoadingAlbums &&
+        visibleAlbums.length === 0 &&
+        isMember
+      "
       instructions-title="Seu coletivo ainda não<br />tem coleções."
       variant="empty"
       @open-create="showCreateModal = true"
@@ -199,7 +199,9 @@
 
     <!-- Coletivo sem coleções: não-membro vê apenas um aviso -->
     <div
-      v-else-if="hasLoadedAlbums && !isLoadingAlbums && visibleAlbums.length === 0"
+      v-else-if="
+        hasLoadedAlbums && !isLoadingAlbums && visibleAlbums.length === 0
+      "
       class="alert alert-dark bg-off-white alert-light border border-dark border-start-3 d-inline-flex align-items-center px-3 py-2"
       role="status"
     >
@@ -233,15 +235,15 @@
         >
           <UiCard
             class="h-100 profile-grid-card"
-            :class="{ 'profile-grid-card--expanded': expandedAlbumId === album.id }"
+            :class="{
+              'profile-grid-card--expanded': expandedAlbumId === album.id,
+            }"
           >
             <template #image>
               <div class="profile-grid-card__image-wrapper">
-                <img
-                  :src="resolveAlbumCover(album)"
+                <AlbumCoverArt
+                  :album="album"
                   class="profile-grid-card__image"
-                  :alt="album.title || 'Capa da coleção'"
-                  @error="handleCoverError"
                 />
               </div>
             </template>
@@ -292,16 +294,17 @@
         <RouterLink
           v-else
           class="profile-grid-card__link"
-          :to="{ name: 'collection-detail', params: { collectionId: album.id, viewMode: 'grid' } }"
+          :to="{
+            name: 'collection-detail',
+            params: { collectionId: album.id, viewMode: 'grid' },
+          }"
         >
           <UiCard class="h-100 profile-grid-card">
             <template #image>
               <div class="profile-grid-card__image-wrapper">
-                <img
-                  :src="resolveAlbumCover(album)"
+                <AlbumCoverArt
+                  :album="album"
                   class="profile-grid-card__image"
-                  :alt="album.title || 'Capa da coleção'"
-                  @error="handleCoverError"
                 />
               </div>
             </template>
