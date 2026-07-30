@@ -5,6 +5,21 @@ import {
 
 const baseURL = () => axios.defaults.baseURL;
 
+const isoYear = (value) => {
+  const year = typeof value === "string" ? value.slice(0, 4) : "";
+  return /^\d{4}$/.test(year) ? year : null;
+};
+
+/**
+ * Retorna o título preferencial de uma obra (VRACWork), com fallback para o
+ * primeiro título disponível.
+ */
+const workPrimaryTitle = (work) => {
+  const titles = work?.titles || [];
+  const preferred = titles.find((t) => t.pref);
+  return (preferred || titles[0])?.label || "Obra sem título";
+};
+
 /**
  * Mapeia um item da API de listagem para o formato usado pela aplicação
  */
@@ -29,20 +44,13 @@ const getLocationsGeoJSON = async () => {
   return response.data;
 };
 
-/** Ano de uma data ISO8601 do backend ("1951-01-01T00:00:00.000000Z" → "1951"). */
-const isoYear = (value) => {
-  const year = typeof value === "string" ? value.slice(0, 4) : "";
-  return /^\d{4}$/.test(year) ? year : null;
-};
-
 /**
- * Retorna o título preferencial de uma obra (VRACWork), com fallback para o
- * primeiro título disponível. `titles` traz itens no formato { label, type, pref }.
+ * Retorna um GeoJSON do acervo filtrado aceita os mesmos parâmetros do GET /api/images,
+ * exceto por paginação (page, per_page) e ordenação (sort). Permite filtrar apenas marcadores de obras com works_only.
  */
-const workPrimaryTitle = (work) => {
-  const titles = work?.titles || [];
-  const preferred = titles.find((t) => t.pref);
-  return (preferred || titles[0])?.label || "Obra sem título";
+const getFilteredLocationsGeoJSON = async (params = {}) => {
+  const response = await axios.get("/api/locations/geojson/search", { params });
+  return response.data;
 };
 
 /**
@@ -128,15 +136,6 @@ const getImageDetails = async (id) => {
     const subjects = image.subjects || [];
     const rights = image.rights || [];
 
-    // Obras associadas à imagem. Uma imagem pode não ter obra (array vazio).
-    const works = Array.isArray(image.works)
-      ? image.works.map((work) => ({
-          id: work.id,
-          title: workPrimaryTitle(work),
-          locationLabel: work.location?.label || null,
-        }))
-      : [];
-
     return {
       id: image.id,
       title,
@@ -158,7 +157,6 @@ const getImageDetails = async (id) => {
       description,
       subjects,
       rights,
-      works,
     };
   } catch (error) {
     console.error("Error fetching image details:", error);
@@ -172,18 +170,21 @@ const getImageComments = async () => {
 };
 
 /**
- * Rótulo de um termo de vocabulário VRAC. Materiais, técnicas, períodos, contextos
- * culturais e tipos de obra usam `label`; assuntos usam `term`.
+ * Busca imagens relacionadas
  */
-const vocabTerms = (list, key = "label") =>
-  (list || [])
-    .map((item) => ({ id: item.id, label: item[key] || null }))
-    .filter((item) => item.label);
+const getRelatedImages = async (imageId, page = 1) => {
+  return axios
+    .get(`api/images/${imageId}/related`, { params: { page } })
+    .then((res) => res.data);
+};
+
+/**
+ * Rótulo de um termo de vocabulário VRAC. Materiais, técnicas, períodos, contextos
+ */
+const vocabTerms = (list, key = "label") => (list || []).map((item) => ({ id: item.id, label: item[key] || null })).filter((item) => item.label);
 
 /**
  * Detalhe de uma obra (VRACWork) pelo ID — GET /api/vrac-works/{id}.
- * As relações vêm em snake_case (style_periods, cultural_contexts, work_types).
- * `description` e `images_count` podem não vir; lidos com fallback null.
  */
 const getWorkDetails = async (id) => {
   const response = await axios.get(`/api/vrac-works/${id}`);
@@ -198,19 +199,16 @@ const getWorkDetails = async (id) => {
     location: work.location
       ? {
           label: work.location.label || null,
-          // Coordenadas chegam como string.
           latitude: parseFloat(work.location.latitude),
           longitude: parseFloat(work.location.longitude),
         }
       : null,
-    // Nome e papel ficam em relações aninhadas, ambas opcionais.
     agents: (work.agents || []).map((agent) => ({
       id: agent.id,
       name: agent.contributor_name?.name || null,
       role: agent.role?.label || null,
       attribution: agent.attribution || null,
     })),
-    // Datas chegam em ISO8601; extraímos só o ano.
     dates: (work.dates || []).map((date) => ({
       id: date.id,
       type: date.type || null,
@@ -229,8 +227,6 @@ const getWorkDetails = async (id) => {
 
 /**
  * Imagens associadas a uma obra — GET /api/images?work[]={id}.
- * `sort_by` é obrigatório: sem ele a ordem não é estável.
- * Retorna { items, meta, hasMore }; `meta.total` serve de fallback para a contagem de imagens.
  */
 const getWorkImages = async (workId, { page = 1, perPage = 24 } = {}) => {
   const response = await axios.get("/api/images", {
@@ -244,7 +240,6 @@ const getWorkImages = async (workId, { page = 1, perPage = 24 } = {}) => {
   });
   const items = (response.data.data || []).map(mapImageListItem);
   const meta = response.data.meta || null;
-  // `links.next` é o sinal usado nas demais listagens; cai no meta quando ausente.
   const hasMore = response.data.links?.next
     ? true
     : meta?.current_page && meta?.last_page
@@ -260,16 +255,6 @@ const getGeoJSON = async () => {
     imagem: createEmptyFeatureCollection(),
   };
 };
-
-/**
- * Busca iamgens relacionadas 
- */
-const getRelatedImages = async (imageId, page = 1) => {
-  return axios
-    .get(`api/images/${imageId}/related`, { params: { page } })
-    .then((res) => res.data); // { data: [...], meta: {...} } vindo do ImageResource::collection paginado
-}
-
 
 /**
  * Busca imagens na API com filtros
@@ -366,7 +351,7 @@ const fetchImages = async (page = 1, filters = {}) => {
     if (filters.collectiveId) {
       params.collective_id = filters.collectiveId;
     }
-
+    
     // Filtro por assuntos (tags de sujeito por ID)
     if (filters.subjects?.length) {
       params['subject[]'] = filters.subjects.length === 1 ? filters.subjects[0] : filters.subjects;
@@ -791,11 +776,12 @@ export const api = {
   getImages: fetchImages,
   getGeoJSON,
   getLocationsGeoJSON,
+  getFilteredLocationsGeoJSON,
   getImageDetails,
   getImageComments,
+  getRelatedImages,
   getWorkDetails,
   getWorkImages,
-  getRelatedImages,
   searchImages,
   getTotalImages,
   getSubjectById,

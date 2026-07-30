@@ -91,10 +91,16 @@ const isFetchingNextPage = ref(false);
 // Evita reprocessar dimensões de imagens já presentes no mosaico.
 const processedIds = new Set();
 
-// "Voltar": volta no histórico interno se houver; senão cai no acervo.
+// "Voltar": mesmo comportamento da página de imagem.
+// O popup do mapa usa <a href>, então history.state.back do Vue Router
+// não existe — router.back() ainda restaura o mapa via histórico do browser.
 const goBack = () => {
-  if (window.history.state?.back) router.back();
-  else router.push({ name: "explore" });
+  if (window.history.length > 1) {
+    router.back();
+    return;
+  }
+
+  router.push({ name: "explore", params: { viewMode: "map" } });
 };
 
 // Precarrega as dimensões reais da imagem para o masonry posicionar corretamente
