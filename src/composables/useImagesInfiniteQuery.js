@@ -3,8 +3,7 @@ import { useInfiniteQuery } from "@tanstack/vue-query";
 import { api } from "@/services/api";
 
 export const useImagesInfiniteQuery = (options = {}) => {
-  const { limit, initialLimit, search, filters, queryKey = ["images"], ...queryOptions } =
-    options;
+  const { search, filters, queryKey = ["images"], ...queryOptions } = options;
 
   const normalizedBaseKey = Array.isArray(queryKey)
     ? queryKey

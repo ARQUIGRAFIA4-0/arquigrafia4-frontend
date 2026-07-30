@@ -5,10 +5,6 @@ import { useUsersStore } from "../../store/users";
 import { useProfilesStore } from "../../store/profiles";
 import ProfileCard from "@/components/ProfileCard.vue";
 import ProfileNav from "@/components/ProfileNav.vue";
-import ProfileWorks from "@/components/ProfileWorks.vue";
-import ProfileAlbums from "@/components/ProfileAlbums.vue";
-import ProfileRoutes from "@/components/ProfileRoutes.vue";
-import ProfileReviews from "@/components/ProfileReviews.vue";
 import ProfileImages from "@/components/ProfileImages.vue";
 import ProfileCollections from "@/components/ProfileCollections.vue";
 

@@ -132,7 +132,7 @@
               </p> 
               
               <p class="about-vocabulary__accordion-paragraph">
-                As categorias e/ou facetas estão sinalizadas com <... > e não apresentam definições explicativas.
+                As categorias e/ou facetas estão sinalizadas com &lt;... &gt; e não apresentam definições explicativas.
               </p>  
 
             </div>

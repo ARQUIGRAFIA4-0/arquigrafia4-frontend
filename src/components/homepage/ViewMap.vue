@@ -2,7 +2,7 @@
   <div class="explore-acervo-map">
     <LocationsMap
       context="explore"
-      :images="locatedImages"
+      :images="locatedItems"
       :is-loading="isLoading"
       :pitch="mapPitch"
       :load-image-details="api.getImageDetails"
@@ -13,12 +13,15 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import { useRouteQuery } from "@vueuse/router";
 
 import LocationsMap from "@/components/map/LocationsMap.vue";
-import { mapLocationsGeoJsonToImages } from "@/helpers/geojson.js";
+import { mapLocationsGeoJsonToMapItems } from "@/helpers/geojson.js";
 import { api } from "@/services/api.js";
+
+const route = useRoute();
 
 const mapSettingsQuery = useRouteQuery("map-settings", "2d");
 const selectedImageQuery = useRouteQuery("image", null);
@@ -41,32 +44,89 @@ const mapPitch = computed(() =>
   mapSettingsQuery.value === "3d" ? MAP_PITCH_3D : MAP_PITCH_2D
 );
 
-const locatedImages = ref([]);
+const locatedItems = ref([]);
 const isLoading = ref(true);
+let loadRequestId = 0;
 
-// Carrega as localizações das imagens do acervo.
-const loadLocatedImages = async () => {
+/**
+ * Mesmos filtros do grid/mosaico (URL).
+ * Sem filtros > null > acervo completo.
+ */
+const mapSearchParams = computed(() => {
+  const params = {};
+  const q = typeof route.query.q === "string" ? route.query.q.trim() : "";
+
+  if (q) params.q = q;
+
+  if (route.query.title) params.title = route.query.title;
+  if (route.query.contributor) params.contributor = route.query.contributor;
+
+  if (route.query.date_from) params.date_from = route.query.date_from;
+  if (route.query.date_to) params.date_to = route.query.date_to;
+
+  // Assuntos
+  const rawSubjects = route.query["subject[]"];
+  if (rawSubjects) {
+    params["subject[]"] = Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects];
+  }
+
+  // Assuntos
+  const rawSubjectTerms = route.query["subject_term[]"];
+  if (rawSubjectTerms) {
+    params["subject_term[]"] = Array.isArray(rawSubjectTerms) ? rawSubjectTerms : [rawSubjectTerms];
+  }
+
+  // Licenças
+  const rawLicenses = route.query["license[]"];
+  if (rawLicenses) {
+    params["license[]"] = Array.isArray(rawLicenses) ? rawLicenses : [rawLicenses];
+  }
+
+  return Object.keys(params).length > 0 ? params : null;
+});
+
+// Chave estável evita re-disparos do watch por novo objeto com o mesmo conteúdo.
+const mapSearchKey = computed(() => JSON.stringify(mapSearchParams.value));
+
+// Carrega os itens do mapa.
+const loadLocatedItems = async () => {
+  const requestId = ++loadRequestId;
   isLoading.value = true;
 
   try {
-    const featureCollection = await api.getLocationsGeoJSON();
+    const featureCollection = mapSearchParams.value
+      ? await api.getFilteredLocationsGeoJSON(mapSearchParams.value)
+      : await api.getLocationsGeoJSON();
+
+    if (requestId !== loadRequestId) return;
+
     const baseUrl = import.meta.env.VITE_BASE_REQUEST_URL ?? "";
-    locatedImages.value = mapLocationsGeoJsonToImages(featureCollection, baseUrl);
+    locatedItems.value = mapLocationsGeoJsonToMapItems(
+      featureCollection,
+      baseUrl
+    );
 
   } catch (error) {
+    if (requestId !== loadRequestId) return;
     console.error("Erro ao carregar localizações do acervo", error);
-    locatedImages.value = [];
+    locatedItems.value = [];
 
   } finally {
-    isLoading.value = false;
-
+    if (requestId === loadRequestId) {
+      isLoading.value = false;
+    }
   }
+  
 };
 
-onMounted(() => {
-  loadLocatedImages();
-});
-
+// Qualquer mudança de filtro (inclui limpar o q) recarrega o mapa.
+watch(
+  mapSearchKey,
+  () => {
+    loadLocatedItems();
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>

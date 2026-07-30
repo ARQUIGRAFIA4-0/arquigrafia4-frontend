@@ -1,22 +1,17 @@
 <script setup>
-import {
-  ref,
-  computed,
-  onMounted,
-  onBeforeUnmount,
-  watch,
-  nextTick,
-} from "vue";
-import { RouterLink, useRouter } from "vue-router";
-import { useAuthStore } from "@/store/auth";
-import { useAlbumsStore } from "@/store/albums";
-import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
-import UploadColectionBox from "@/components/UploadColectionBox.vue";
-import UiCard from "@/components/ui/UiCard.vue";
-import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
-import AlbumCoverArt from "@/components/AlbumCoverArt.vue";
-import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
-import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
+  import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
+  import { RouterLink, useRouter } from "vue-router";
+  import { useAuthStore } from "@/store/auth";
+  import { useAlbumsStore } from "@/store/albums";
+  import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
+  import UploadColectionBox from "@/components/UploadColectionBox.vue";
+  import UiCard from "@/components/ui/UiCard.vue";
+  import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
+  import AlbumCoverArt from "@/components/AlbumCoverArt.vue";
+  import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
+  import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
+  import AppToast from "@/components/ui/AppToast.vue";
+  import { useToast } from "@/composables/useToast";
 
 // Props
 const props = defineProps({
@@ -26,9 +21,11 @@ const props = defineProps({
   isMember: { type: Boolean, default: false },
 });
 
-const authStore = useAuthStore();
-const albumsStore = useAlbumsStore();
-const router = useRouter();
+  const toast = useToast();
+
+  const authStore = useAuthStore();
+  const albumsStore = useAlbumsStore();
+  const router = useRouter();
 
 // Para visitantes não logados não enviamos header de autorização
 // (authStore.authHeader resolve para "Bearer null" sem token).
@@ -172,10 +169,16 @@ watch(
 
 <template>
   <section class="collective-collections">
-    <div
-      v-if="albumsError"
-      class="collective-collections__state collective-collections__state--error"
-    >
+    <AppToast
+      class="collective-collections__alert"
+      variant="solid"
+      :toasts="toast.toasts.value"
+      @close="toast.hide"
+      @pause="toast.pause"
+      @resume="toast.resume"
+    />
+
+    <div v-if="albumsError" class="collective-collections__state collective-collections__state--error">
       {{ albumsError }}
     </div>
 
@@ -328,6 +331,15 @@ watch(
 
 .collective-collections {
   width: 100%;
+}
+
+.collective-collections__alert {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  max-width: 90%;
 }
 
 .collective-collections__state {

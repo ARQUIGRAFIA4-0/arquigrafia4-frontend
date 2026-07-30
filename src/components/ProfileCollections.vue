@@ -1,23 +1,20 @@
 <script setup>
-import {
-  ref,
-  computed,
-  onMounted,
-  onBeforeUnmount,
-  watch,
-  nextTick,
-} from "vue";
-import { useAuthStore } from "@/store/auth";
-import { useAlbumsStore } from "@/store/albums";
-import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
-import UploadColectionBox from "@/components/UploadColectionBox.vue";
-import UiCard from "@/components/ui/UiCard.vue";
-import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
-import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
-import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
-import AlbumCoverArt from "@/components/AlbumCoverArt.vue";
+  import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
+  import { useAuthStore } from "@/store/auth";
+  import { useAlbumsStore } from "@/store/albums";
+  import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
+  import UploadColectionBox from "@/components/UploadColectionBox.vue";
+  import UiCard from "@/components/ui/UiCard.vue";
+  import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
+  import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
+  import AlbumCoverArt from "@/components/AlbumCoverArt.vue";
+  import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
+  import AppToast from "@/components/ui/AppToast.vue";
+  import { useToast } from "@/composables/useToast";
 
-const showCreateModal = ref(false);
+  const showCreateModal = ref(false);
+  const toast = useToast();
+  const openCollectionToast = (message, type = "success") => toast.show(message, type);
 
 import { RouterLink, useRouter } from "vue-router";
 const router = useRouter();
@@ -185,10 +182,16 @@ watch(
 
 <template>
   <section class="profile-collections">
-    <div
-      v-if="albumsError"
-      class="profile-collections__state profile-collections__state--error"
-    >
+    <AppToast
+      class="profile-collections__alert"
+      variant="solid"
+      :toasts="toast.toasts.value"
+      @close="toast.hide"
+      @pause="toast.pause"
+      @resume="toast.resume"
+    />
+
+    <div v-if="albumsError" class="profile-collections__state profile-collections__state--error">
       {{ albumsError }}
     </div>
 
@@ -247,16 +250,6 @@ watch(
               'profile-grid-card--expanded': expandedAlbumId === album.id,
             }"
           >
-            <!-- <template #image>
-              <div class="profile-grid-card__image-wrapper">
-                <img
-                  :src="resolveAlbumCover(album)"
-                  class="profile-grid-card__image"
-                  :alt="album.title || 'Capa da coleção'"
-                  @error="handleCoverError"
-                />
-              </div>
-            </template> -->
             <template #image>
               <div class="profile-grid-card__image-wrapper">
                 <AlbumCoverArt
@@ -319,16 +312,6 @@ watch(
           }"
         >
           <UiCard class="h-100 profile-grid-card">
-            <!-- <template #image>
-              <div class="profile-grid-card__image-wrapper">
-                <img
-                  :src="resolveAlbumCover(album)"
-                  class="profile-grid-card__image"
-                  :alt="album.title || 'Capa da coleção'"
-                  @error="handleCoverError"
-                />
-              </div>
-            </template> -->
             <template #image>
               <div class="profile-grid-card__image-wrapper">
                 <AlbumCoverArt
@@ -360,6 +343,15 @@ watch(
 
 .profile-collections {
   width: 100%;
+}
+
+.profile-collections__alert {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  max-width: 90%;
 }
 
 .profile-collections__state {

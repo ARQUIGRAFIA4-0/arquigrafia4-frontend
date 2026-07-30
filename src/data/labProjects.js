@@ -96,7 +96,7 @@ export const labProjects = [
             {
                 name: "Acervos Digitais e Pesquisa",
                 avatar: lab03Pesquisador01,
-                bio: `Acervos Digitais e Pesquisa é um Projeto Temático financiado pela FAPESP na chamada LinCar. Seu objetivo é desenvolver metodologias e um repertório teórico-conceitual para coleções de museus e documentos digitais, por meio da conceituação e prototipagem de interfaces acessíveis e economicamente sustentáveis.`,
+                bio: `Acervos Digitais e Pesquisa é um Projeto Temático financiado pela\u00A0FAPESP na chamada LinCar. Seu objetivo é desenvolver metodologias e um repertório teórico-conceitual para coleções de museus e documentos digitais, por meio da conceituação e prototipagem de interfaces acessíveis e economicamente sustentáveis.`,
             },
             {
                 name: "Equipe Arquigrafia",

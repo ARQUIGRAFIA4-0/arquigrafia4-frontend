@@ -234,8 +234,6 @@ async function loadCollectionImageDetails(imagesFromAlbum = []) {
       ordered.map((img) => api.getImageDetails(img.id))
     );
 
-    selectedMapImageId.value = null;
-
   } catch (err) {
     console.error("Erro ao carregar imagens da coleção:", err);
     collectionImages.value = [];

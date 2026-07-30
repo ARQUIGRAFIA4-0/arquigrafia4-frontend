@@ -39,7 +39,7 @@ import LabCard from "@/components/LabCard.vue";
 import LabProjectDetail from "@/components/LabProjectDetail.vue";
 import { labProjects } from "@/data/labProjects.js";
 
-const props = defineProps({
+defineProps({
   mode: {
     type: String,
     required: true,

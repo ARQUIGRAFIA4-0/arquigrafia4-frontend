@@ -100,6 +100,7 @@ export function createCollectionImagesFeatureCollection(images = []) {
         title: image?.title ?? "",
         thumbUrl: image?.thumbUrl ?? image?.imageUrl ?? null,
         imageUrl: image?.imageUrl ?? null,
+        featureType: image?.featureType === "work" ? "work" : "image",
       },
     });
   });
@@ -127,32 +128,33 @@ export function resolveMediaUrl(path, baseUrl = "") {
 }
 
 /**
- * Converte FeatureCollection da API de localizações
- * para o formato usado pelo LocationsMap (locationCoordinates em [lat, lng]).
+ * Converte FeatureCollection (image|work) para o formato do LocationsMap.
+ * feature_type: "image" → câmera | "work" → prédio
  */
-export function mapLocationsGeoJsonToImages(featureCollection, baseUrl = "") {
-  const features = Array.isArray(featureCollection?.features)
-    ? featureCollection.features
-    : [];
+export function mapLocationsGeoJsonToMapItems(featureCollection, baseUrl = "") {
+  const features = Array.isArray(featureCollection?.features) ? featureCollection.features : [];
 
-  return features
-    .map((feature) => {
-      const coords = feature?.geometry?.coordinates;
-      if (!Array.isArray(coords) || coords.length < 2) return null;
+  return features.map((feature) => {
+    const coords = feature?.geometry?.coordinates;
+    if (!Array.isArray(coords) || coords.length < 2) return null;
 
-      const [lng, lat] = coords;
-      if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
+    const [lng, lat] = coords;
+    if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
 
-      const props = feature.properties ?? {};
+    const props = feature.properties ?? {};
+    const featureType = props.feature_type === "work" ? "work" : "image";
+    const id = featureType === "work" ? props.work_id ?? null : props.image_id ?? null;
 
-      return {
-        id: props.image_id ?? null,
-        title: props.title ?? "",
-        thumbUrl: resolveMediaUrl(props.thumb_url, baseUrl),
-        imageUrl: resolveMediaUrl(props.thumb_url, baseUrl),
-        locationCoordinates: [lat, lng],
-      };
-    })
-    .filter((image) => image?.id && image.locationCoordinates);
+    if (!id) return null;
 
+    return {
+      id,
+      featureType, // "image" | "work"
+      title: props.title ?? "",
+      thumbUrl: resolveMediaUrl(props.thumb_url, baseUrl),
+      imageUrl: resolveMediaUrl(props.thumb_url, baseUrl),
+      locationCoordinates: [lat, lng], // [lat, lng] como o mapa espera
+    };
+  })
+  .filter(Boolean);
 }

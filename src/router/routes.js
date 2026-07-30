@@ -197,6 +197,11 @@ export default [
     },
   },
   {
+    path: "/obras/:id",
+    name: "work-detail",
+    component: () => import("../views/WorkDetail.vue"),
+  },
+  {
     path: "/eu",
     redirect: { name: "my-profile-images" },
     meta: { requiresAuth: true }

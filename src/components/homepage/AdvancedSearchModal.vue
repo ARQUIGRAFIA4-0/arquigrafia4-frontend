@@ -362,6 +362,8 @@ function removeSearchTerm(index) {
   searchTerms.value.splice(index, 1);
 }
 
+// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
+// eslint-disable-next-line no-unused-vars
 function toggleLocation(city) {
   toggleArrayItem(selectedLocations.value, city);
 }
@@ -374,6 +376,8 @@ function toggleLicense(label) {
   toggleArrayItem(selectedLicenses.value, label);
 }
 
+// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
+// eslint-disable-next-line no-unused-vars
 function setUse(use) {
   selectedUse.value = selectedUse.value === use ? null : use;
 }

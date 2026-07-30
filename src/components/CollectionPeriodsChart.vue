@@ -4,7 +4,7 @@ import * as echarts from "echarts";
 
 defineOptions({ name: "CollectionPeriodsChart" });
 
-const props = defineProps({
+defineProps({
   ariaLabel: {
     type: String,
     default: "Gráfico de períodos da coleção",

@@ -6,12 +6,16 @@ import MapControls from "@/components/map/MapControls.vue";
 import UiField from "@/components/ui/UiField.vue";
 import Fuse from "fuse.js";
 import axios from "@/axios";
+import { Marker } from "maplibre-gl";
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
+  // Texto para pré-preencher o input de título ao abrir (ex.: vindo da busca que
+  // sugeriu criar a obra). Fica só no input; não é adicionado como título.
+  initialTitle: { type: String, default: "" },
 });
 
-const emit = defineEmits(["update:modelValue", "created"]);
+const emit = defineEmits(["update:modelValue", "created", "select-existing"]);
 
 const vracStore = useVracStore();
 
@@ -20,15 +24,108 @@ const step = ref(1);
 
 // ── Step 1: map ──────────────────────────────────────────────────────────────
 const mapStyleUrl = "https://tiles.openfreemap.org/styles/positron";
-const mapCenter = [-46.6388, -23.5489]; // São Paulo
-const mapZoom = 12;
+const INITIAL_MAP_CENTER = [-46.6388, -23.5489]; // São Paulo
+const INITIAL_MAP_ZOOM = 12;
+// Reativos para preservar a posição da câmera ao navegar entre passos do modal:
+// o mapa é destruído/recriado a cada troca (v-if), então remonta lendo daqui.
+const mapCenter = ref([...INITIAL_MAP_CENTER]);
+const mapZoom = ref(INITIAL_MAP_ZOOM);
 const mapInstance = ref(null);
 const pickedCoords = ref(null);   // { lng, lat }
 const pickedAddress = ref("");
 const isReverseGeocoding = ref(false);
 
+// Obras já existentes no viewport atual — para o usuário perceber uma possível
+// duplicata antes de criar. Carregadas por bbox a cada movimento do mapa.
+const existingWorks = ref([]);
+const selectedExistingWork = ref(null); // obra clicada, aguardando confirmação
+// Instâncias de Marker do MapLibre — mantidas fora da reatividade do Vue (mesmo
+// motivo de mapInstance usar markRaw); recriadas a cada fetch.
+let existingMarkers = [];
+let worksDebounce = null;
+
+const primaryTitle = (work) => {
+  const ts = work?.titles || [];
+  return (ts.find((t) => t.pref) || ts[0])?.label || "(sem título)";
+};
+
+const clearWorkMarkers = () => {
+  for (const marker of existingMarkers) marker.remove();
+  existingMarkers = [];
+};
+
+const createExistingWorkMarkerElement = () => {
+  const element = document.createElement("div");
+  // Estilo inline: markers ficam fora da árvore atingida pelo CSS scoped daqui.
+  // Círculo cheio terracota — distinto do pin escuro da localização escolhida.
+  element.style.cssText =
+    "width:18px;height:18px;border-radius:50%;background:#c0563b;" +
+    "border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.4);" +
+    "cursor:pointer;box-sizing:border-box;";
+  return element;
+};
+
+const renderWorkMarkers = () => {
+  const map = mapInstance.value;
+  if (!map) return;
+  clearWorkMarkers();
+  for (const work of existingWorks.value) {
+    const lat = parseFloat(work.location?.latitude);
+    const lng = parseFloat(work.location?.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    const element = createExistingWorkMarkerElement();
+    element.addEventListener("click", (event) => {
+      event.stopPropagation();
+      selectedExistingWork.value = work;
+    });
+    const marker = new Marker({ element, anchor: "center" })
+      .setLngLat([lng, lat])
+      .addTo(map);
+    existingMarkers.push(marker);
+  }
+};
+
+const fetchWorksInView = async () => {
+  const map = mapInstance.value;
+  if (!map) return;
+  const bounds = map.getBounds();
+  // Ordem exigida pelo backend: west,south,east,north — exatamente 4 valores.
+  // Menos que isso e o backend ignora o filtro e devolve a lista inteira.
+  const bbox = [
+    bounds.getWest(),
+    bounds.getSouth(),
+    bounds.getEast(),
+    bounds.getNorth(),
+  ].join(",");
+  try {
+    const res = await axios.get("/api/vrac-works", {
+      params: { bbox, per_page: -1 },
+    });
+    existingWorks.value = res.data?.data ?? [];
+    renderWorkMarkers();
+  } catch {
+    // Não-fatal: o mapa de seleção segue funcionando sem as obras existentes.
+  }
+};
+
+const fetchWorksInViewDebounced = () => {
+  if (worksDebounce) clearTimeout(worksDebounce);
+  worksDebounce = setTimeout(fetchWorksInView, 300);
+};
+
+const confirmExistingWork = () => {
+  const work = selectedExistingWork.value;
+  if (!work) return;
+  emit("select-existing", work);
+  close();
+};
+
 const handleMapReady = (map) => {
   mapInstance.value = markRaw(map);
+  // A cada abertura o mapa nasce do zero (v-if no template), então religar o
+  // listener e disparar o fetch inicial aqui é seguro e auto-limpante.
+  map.on("moveend", fetchWorksInViewDebounced);
+  fetchWorksInView();
 };
 
 const handleMapClick = async ({ lng, lat }) => {
@@ -50,7 +147,7 @@ const handleMapClick = async ({ lng, lat }) => {
 
 const canAdvance = computed(() => pickedCoords.value !== null && !isReverseGeocoding.value);
 
-const showSearch = ref(false);
+const showSearch = ref(true); // Começa visível;
 const searchQuery = ref("");
 const searchSuggestions = ref([]);
 const isForwardGeocoding = ref(false);
@@ -83,13 +180,20 @@ const selectSearchResult = async (result) => {
   const lat = parseFloat(result.lat);
   searchQuery.value = "";
   searchSuggestions.value = [];
-  showSearch.value = false;
   mapInstance.value?.flyTo({ center: [lng, lat], zoom: 16 });
   await handleMapClick({ lng, lat });
 };
 
 const goToStep2 = () => {
   if (!canAdvance.value) return;
+  // Guarda a posição atual da câmera antes de destruir o mapa, para que voltar
+  // ao passo 1 reabra na mesma vista (e não recentralize em São Paulo).
+  const map = mapInstance.value;
+  if (map) {
+    const center = map.getCenter();
+    mapCenter.value = [center.lng, center.lat];
+    mapZoom.value = map.getZoom();
+  }
   locationLabel.value = pickedAddress.value;
   step.value = 2;
 };
@@ -111,9 +215,14 @@ const titles = ref([]);  // [{ type, label, pref }]
 const addTitle = () => {
   const label = titleLabelInput.value.trim();
   if (!label) return;
-  const pref = titleTypeInput.value === "other";
-  titles.value.push({ type: titleTypeInput.value, label, pref });
+  const isPrincipal = titleTypeInput.value === "other";
+  // Só pode existir UM título principal; um segundo é bloqueado (o dropdown já
+  // impede selecioná-lo quando um existe — isto é a rede de segurança).
+  if (isPrincipal && hasPreferredTitle.value) return;
+  titles.value.push({ type: titleTypeInput.value, label, pref: isPrincipal });
   titleLabelInput.value = "";
+  // Definido o principal, o padrão passa a ser "Alternativo".
+  if (isPrincipal) titleTypeInput.value = "alternate";
 };
 
 const removeTitle = (index) => titles.value.splice(index, 1);
@@ -390,6 +499,8 @@ const handleSubmit = () => {
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 const reset = () => {
   step.value = 1;
+  mapCenter.value = [...INITIAL_MAP_CENTER];
+  mapZoom.value = INITIAL_MAP_ZOOM;
   pickedCoords.value = null;
   pickedAddress.value = "";
   locationLabel.value = "";
@@ -404,6 +515,13 @@ const reset = () => {
   dateYearEndInput.value = "";
   descriptionInput.value = "";
   errorMessage.value = "";
+  showSearch.value = true;
+  searchQuery.value = "";
+  searchSuggestions.value = [];
+  existingWorks.value = [];
+  selectedExistingWork.value = null;
+  clearWorkMarkers();
+  if (worksDebounce) clearTimeout(worksDebounce);
   for (const { field } of VOCAB_FIELDS) {
     field.input.value = "";
     field.selected.value = [];
@@ -420,6 +538,11 @@ watch(
   () => props.modelValue,
   async (open) => {
     if (!open) { reset(); return; }
+
+    // Pré-preenche o input de título com o texto que originou a sugestão de criar.
+    if (props.initialTitle) {
+      titleLabelInput.value = props.initialTitle;
+    }
 
     try {
       const contributors = await vracStore.getVRACContributorNames();
@@ -456,6 +579,8 @@ watch(
 onUnmounted(() => {
   if (nameDebounce) clearTimeout(nameDebounce);
   if (searchDebounce) clearTimeout(searchDebounce);
+  if (worksDebounce) clearTimeout(worksDebounce);
+  clearWorkMarkers();
   for (const { field } of VOCAB_FIELDS) {
     if (field.debounce) clearTimeout(field.debounce);
   }
@@ -485,6 +610,7 @@ onUnmounted(() => {
                 :zoom="mapZoom"
                 :clickable="true"
                 :marker-position="pickedCoords"
+                marker-variant="building"
                 @map-ready="handleMapReady"
                 @click="handleMapClick"
               />
@@ -522,6 +648,40 @@ onUnmounted(() => {
                     {{ r.display_name }}
                   </li>
                 </ul>
+              </div>
+
+              <div
+                v-if="selectedExistingWork"
+                class="work-modal__existing-confirm"
+                data-cy="existing-work-confirm"
+              >
+                <p class="work-modal__existing-confirm-title">Usar esta obra?</p>
+                <p class="work-modal__existing-confirm-name">
+                  {{ primaryTitle(selectedExistingWork) }}
+                </p>
+                <p
+                  v-if="selectedExistingWork.location?.label"
+                  class="work-modal__existing-confirm-address text-muted"
+                >
+                  {{ selectedExistingWork.location.label }}
+                </p>
+                <div class="work-modal__existing-confirm-actions">
+                  <button
+                    type="button"
+                    class="work-modal__btn work-modal__btn--secondary"
+                    @click="selectedExistingWork = null"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    class="work-modal__btn work-modal__btn--primary"
+                    data-cy="existing-work-confirm-use"
+                    @click="confirmExistingWork"
+                  >
+                    Usar esta obra
+                  </button>
+                </div>
               </div>
             </div>
             <p v-if="isReverseGeocoding" class="work-modal__geocode-hint text-muted">
@@ -587,8 +747,16 @@ onUnmounted(() => {
                   </button>
                   <ul class="dropdown-menu menu-light">
                     <li v-for="t in TITLE_TYPES" :key="t.value">
-                      <button class="dropdown-item" @click.prevent="titleTypeInput = t.value">
+                      <button
+                        class="dropdown-item"
+                        :disabled="t.value === 'other' && hasPreferredTitle"
+                        @click.prevent="titleTypeInput = t.value"
+                      >
                         {{ t.label }}
+                        <span
+                          v-if="t.value === 'other' && hasPreferredTitle"
+                          class="text-muted small ms-1"
+                        ></span>
                       </button>
                     </li>
                   </ul>
@@ -1008,6 +1176,43 @@ onUnmounted(() => {
   flex-shrink: 0;
   margin: 6px 16px 0;
   font-size: 13px;
+}
+
+.work-modal__existing-confirm {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 30;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.work-modal__existing-confirm-title {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2f2f2f;
+}
+
+.work-modal__existing-confirm-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2f2f2f;
+}
+
+.work-modal__existing-confirm-address {
+  margin: 2px 0 0;
+  font-size: 12px;
+}
+
+.work-modal__existing-confirm-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
 }
 
 .work-modal__body {

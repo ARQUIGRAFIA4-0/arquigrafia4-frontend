@@ -252,8 +252,7 @@ const selectedScope = computed(
     null
 );
 
-const { searchMode, loadSnapshot, setSearchMode, submitSearch } =
-  useSearchQuery();
+const { searchMode, loadSnapshot, submitSearch } = useSearchQuery();
 
 const localSearchMode = ref(searchMode.value ?? "textual");
 

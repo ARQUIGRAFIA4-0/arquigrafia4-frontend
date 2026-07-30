@@ -35,6 +35,43 @@ const selectedId = ref(null);
 let activePopup = null;
 let initialView = null;
 
+const isAwayFromInitial = ref(false);
+
+let baselineCenter = null; // [lng, lat]
+let baselineZoom = null;
+
+// Qualquer alteração mínima de zoom/centro já exibe o botão.
+const VIEW_ZOOM_EPSILON = 0.01;
+const VIEW_CENTER_EPSILON = 0.00005;
+
+const captureBaselineView = () => {
+  const map = mapInstance.value;
+  if (!map) return;
+
+  const center = map.getCenter();
+  baselineCenter = [center.lng, center.lat];
+  baselineZoom = map.getZoom();
+  isAwayFromInitial.value = false;
+};
+
+const updateAwayFromInitial = () => {
+  const map = mapInstance.value;
+  if (!map || baselineZoom == null || !baselineCenter) {
+    isAwayFromInitial.value = false;
+    return;
+  }
+
+  const center = map.getCenter();
+  const zoomDiff = Math.abs(map.getZoom() - baselineZoom);
+  const centerDiff = Math.hypot(
+    center.lng - baselineCenter[0],
+    center.lat - baselineCenter[1]
+  );
+
+  isAwayFromInitial.value =
+    zoomDiff > VIEW_ZOOM_EPSILON || centerDiff > VIEW_CENTER_EPSILON;
+};
+
 let activeCardPopup = null;
 let activeCardImageId = null;
 let isUnmounting = false;
@@ -51,6 +88,9 @@ const styleUrl = "https://tiles.openfreemap.org/styles/positron";
 const sourceId = "locations-images";
 const iconId = "locations-camera-icon";
 const selectedIconId = "locations-camera-icon-active";
+
+const workIconId = "locations-work-icon";
+const workSelectedIconId = "locations-work-icon-active";
 
 const clusterLayerId = `${sourceId}-clusters`;
 const clusterCountLayerId = `${sourceId}-cluster-count`;
@@ -71,8 +111,21 @@ const SELECTED_ICON_ZOOM = 8;
 const SELECTED_ICON_ANIMATION_MS = 700;
 const POPUP_CLOSE_ZOOM_DELTA = 0.1;
 
-const cameraIconSvg = (fill) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="${fill}"/><g transform="translate(8 8) scale(0.75) translate(-8 -8)"><path fill="#FFFFFF" d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/><path fill="#FFFFFF" d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4Zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0"/></g></svg>`;
+const cameraIconSvg = (fill) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="${fill}"/><g transform="translate(8 8) scale(0.75) translate(-8 -8)"><path fill="#FFFFFF" d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/><path fill="#FFFFFF" d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4Zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0"/></g></svg>`;
+
+const workIconSvg = (fill = baseColor) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="${fill}"/><path fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" d="M18 45 V31.5 L28 19.5 L46.5 28.5 V45 H18 Z"/><line x1="28" y1="19.5" x2="28" y2="45" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"/><g fill="#FFFFFF"><rect x="21" y="33" width="3.4" height="3.4" rx="0.35"/><rect x="21" y="38.2" width="3.4" height="3.4" rx="0.35"/><rect x="31" y="24.8" width="3.2" height="3.2" rx="0.3"/><rect x="35.6" y="24.8" width="3.2" height="3.2" rx="0.3"/><rect x="40.2" y="24.8" width="3.2" height="3.2" rx="0.3"/><rect x="31" y="29" width="3.2" height="3.2" rx="0.3"/><rect x="35.6" y="29" width="3.2" height="3.2" rx="0.3"/><rect x="40.2" y="29" width="3.2" height="3.2" rx="0.3"/><rect x="31" y="33.2" width="3.2" height="3.2" rx="0.3"/><rect x="35.6" y="33.2" width="3.2" height="3.2" rx="0.3"/><rect x="40.2" y="33.2" width="3.2" height="3.2" rx="0.3"/><rect x="31" y="37.4" width="3.2" height="3.2" rx="0.3"/><rect x="35.6" y="37.4" width="3.2" height="3.2" rx="0.3"/><rect x="40.2" y="37.4" width="3.2" height="3.2" rx="0.3"/><rect x="31" y="41.6" width="3.2" height="3.2" rx="0.3"/><rect x="35.6" y="41.6" width="3.2" height="3.2" rx="0.3"/><rect x="40.2" y="41.6" width="3.2" height="3.2" rx="0.3"/></g></svg>`;
+
+// image → câmera | work → prédio | selected → laranja
+const iconImageLayout = [
+  "case",
+  ["all", ["==", ["get", "featureType"], "work"], ["get", "selected"]],
+  workSelectedIconId,
+  ["==", ["get", "featureType"], "work"],
+  workIconId,
+  ["get", "selected"],
+  selectedIconId,
+  iconId,
+];
 
 /* ------------------------------- Validação ---------------------------------- */
 // Verifica se as coordenadas são válidas.
@@ -206,18 +259,21 @@ const createExploreCardPopupContent = ({
   title,
   imageUrl,
   date = "",
+  featureType = "image",
 }) => {
   const safeId = encodeURIComponent(id);
   const safeTitle = escapeHtml(title || "Imagem sem título");
   const safeImageUrl = typeof imageUrl === "string" ? escapeHtml(imageUrl) : "";
+  const isWork = featureType === "work";
+  const href = isWork ? `/obras/${safeId}` : `/explore/dados/image/${safeId}`;
+  const ctaLabel = isWork ? "Ver obra" : "Ver imagem";
+  const ctaAria = isWork ? `Ver detalhes da obra ${safeTitle}` : `Ver detalhes da imagem ${safeTitle}`;
 
   return `
     <article class="locations-map-card">
       <div class="locations-map-card__media">
         ${
-          safeImageUrl
-            ? `<img src="${safeImageUrl}" alt="${safeTitle}" loading="lazy" />`
-            : ""
+          safeImageUrl ? `<img src="${safeImageUrl}" alt="${safeTitle}" loading="lazy" />` : ""
         }
       </div>
 
@@ -227,17 +283,15 @@ const createExploreCardPopupContent = ({
         </h3>
 
         ${
-          date
-            ? `<p class="locations-map-card__date">${escapeHtml(date)}</p>`
-            : ""
+          date ? `<p class="locations-map-card__date">${escapeHtml(date)}</p>` : ""
         }
 
         <a
           class="locations-map-card__button"
-          href="/explore/dados/image/${safeId}"
-          aria-label="Ver detalhes da imagem ${safeTitle}"
+          href="${href}"
+          aria-label="${ctaAria}"
         >
-          <span>Ver imagem</span>
+          <span>${ctaLabel}</span>
 
           <svg
             aria-hidden="true"
@@ -259,7 +313,7 @@ const createExploreCardPopupContent = ({
       </div>
     </article>
   `;
-
+  
 };
 
 const showExploreCardPopup = async (feature) => {
@@ -287,6 +341,7 @@ const showExploreCardPopup = async (feature) => {
         id,
         title: properties.title,
         imageUrl: properties.thumbUrl ?? properties.imageUrl,
+        featureType: properties.featureType ?? "image",
       })
     )
     .addTo(map);
@@ -323,7 +378,8 @@ const showExploreCardPopup = async (feature) => {
     }
   });
 
-  if (!props.loadImageDetails) return;
+  // Obras não usam /api/images/:id — o GeoJSON já traz título/thumb.
+  if (!props.loadImageDetails || properties.featureType === "work") return;
 
   try {
     const details = await props.loadImageDetails(id);
@@ -339,6 +395,7 @@ const showExploreCardPopup = async (feature) => {
           properties.thumbUrl ??
           properties.imageUrl,
         date: formatPopupDate(details?.dates),
+        featureType: properties.featureType ?? "image",
       })
     );
   } catch (error) {
@@ -555,8 +612,6 @@ const restoreInitialView = () => {
 
 // Limpa a seleção e restaura a view inicial.
 const resetToInitial = () => {
-  if (selectedId.value === null) return;
-
   selectedId.value = null;
   emit("select", null);
   collapseSpider();
@@ -572,11 +627,13 @@ const resetToInitial = () => {
     if (restored) return;
     restored = true;
     restoreInitialView();
+    map.once("idle", () => {
+      captureBaselineView();
+    });
   };
 
   map.once("idle", run);
   window.setTimeout(run, 80);
-
 };
 
 /* ------------------------------- Spiderfy --------------------------------- */
@@ -609,15 +666,13 @@ const generateSpiderPositions = (count) => {
           )
         : previousRadius + ringGap;
 
-    const capacity =
-      count <= singleRingLimit
+    const capacity = count <= singleRingLimit
         ? count
         : Math.max(8, Math.floor((2 * Math.PI * radius) / iconSpacing));
 
     const inRing = Math.min(capacity, remaining);
     const angleStep = (2 * Math.PI) / inRing;
-    const angleOffset =
-      -Math.PI / 2 + (ringIndex % 2 === 0 ? 0 : angleStep / 2);
+    const angleOffset = -Math.PI / 2 + (ringIndex % 2 === 0 ? 0 : angleStep / 2);
 
     // Mantém a base da pétala com aproximadamente 28 px de largura.
     const spread = Math.min(angleStep * 0.38, Math.atan2(14, radius));
@@ -725,7 +780,8 @@ const renderSpider = () => {
 // Oculta somente o cluster aberto e restaura sua exibição ao fechar o spider.
 const setExplodedCluster = (clusterId = null) => {
   const map = mapInstance.value;
-  if (!map) return;
+  // No unmount o style já pode ter sido destruído.
+  if (!map || !map.style) return;
 
   const filter =
     clusterId == null
@@ -747,16 +803,16 @@ const setExplodedCluster = (clusterId = null) => {
 
 // Fecha o spider e limpa as fontes.
 const collapseSpider = () => {
-  const map = mapInstance.value;
   if (!spiderContext) return;
 
   spiderContext = null;
 
-  if (!map) return;
+  const map = mapInstance.value;
+  if (!map || !map.style) return;
+
   setExplodedCluster();
   map.getSource(spiderLegsSourceId)?.setData(emptyFeatureCollection());
   map.getSource(spiderLeavesSourceId)?.setData(emptyFeatureCollection());
-
 };
 
 // Abre o spider: busca as folhas do cluster e as espalha.
@@ -878,13 +934,32 @@ const handleMapClickOutsideSpider = (event) => {
 /* ------------------------------- Mapa ------------------------------------- */
 // Ajusta o mapa para exibir todas as features visíveis.
 const fitMapToFeatures = () => {
-  restoreInitialView();
+  const map = mapInstance.value;
+  if (!map) return;
+
+  // fitBounds calcula o zoom a partir das dimensões do viewport. No primeiro
+  // carregamento (ou ao trocar para o modo mapa), o container pode ainda não ter
+  // a altura final, o que faz o enquadramento sair "afastado". Garante o resize e
+  // adia o fit para quando o mapa estiver ocioso.
+  map.resize();
+
+  let fitted = false;
+  const run = () => {
+    if (fitted) return;
+    fitted = true;
+    restoreInitialView();
+  };
+
+  map.once("idle", run);
+  window.setTimeout(run, 80);
 };
 
 // Configura as camadas do mapa.
 const setupLayers = async (map) => {
   await registerIcon(map, iconId, cameraIconSvg(baseColor));
   await registerIcon(map, selectedIconId, cameraIconSvg(selectedColor));
+  await registerIcon(map, workIconId, workIconSvg(baseColor));
+  await registerIcon(map, workSelectedIconId, workIconSvg(selectedColor));
 
   if (!map.getSource(sourceId)) {
     map.addSource(sourceId, {
@@ -940,7 +1015,7 @@ const setupLayers = async (map) => {
       source: sourceId,
       filter: ["!", ["has", "point_count"]],
       layout: {
-        "icon-image": ["case", ["get", "selected"], selectedIconId, iconId],
+        "icon-image": iconImageLayout,
         "icon-size": ["case", ["get", "selected"], 0.95, 0.8],
         "icon-allow-overlap": true,
       },
@@ -991,7 +1066,7 @@ const setupLayers = async (map) => {
       type: "symbol",
       source: spiderLeavesSourceId,
       layout: {
-        "icon-image": ["case", ["get", "selected"], selectedIconId, iconId],
+        "icon-image": iconImageLayout,
         "icon-size": ["case", ["get", "selected"], 0.95, 0.8],
         "icon-allow-overlap": true,
       },
@@ -1030,6 +1105,12 @@ const handleMapReady = async (map) => {
 
   applyMapPitch(props.pitch);
 
+  map.once("idle", () => {
+    captureBaselineView();
+  });
+
+  map.on("moveend", updateAwayFromInitial);
+  map.on("zoomend", updateAwayFromInitial);
 };
 
 const handleMapError = (error) => {
@@ -1061,6 +1142,9 @@ watch(
 
     ) {
       applyInitialSelection();
+      mapInstance.value?.once("idle", () => {
+        captureBaselineView();
+      });
       return;
 
     }
@@ -1068,6 +1152,10 @@ watch(
     selectedId.value = null;
     emit("select", null);
     fitMapToFeatures();
+
+    mapInstance.value?.once("idle", () => {
+      captureBaselineView();
+    });
 
   },
   { deep: true }
@@ -1088,7 +1176,18 @@ onUnmounted(() => {
   isUnmounting = true;
 
   const map = mapInstance.value;
-  collapseSpider();
+
+  if (map) {
+    map.off("moveend", updateAwayFromInitial);
+    map.off("zoomend", updateAwayFromInitial);
+  }
+
+  if (map && map.style) {
+    collapseSpider();
+  } else {
+    spiderContext = null;
+  }
+
   closeActivePopup();
   closeActiveCardPopup();
 
@@ -1109,6 +1208,8 @@ onUnmounted(() => {
 
     if (map.hasImage(iconId)) map.removeImage(iconId);
     if (map.hasImage(selectedIconId)) map.removeImage(selectedIconId);
+    if (map.hasImage(workIconId)) map.removeImage(workIconId);
+    if (map.hasImage(workSelectedIconId)) map.removeImage(workSelectedIconId);    
   }
 
   mapInstance.value = null;
@@ -1120,6 +1221,14 @@ onUnmounted(() => {
     class="locations-map"
     :aria-label="context === 'explore' ? 'Mapa do acervo' : 'Mapa das imagens da coleção'"
   >
+    <MapLibreMap
+      class="locations-map__canvas"
+      :style-url="styleUrl"
+      :map-options="initialMapOptions"
+      @map-ready="handleMapReady"
+      @map-error="handleMapError"
+    />
+
     <div
       v-if="isLoading"
       class="locations-map__state"
@@ -1128,48 +1237,38 @@ onUnmounted(() => {
       Carregando mapa...
     </div>
 
-    <template v-else>
-      <MapLibreMap
-        class="locations-map__canvas"
-        :style-url="styleUrl"
-        :map-options="initialMapOptions"
-        @map-ready="handleMapReady"
-        @map-error="handleMapError"
-      />
+    <p
+      v-if="!isLoading && !hasLocatedImages"
+      class="locations-map__empty"
+    >
+      {{ emptyMessage }}
+    </p>
 
-      <p
-        v-if="!hasLocatedImages"
-        class="locations-map__empty"
-      >
-        {{ emptyMessage }}
-      </p>
-
-      <button
-        v-if="selectedId"
-        type="button"
-        class="locations-map__hint"
-        aria-label="Clique aqui para voltar ao estado original do mapa"
-        @click="resetToInitial"
-      >
-        <span class="locations-map__hint-icon" aria-hidden="true">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="13"
-            height="13"
-            viewBox="0 0 13 13"
-            fill="none"
-          >
-            <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M0.118945 12.8394C0.195128 12.9156 0.29844 12.9584 0.406163 12.9584C0.513886 12.9584 0.617199 12.9156 0.693382 12.8394L4.02138 9.51145V11.7604C4.02138 11.8682 4.06418 11.9715 4.14037 12.0477C4.21656 12.1239 4.31989 12.1667 4.42763 12.1667C4.53538 12.1667 4.63871 12.1239 4.71489 12.0477C4.79108 11.9715 4.83388 11.8682 4.83388 11.7604V8.53076C4.83388 8.42301 4.79108 8.31968 4.71489 8.2435C4.63871 8.16731 4.53538 8.12451 4.42763 8.12451H1.19794C1.0902 8.12451 0.986869 8.16731 0.910682 8.2435C0.834496 8.31968 0.791695 8.42301 0.791695 8.53076C0.791695 8.6385 0.834496 8.74183 0.910682 8.81802C0.986869 8.89421 1.0902 8.93701 1.19794 8.93701H3.44694L0.118945 12.265C0.0427844 12.3412 0 12.4445 0 12.5522C0 12.6599 0.0427844 12.7633 0.118945 12.8394V12.8394ZM12.8394 0.118945C12.7633 0.0427844 12.6599 0 12.5522 0C12.4445 0 12.3412 0.0427844 12.265 0.118945L8.93701 3.44694V1.19794C8.93701 1.0902 8.89421 0.986869 8.81802 0.910682C8.74183 0.834496 8.6385 0.791695 8.53076 0.791695C8.42301 0.791695 8.31968 0.834496 8.2435 0.910682C8.16731 0.986869 8.12451 1.0902 8.12451 1.19794V4.42763C8.12451 4.53538 8.16731 4.63871 8.2435 4.71489C8.31968 4.79108 8.42301 4.83388 8.53076 4.83388H11.7604C11.8682 4.83388 11.9715 4.79108 12.0477 4.71489C12.1239 4.63871 12.1667 4.53538 12.1667 4.42763C12.1667 4.31989 12.1239 4.21656 12.0477 4.14037C11.9715 4.06418 11.8682 4.02138 11.7604 4.02138H9.51145L12.8394 0.693382C12.9156 0.617199 12.9584 0.513886 12.9584 0.406163C12.9584 0.29844 12.9156 0.195128 12.8394 0.118945V12.8394Z"
-              fill="white"
-            />
-          </svg>
-        </span>
-        <span class="locations-map__hint-text">Clique aqui para voltar ao estado original</span>
-      </button>
-    </template>
+    <button
+      v-if="isAwayFromInitial"
+      type="button"
+      class="locations-map__hint"
+      aria-label="Voltar ao zoom original"
+      @click="resetToInitial"
+    >
+      <span class="locations-map__hint-icon" aria-hidden="true">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="13"
+          height="13"
+          viewBox="0 0 13 13"
+          fill="none"
+        >
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M0.118945 12.8394C0.195128 12.9156 0.29844 12.9584 0.406163 12.9584C0.513886 12.9584 0.617199 12.9156 0.693382 12.8394L4.02138 9.51145V11.7604C4.02138 11.8682 4.06418 11.9715 4.14037 12.0477C4.21656 12.1239 4.31989 12.1667 4.42763 12.1667C4.53538 12.1667 4.63871 12.1239 4.71489 12.0477C4.79108 11.9715 4.83388 11.8682 4.83388 11.7604V8.53076C4.83388 8.42301 4.79108 8.31968 4.71489 8.2435C4.63871 8.16731 4.53538 8.12451 4.42763 8.12451H1.19794C1.0902 8.12451 0.986869 8.16731 0.910682 8.2435C0.834496 8.31968 0.791695 8.42301 0.791695 8.53076C0.791695 8.6385 0.834496 8.74183 0.910682 8.81802C0.986869 8.89421 1.0902 8.93701 1.19794 8.93701H3.44694L0.118945 12.265C0.0427844 12.3412 0 12.4445 0 12.5522C0 12.6599 0.0427844 12.7633 0.118945 12.8394V12.8394ZM12.8394 0.118945C12.7633 0.0427844 12.6599 0 12.5522 0C12.4445 0 12.3412 0.0427844 12.265 0.118945L8.93701 3.44694V1.19794C8.93701 1.0902 8.89421 0.986869 8.81802 0.910682C8.74183 0.834496 8.6385 0.791695 8.53076 0.791695C8.42301 0.791695 8.31968 0.834496 8.2435 0.910682C8.16731 0.986869 8.12451 1.0902 8.12451 1.19794V4.42763C8.12451 4.53538 8.16731 4.63871 8.2435 4.71489C8.31968 4.79108 8.42301 4.83388 8.53076 4.83388H11.7604C11.8682 4.83388 11.9715 4.79108 12.0477 4.71489C12.1239 4.63871 12.1667 4.53538 12.1667 4.42763C12.1667 4.31989 12.1239 4.21656 12.0477 4.14037C11.9715 4.06418 11.8682 4.02138 11.7604 4.02138H9.51145L12.8394 0.693382C12.9156 0.617199 12.9584 0.513886 12.9584 0.406163C12.9584 0.29844 12.9156 0.195128 12.8394 0.118945V12.8394Z"
+            fill="white"
+          />
+        </svg>
+      </span>
+      <span class="locations-map__hint-text">Zoom original</span>
+    </button>
   </div>
 </template>
 
@@ -1221,9 +1320,9 @@ onUnmounted(() => {
   bottom: 16px;
   z-index: 3;
   display: inline-flex;
-  padding: var(--pp, 8px) var(--p, 12px) var(--pp, 8px) var(--m, 16px);
+  padding: 8px 12px;
   align-items: center;
-  gap: 24px;
+  gap: 8px;
   border: none;
   border-radius: 4px;
   background: var(--Cinza_E, #2f2f2f);
