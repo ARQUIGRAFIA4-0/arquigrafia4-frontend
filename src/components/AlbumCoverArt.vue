@@ -83,14 +83,12 @@ const DOT_COUNT = 6;
 
 const dots = computed(() => {
   const { lineCount, dotPositions } = cover.value;
-  console.log(cover.value);
   
   if (!lineCount) return [];
 
   const usableWidth = VIEWBOX_WIDTH - MARGIN_X * 2;
   const usableHeight = VIEWBOX_HEIGHT - TOP_MARGIN - BOTTOM_MARGIN;
   const step = usableHeight / (DOT_COUNT - 1);
-  const eixoStep = usableHeight / (DOT_COUNT - 1);
 
   return Array.from({ length: DOT_COUNT }, (_, index) => {
     const lineY = TOP_MARGIN + step * index;
