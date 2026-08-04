@@ -20,8 +20,8 @@ const props = defineProps({
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
 
-/* Desktop: a partir do layout em duas colunas da página de editar */
-$breakpoint-desk: 992px;
+/* Desktop wide: 20px / gap 40 — em 1024 e abaixo mantém 14px / gap 12 */
+$breakpoint-desk: 1425px;
 
 .edit-profile-nav {
   display: flex;
