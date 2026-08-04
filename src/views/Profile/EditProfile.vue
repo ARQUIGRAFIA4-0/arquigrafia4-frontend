@@ -6,9 +6,12 @@ import ProfileCard from "@/components/ProfileCard.vue";
 import EditProfileNav from '@/components/EditProfileNav.vue';
 import EditProfileForm from "@/components/EditProfileForm.vue";
 
+/** Sidebar ao lado a partir de laptop (1024). */
+const SIDEBAR_LAYOUT_MIN = 1024;
+
 const authStore = useAuthStore();
 const profilesStore = useProfilesStore();
-const isMobile = ref(window.innerWidth < 992);
+const isMobile = ref(window.innerWidth < SIDEBAR_LAYOUT_MIN);
 const userAuthHeader = computed(() => authStore.authHeader);
 
 const userData = computed(() => authStore.loggedUser);
@@ -28,7 +31,7 @@ onUnmounted(() => {
 });
 
 function handleResize() {
-  isMobile.value = window.innerWidth < 992;
+  isMobile.value = window.innerWidth < SIDEBAR_LAYOUT_MIN;
 }
 
 function handleNavSelect(refName) {
@@ -76,8 +79,10 @@ function scrollToSection(refName) {
 </template>
 
 <style lang="scss" scoped>
-$breakpoint-lg: 992px;
-$breakpoint-xl: 1200px;
+/* Sidebar ao lado: laptop e acima */
+$breakpoint-laptop: 1024px;
+/* Mais ar na faixa wide */
+$breakpoint-wide: 1425px;
 
 .profile-container {
   width: 100%;
@@ -88,9 +93,10 @@ $breakpoint-xl: 1200px;
 
   &--desktop {
     display: grid;
-    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
-    gap: 32px;
-    padding: 0 2rem;
+    /* Laptop 1024: card um pouco mais estreito + gap moderado */
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+    gap: 24px;
+    padding: 0 1.5rem;
     align-items: start;
   }
 
@@ -109,7 +115,7 @@ $breakpoint-xl: 1200px;
   &__nav {
     margin-top: 0.5rem;
 
-    @media (min-width: #{$breakpoint-lg}) {
+    @media (min-width: #{$breakpoint-laptop}) {
       margin-top: 0;
     }
   }
@@ -117,10 +123,11 @@ $breakpoint-xl: 1200px;
   &__form {
     min-width: 0;
     max-width: 720px;
+    width: 100%;
   }
 }
 
-@media (min-width: #{$breakpoint-xl}) {
+@media (min-width: #{$breakpoint-wide}) {
   .profile-container--desktop {
     grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
     gap: 48px;

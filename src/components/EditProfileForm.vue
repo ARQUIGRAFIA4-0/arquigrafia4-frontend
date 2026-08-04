@@ -631,8 +631,8 @@ function handleCancel() {
       </div>
     </div>
     <!-- Data de nascimento e Localização -->
-    <div class="row mb-4 gy-4 gy-lg-0">
-      <div class="col-12 col-lg-6">
+    <div class="row mb-4 gy-4 gy-edit-half-0">
+      <div class="col-12 col-edit-half">
         <UiField id="birthdate" label="Data de nascimento" explain="Digite sua data de nascimento.">
           <input type="date" class="form-control" id="birthdate" v-model="birthdate" :max="today"
             placeholder="Sua data de nascimento" />
@@ -644,7 +644,7 @@ function handleCancel() {
             switch>
         </div>
       </div>
-      <div class="col-12 col-lg-6">
+      <div class="col-12 col-edit-half">
         <UiField id="address" label="Sua localização" explain="Digite sua localização.">
           <input type="text" class="form-control" id="address" v-model="address"
             placeholder="Sua cidade, estado ou país" autocomplete="address-line1" />
@@ -658,8 +658,8 @@ function handleCancel() {
       </div>
     </div>
     <!-- Gênero e Raça -->
-    <div class="row mb-4 gy-4 gy-lg-0">
-      <div class="col-12 col-lg-6">
+    <div class="row mb-4 gy-4 gy-edit-half-0">
+      <div class="col-12 col-edit-half">
         <UiField id="gender" label="Gênero" labelTag="span" explain="Selecione seu gênero.">
           <div class="dropdown">
             <button class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between"
@@ -683,7 +683,7 @@ function handleCancel() {
             switch>
         </div>
       </div>
-      <div class="col-12 col-lg-6">
+      <div class="col-12 col-edit-half">
         <UiField id="race" label="Raça" labelTag="span" explain="Selecione sua raça.">
           <div class="dropdown">
             <button class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between"
@@ -720,8 +720,8 @@ function handleCancel() {
       </div>
     </div>
     <!-- Escolaridade e Profissão -->
-    <div ref="professionalRef" class="row mb-4 mb-md-5 gy-4 gy-lg-0">
-      <div class="col-12 col-lg-6">
+    <div ref="professionalRef" class="row mb-4 mb-md-5 gy-4 gy-edit-half-0">
+      <div class="col-12 col-edit-half">
         <UiField id="scholarity" label="Escolaridade" labelTag="span" explain="Selecione sua escolaridade.">
           <div class="dropdown">
             <button class="w-100 btn btn-outline-secondary btn-icon dropdown-toggle caret-right justify-content-between"
@@ -745,7 +745,7 @@ function handleCancel() {
             v-model="scholarityPublic" switch>
         </div>
       </div>
-      <div class="col-12 col-lg-6">
+      <div class="col-12 col-edit-half">
         <UiField id="profession" label="Profissão" explain="Digite sua profissão.">
           <input type="text" class="form-control" id="profession" v-model="profession" placeholder="Sua ocupação" />
         </UiField>
@@ -1691,6 +1691,24 @@ $breakpoint-md: 768px;
   .form-check-input {
     flex-shrink: 0;
     margin-left: 0;
+  }
+}
+
+/* Campos em 2 colunas só a partir de 1425px (antes: empilhados) */
+$breakpoint-edit-wide: 1425px;
+
+.gy-edit-half-0 {
+  --bs-gutter-y: 1.5rem;
+}
+
+@media (min-width: #{$breakpoint-edit-wide}) {
+  .col-edit-half {
+    flex: 0 0 auto;
+    width: 50%;
+  }
+
+  .gy-edit-half-0 {
+    --bs-gutter-y: 0;
   }
 }
 </style>
