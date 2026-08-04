@@ -6,7 +6,7 @@ import ProfileCard from "@/components/ProfileCard.vue";
 import EditProfileNav from '@/components/EditProfileNav.vue';
 import EditProfileForm from "@/components/EditProfileForm.vue";
 
-/** Sidebar ao lado a partir de laptop (1024). */
+/** Layout tipo desktop do Figma (sidebar + gutter + form) a partir de 1024. */
 const SIDEBAR_LAYOUT_MIN = 1024;
 
 const authStore = useAuthStore();
@@ -53,6 +53,7 @@ function scrollToSection(refName) {
     class="profile-container"
     :class="{ 'profile-container--desktop': !isMobile }"
   >
+    <!-- col ~3/12: card do perfil -->
     <aside v-if="!isMobile" class="profile-container__sidebar">
       <ProfileCard
         :userData="userData"
@@ -62,6 +63,14 @@ function scrollToSection(refName) {
       />
     </aside>
 
+    <!-- col ~1/12: gutter entre card e conteúdo (como col-md-1 no resto do app) -->
+    <div
+      v-if="!isMobile"
+      class="profile-container__gutter"
+      aria-hidden="true"
+    />
+
+    <!-- col ~8/12: abas + formulário -->
     <section class="profile-container__main">
       <div class="profile-container__nav">
         <EditProfileNav :selected="selectedTab" @select="handleNavSelect" />
@@ -79,10 +88,8 @@ function scrollToSection(refName) {
 </template>
 
 <style lang="scss" scoped>
-/* Sidebar ao lado: laptop e acima */
+/* Alinhado ao grid 12 cols do design: 3 | 1 | 8 */
 $breakpoint-laptop: 1024px;
-/* Mais ar na faixa wide */
-$breakpoint-wide: 1425px;
 
 .profile-container {
   width: 100%;
@@ -93,23 +100,34 @@ $breakpoint-wide: 1425px;
 
   &--desktop {
     display: grid;
-    /* Laptop 1024: card um pouco mais estreito + gap moderado */
-    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
-    gap: 24px;
-    padding: 0 1.5rem;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 8fr);
+    column-gap: 0;
+    row-gap: 0;
+    padding: 0 48px;
     align-items: start;
   }
 
   &__sidebar {
     min-width: 0;
+    grid-column: 1;
     position: sticky;
     top: 1rem;
   }
 
+  &__gutter {
+    grid-column: 2;
+    min-width: 0;
+  }
+
   &__main {
     min-width: 0;
+    grid-column: 1 / -1;
     display: flex;
     flex-direction: column;
+
+    @media (min-width: #{$breakpoint-laptop}) {
+      grid-column: 3;
+    }
   }
 
   &__nav {
@@ -122,16 +140,8 @@ $breakpoint-wide: 1425px;
 
   &__form {
     min-width: 0;
-    max-width: 720px;
     width: 100%;
-  }
-}
-
-@media (min-width: #{$breakpoint-wide}) {
-  .profile-container--desktop {
-    grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
-    gap: 48px;
-    padding: 0 3rem;
+    max-width: none;
   }
 }
 </style>
