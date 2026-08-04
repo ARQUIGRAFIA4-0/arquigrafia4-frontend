@@ -8,7 +8,7 @@ import EditProfileForm from "@/components/EditProfileForm.vue";
 
 const authStore = useAuthStore();
 const profilesStore = useProfilesStore();
-const isMobile = ref(window.innerWidth < 768);
+const isMobile = ref(window.innerWidth < 992);
 const userAuthHeader = computed(() => authStore.authHeader);
 
 const userData = computed(() => authStore.loggedUser);
@@ -28,7 +28,7 @@ onUnmounted(() => {
 });
 
 function handleResize() {
-  isMobile.value = window.innerWidth < 768;
+  isMobile.value = window.innerWidth < 992;
 }
 
 function handleNavSelect(refName) {
@@ -46,46 +46,85 @@ function scrollToSection(refName) {
 </script>
 
 <template>
-  <div :class="['profile-container', isMobile ? '' : 'row']">
-    <div class="col-12 col-md-3">
-      <ProfileCard v-if="!isMobile" :userData="userData" :profileData="privateProfileData"
-        :isMobile="isMobile" :isOwnProfile="true" />
-    </div>
-    <div class="d-none d-md-block col-md-1"></div>
-    <div :class="['col-12 col-md-8', isMobile ? '' : 'row']">
-      <div class="col-12 col-md-12 mt-md-0 mt-2">
+  <div
+    class="profile-container"
+    :class="{ 'profile-container--desktop': !isMobile }"
+  >
+    <aside v-if="!isMobile" class="profile-container__sidebar">
+      <ProfileCard
+        :userData="userData"
+        :profileData="privateProfileData"
+        :isMobile="isMobile"
+        :isOwnProfile="true"
+      />
+    </aside>
+
+    <section class="profile-container__main">
+      <div class="profile-container__nav">
         <EditProfileNav :selected="selectedTab" @select="handleNavSelect" />
       </div>
-      <div class="col-12 col-md-8">
-        <EditProfileForm v-if="privateProfileData" :userData="userData" :profileData="privateProfileData"
-          ref="editProfileFormRef" />
+      <div class="profile-container__form">
+        <EditProfileForm
+          v-if="privateProfileData"
+          :userData="userData"
+          :profileData="privateProfileData"
+          ref="editProfileFormRef"
+        />
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <style lang="scss" scoped>
-$breakpoint-md: 768px;
-
-@mixin md {
-  @media (min-width: #{$breakpoint-md}) {
-    @content;
-  }
-}
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
 
 .profile-container {
   width: 100%;
   padding: 0 1rem;
+  max-width: 1440px;
+  margin: 0 auto;
+  box-sizing: border-box;
 
-  @include md {
-    display: flex;
-    padding: 0 3rem;
+  &--desktop {
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    gap: 32px;
+    padding: 0 2rem;
+    align-items: start;
   }
 
-  &__content {
-    @include md {
-      padding: 32px 0;
+  &__sidebar {
+    min-width: 0;
+    position: sticky;
+    top: 1rem;
+  }
+
+  &__main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__nav {
+    margin-top: 0.5rem;
+
+    @media (min-width: #{$breakpoint-lg}) {
+      margin-top: 0;
     }
+  }
+
+  &__form {
+    min-width: 0;
+    max-width: 720px;
+  }
+}
+
+@media (min-width: #{$breakpoint-xl}) {
+  .profile-container--desktop {
+    grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+    gap: 48px;
+    padding: 0 3rem;
   }
 }
 </style>

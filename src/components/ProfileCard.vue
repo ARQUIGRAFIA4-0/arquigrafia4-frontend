@@ -256,6 +256,9 @@ $breakpoint-md: 768px;
 }
 
 .profile-card {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
   background-color: #faf9f9;
   border-radius: 16px;
   padding: 24px 16px;
@@ -410,16 +413,24 @@ $breakpoint-md: 768px;
     padding: 0;
     margin-top: 8px;
     overflow: hidden;
+    min-width: 0;
+    max-width: 100%;
 
     .btn {
       cursor: default;
       white-space: normal;
-      word-break: break-all;
+      word-break: break-word;
+      overflow-wrap: anywhere;
       text-align: center;
       max-width: 100%;
     }
 
     li {
+      max-width: 100%;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      white-space: normal;
+
       @include md {
         font-size: 12px;
       }
