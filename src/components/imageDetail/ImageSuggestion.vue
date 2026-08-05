@@ -1,12 +1,13 @@
 <template>
   <div class="image-suggestion">
-
     <!-- Loading -->
     <div v-if="loading" class="image-suggestion__skeleton">
       <div v-for="i in 3" :key="i" class="image-suggestion__skeleton-card">
         <div class="image-suggestion__skeleton-header">
-
-          <div class="skeleton image-suggestion__skeleton-avatar" style="width: 36px; height: 36px; flex-shrink: 0" />
+          <div
+            class="skeleton image-suggestion__skeleton-avatar"
+            style="width: 36px; height: 36px; flex-shrink: 0"
+          />
           <div class="image-suggestion__skeleton-info">
             <div class="skeleton image-suggestion__skeleton-name" />
           </div>
@@ -16,31 +17,56 @@
     </div>
 
     <!-- Vazio -->
-    <div v-else-if="suggestionCards.length === 0" class="image-suggestion__empty">
+    <div
+      v-else-if="suggestionCards.length === 0"
+      class="image-suggestion__empty"
+    >
       <i class="bi bi-chat-left-text image-suggestion__empty-icon" />
-      <p class="image-suggestion__empty-text">Você ainda não tem sugestões para serem avaliadas.</p>
+      <p class="image-suggestion__empty-text">
+        Você ainda não tem sugestões para serem avaliadas.
+      </p>
     </div>
 
     <!-- Cards por sugestão -->
     <div v-else class="image-suggestion__content">
-      <h2 class="image-suggestion__title">Analise as sugestões pendentes abaixo</h2>
+      <h2 class="image-suggestion__title">
+        Analise as sugestões pendentes abaixo
+      </h2>
 
-      <SuggestionFieldCard v-for="card in suggestionCards" :key="card.key" :suggestion-id="card.suggestionId"
-        :fields="card.fields" :createdAt="card.createdAt" :reason="card.reason" :user-name="card.userName"
-        :user-avatar="card.userAvatar" @accepted="handleAccepted" @rejected="handleRejected"
-        @error="showAlert('danger', $event)" />
+      <SuggestionFieldCard
+        v-for="card in suggestionCards"
+        :key="card.key"
+        :suggestion-id="card.suggestionId"
+        :fields="card.fields"
+        :createdAt="card.createdAt"
+        :reason="card.reason"
+        :user-name="card.userName"
+        :user-avatar="card.userAvatar"
+        @accepted="handleAccepted"
+        @rejected="handleRejected"
+        @error="showAlert('danger', $event)"
+      />
     </div>
 
     <!-- Alert -->
     <transition name="fade">
-      <div v-if="alert.show" class="alert image-suggestion__alert" :class="alert.type === 'success'
-        ? 'alert-success bg-positivo-c text-positivo-e border-success'
-        : 'alert-danger bg-negativo-c text-negativo-e border-danger'
-        " role="alert">
-        <i :class="alert.type === 'success'
-          ? 'bi bi-check-circle-fill text-positivo-e'
-          : 'bi bi-exclamation-triangle-fill text-negativo-e'
-          " />
+      <div
+        v-if="alert.show"
+        class="alert image-suggestion__alert"
+        :class="
+          alert.type === 'success'
+            ? 'alert-success bg-positivo-c text-positivo-e border-success'
+            : 'alert-danger bg-negativo-c text-negativo-e border-danger'
+        "
+        role="alert"
+      >
+        <i
+          :class="
+            alert.type === 'success'
+              ? 'bi bi-check-circle-fill text-positivo-e'
+              : 'bi bi-exclamation-triangle-fill text-negativo-e'
+          "
+        />
         <span>{{ alert.message }}</span>
         <button type="button" class="btn-close" @click="alert.show = false" />
       </div>
@@ -75,13 +101,16 @@ const PAYLOAD_FIELDS = [
   "photographer",
 ];
 
+const subjectsById = computed(() => {
+  const map = new Map();
+  for (const s of allSubjects.value) map.set(s.id, s);
+  return map;
+});
 
 const suggestionCards = computed(() => {
-
   const cards = [];
 
   for (const suggestion of suggestions.value) {
-
     const fields = [];
 
     for (const field of PAYLOAD_FIELDS) {
@@ -89,41 +118,61 @@ const suggestionCards = computed(() => {
 
       if (value === undefined || value === null) continue;
       // subjects vazio não entra no card
-      if (field === "subjects" && (!Array.isArray(value) || value.length === 0)) continue;
+      if (field === "subjects" && (!Array.isArray(value) || value.length === 0))
+        continue;
 
       if (field === "subjects") {
-        const currentIds = new Set((props.image?.subjects ?? []).map((s) => s.id));
+        //Pega os IDs e objetos das tags ATUAIS que já estão na imagem
+        const currentIds = new Set(
+          (props.image?.subjects ?? []).map((s) => s.id),
+        );
+        const currentTagMap = new Map(
+          (props.image?.subjects ?? []).map((s) => [s.id, s]),
+        );
 
-        const currentTagMap = new Map((props.image?.subjects ?? []).map((s) => [s.id, s]));
-
-        // const suggestedIds = new Set(value);
-
-
+        //Mapeia as tags SUGERIDAS
         const suggestedTagMap = new Map(
           value
             .filter((v) => typeof v === "object" && v !== null)
-            .map((v) => [v.id, v])
+            .map((v) => [v.id, v]),
         );
-
         const suggestedIds = new Set(
-          value.map((v) => (typeof v === "string" ? v : v.id))
+          value.map((v) => (typeof v === "string" ? v : v.id)),
         );
 
+        //Junta todos os IDs únicos em um só Set
         const allTagIds = new Set([...currentIds, ...suggestedIds]);
 
         const tags = [...allTagIds].map((uuid) => {
           const fromImage = currentTagMap.get(uuid);
           const fromSuggested = suggestedTagMap.get(uuid);
+          const fromSubjects = subjectsById.value.get(uuid);
 
-          const fromSubjects = allSubjects.value.find((s) => s.id === uuid);
-
-
-
-          const term = fromImage?.term ?? fromSuggested?.term ?? fromSubjects?.term ?? uuid;
-          const type = fromImage?.type ?? fromSuggested?.type ?? fromSubjects?.type ?? null;
-          const vocab = fromImage?.vocab ?? fromSuggested?.vocab ?? fromSubjects?.vocab ?? null;
-          const ref_id = fromImage?.ref_id ?? fromSuggested?.ref_id ?? fromSubjects?.ref_id ?? null;
-          const source = fromImage?.source ?? fromSuggested?.source ?? fromSubjects?.source ?? null;
+          const term =
+            fromImage?.term ??
+            fromSuggested?.term ??
+            fromSubjects?.term ??
+            uuid;
+          const type =
+            fromImage?.type ??
+            fromSuggested?.type ??
+            fromSubjects?.type ??
+            null;
+          const vocab =
+            fromImage?.vocab ??
+            fromSuggested?.vocab ??
+            fromSubjects?.vocab ??
+            null;
+          const ref_id =
+            fromImage?.ref_id ??
+            fromSuggested?.ref_id ??
+            fromSubjects?.ref_id ??
+            null;
+          const source =
+            fromImage?.source ??
+            fromSuggested?.source ??
+            fromSubjects?.source ??
+            null;
 
           let status = "kept";
           if (!currentIds.has(uuid)) status = "added";
@@ -149,10 +198,13 @@ const suggestionCards = computed(() => {
     }
 
     const { latitude, longitude, location_label } = suggestion.payload ?? {};
-    const hasLocationLabel = location_label !== undefined && location_label !== null;
+    const hasLocationLabel =
+      location_label !== undefined && location_label !== null;
     const hasCoordinates =
-      latitude !== undefined && latitude !== null &&
-      longitude !== undefined && longitude !== null;
+      latitude !== undefined &&
+      latitude !== null &&
+      longitude !== undefined &&
+      longitude !== null;
 
     if (hasLocationLabel || hasCoordinates) {
       fields.push({
@@ -174,7 +226,7 @@ const suggestionCards = computed(() => {
       reason: suggestion.payload?.reason ?? null,
       userName: suggestion.user?.name ?? "Usuário",
       userAvatar: suggestion.user?.avatar_path ?? null,
-      createdAt: suggestion.created_at
+      createdAt: suggestion.created_at,
     });
   }
 
@@ -214,12 +266,13 @@ const showAlert = (type, message) => {
   alert.type = type;
   alert.message = message;
   alert.show = true;
-  setTimeout(() => { alert.show = false; }, 4000);
+  setTimeout(() => {
+    alert.show = false;
+  }, 4000);
 };
 
-onMounted(async () => {
-  await loadFormDependencies();
-  await fetchSuggestions();
+onMounted(() => {
+  Promise.all([loadFormDependencies(), fetchSuggestions()]);
 });
 </script>
 
@@ -314,14 +367,14 @@ onMounted(async () => {
   &__empty-text {
     margin: 0;
     color: var(--Preto);
-    font-size: .875rem;
+    font-size: 0.875rem;
     font-style: italic;
     font-weight: 400;
     line-height: 150%;
     justify-self: center;
 
     @media (max-width: 768px) {
-      font-size: .75rem;
+      font-size: 0.75rem;
     }
   }
 
@@ -377,10 +430,12 @@ onMounted(async () => {
     position: absolute;
     inset: 0;
     transform: translateX(-100%);
-    background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.5) 50%,
-        transparent 100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.5) 50%,
+      transparent 100%
+    );
     animation: skeleton-shimmer 1.4s infinite;
   }
 }

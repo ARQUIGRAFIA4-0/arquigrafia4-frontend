@@ -1,14 +1,17 @@
 <template>
   <div class="suggestion-view">
-
     <!-- Loading -->
     <div v-if="loading" class="suggestion-view__loading">
       <div v-for="i in 3" :key="i" class="suggestion-view__skeleton-card">
         <div class="suggestion-view__skeleton-header">
           <div class="suggestion-view__skeleton-avatar" />
           <div class="suggestion-view__skeleton-lines">
-            <div class="suggestion-view__skeleton-line suggestion-view__skeleton-line--wide" />
-            <div class="suggestion-view__skeleton-line suggestion-view__skeleton-line--narrow" />
+            <div
+              class="suggestion-view__skeleton-line suggestion-view__skeleton-line--wide"
+            />
+            <div
+              class="suggestion-view__skeleton-line suggestion-view__skeleton-line--narrow"
+            />
           </div>
         </div>
         <div class="suggestion-view__skeleton-body" />
@@ -18,17 +21,32 @@
     <template v-else>
       <!-- Lista de sugestões -->
       <ul v-if="suggestions.length > 0" class="suggestion-view__list">
-        <li v-for="suggestion in suggestions" :key="suggestion.id" class="suggestion-view__card">
+        <li
+          v-for="suggestion in suggestionsWithTags"
+          :key="suggestion.id"
+          class="suggestion-view__card"
+        >
           <!-- Cabeçalho -->
-          <button class="suggestion-view__card-header" :aria-expanded="open.includes(suggestion.id)"
-            @click="toggle(suggestion.id)">
+          <button
+            class="suggestion-view__card-header"
+            :aria-expanded="open.includes(suggestion.id)"
+            @click="toggle(suggestion.id)"
+          >
             <div class="suggestion-view__card-identity">
-
-              <div v-if="suggestion.user?.avatar" class="suggestion-view__avatar suggestion-view__avatar--image">
-                <img :src="`${API_BASE_URL}${selectedIdentity.avatar}`" :alt="suggestion.user?.name" />
+              <div
+                v-if="suggestion.user?.avatar"
+                class="suggestion-view__avatar suggestion-view__avatar--image"
+              >
+                <img
+                  :src="`${API_BASE_URL}${selectedIdentity.avatar}`"
+                  :alt="suggestion.user?.name"
+                />
               </div>
 
-              <div v-else class="suggestion-view__avatar suggestion-view__avatar--image">
+              <div
+                v-else
+                class="suggestion-view__avatar suggestion-view__avatar--image"
+              >
                 <img :src="defaultImageUser" :alt="suggestion.user?.name" />
               </div>
 
@@ -40,88 +58,183 @@
             <div class="suggestion-view__status-wrapper">
               <!-- Status -->
               <div class="suggestion-view__status">
-                <span v-if="suggestion.status === 'accepted'"
-                  class="suggestion-view__status-badge suggestion-view__status-badge--accepted">
+                <span
+                  v-if="suggestion.status === 'accepted'"
+                  class="suggestion-view__status-badge suggestion-view__status-badge--accepted"
+                >
                   Sugestão aceita
                 </span>
-                <span v-else-if="suggestion.status === 'partially_accepted'"
-                  class="suggestion-view__status-badge suggestion-view__status-badge--partial">
+                <span
+                  v-else-if="suggestion.status === 'partially_accepted'"
+                  class="suggestion-view__status-badge suggestion-view__status-badge--partial"
+                >
                   Sugestão parcial
                 </span>
-                <span v-else-if="suggestion.status === 'rejected'"
-                  class="suggestion-view__status-badge suggestion-view__status-badge--rejected">
+                <span
+                  v-else-if="suggestion.status === 'rejected'"
+                  class="suggestion-view__status-badge suggestion-view__status-badge--rejected"
+                >
                   Sugestão recusada
                 </span>
-                <span v-else class="suggestion-view__status-badge suggestion-view__status-badge--pending">
+                <span
+                  v-else
+                  class="suggestion-view__status-badge suggestion-view__status-badge--pending"
+                >
                   Pendente
                 </span>
               </div>
-              <i class="bi" :class="open.includes(suggestion.id) ? 'bi-chevron-up' : 'bi-chevron-down'"
-                aria-hidden="true" />
+              <i
+                class="bi"
+                :class="
+                  open.includes(suggestion.id)
+                    ? 'bi-chevron-up'
+                    : 'bi-chevron-down'
+                "
+                aria-hidden="true"
+              />
             </div>
           </button>
 
           <!-- Conteúdo expandido -->
-          <div v-if="open.includes(suggestion.id)" class="suggestion-view__card-body">
-            <span class="suggestion-view__timestamp">{{ timeAgo(suggestion.created_at) }}</span>
+          <div
+            v-if="open.includes(suggestion.id)"
+            class="suggestion-view__card-body"
+          >
+            <span class="suggestion-view__timestamp">{{
+              timeAgo(suggestion.created_at)
+            }}</span>
 
             <div class="suggestion-view__fields">
-
-              <div v-if="suggestion.payload?.title" class="suggestion-view__field">
-                <label class="suggestion-view__field-label">Título sugerido</label>
-                <input class="suggestion-view__field-input" type="text" :value="suggestion.payload.title" readonly />
+              <div
+                v-if="suggestion.payload?.title"
+                class="suggestion-view__field"
+              >
+                <label class="suggestion-view__field-label"
+                  >Título sugerido</label
+                >
+                <input
+                  class="suggestion-view__field-input"
+                  type="text"
+                  :value="suggestion.payload.title"
+                  readonly
+                />
               </div>
 
-              <div v-if="suggestion.payload?.description" class="suggestion-view__field">
-                <label class="suggestion-view__field-label">Descrição sugerida</label>
-                <textarea class="suggestion-view__field-input suggestion-view__field-input--textarea"
-                  :value="suggestion.payload.description" rows="3" readonly />
+              <div
+                v-if="suggestion.payload?.description"
+                class="suggestion-view__field"
+              >
+                <label class="suggestion-view__field-label"
+                  >Descrição sugerida</label
+                >
+                <textarea
+                  class="suggestion-view__field-input suggestion-view__field-input--textarea"
+                  :value="suggestion.payload.description"
+                  rows="3"
+                  readonly
+                />
               </div>
 
-              <div v-if="suggestion.payload?.subjects?.length" class="suggestion-view__field">
-                <label class="suggestion-view__field-label">Tags sugeridas</label>
+              <div
+                v-if="suggestion.payload?.subjects?.length"
+                class="suggestion-view__field"
+              >
+                <label class="suggestion-view__field-label"
+                  >Tags sugeridas</label
+                >
                 <div class="suggestion-view__tags">
-                  <span v-for="subject in resolvedTags(suggestion)" :key="subject.id" class="suggestion-view__tag"
+                  <span
+                    v-for="subject in resolvedTags(suggestion)"
+                    :key="subject.id"
+                    class="suggestion-view__tag"
                     :class="{
                       'suggestion-view__tag--added': subject.status === 'added',
-                      'suggestion-view__tag--removed': subject.status === 'removed',
-                    }">
+                      'suggestion-view__tag--removed':
+                        subject.status === 'removed',
+                    }"
+                  >
                     {{ subject.term }}
                   </span>
                 </div>
 
-                <div v-if="resolvedTags(suggestion).some(t => t.status !== 'kept')"
-                  class="suggestion-view__tags-legend">
-                  <span v-if="resolvedTags(suggestion).some(t => t.status === 'added')"
-                    class="suggestion-view__tags-legend-item suggestion-view__tags-legend-item--added">
+                <div
+                  v-if="
+                    resolvedTags(suggestion).some((t) => t.status !== 'kept')
+                  "
+                  class="suggestion-view__tags-legend"
+                >
+                  <span
+                    v-if="
+                      resolvedTags(suggestion).some((t) => t.status === 'added')
+                    "
+                    class="suggestion-view__tags-legend-item suggestion-view__tags-legend-item--added"
+                  >
                     Adicionada
                   </span>
-                  <span v-if="resolvedTags(suggestion).some(t => t.status === 'removed')"
-                    class="suggestion-view__tags-legend-item suggestion-view__tags-legend-item--removed">
+                  <span
+                    v-if="
+                      resolvedTags(suggestion).some(
+                        (t) => t.status === 'removed',
+                      )
+                    "
+                    class="suggestion-view__tags-legend-item suggestion-view__tags-legend-item--removed"
+                  >
                     Removida
                   </span>
                 </div>
               </div>
 
-              <div v-if="suggestion.payload?.location_label || hasCoordinates(suggestion)"
-                class="suggestion-view__field">
-                <label class="suggestion-view__field-label">Localização sugerida</label>
-                <input v-if="suggestion.payload?.location_label" class="suggestion-view__field-input" type="text"
-                  :value="suggestion.payload.location_label" readonly />
-                <div v-if="hasCoordinates(suggestion)" class="suggestion-view__map">
-                  <MapLibreMap :style-url="mapStyleUrl"
-                    :center="[suggestion.payload.longitude, suggestion.payload.latitude]" :zoom="14"
-                    :marker-position="{ lat: suggestion.payload.latitude, lng: suggestion.payload.longitude }"
-                    marker-color="#2F2F2F" />
+              <div
+                v-if="
+                  suggestion.payload?.location_label ||
+                  hasCoordinates(suggestion)
+                "
+                class="suggestion-view__field"
+              >
+                <label class="suggestion-view__field-label"
+                  >Localização sugerida</label
+                >
+                <input
+                  v-if="suggestion.payload?.location_label"
+                  class="suggestion-view__field-input"
+                  type="text"
+                  :value="suggestion.payload.location_label"
+                  readonly
+                />
+                <div
+                  v-if="hasCoordinates(suggestion)"
+                  class="suggestion-view__map"
+                >
+                  <MapLibreMap
+                    :style-url="mapStyleUrl"
+                    :center="[
+                      suggestion.payload.longitude,
+                      suggestion.payload.latitude,
+                    ]"
+                    :zoom="14"
+                    :marker-position="{
+                      lat: suggestion.payload.latitude,
+                      lng: suggestion.payload.longitude,
+                    }"
+                    marker-color="#2F2F2F"
+                  />
                 </div>
               </div>
 
-              <div v-if="suggestion.payload?.earliest_date" class="suggestion-view__field">
-                <label class="suggestion-view__field-label">Data sugerida</label>
-                <input class="suggestion-view__field-input" type="text" :value="formatDateRange(suggestion.payload)"
-                  readonly />
+              <div
+                v-if="suggestion.payload?.earliest_date"
+                class="suggestion-view__field"
+              >
+                <label class="suggestion-view__field-label"
+                  >Data sugerida</label
+                >
+                <input
+                  class="suggestion-view__field-input"
+                  type="text"
+                  :value="formatDateRange(suggestion.payload)"
+                  readonly
+                />
               </div>
-
             </div>
           </div>
         </li>
@@ -134,7 +247,11 @@
       </div>
 
       <!-- Botão enviar sugestão -->
-      <button v-if="isLoggedIn" class="suggestion-view__submit-btn" @click="goToSuggest">
+      <button
+        v-if="isLoggedIn"
+        class="suggestion-view__submit-btn"
+        @click="goToSuggest"
+      >
         Enviar sugestão
       </button>
 
@@ -144,8 +261,9 @@
           <i class="bi bi-question-circle-fill" aria-hidden="true"></i>
         </div>
         <p class="suggestion-view__info-text">
-          A plataforma ARQUIGRAFIA é colaborativa e permite que usuários façam sugestões de modificação nos dados das
-          imagens caso identifiquem a possibilidade de melhorias.
+          A plataforma ARQUIGRAFIA é colaborativa e permite que usuários façam
+          sugestões de modificação nos dados das imagens caso identifiquem a
+          possibilidade de melhorias.
         </p>
       </div>
     </template>
@@ -171,8 +289,6 @@ defineOptions({ name: "ImageSuggestionView" });
 const props = defineProps({
   image: { type: Object, default: null },
 });
-console.log("View:", props);
-
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -183,26 +299,44 @@ const loading = ref(true);
 const suggestions = ref([]);
 const open = ref([]);
 
+const subjectsById = computed(() => {
+  const map = new Map();
+  for (const s of allSubjects.value) map.set(s.id, s);
+  return map;
+});
+
+const currentSubjects = computed(() => {
+  const list = props.image?.subjects ?? [];
+  return {
+    ids: new Set(list.map((s) => s.id)),
+    map: new Map(list.map((s) => [s.id, s])),
+  };
+});
+
 const hasCoordinates = (suggestion) => {
   const { latitude, longitude } = suggestion.payload ?? {};
-  return latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null;
+  return (
+    latitude !== undefined &&
+    latitude !== null &&
+    longitude !== undefined &&
+    longitude !== null
+  );
 };
 
 const resolvedTags = (suggestion) => {
   const value = suggestion.payload?.subjects;
   if (!Array.isArray(value) || value.length === 0) return [];
 
-  const currentIds = new Set((props.image?.subjects ?? []).map((s) => s.id));
-  const currentTagMap = new Map((props.image?.subjects ?? []).map((s) => [s.id, s]));
+  const { ids: currentIds, map: currentTagMap } = currentSubjects.value;
 
   const suggestedTagMap = new Map(
     value
       .filter((v) => typeof v === "object" && v !== null)
-      .map((v) => [v.id, v])
+      .map((v) => [v.id, v]),
   );
 
   const suggestedIds = new Set(
-    value.map((v) => (typeof v === "string" ? v : v.id))
+    value.map((v) => (typeof v === "string" ? v : v.id)),
   );
 
   const allTagIds = new Set([...currentIds, ...suggestedIds]);
@@ -210,9 +344,10 @@ const resolvedTags = (suggestion) => {
   const tags = [...allTagIds].map((uuid) => {
     const fromImage = currentTagMap.get(uuid);
     const fromSuggested = suggestedTagMap.get(uuid);
-    const fromSubjects = allSubjects.value.find((s) => s.id === uuid);
+    const fromSubjects = subjectsById.value.get(uuid);
 
-    const term = fromImage?.term ?? fromSuggested?.term ?? fromSubjects?.term ?? uuid;
+    const term =
+      fromImage?.term ?? fromSuggested?.term ?? fromSubjects?.term ?? uuid;
 
     let status = "kept";
     if (!currentIds.has(uuid)) status = "added";
@@ -229,8 +364,17 @@ const resolvedTags = (suggestion) => {
   return tags;
 };
 
+const suggestionsWithTags = computed(() =>
+  suggestions.value.map((s) => ({
+    ...s,
+    resolvedTags: resolvedTags(s),
+  })),
+);
+
 const suggestionLabel = (suggestion) => {
-  const fields = Object.keys(suggestion.payload || {}).filter((k) => k !== "reason");
+  const fields = Object.keys(suggestion.payload || {}).filter(
+    (k) => k !== "reason",
+  );
   const map = {
     title: "sugeriu um novo título",
     description: "sugeriu uma nova descrição",
@@ -242,13 +386,18 @@ const suggestionLabel = (suggestion) => {
     longitude: "sugeriu uma nova localização",
   };
   if (fields.length === 1 && map[fields[0]]) return map[fields[0]];
-  if (fields.every((f) => map[f] === "sugeriu uma nova localização")) return "sugeriu uma nova localização";
+  if (fields.every((f) => map[f] === "sugeriu uma nova localização"))
+    return "sugeriu uma nova localização";
   return "sugeriu novas edições";
 };
 
 const formatDateRange = (payload) => {
-  const start = payload.earliest_date ? new Date(payload.earliest_date).getUTCFullYear() : null;
-  const end = payload.latest_date ? new Date(payload.latest_date).getUTCFullYear() : null;
+  const start = payload.earliest_date
+    ? new Date(payload.earliest_date).getUTCFullYear()
+    : null;
+  const end = payload.latest_date
+    ? new Date(payload.latest_date).getUTCFullYear()
+    : null;
   if (start && end && start !== end) return `${start} – ${end}`;
   return start ? String(start) : "";
 };
@@ -278,7 +427,7 @@ const fetchSuggestions = async () => {
       params: { image_id: props.image.id },
       // headers: authStore.authHeader ? { Authorization: authStore.authHeader } : {},
     });
-    console.log("fetch:", data.data);
+    // console.log("fetch:", data.data);
 
     suggestions.value = data.data ?? [];
   } catch (e) {
@@ -300,18 +449,15 @@ watch(
   () => props.image?.id,
   async (id) => {
     if (id) {
-      await loadFormDependencies();
-      console.log("allSubjects após load:", allSubjects.value);
-      await fetchSuggestions();
+      await Promise.all([loadFormDependencies(), fetchSuggestions()]);
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 </script>
 <style lang="scss" scoped>
 // ─── Bloco: suggestion-view ───────────────────────────────────────────────────
 .suggestion-view {
-
   // ── Loading skeleton ────────────────────────────────────────────────────────
   &__loading {
     display: flex;
@@ -393,14 +539,14 @@ watch(
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: .5rem 1rem;
+    padding: 0.5rem 1rem;
     background: none;
     border: none;
     cursor: pointer;
     text-align: left;
 
     &:hover {
-      background-color: var(--Off_white)
+      background-color: var(--Off_white);
     }
   }
 
@@ -414,7 +560,7 @@ watch(
   }
 
   &__card-label {
-    font-size: .875rem;
+    font-size: 0.875rem;
     font-weight: 400;
     font-style: italic;
     line-height: 150%;
@@ -431,7 +577,6 @@ watch(
     align-items: center;
   }
 
-
   // ── Status ──────────────────────────────────────────────────────────────────
   // &__status {
   //   text-align: right;
@@ -439,8 +584,8 @@ watch(
 
   &__status-badge {
     border-radius: 2px;
-    padding: .25rem .5rem;
-    font-size: .75rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
     font-weight: 400;
     line-height: 114%;
     background-color: transparent;
@@ -623,8 +768,8 @@ watch(
   &__reason {
     border: 1px solid var(--Laranja_E);
     border-radius: 2px;
-    padding: .25rem .5rem;
-    font-size: .75rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
     font-weight: 400;
     line-height: 114%;
     color: var(--Laranja_M);
@@ -654,9 +799,9 @@ watch(
   &__submit-btn {
     display: block;
     width: 100%;
-    padding: .3125rem .875rem;
-    margin-bottom: .75rem;
-    font-size: .875rem;
+    padding: 0.3125rem 0.875rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 400;
     line-height: 150%;
     color: var(--Branco);
@@ -685,7 +830,7 @@ watch(
     overflow: hidden;
 
     &::before {
-      content: '';
+      content: "";
       position: absolute;
       left: 0px;
       display: block;
