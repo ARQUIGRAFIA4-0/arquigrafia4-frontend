@@ -6,8 +6,8 @@ import ProfileCard from "@/components/ProfileCard.vue";
 import EditProfileNav from '@/components/EditProfileNav.vue';
 import EditProfileForm from "@/components/EditProfileForm.vue";
 
-/** Layout tipo desktop do Figma (sidebar + gutter + form) a partir de 1024. */
-const SIDEBAR_LAYOUT_MIN = 1024;
+/** Layout tipo desktop do Figma (sidebar + gutter + form) a partir de 768. */
+const SIDEBAR_LAYOUT_MIN = 768;
 
 const authStore = useAuthStore();
 const profilesStore = useProfilesStore();
@@ -53,7 +53,6 @@ function scrollToSection(refName) {
     class="profile-container"
     :class="{ 'profile-container--desktop': !isMobile }"
   >
-    <!-- col ~3/12: card do perfil -->
     <aside v-if="!isMobile" class="profile-container__sidebar">
       <ProfileCard
         :userData="userData"
@@ -63,14 +62,6 @@ function scrollToSection(refName) {
       />
     </aside>
 
-    <!-- col ~1/12: gutter entre card e conteúdo (como col-md-1 no resto do app) -->
-    <div
-      v-if="!isMobile"
-      class="profile-container__gutter"
-      aria-hidden="true"
-    />
-
-    <!-- col ~8/12: abas + formulário -->
     <section class="profile-container__main">
       <div class="profile-container__nav">
         <EditProfileNav :selected="selectedTab" @select="handleNavSelect" />
@@ -88,8 +79,7 @@ function scrollToSection(refName) {
 </template>
 
 <style lang="scss" scoped>
-/* Alinhado ao grid 12 cols do design: 3 | 1 | 8 */
-$breakpoint-laptop: 1024px;
+$breakpoint-laptop: 768px;
 
 .profile-container {
   width: 100%;
@@ -100,34 +90,34 @@ $breakpoint-laptop: 1024px;
 
   &--desktop {
     display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 8fr);
-    column-gap: 0;
-    row-gap: 0;
-    padding: 0 48px;
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+    gap: 20px;
+    padding: 0 1.25rem;
     align-items: start;
+
+    @media (min-width: 1024px) {
+      grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+      gap: 32px;
+      padding: 0 2rem;
+    }
+
+    @media (min-width: 1280px) {
+      grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+      gap: 48px;
+      padding: 0 48px;
+    }
   }
 
   &__sidebar {
     min-width: 0;
-    grid-column: 1;
     position: sticky;
     top: 1rem;
   }
 
-  &__gutter {
-    grid-column: 2;
-    min-width: 0;
-  }
-
   &__main {
     min-width: 0;
-    grid-column: 1 / -1;
     display: flex;
     flex-direction: column;
-
-    @media (min-width: #{$breakpoint-laptop}) {
-      grid-column: 3;
-    }
   }
 
   &__nav {
