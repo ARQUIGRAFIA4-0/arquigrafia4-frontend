@@ -6,8 +6,8 @@ import ProfileCard from "@/components/ProfileCard.vue";
 import EditProfileNav from '@/components/EditProfileNav.vue';
 import EditProfileForm from "@/components/EditProfileForm.vue";
 
-/** Sidebar ao lado a partir de laptop (1024). */
-const SIDEBAR_LAYOUT_MIN = 1024;
+/** Layout tipo desktop do Figma (sidebar + gutter + form) a partir de 768. */
+const SIDEBAR_LAYOUT_MIN = 768;
 
 const authStore = useAuthStore();
 const profilesStore = useProfilesStore();
@@ -79,10 +79,7 @@ function scrollToSection(refName) {
 </template>
 
 <style lang="scss" scoped>
-/* Sidebar ao lado: laptop e acima */
-$breakpoint-laptop: 1024px;
-/* Mais ar na faixa wide */
-$breakpoint-wide: 1425px;
+$breakpoint-laptop: 768px;
 
 .profile-container {
   width: 100%;
@@ -93,11 +90,22 @@ $breakpoint-wide: 1425px;
 
   &--desktop {
     display: grid;
-    /* Laptop 1024: card um pouco mais estreito + gap moderado */
     grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
-    gap: 24px;
-    padding: 0 1.5rem;
+    gap: 20px;
+    padding: 0 1.25rem;
     align-items: start;
+
+    @media (min-width: 1024px) {
+      grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+      gap: 32px;
+      padding: 0 2rem;
+    }
+
+    @media (min-width: 1280px) {
+      grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+      gap: 48px;
+      padding: 0 48px;
+    }
   }
 
   &__sidebar {
@@ -122,16 +130,8 @@ $breakpoint-wide: 1425px;
 
   &__form {
     min-width: 0;
-    max-width: 720px;
     width: 100%;
-  }
-}
-
-@media (min-width: #{$breakpoint-wide}) {
-  .profile-container--desktop {
-    grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
-    gap: 48px;
-    padding: 0 3rem;
+    max-width: none;
   }
 }
 </style>

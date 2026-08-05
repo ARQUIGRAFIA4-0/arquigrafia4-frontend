@@ -1694,8 +1694,8 @@ $breakpoint-md: 768px;
   }
 }
 
-/* Campos em 2 colunas só a partir de 1425px (antes: empilhados) */
-$breakpoint-edit-wide: 1425px;
+/* Campos em 2 colunas no desktop com sidebar (≥1024), como no Figma */
+$breakpoint-edit-wide: 1024px;
 
 .gy-edit-half-0 {
   --bs-gutter-y: 1.5rem;

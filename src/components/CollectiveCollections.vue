@@ -274,7 +274,7 @@ watch(
                     @click.stop="handleDeleteAlbum(album.id)"
                   >
                     <i class="bi bi-trash"></i>
-                    <span class="d-none d-md-inline">Excluir</span>
+                    <span class="d-none d-xl-inline">Excluir</span>
                   </button>
                   <button
                     type="button"
@@ -283,7 +283,7 @@ watch(
                     @click.stop="openCollection(album.id)"
                   >
                     <i class="bi bi-arrow-right"></i>
-                    <span class="d-none d-md-inline">Abrir</span>
+                    <span class="d-none d-xl-inline">Abrir</span>
                   </button>
                 </div>
               </div>
@@ -357,11 +357,13 @@ watch(
 
 .collective-collections__create-col {
   display: flex;
+  min-width: 0;
 
   :deep(.upload-collection-box--compact) {
     width: 100%;
+    max-width: 100%;
     height: 100%;
-    min-height: 100%;
+    min-height: 0;
   }
 }
 </style>
