@@ -266,8 +266,12 @@ $breakpoint-md: 768px;
   margin-bottom: 40px;
 
   @include md {
-    padding: 24px 24px;
+    padding: 16px 12px;
     margin-bottom: 0px;
+  }
+
+  @media (min-width: 1024px) {
+    padding: 24px 24px;
   }
 
   &__header {
@@ -319,6 +323,10 @@ $breakpoint-md: 768px;
       text-align: center;
 
       @include md {
+        font-size: 16px;
+      }
+
+      @media (min-width: 1024px) {
         font-size: 20px;
       }
     }
@@ -423,6 +431,14 @@ $breakpoint-md: 768px;
       overflow-wrap: anywhere;
       text-align: center;
       max-width: 100%;
+      font-size: 11px;
+      line-height: 1.2;
+      padding: 4px 6px;
+
+      @media (min-width: 1024px) {
+        font-size: 12px;
+        padding: 4px 8px;
+      }
     }
 
     li {

@@ -6,7 +6,7 @@ defineProps({
 
 <template>
   <div class="row g-4" aria-busy="true" aria-live="polite">
-    <div v-for="n in count" :key="`skeleton-${n}`" class="col-6 col-md-3">
+    <div v-for="n in count" :key="`skeleton-${n}`" class="col-6 profile-grid-col">
       <article class="profile-grid-card profile-grid-card--skeleton" aria-hidden="true">
         <div class="profile-grid-card__image-wrapper profile-grid-card__image-wrapper--skeleton"></div>
         <div class="profile-grid-card__body">
@@ -20,4 +20,5 @@ defineProps({
 
 <style lang="scss">
 @use "@/scss/profile-grid-card.scss";
+@use "@/scss/profile-grid-cols.scss";
 </style>

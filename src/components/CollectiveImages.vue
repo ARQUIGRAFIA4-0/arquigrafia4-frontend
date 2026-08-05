@@ -294,7 +294,7 @@ onBeforeUnmount(() => {
                       @click.stop="handleDelete(item.id)"
                     >
                       <i class="bi bi-trash"></i>
-                      <span class="d-none d-md-inline">Apagar</span>
+                      <span class="d-none d-xl-inline">Apagar</span>
                     </button>
                     <button
                       type="button"
@@ -302,7 +302,7 @@ onBeforeUnmount(() => {
                       @click.stop="router.push(`/explore/dados/image/${item.id}`)"
                     >
                       <i class="bi bi-arrow-right"></i>
-                      <span class="d-none d-md-inline">Ver</span>
+                      <span class="d-none d-xl-inline">Ver</span>
                     </button>
                   </div>
                 </div>

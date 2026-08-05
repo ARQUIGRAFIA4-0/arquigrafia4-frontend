@@ -208,7 +208,7 @@ onBeforeUnmount(() => {
 
     <div v-else-if="hasLoadedImages && items.length > 0">
       <div class="row g-4">
-        <div v-if="isCurrentUser" class="col-6 col-md-3 profile-images__add-col">
+        <div v-if="isCurrentUser" class="col-6 profile-grid-col profile-images__add-col">
           <button
             type="button"
             class="profile-images__add-btn h-100"
@@ -242,7 +242,7 @@ onBeforeUnmount(() => {
           />
         </div>
 
-        <div v-for="item in items" :key="item.id" class="col-6 col-md-3">
+        <div v-for="item in items" :key="item.id" class="col-6 profile-grid-col">
           <div
             v-if="isCurrentUser"
             class="profile-grid-card__link"
@@ -277,7 +277,7 @@ onBeforeUnmount(() => {
                       @click.stop="handleDelete(item.id)"
                     >
                       <i class="bi bi-trash"></i>
-                      <span class="d-none d-md-inline">Apagar</span>
+                      <span class="d-none d-xl-inline">Apagar</span>
                     </button>
                     <button
                       type="button"
@@ -285,7 +285,7 @@ onBeforeUnmount(() => {
                       @click.stop="router.push(`/explore/dados/image/${item.id}`)"
                     >
                       <i class="bi bi-arrow-right"></i>
-                      <span class="d-none d-md-inline">Ver</span>
+                      <span class="d-none d-xl-inline">Ver</span>
                     </button>
                   </div>
                 </div>
@@ -327,6 +327,7 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 @use "@/scss/profile-grid-card.scss";
+@use "@/scss/profile-grid-cols.scss";
 
 .profile-images__add-col {
   display: flex;
@@ -350,6 +351,13 @@ onBeforeUnmount(() => {
   svg {
     flex-shrink: 0;
     display: block;
+    width: 36px;
+    height: 36px;
+
+    @media (min-width: 1280px) {
+      width: 50px;
+      height: 50px;
+    }
   }
 
   &:hover {
