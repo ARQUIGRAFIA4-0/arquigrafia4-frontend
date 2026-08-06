@@ -194,9 +194,6 @@ $breakpoint-sm: 425px;
   }
 }
 
-.tabs-nav {
-  gap: 40px;
-}
 
 .user-grid {
   --network-card-w: 220px;

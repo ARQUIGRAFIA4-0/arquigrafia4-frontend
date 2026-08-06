@@ -1,12 +1,23 @@
+/* Em telas pequenas, fonte 14px e espaçamento de 12px; em telas grandes (≥1425px), aumenta para 20px e gap de 40px */
+$breakpoint-desk: 1425px;
+
+.nav-underline {
+  gap: 12px;
+}
+
 .nav-underline .nav-link {
   font-weight: 300;
-  font-size: 20px;
+  font-size: 14px;
+  line-height: 150%;
   color: #1f1f1f;
   position: relative;
   display: inline-block;
-  line-height: 100%;
   letter-spacing: 0%;
   --bs-nav-underline-border-width: 4px;
+  --bs-nav-link-padding-y: 0.375rem;
+  --bs-nav-link-padding-x: 0.75rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.75rem;
 }
 
 .nav-underline .nav-link:hover {
@@ -28,27 +39,24 @@
 .nav-underline .nav-link[data-label]::after {
   content: attr(data-label);
   font-weight: 700;
+  font-size: inherit;
   visibility: hidden;
   display: block;
   height: 0;
   overflow: hidden;
 }
 
-@media (max-width: 575.98px) {
+@media (min-width: #{$breakpoint-desk}) {
   .nav-underline {
-    gap: 24px;
+    gap: 40px;
   }
 
   .nav-underline .nav-link {
-    font-size: 12px;
-    --bs-nav-link-padding-y: 0.375rem;
-    --bs-nav-link-padding-x: 0.75rem;
-    --bs-nav-underline-border-width: 3px;
-    padding-top: 0.25rem;
-    padding-bottom: 0.75rem;
-  }
-
-  .nav-underline .nav-link[data-label]::after {
-    font-size: inherit;
+    font-size: 20px;
+    line-height: 100%;
+    --bs-nav-link-padding-y: 0.5rem;
+    --bs-nav-link-padding-x: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
   }
 }

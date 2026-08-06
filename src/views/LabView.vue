@@ -112,12 +112,6 @@ $breakpoint-md: 768px;
   margin-bottom: 12px;
 }
 
-.nav-underline {
-  @include md {
-    gap: 40px;
-  }
-}
-
 .container-lab {
   padding-left: 1rem;
   padding-right: 1rem;
