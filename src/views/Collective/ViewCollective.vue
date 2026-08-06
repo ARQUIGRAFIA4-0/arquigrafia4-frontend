@@ -76,7 +76,7 @@ async function handleRequestApproved() {
 
     <div v-else :class="['collective-container', isMobile ? '' : 'row']">
       <!-- Card lateral esquerdo -->
-      <div class="col-12 col-md-3">
+      <div class="col-12 collective-container__sidebar">
         <CollectiveCard
           :collectiveData="collectiveData"
           :userRole="userRole"
@@ -85,10 +85,11 @@ async function handleRequestApproved() {
         />
       </div>
 
-      <div class="d-none d-md-block col-md-1"></div>
+      <!-- Gutter só acima de 1440px -->
+      <div class="collective-container__gutter" aria-hidden="true"></div>
 
       <!-- Conteúdo principal (abas) -->
-      <div class="col-12 col-md-8">
+      <div class="col-12 collective-container__main">
         <div class="collective-container__content">
           <CollectiveNav :selected="selectedTab" :userRole="userRole" @select="selectedTab = $event" />
           <CollectiveImages
@@ -124,6 +125,8 @@ async function handleRequestApproved() {
 
 <style lang="scss" scoped>
 $breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-after-gutter: 1441px;
 
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
@@ -134,14 +137,86 @@ $breakpoint-md: 768px;
 .collective-container {
   width: 100%;
   padding: 0 1rem;
+  box-sizing: border-box;
 
   @include md {
     display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 0 1.25rem;
+  }
+
+  @media (min-width: #{$breakpoint-lg}) {
+    gap: 24px;
+    padding: 0 2rem;
+  }
+
+  @media (min-width: #{$breakpoint-after-gutter}) {
+    gap: 0;
     padding: 0 48px;
+  }
+
+  &__gutter {
+    display: none;
+  }
+
+  &__sidebar {
+    min-width: 0;
+  }
+
+  &__main {
+    min-width: 0;
   }
 
   &__content {
     width: 100%;
+    min-width: 0;
+  }
+}
+
+/*
+ * Sidebar com largura fixa (como no perfil), para botões não ficarem
+ * espremidos; o conteúdo principal ocupa o restante.
+ * 768–1440: sem gutter.
+ */
+@media (min-width: #{$breakpoint-md}) {
+  .collective-container__sidebar {
+    flex: 0 0 240px;
+    width: 240px;
+    max-width: 240px;
+  }
+
+  .collective-container__main {
+    flex: 1 1 0;
+    width: auto;
+  }
+}
+
+@media (min-width: #{$breakpoint-lg}) {
+  .collective-container__sidebar {
+    flex-basis: 260px;
+    width: 260px;
+    max-width: 260px;
+  }
+}
+
+/* >1440: restaura proporção original com gutter (3 + 1 + 8) */
+@media (min-width: #{$breakpoint-after-gutter}) {
+  .collective-container__sidebar {
+    flex: 0 0 auto;
+    width: 25%;
+    max-width: none;
+  }
+
+  .collective-container__gutter {
+    display: block;
+    flex: 0 0 auto;
+    width: 8.33333333%;
+  }
+
+  .collective-container__main {
+    flex: 0 0 auto;
+    width: 66.66666667%;
   }
 }
 </style>

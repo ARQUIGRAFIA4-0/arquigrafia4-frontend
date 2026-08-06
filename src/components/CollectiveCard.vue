@@ -280,13 +280,20 @@ $breakpoint-md: 768px;
 .collective-card {
   background-color: $color-off-white;
   border-radius: 16px;
-  padding: 24px 16px;
+  padding: 20px 14px;
   box-shadow: 1px 1px 4px 1px #0000001a;
   margin-bottom: 40px;
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
 
   @include md {
-    padding: 24px;
+    padding: 20px 16px;
     margin-bottom: 0;
+  }
+
+  @media (min-width: 1024px) {
+    padding: 24px;
   }
 
   &__header {
@@ -295,6 +302,8 @@ $breakpoint-md: 768px;
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
+    min-width: 0;
+    width: 100%;
 
     @include md {
       margin-bottom: 16px;
@@ -307,8 +316,15 @@ $breakpoint-md: 768px;
       line-height: 150%;
       text-align: center;
       margin: 0;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
 
       @include md {
+        font-size: 18px;
+      }
+
+      @media (min-width: 1024px) {
         font-size: 20px;
       }
     }
@@ -409,6 +425,17 @@ $breakpoint-md: 768px;
     flex-direction: column;
     gap: 8px;
     margin-top: 4px;
+    min-width: 0;
+    width: 100%;
+
+    :deep(.btn) {
+      white-space: normal;
+      line-height: 1.25;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      text-align: center;
+      hyphens: auto;
+    }
   }
 
   &__leave-btn {
