@@ -130,7 +130,7 @@ onBeforeUnmount(() => {
 
     <!-- Grid de membros -->
     <div v-else class="row g-3 g-md-4">
-      <div v-for="member in members" :key="member.id" class="col-6 col-md-3">
+      <div v-for="member in members" :key="member.id" class="col-6 profile-grid-col">
         <div
           class="member-card"
           :class="{ 'member-card--expanded': expandedCardId === member.id }"
@@ -204,6 +204,7 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
+@use "@/scss/profile-grid-cols.scss";
 $breakpoint-md: 768px;
 
 @mixin md {
@@ -223,6 +224,7 @@ $breakpoint-md: 768px;
   cursor: pointer;
   overflow: hidden;
   transition: background-color 0.15s ease;
+  min-width: 0;
 
   &--expanded {
     background-color: $color-laranja-c;
@@ -259,11 +261,16 @@ $breakpoint-md: 768px;
   }
 
   &__body {
-    padding: 16px 10px 16px;
+    padding: 12px 10px 14px;
     display: flex;
     flex-direction: column;
     flex: 1;
     gap: 8px;
+    min-width: 0;
+
+    @include md {
+      padding: 16px 10px 16px;
+    }
   }
 
   &__name {
@@ -303,23 +310,36 @@ $breakpoint-md: 768px;
 
   &__actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
     padding-top: 4px;
     padding-bottom: 4px;
+    min-width: 0;
+
+    @include md {
+      gap: 8px;
+    }
   }
 
   &__action-btn {
-    flex: 1 0 0;
+    flex: 1 1 0;
     min-width: 0;
-    padding: 2px 14px;
+    padding: 2px 8px;
     border-radius: 5px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 400;
     line-height: 1.5;
     cursor: pointer;
     border: 1px solid $color-laranja-e;
     transition: opacity 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    @include md {
+      padding: 2px 14px;
+      font-size: 14px;
+    }
 
     &:disabled {
       opacity: 0.65;

@@ -213,7 +213,7 @@ watch(
     <div v-else class="row g-4">
       <div
         v-if="isMember"
-        class="col-6 col-md-3 collective-collections__create-col"
+        class="col-6 profile-grid-col collective-collections__create-col"
       >
         <UploadColectionBox
           key="create-album-card"
@@ -226,7 +226,7 @@ watch(
       <div
         v-for="album in visibleAlbums"
         :key="album.id"
-        class="col-6 col-md-3"
+        class="col-6 profile-grid-col"
       >
         <div
           v-if="isMember"
@@ -328,6 +328,7 @@ watch(
 
 <style lang="scss" scoped>
 @use "@/scss/profile-grid-card.scss";
+@use "@/scss/profile-grid-cols.scss";
 
 .collective-collections {
   width: 100%;
