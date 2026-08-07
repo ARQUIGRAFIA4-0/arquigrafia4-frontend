@@ -62,6 +62,13 @@ function scrollToSection(refName) {
       />
     </aside>
 
+    <!-- Gutter 1/12 só no desk ≥1440 (grid Figma 3 | 1 | 8) -->
+    <div
+      v-if="!isMobile"
+      class="profile-container__gutter"
+      aria-hidden="true"
+    />
+
     <section class="profile-container__main">
       <div class="profile-container__nav">
         <EditProfileNav :selected="selectedTab" @select="handleNavSelect" />
@@ -80,6 +87,7 @@ function scrollToSection(refName) {
 
 <style lang="scss" scoped>
 $breakpoint-laptop: 768px;
+$breakpoint-wide: 1440px;
 
 .profile-container {
   width: 100%;
@@ -88,6 +96,7 @@ $breakpoint-laptop: 768px;
   margin: 0 auto;
   box-sizing: border-box;
 
+  /* <1440: 2 colunas + gap */
   &--desktop {
     display: grid;
     grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
@@ -106,18 +115,43 @@ $breakpoint-laptop: 768px;
       gap: 48px;
       padding: 0 48px;
     }
+
+    /* ≥1440: grid Figma 12 cols — 3 | 1 | 8 */
+    @media (min-width: #{$breakpoint-wide}) {
+      grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 8fr);
+      gap: 0;
+      padding: 0 48px;
+    }
   }
 
   &__sidebar {
     min-width: 0;
     position: sticky;
     top: 1rem;
+
+    @media (min-width: #{$breakpoint-wide}) {
+      grid-column: 1;
+    }
+  }
+
+  &__gutter {
+    display: none;
+    min-width: 0;
+
+    @media (min-width: #{$breakpoint-wide}) {
+      display: block;
+      grid-column: 2;
+    }
   }
 
   &__main {
     min-width: 0;
     display: flex;
     flex-direction: column;
+
+    @media (min-width: #{$breakpoint-wide}) {
+      grid-column: 3;
+    }
   }
 
   &__nav {
