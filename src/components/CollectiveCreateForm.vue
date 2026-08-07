@@ -158,8 +158,8 @@ onMounted(() => {
         class="alert alert-dark bg-off-white alert-light border border-dark border-start-3 mb-4 collective-warning-alert"
         role="alert"
       >
-        <i class="bi bi-exclamation-triangle-fill me-2" style="color: var(--Cinza_E);"></i>
-        Recomendamos que apenas adicione grupos dos quais você de fato participa.
+        <i class="bi bi-exclamation-triangle-fill collective-warning-alert__icon" aria-hidden="true"></i>
+        <span>Recomendamos que apenas adicione grupos dos quais você de fato participa.</span>
       </div>
 
       <!-- Submit button -->
@@ -178,10 +178,10 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
-$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
 
-@mixin md {
-  @media (min-width: #{$breakpoint-md}) {
+@mixin lg {
+  @media (min-width: #{$breakpoint-lg}) {
     @content;
   }
 }
@@ -189,11 +189,17 @@ $breakpoint-md: 768px;
 .login-container {
   background-color: #faf9f9;
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1.25rem;
   font-weight: 500;
   position: sticky;
   top: 32px;
   z-index: 100;
+  min-width: 0;
+  box-sizing: border-box;
+
+  @include lg {
+    padding: 2rem;
+  }
 }
 
 .loading-overlay {
@@ -216,7 +222,7 @@ $breakpoint-md: 768px;
   font-size: 20px;
   line-height: 150%;
 
-  @include md {
+  @include lg {
     font-size: 30px;
   }
 }
@@ -228,7 +234,7 @@ $breakpoint-md: 768px;
   display: block;
   padding-bottom: 10px;
 
-  @include md {
+  @include lg {
     font-size: 20px;
   }
 }
@@ -254,6 +260,9 @@ $breakpoint-md: 768px;
 }
 
 .collective-warning-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
   width: auto;
   max-width: 100%;
   height: auto;
@@ -261,5 +270,11 @@ $breakpoint-md: 768px;
   font-size: 14px;
   line-height: 150%;
   letter-spacing: 0%;
+
+  &__icon {
+    flex-shrink: 0;
+    color: var(--Cinza_E);
+    margin-top: 0.15em;
+  }
 }
 </style>

@@ -1063,12 +1063,6 @@ $breakpoint-md: 768px;
   margin-bottom: 4px;
 }
 
-.nav-underline {
-  @include md {
-    gap: 40px; //sobrescreve tabs.scss
-  }
-}
-
 .container-grid {
   padding-left: 1rem;
   padding-right: 1rem;
