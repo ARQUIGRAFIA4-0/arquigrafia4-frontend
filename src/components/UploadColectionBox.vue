@@ -52,8 +52,6 @@ function handleClick() {
       <svg
         class="upload-collection-box__compact-svg"
         xmlns="http://www.w3.org/2000/svg"
-        width="50"
-        height="50"
         viewBox="0 0 50 50"
         fill="none"
         aria-hidden="true"
@@ -81,13 +79,16 @@ function handleClick() {
 <style lang="scss" scoped>
 
 .upload-collection-box.upload-collection-box--compact {
-  width: 220px;
-  min-height: 334px;
-  height: 334px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 12px 8px;
   border: 0.3px solid #636262;
   border-radius: 5px;
   background: #faf9f9;
@@ -99,23 +100,32 @@ function handleClick() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .upload-collection-box__compact-svg {
   flex-shrink: 0;
   display: block;
+  width: clamp(28px, 18%, 50px);
+  height: clamp(28px, 18%, 50px);
 }
 
 .upload-collection-box__compact-label {
   margin: 0;
+  max-width: 100%;
+  padding: 0 2px;
   font-family: "DM Sans", sans-serif;
-  font-size: 14px;
+  font-size: clamp(11px, 3.4vw, 14px);
   font-weight: 500;
-  line-height: 1.3;
+  line-height: 1.25;
   color: #636262;
   text-align: center;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
+
 .upload-collection-box__icon--compact {
   font-size: 50px;
   color: #636262;
@@ -179,40 +189,46 @@ function handleClick() {
   text-transform: lowercase;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 575px) {
   .upload-collection-box {
     min-height: 360px;
   }
 
   .upload-collection-box.upload-collection-box--compact {
-    width: 100%;
-    height: auto;
-    min-height: 132px;
-    padding: 20px 16px;
-    border-radius: 8px;
-    border: 1px solid rgba(99, 98, 98, 0.35);
+    padding: 10px 6px;
   }
 
   .upload-collection-box__compact-inner {
-    gap: 12px;
+    gap: 6px;
   }
 
   .upload-collection-box__compact-svg {
-    width: 44px;
-    height: 44px;
+    width: 28px;
+    height: 28px;
   }
 
   .upload-collection-box__compact-label {
-    font-size: 15px;
-    color: #2f2f2f;
+    font-size: 11px;
+    line-height: 1.2;
   }
 
   .upload-collection-box__title {
-    font-size: 30px;
+    font-size: 22px;
   }
 
   .upload-collection-box__icon {
     font-size: 32px;
+  }
+}
+
+@media (min-width: 576px) and (max-width: 1023px) {
+  .upload-collection-box__compact-svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .upload-collection-box__compact-label {
+    font-size: 12px;
   }
 }
 

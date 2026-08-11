@@ -346,9 +346,12 @@ $breakpoint-lg: 1440px;
   }
 }
 
+/* Em telas pequenas, fonte 14px e espaçamento de 12px; em telas grandes (≥1425px), aumenta para 20px e gap de 40px */
+$breakpoint-desk: 1425px;
+
 .image-detail__navbar-links {
   z-index: auto;
-  gap: 40px;
+  gap: 12px;
   display: flex;
   flex-wrap: nowrap;
   width: 100%;
@@ -356,24 +359,23 @@ $breakpoint-lg: 1440px;
   overflow-y: hidden;
   white-space: nowrap;
   scrollbar-width: thin;
-}
-
-.image-detail__navbar-links::-webkit-scrollbar {
-  height: 6px;
-}
-
-.image-detail__navbar-links::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
-}
-
-.image-detail__navbar-links::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* Firefox */
-.image-detail__navbar-links {
   scrollbar-color: #d1d5db transparent;
-  scrollbar-width: thin;
+
+  @media (min-width: #{$breakpoint-desk}) {
+    gap: 40px;
+  }
+
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 </style>

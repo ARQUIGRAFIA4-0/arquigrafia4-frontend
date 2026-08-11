@@ -256,6 +256,9 @@ $breakpoint-md: 768px;
 }
 
 .profile-card {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
   background-color: #faf9f9;
   border-radius: 16px;
   padding: 24px 16px;
@@ -263,8 +266,12 @@ $breakpoint-md: 768px;
   margin-bottom: 40px;
 
   @include md {
-    padding: 24px 24px;
+    padding: 16px 12px;
     margin-bottom: 0px;
+  }
+
+  @media (min-width: 1024px) {
+    padding: 24px 24px;
   }
 
   &__header {
@@ -316,6 +323,10 @@ $breakpoint-md: 768px;
       text-align: center;
 
       @include md {
+        font-size: 16px;
+      }
+
+      @media (min-width: 1024px) {
         font-size: 20px;
       }
     }
@@ -410,16 +421,32 @@ $breakpoint-md: 768px;
     padding: 0;
     margin-top: 8px;
     overflow: hidden;
+    min-width: 0;
+    max-width: 100%;
 
     .btn {
       cursor: default;
       white-space: normal;
-      word-break: break-all;
+      word-break: break-word;
+      overflow-wrap: anywhere;
       text-align: center;
       max-width: 100%;
+      font-size: 11px;
+      line-height: 1.2;
+      padding: 4px 6px;
+
+      @media (min-width: 1024px) {
+        font-size: 12px;
+        padding: 4px 8px;
+      }
     }
 
     li {
+      max-width: 100%;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      white-space: normal;
+
       @include md {
         font-size: 12px;
       }

@@ -23,64 +23,54 @@ const props = defineProps({
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
-$breakpoint-md: 768px;
 
-@mixin md {
-  @media (min-width: #{$breakpoint-md}) {
-    @content;
-  }
-}
+/* Em telas pequenas, fonte 14px e espaçamento de 12px; em telas grandes (≥1425px), aumenta para 20px e gap de 40px */
+$breakpoint-desk: 1425px;
 
 .collective-edit-nav {
   display: flex;
   list-style: none;
+  margin: 0 0 32px;
   padding: 0;
-  margin: 0;
-  margin-bottom: 32px;
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
   -webkit-overflow-scrolling: touch;
+  gap: 12px;
+
   scrollbar-width: none;
   -ms-overflow-style: none;
-
   &::-webkit-scrollbar {
     display: none;
   }
 
-  @include md {
-    overflow-x: visible;
+  @media (min-width: #{$breakpoint-desk}) {
+    gap: 40px;
   }
 
   li {
-    margin-right: 26px;
+    margin: 0;
     font-weight: 300;
     font-size: 14px;
     line-height: 150%;
-    letter-spacing: 0%;
     text-align: center;
-    vertical-align: middle;
     cursor: pointer;
     flex-shrink: 0;
 
-    @include md {
+    @media (min-width: #{$breakpoint-desk}) {
       font-size: 20px;
       line-height: 100%;
-      margin-right: 48px;
     }
 
     &.collective-edit-nav--selected {
-      color: #AA4F28;
+      color: #aa4f28;
       font-weight: 800;
       font-size: 14px;
       line-height: 150%;
-      letter-spacing: 0%;
-      text-align: center;
-      vertical-align: middle;
       padding-bottom: 10px;
-      border-bottom: 3px solid;
+      border-bottom: 3px solid currentColor;
 
-      @include md {
+      @media (min-width: #{$breakpoint-desk}) {
         font-weight: 700;
         font-size: 20px;
         line-height: 100%;

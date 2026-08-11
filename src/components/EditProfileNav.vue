@@ -19,67 +19,55 @@ const props = defineProps({
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
-$breakpoint-md: 768px;
 
-@mixin md {
-  @media (min-width: #{$breakpoint-md}) {
-    @content;
-  }
-}
+/* Desktop wide: 20px / gap 40 — em 1024 e abaixo mantém 14px / gap 12 */
+$breakpoint-desk: 1425px;
 
 .edit-profile-nav {
   display: flex;
   list-style: none;
+  margin: 0 0 32px;
   padding: 0;
-  margin: 0;
-  margin-bottom: 32px;
-  padding: 0px 0 0 0;
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
   -webkit-overflow-scrolling: touch;
+  gap: 12px; /* espaçamento mobile e telas menores */
 
-  /* Esconde a scrollbar */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  /* Esconde a scrollbar, mas mantém o scroll horizontal */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   &::-webkit-scrollbar {
-    display: none; /* Chrome, Safari and Opera */
+    display: none;
   }
 
-  @include md {
-    overflow-x: visible;
+  @media (min-width: #{$breakpoint-desk}) {
+    gap: 40px; /* espaçamento desk */
   }
 
   li {
-    margin-right: 26px;
+    margin: 0;
     font-weight: 300;
-    font-size: 14px;
+    font-size: 14px; /* mobile e telas menores */
     line-height: 150%;
-    letter-spacing: 0%;
     text-align: center;
-    vertical-align: middle;
     cursor: pointer;
     flex-shrink: 0;
 
-    @include md {
-      font-size: 20px;
-      font-size: 20px;
+    @media (min-width: #{$breakpoint-desk}) {
+      font-size: 20px; /* desk */
       line-height: 100%;
-      margin-right: 48px;
     }
 
     &.edit-profile-nav--selected {
-      color: #AA4F28;
+      color: #aa4f28;
       font-weight: 800;
       font-size: 14px;
       line-height: 150%;
-      letter-spacing: 0%;
-      text-align: center;
-      vertical-align: middle;
       padding-bottom: 10px;
-      border-bottom: 3px solid;
+      border-bottom: 3px solid currentColor;
 
-      @include md {
+      @media (min-width: #{$breakpoint-desk}) {
         font-weight: 700;
         font-size: 20px;
         line-height: 100%;

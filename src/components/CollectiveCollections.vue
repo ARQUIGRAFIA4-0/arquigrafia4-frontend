@@ -213,7 +213,7 @@ watch(
     <div v-else class="row g-4">
       <div
         v-if="isMember"
-        class="col-6 col-md-3 collective-collections__create-col"
+        class="col-6 profile-grid-col collective-collections__create-col"
       >
         <UploadColectionBox
           key="create-album-card"
@@ -226,7 +226,7 @@ watch(
       <div
         v-for="album in visibleAlbums"
         :key="album.id"
-        class="col-6 col-md-3"
+        class="col-6 profile-grid-col"
       >
         <div
           v-if="isMember"
@@ -274,7 +274,7 @@ watch(
                     @click.stop="handleDeleteAlbum(album.id)"
                   >
                     <i class="bi bi-trash"></i>
-                    <span class="d-none d-md-inline">Excluir</span>
+                    <span class="d-none d-xl-inline">Excluir</span>
                   </button>
                   <button
                     type="button"
@@ -283,7 +283,7 @@ watch(
                     @click.stop="openCollection(album.id)"
                   >
                     <i class="bi bi-arrow-right"></i>
-                    <span class="d-none d-md-inline">Abrir</span>
+                    <span class="d-none d-xl-inline">Abrir</span>
                   </button>
                 </div>
               </div>
@@ -328,6 +328,7 @@ watch(
 
 <style lang="scss" scoped>
 @use "@/scss/profile-grid-card.scss";
+@use "@/scss/profile-grid-cols.scss";
 
 .collective-collections {
   width: 100%;
@@ -357,11 +358,13 @@ watch(
 
 .collective-collections__create-col {
   display: flex;
+  min-width: 0;
 
   :deep(.upload-collection-box--compact) {
     width: 100%;
+    max-width: 100%;
     height: 100%;
-    min-height: 100%;
+    min-height: 0;
   }
 }
 </style>
