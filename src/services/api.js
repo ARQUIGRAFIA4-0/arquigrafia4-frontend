@@ -136,6 +136,16 @@ const getImageDetails = async (id) => {
     const subjects = image.subjects || [];
     const rights = image.rights || [];
 
+    // Obras associadas à imagem. O backend inclui `works` com `works.titles` e
+    // `works.location` no GET /images/{id}. Uma imagem pode não ter obra (array vazio).
+    const works = Array.isArray(image.works)
+      ? image.works.map((work) => ({
+          id: work.id,
+          title: workPrimaryTitle(work),
+          locationLabel: work.location?.label || null,
+        }))
+      : [];
+
     return {
       id: image.id,
       title,
@@ -157,6 +167,7 @@ const getImageDetails = async (id) => {
       description,
       subjects,
       rights,
+      works,
     };
   } catch (error) {
     console.error("Error fetching image details:", error);
