@@ -1,6 +1,6 @@
 import { findLicenseByUrl } from "@/constants/creativeCommonsLicenses";
 
-const IIIF_BASE = "https://api-dev.arquigrafia.org.br";
+const IIIF_BASE = "https://api.arquigrafia.org.br";
 
 export function getImageDownloadUrl(image) {
   if (!image?.id) return null;

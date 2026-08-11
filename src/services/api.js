@@ -423,7 +423,7 @@ const fetchImages = async (page = 1, filters = {}) => {
  * @returns {Promise<number>} Total de imagens cadastradas
  */
 const getTotalImages = async () => {
-  const apiBaseUrl = "https://api-dev.arquigrafia.org.br";
+  const apiBaseUrl = "https://api.arquigrafia.org.br";
   const apiUrl = `${apiBaseUrl}/api/images?per_page=1`;
 
   try {
@@ -452,7 +452,7 @@ const getSubjectById = async (id) => {
     return null;
   }
 
-  const apiBaseUrl = "https://api-dev.arquigrafia.org.br";
+  const apiBaseUrl = "https://api.arquigrafia.org.br";
   const apiUrl = `${apiBaseUrl}/api/vrac-subjects/${id}`;
 
   try {
