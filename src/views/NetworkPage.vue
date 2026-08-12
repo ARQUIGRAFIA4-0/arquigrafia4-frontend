@@ -24,31 +24,45 @@
       </ul>
     </div>
 
-    <!-- Grid de resultados -->
-    <div class="user-grid">
-      <template v-for="item in results" :key="`${item.type}-${item.id}`">
-        <UserCardNetwork v-if="item.type === 'user'" :user="item" />
-        <ColletiveCardNetwork v-else :collective="item" />
-      </template>
-
-      <template v-if="isLoading">
+    <div ref="gridRef" class="user-grid">
+      <div v-if="isLoading && results.length === 0" class="user-grid__skeletons">
         <div v-for="n in 6" :key="`skeleton-${n}`" class="user-grid__skeleton" />
-      </template>
+      </div>
+
+      <div v-else-if="hasResults" class="user-masonry">
+        <div
+          v-for="(column, colIndex) in masonryColumns"
+          :key="`col-${colIndex}-${columnCount}`"
+          class="user-masonry__column"
+        >
+          <div
+            v-for="item in column"
+            :key="`${item.type}-${item.id}`"
+            class="user-masonry__item"
+          >
+            <UserCardNetwork v-if="item.type === 'user'" :user="item" />
+            <ColletiveCardNetwork v-else :collective="item" />
+          </div>
+        </div>
+      </div>
+
+      <div v-if="isLoading && results.length > 0" class="user-grid__loading text-center my-4">
+        <div class="spinner-border spinner-border-sm text-secondary" role="status">
+          <span class="visually-hidden">Carregando...</span>
+        </div>
+      </div>
     </div>
 
     <div ref="sentinel" class="network-page__sentinel" />
 
-    <!-- Fim da lista -->
-    <p v-if="hasReachedEnd && results.length > 0" class="network-page__end-msg">
+    <p v-if="hasReachedEnd && hasResults" class="network-page__end-msg">
       Nenhum resultado adicional.
     </p>
 
-    <!-- Nenhum resultado -->
-    <p v-if="!isLoading && results.length === 0" class="network-page__empty-msg">
+    <p v-if="!isLoading && !hasResults" class="network-page__empty-msg">
       Nenhum resultado encontrado.
     </p>
 
-    <!-- Toolbar flutuante -->
     <div class="network-toolbar-container">
       <NetworkToolbar @search="onSearch" />
     </div>
@@ -56,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed, nextTick } from "vue";
 import ColletiveCardNetwork from "../components/network/ColletiveCardNetwork.vue";
 import UserCardNetwork from "../components/network/UserCardNetwork.vue";
 import NetworkToolbar from "../components/network/NetworkToolbar.vue";
@@ -66,6 +80,10 @@ import { useRoute, useRouter } from "vue-router";
 const store = useNetworksStore();
 
 const PER_PAGE = 20;
+const COLUMN_WIDTH = 220;
+const COLUMN_GAP = 16;
+const MIN_COLUMNS = 2;
+const MAX_COLUMNS = 6;
 
 const route = useRoute();
 const router = useRouter();
@@ -74,6 +92,78 @@ const isLoading = ref(false);
 const hasReachedEnd = ref(false);
 const currentPage = ref(1);
 const activeParams = ref({ filter: "todos", sort: "mais-recentes", query: "" });
+const gridRef = ref(null);
+const columnCount = ref(MAX_COLUMNS);
+
+/**
+ * Start: Modo de exibição do grid
+ */
+function buildCheckerboardColumns(items, cols) {
+  const columns = Array.from({ length: cols }, () => []);
+  const users = items.filter((item) => item.type === "user");
+  const collectives = items.filter((item) => item.type !== "user");
+
+  let userIndex = 0;
+  let collectiveIndex = 0;
+  let row = 0;
+  const total = items.length;
+
+  while (userIndex + collectiveIndex < total) {
+    let placedInRow = 0;
+
+    for (let col = 0; col < cols; col++) {
+      // linha par + col par → coletivo; linha par + col ímpar → perfil (e o inverso na linha ímpar)
+      const wantCollective = (col % 2 === 0) === (row % 2 === 0);
+      let item = null;
+
+      if (wantCollective && collectiveIndex < collectives.length) {
+        item = collectives[collectiveIndex++];
+      } else if (!wantCollective && userIndex < users.length) {
+        item = users[userIndex++];
+      } else if (collectiveIndex < collectives.length) {
+        item = collectives[collectiveIndex++];
+      } else if (userIndex < users.length) {
+        item = users[userIndex++];
+      }
+
+      if (item) {
+        columns[col].push(item);
+        placedInRow++;
+      }
+    }
+
+    if (placedInRow === 0) break;
+    row++;
+  }
+
+  return columns;
+}
+
+function buildRoundRobinColumns(items, cols) {
+  const columns = Array.from({ length: cols }, () => []);
+  items.forEach((item, index) => {
+    columns[index % cols].push(item);
+  });
+  return columns;
+}
+
+const hasResults = computed(() => results.value.length > 0);
+
+const masonryColumns = computed(() => {
+  const cols = columnCount.value;
+  const items = results.value;
+  if (!items.length) return [];
+
+  if (activeParams.value.filter === "todos") {
+    return buildCheckerboardColumns(items, cols);
+  }
+
+  return buildRoundRobinColumns(items, cols);
+});
+
+/**
+ * End: Modo de exibição do grid
+ */
 
 const activeTab = computed(() => {
   const path = route.path;
@@ -119,7 +209,14 @@ function buildQueryParams(page) {
   };
 }
 
-// --- Busca ---
+function updateColumnCount() {
+  const el = gridRef.value;
+  if (!el) return;
+  const width = el.clientWidth;
+  const cols = Math.floor((width + COLUMN_GAP) / (COLUMN_WIDTH + COLUMN_GAP));
+  columnCount.value = Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, cols || MIN_COLUMNS));
+}
+
 async function fetchPage(page) {
   if (isLoading.value || hasReachedEnd.value) return;
 
@@ -127,7 +224,7 @@ async function fetchPage(page) {
   try {
     const { data, meta } = await store.searchNetworks(buildQueryParams(page));
 
-    results.value.push(...data);
+    results.value = [...results.value, ...data];
     currentPage.value = meta.current_page;
 
     if (meta.current_page >= meta.last_page) {
@@ -154,8 +251,19 @@ function onSearch({ filter, sort, query }) {
 // --- Scroll infinito com IntersectionObserver ---
 const sentinel = ref(null);
 let observer = null;
+let resizeObserver = null;
 
-onMounted(() => {
+onMounted(async () => {
+  await nextTick();
+  updateColumnCount();
+
+  if (gridRef.value && typeof ResizeObserver !== "undefined") {
+    resizeObserver = new ResizeObserver(() => updateColumnCount());
+    resizeObserver.observe(gridRef.value);
+  } else {
+    window.addEventListener("resize", updateColumnCount);
+  }
+
   resetAndFetch();
 
   observer = new IntersectionObserver(
@@ -172,13 +280,14 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   observer?.disconnect();
+  resizeObserver?.disconnect();
+  window.removeEventListener("resize", updateColumnCount);
 });
 
 </script>
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
-$breakpoint-md: 768px;
 $breakpoint-sm: 425px;
 
 .network-page {
@@ -194,17 +303,37 @@ $breakpoint-sm: 425px;
   }
 }
 
-
 .user-grid {
-  --network-card-w: 220px;
   box-sizing: border-box;
   width: 100%;
   padding-top: 5px;
+}
+
+.user-masonry {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  width: 100%;
+}
+
+.user-masonry__column {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.user-masonry__item {
+  width: 100%;
+}
+
+.user-grid__skeletons {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--network-card-w)), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
   gap: 1rem;
 
-  @media (max-width: 425px) {
+  @media (max-width: $breakpoint-sm) {
     grid-template-columns: repeat(2, 1fr);
   }
 }
