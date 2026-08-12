@@ -169,7 +169,7 @@ let observer = null;
 
 const hasItems = computed(() => mosaicItems.value.length > 0);
 const isLoading = computed(() => isPending.value || isFetchingNextPage.value);
-const IIIF_BASE = "https://api-dev.arquigrafia.org.br";
+const IIIF_BASE = "https://api.arquigrafia.org.br";
 
 const buildImageUrl = (path) => {
   if (!path) return "";

@@ -6,7 +6,6 @@ import { formatDate, parseYearFromDateString } from "@/helpers/dateUtils";
 import Fuse from "fuse.js";
 import axios from "axios";
 
-
 export function useImageForm() {
   const vracStore = useVracStore();
   const authStore = useAuthStore();
@@ -14,9 +13,12 @@ export function useImageForm() {
 
   // --- Capitalize
   const capitalizeWords = (name) => {
-    return name.split(" ").map((word) => {
-      return word.charAt(0).toUpperCase() + word.slice(1);
-    }).join(" ");
+    return name
+      .split(" ")
+      .map((word) => {
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(" ");
   };
 
   // ─── Tabs
@@ -27,9 +29,11 @@ export function useImageForm() {
   ];
 
   const currentSection = ref("essenciais");
-  const selectTab = (section) => { currentSection.value = section; };
+  const selectTab = (section) => {
+    currentSection.value = section;
+  };
 
-  // ─── Alert 
+  // ─── Alert
   const showAlert = ref(false);
   const alertMessage = ref("");
   const alertType = ref("error");
@@ -46,7 +50,7 @@ export function useImageForm() {
     showAlert.value = true;
   };
 
-  // ─── Identidade (publicar como) 
+  // ─── Identidade (publicar como)
   const isIdentityDropdownOpen = ref(false);
   const selectedIdentityId = ref(null);
 
@@ -82,21 +86,22 @@ export function useImageForm() {
     if (!publishingIdentities.value.length) return null;
     if (!selectedIdentityId.value) return publishingIdentities.value[0];
     return (
-      publishingIdentities.value.find((i) => i.id === selectedIdentityId.value) ||
-      publishingIdentities.value[0]
+      publishingIdentities.value.find(
+        (i) => i.id === selectedIdentityId.value,
+      ) || publishingIdentities.value[0]
     );
   });
 
   const hasCollectives = computed(
     () =>
       Array.isArray(loggedUser.value?.collectives) &&
-      loggedUser.value.collectives.length > 0
+      loggedUser.value.collectives.length > 0,
   );
 
   const availableIdentities = computed(() =>
     publishingIdentities.value.filter(
-      (identity) => identity.id !== selectedIdentity.value?.id
-    )
+      (identity) => identity.id !== selectedIdentity.value?.id,
+    ),
   );
 
   const toggleIdentityDropdown = () => {
@@ -108,7 +113,7 @@ export function useImageForm() {
     isIdentityDropdownOpen.value = false;
   };
 
-  // ─── Form state 
+  // ─── Form state
   const defaultForm = {
     title: "",
     isAuthor: true,
@@ -129,15 +134,18 @@ export function useImageForm() {
 
   const form = ref({ ...defaultForm });
 
-  watch(() => form.value.dateType, (newType) => {
-    if (newType === "year") {
-      // Sincroniza dateEnd com date ao voltar para ano único
-      const year = parseYearFromDateString(form.value.date);
-      if (year) {
-        form.value.dateEnd = yearToDateString(year, true);
+  watch(
+    () => form.value.dateType,
+    (newType) => {
+      if (newType === "year") {
+        // Sincroniza dateEnd com date ao voltar para ano único
+        const year = parseYearFromDateString(form.value.date);
+        if (year) {
+          form.value.dateEnd = yearToDateString(year, true);
+        }
       }
-    }
-  });
+    },
+  );
 
   const resetForm = () => {
     form.value = { ...defaultForm, tags: [] };
@@ -150,7 +158,7 @@ export function useImageForm() {
   const isAuthorNameTouched = ref(false);
 
   const isTitleInvalid = computed(
-    () => isTitleTouched.value && !form.value.title.trim()
+    () => isTitleTouched.value && !form.value.title.trim(),
   );
 
   const isAuthorNameInvalid = computed(() => {
@@ -170,17 +178,26 @@ export function useImageForm() {
     () =>
       !form.value.isAuthor &&
       !form.value.isPublicDomain &&
-      !form.value.hasAuthorization
+      !form.value.hasAuthorization,
   );
 
   const isEssenciaisInvalid = computed(
-    () => isRightsInvalid.value || isTitleInvalid.value || isAuthorNameInvalid.value
+    () =>
+      isRightsInvalid.value ||
+      isTitleInvalid.value ||
+      isAuthorNameInvalid.value,
   );
 
   const isFormValid = computed(() => {
-    if (!form.value.title?.trim()) { return false; }
-    if (form.value.isAuthor || form.value.isPublicDomain) { return true; }
-    if (!form.value.hasAuthorization && !form.value.unknownAuthor) { return false; }
+    if (!form.value.title?.trim()) {
+      return false;
+    }
+    if (form.value.isAuthor || form.value.isPublicDomain) {
+      return true;
+    }
+    if (!form.value.hasAuthorization && !form.value.unknownAuthor) {
+      return false;
+    }
     if (
       form.value.hasAuthorization &&
       !form.value.unknownAuthor &&
@@ -235,22 +252,33 @@ export function useImageForm() {
   const mapZoom = 2;
   const mapInstance = ref(null);
 
-  const handleMapReady = (map) => { mapInstance.value = markRaw(map); };
-  const handleMapError = (error) => { console.error("Erro no mapa:", error); };
+  const handleMapReady = (map) => {
+    mapInstance.value = markRaw(map);
+  };
+  const handleMapError = (error) => {
+    console.error("Erro no mapa:", error);
+  };
   // const handleMapClick = ({ lng, lat }) => { form.value.coordinates = { lng, lat }; };
   const handleMapClick = async (coords) => {
     form.value.coordinates = coords;
     try {
-      const { data } = await axios.get("https://nominatim.openstreetmap.org/reverse", {
-        params: { lat: coords.lat, lon: coords.lng, format: "jsonv2" },
-      });
+      const { data } = await axios.get(
+        "https://nominatim.openstreetmap.org/reverse",
+        {
+          params: { lat: coords.lat, lon: coords.lng, format: "jsonv2" },
+        },
+      );
       form.value.location = data.display_name ?? form.value.location;
     } catch (e) {
       console.error("Erro no reverse geocoding:", e);
     }
   };
-  const zoomIn = () => { mapInstance.value?.zoomIn(); };
-  const zoomOut = () => { mapInstance.value?.zoomOut(); };
+  const zoomIn = () => {
+    mapInstance.value?.zoomIn();
+  };
+  const zoomOut = () => {
+    mapInstance.value?.zoomOut();
+  };
 
   // ─── Localização / geocoding ─────────────────────────────────────────────────
   const locationSuggestions = ref([]);
@@ -267,11 +295,10 @@ export function useImageForm() {
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`,
-        { headers: { "Accept-Language": "pt-BR,pt" } }
+        { headers: { "Accept-Language": "pt-BR,pt" } },
       );
       locationSuggestions.value = await response.json();
       showLocationSuggestions.value = true;
-
     } catch (error) {
       console.warn("Erro ao buscar localidade:", error);
     } finally {
@@ -290,7 +317,9 @@ export function useImageForm() {
   };
 
   const hideLocationSuggestions = () => {
-    setTimeout(() => { showLocationSuggestions.value = false; }, 200);
+    setTimeout(() => {
+      showLocationSuggestions.value = false;
+    }, 200);
   };
 
   // ─── Tags / subjects ─────────────────────────────────────────────────────────
@@ -308,11 +337,11 @@ export function useImageForm() {
     const term = tagInput.value.trim();
     if (!term) return false;
     const alreadyInForm = form.value.tags.some(
-      (t) => getTagTerm(t).toLowerCase() === term.toLowerCase()
+      (t) => getTagTerm(t).toLowerCase() === term.toLowerCase(),
     );
     if (alreadyInForm) return false;
     return !allSubjects.value.some(
-      (s) => s.term.toLowerCase() === term.toLowerCase()
+      (s) => s.term.toLowerCase() === term.toLowerCase(),
     );
   });
 
@@ -335,20 +364,25 @@ export function useImageForm() {
         filteredTagSuggestions.value = fuseInstance
           .search(tagInput.value)
           .map((r) => r.item)
-          .filter((item) => !form.value.tags.some(
-            (t) => getTagTerm(t).toLowerCase() === item.term.toLowerCase()
-          ))
+          .filter(
+            (item) =>
+              !form.value.tags.some(
+                (t) => getTagTerm(t).toLowerCase() === item.term.toLowerCase(),
+              ),
+          )
           .slice(0, 10);
       }
     }, 300);
   };
 
   const hideTagSuggestions = () => {
-    setTimeout(() => { showTagSuggestions.value = false; }, 200);
+    setTimeout(() => {
+      showTagSuggestions.value = false;
+    }, 200);
   };
 
   const selectTagSuggestion = (subject) => {
-    if (!form.value.tags.some(t => t.id === subject.id)) {
+    if (!form.value.tags.some((t) => t.id === subject.id)) {
       form.value.tags.push({ id: subject.id, term: subject.term });
     }
     tagInput.value = "";
@@ -357,13 +391,22 @@ export function useImageForm() {
   };
 
   const createAndAddSubject = async (term) => {
-    if (!term || form.value.tags.some(t => (t.term ?? t).toLowerCase() === term.toLowerCase()) || isCreatingSubject.value) return;
+    if (
+      !term ||
+      form.value.tags.some(
+        (t) => (t.term ?? t).toLowerCase() === term.toLowerCase(),
+      ) ||
+      isCreatingSubject.value
+    )
+      return;
     isCreatingSubject.value = true;
     try {
       const response = await vracStore.addVRACSubject(term);
       const subjectData = response?.data?.data || response?.data || response;
       if (subjectData?.id && subjectData?.term) {
-        const alreadyLoaded = allSubjects.value.some(s => s.id === subjectData.id);
+        const alreadyLoaded = allSubjects.value.some(
+          (s) => s.id === subjectData.id,
+        );
         if (!alreadyLoaded) {
           allSubjects.value.push(subjectData);
           initFuse();
@@ -383,12 +426,16 @@ export function useImageForm() {
   const addTag = async () => {
     const term = tagInput.value.trim();
     if (!term) return;
-    if (form.value.tags.some(t => (t.term ?? t).toLowerCase() === term.toLowerCase())) {
+    if (
+      form.value.tags.some(
+        (t) => (t.term ?? t).toLowerCase() === term.toLowerCase(),
+      )
+    ) {
       tagInput.value = "";
       return;
     }
     const exactMatch = allSubjects.value.find(
-      (s) => s.term.toLowerCase() === term.toLowerCase()
+      (s) => s.term.toLowerCase() === term.toLowerCase(),
     );
     if (exactMatch) {
       selectTagSuggestion(exactMatch);
@@ -397,7 +444,9 @@ export function useImageForm() {
     }
   };
 
-  const removeTag = (index) => { form.value.tags.splice(index, 1); };
+  const removeTag = (index) => {
+    form.value.tags.splice(index, 1);
+  };
 
   // ─── Contribuidores ──────────────────────────────────────────────────────────
   const allContributorNames = ref([]);
@@ -413,11 +462,12 @@ export function useImageForm() {
     if (!photographerName) return null;
 
     let contributor = allContributorNames.value.find(
-      (c) => c.name.toLowerCase() === photographerName.toLowerCase()
+      (c) => c.name.toLowerCase() === photographerName.toLowerCase(),
     );
 
     if (!contributor) {
-      const newContributor = await vracStore.addVRACContributorName(photographerName);
+      const newContributor =
+        await vracStore.addVRACContributorName(photographerName);
       if (newContributor?.name) {
         contributor = newContributor.name;
         allContributorNames.value.push(contributor);
@@ -436,15 +486,16 @@ export function useImageForm() {
   //     .filter(Boolean);
 
   const resolveSubjectUuids = (tags = []) =>
-    tags.map((tag) => {
-      // suporta tanto string quanto objeto { id, term }
-      if (typeof tag === "object" && tag?.id) return tag.id;
-      const term = typeof tag === "string" ? tag : tag?.term;
-      return allSubjects.value.find(
-        (s) => s.term.toLowerCase() === term?.toLowerCase()
-      )?.id;
-    }).filter(Boolean);
-
+    tags
+      .map((tag) => {
+        // suporta tanto string quanto objeto { id, term }
+        if (typeof tag === "object" && tag?.id) return tag.id;
+        const term = typeof tag === "string" ? tag : tag?.term;
+        return allSubjects.value.find(
+          (s) => s.term.toLowerCase() === term?.toLowerCase(),
+        )?.id;
+      })
+      .filter(Boolean);
 
   // ─── Inicialização (chamar no onMounted do componente pai) ───────────────────
   /**
@@ -452,15 +503,15 @@ export function useImageForm() {
    * Deve ser chamado no onMounted de quem usar o composable.
    */
   const loadFormDependencies = async () => {
-
-    const subjects = await vracStore.getVRACSubjects();
+    const [subjects, contributors] = await Promise.all([
+      vracStore.getVRACSubjects(),
+      vracStore.getVRACContributorNames(),
+    ]);
 
     if (Array.isArray(subjects)) {
       allSubjects.value = subjects;
       initFuse();
     }
-
-    const contributors = await vracStore.getVRACContributorNames();
     if (Array.isArray(contributors)) {
       allContributorNames.value = contributors;
     }
@@ -471,15 +522,16 @@ export function useImageForm() {
    * O mapeamento fica centralizado aqui para reusar em Edit e Suggest.
    */
 
-  console.log("allSubjects:", allSubjects.value);
-  console.log("allSubjects-length:", allSubjects.value.length);
-  console.log("tags:", form.value.tags);
+  // console.log("allSubjects:", allSubjects.value);
+  // console.log("allSubjects-length:", allSubjects.value.length);
+  // console.log("tags:", form.value.tags);
 
   const populateFormFromApi = (data, currentUserName = null) => {
-    const authorName = data.authors?.[0] || data.rights?.[0]?.rights_holder || "";
-    const isAuthor = !!currentUserName && (
-      data.authors?.some(a => a === currentUserName) ?? false
-    );
+    const authorName =
+      data.authors?.[0] || data.rights?.[0]?.rights_holder || "";
+    const isAuthor =
+      !!currentUserName &&
+      (data.authors?.some((a) => a === currentUserName) ?? false);
     const dateRaw = data.dateRaw;
     const earliestYear = dateRaw?.earliest_date
       ? new Date(dateRaw.earliest_date).getUTCFullYear()
@@ -490,11 +542,11 @@ export function useImageForm() {
 
     const coords =
       Array.isArray(data.locationCoordinates) &&
-        data.locationCoordinates.length === 2 &&
-        !isNaN(data.locationCoordinates[0]) &&
-        !isNaN(data.locationCoordinates[1]) &&
-        data.locationCoordinates[0] !== 0 &&
-        data.locationCoordinates[1] !== 0
+      data.locationCoordinates.length === 2 &&
+      !isNaN(data.locationCoordinates[0]) &&
+      !isNaN(data.locationCoordinates[1]) &&
+      data.locationCoordinates[0] !== 0 &&
+      data.locationCoordinates[1] !== 0
         ? { lat: data.locationCoordinates[0], lng: data.locationCoordinates[1] }
         : null;
 
@@ -509,11 +561,14 @@ export function useImageForm() {
       license: data.rights?.[0]?.text || "CC BY-NC-SA",
       description: data.description || "",
       tags: (data.subjects || []).map((s) =>
-        typeof s === "object" ? { id: s.id, term: s.term } : { term: s }
+        typeof s === "object" ? { id: s.id, term: s.term } : { term: s },
       ),
       date: earliestYear ? `${earliestYear}-01-01` : "",
       dateEnd: latestYear ? `${latestYear}-12-31` : "",
-      dateType: earliestYear && latestYear && earliestYear !== latestYear ? "interval" : "year",
+      dateType:
+        earliestYear && latestYear && earliestYear !== latestYear
+          ? "interval"
+          : "year",
       dateAccuracy: dateRaw?.circa ? "approximate" : "exact",
       location: data.location || "",
       coordinates: coords,
