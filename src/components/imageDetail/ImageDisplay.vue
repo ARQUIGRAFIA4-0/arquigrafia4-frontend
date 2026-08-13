@@ -236,20 +236,80 @@ async function loadAlbumsForScope(scope) {
 /**
  * Start: Adicionar imagem a coleção de Favoritos
  */
-const FAVORITES_COLLECTION_TITLE = "Favoritos";
+const FAVORITES_COLLECTION_TITLE = "Favoritos"; // Titulo da coleção de Favoritos
+const isFavorited = ref(false); // Indica se a imagem está favoritada
+const favoritesAlbumId = ref(null); // ID da coleção de Favoritos
+const favoriteLoading = ref(false); // Indica se o processo de favoritar está em andamento
 
-// Normaliza o título para comparação case-insensitive.
+// Normaliza o título do álbum para comparação
 const normalizeAlbumTitle = (title) => String(title || "").trim().toLocaleLowerCase("pt-BR");
 
-// Verifica se o álbum já contém a imagem atual.
+// Verifica se o álbum contém a imagem
 const albumContainsImage = (album, imageId) => Array.isArray(album?.images) && album.images.some((img) => img?.id === imageId);
 
-// Garante a coleção "Favoritos" e adiciona a imagem nela.
-// Retorna: "created" / "added" / "exists" / null
-async function addImageToFavoritesCollection() {
+// Mostra o toast de adicionar imagem a coleção
+function showFavoriteToast(message) {
+  if (addToAlbumToastTimeout) clearTimeout(addToAlbumToastTimeout);
+  addToAlbumToastMessage.value = message;
+  showAddToAlbumToast.value = true;
 
-  // verifica se o usuário está logado
-  if (!isLoggedIn.value || !loggedUser.value?.id) {
+  addToAlbumToastTimeout = setTimeout(() => {
+    showAddToAlbumToast.value = false;
+    addToAlbumToastTimeout = null;
+  }, 4400);
+
+}
+
+// Garante que o escopo do usuário está carregado
+async function ensureUserScopeLoaded() {
+  if (!loggedUser.value?.id) return null;
+
+  selectedScopeId.value = collectionScopes.value[0]?.id ?? loggedUser.value.id;
+
+  await loadAlbumsForScope(selectedScope.value);
+
+  return selectedScope.value;
+}
+
+// Encontra o álbum de Favoritos
+async function findFavoritesAlbum() {
+  await ensureUserScopeLoaded();
+  return (
+    loadedAlbums.value.find(
+      (album) => normalizeAlbumTitle(album.title) === normalizeAlbumTitle(FAVORITES_COLLECTION_TITLE)
+    ) ?? null
+  );
+}
+
+// Atualiza o estado de Favoritos
+async function refreshFavoriteState() {
+  isFavorited.value = false;
+  favoritesAlbumId.value = null;
+  if (!isLoggedIn.value || !props.image?.id) return; // Verifica se o usuário está logado e se a imagem está presente
+
+  try {
+    const favoritesAlbum = await findFavoritesAlbum();
+    if (!favoritesAlbum?.id) return;
+
+    favoritesAlbumId.value = favoritesAlbum.id;
+
+    const detail = await albumsStore.getAlbumDetail(
+      authHeader.value,
+      favoritesAlbum.id
+    );
+ 
+    const albumData = detail.success ? detail.data : favoritesAlbum; // Obtém os dados do álbum
+    
+    isFavorited.value = albumContainsImage(albumData, props.image.id);
+
+  } catch (error) {
+    console.error("Erro ao verificar Favoritos:", error);
+  }
+}
+
+// Adiciona a imagem ao álbum de Favoritos
+async function addImageToFavoritesCollection() {
+  if (!isLoggedIn.value) {
     console.warn("Sem usuário logado ou sem id:", {
       isLoggedIn: isLoggedIn.value,
       loggedUser: loggedUser.value,
@@ -262,82 +322,141 @@ async function addImageToFavoritesCollection() {
   if (!props.image?.id) return null;
 
   const imageId = props.image.id;
-  const userId = loggedUser.value.id;
 
   try {
-    selectedScopeId.value = collectionScopes.value[0]?.id ?? userId;
-    await loadAlbumsForScope(selectedScope.value);
-
-    // verifica se a coleção de Favoritos existe
-    let favoritesAlbum = loadedAlbums.value.find(
-      (album) => normalizeAlbumTitle(album.title) === normalizeAlbumTitle(FAVORITES_COLLECTION_TITLE)
-    );
-
+    let favoritesAlbum = await findFavoritesAlbum();
     let created = false;
 
-    // cria a coleção de Favoritos se não existir
     if (!favoritesAlbum) {
       favoritesAlbum = await albumsStore.createAlbum(authHeader.value, {
         title: FAVORITES_COLLECTION_TITLE,
         description: "",
         is_private: false,
       });
+
       created = true;
 
-      // recarrega as coleções do escopo atual para atualizar a lista de álbuns
       await loadAlbumsForScope(selectedScope.value);
-
+      // Encontra o álbum de Favoritos
       favoritesAlbum =
         loadedAlbums.value.find(
-          (album) => normalizeAlbumTitle(album.title) === normalizeAlbumTitle(FAVORITES_COLLECTION_TITLE)
+          (album) =>
+            normalizeAlbumTitle(album.title) ===
+            normalizeAlbumTitle(FAVORITES_COLLECTION_TITLE)
         ) ?? favoritesAlbum;
     }
 
-    // obtém o id da coleção de Favoritos 
     const albumId = favoritesAlbum?.id;
+    if (!albumId) throw new Error("Não foi possível obter a coleção Favoritos.");
 
-    // verifica se a coleção de Favoritos existe
-    if (!albumId) {
-      throw new Error("Não foi possível obter a coleção Favoritos.");
-    }
+    favoritesAlbumId.value = albumId;
 
-    if (albumContainsImage(favoritesAlbum, imageId)) {
+    const detail = await albumsStore.getAlbumDetail(authHeader.value, albumId);
+
+    const albumData = detail.success ? detail.data : favoritesAlbum; // Obtém os dados do álbum
+
+    if (albumContainsImage(albumData, imageId)) { // Verifica se o álbum contém a imagem
+      isFavorited.value = true;
       return "exists";
     }
 
     await albumsStore.addImageToAlbum(authHeader.value, albumId, imageId);
     await loadAlbumsForScope(selectedScope.value);
+    isFavorited.value = true;
 
     return created ? "created" : "added";
+
   } catch (error) {
     console.error("Erro ao adicionar imagem aos Favoritos:", error);
     return null;
+
+  }
+
+}
+
+// Remove a imagem do álbum de Favoritos
+async function removeImageFromFavoritesCollection() {
+  if (!isLoggedIn.value || !props.image?.id) return false;
+
+  try {
+    let albumId = favoritesAlbumId.value;
+    if (!albumId) {
+      const favoritesAlbum = await findFavoritesAlbum();
+      albumId = favoritesAlbum?.id ?? null;
+
+    }
+
+    if (!albumId) return false;
+
+    await albumsStore.removeImagesFromAlbum(
+      authHeader.value,
+      albumId,
+      props.image.id
+    );
+
+    await loadAlbumsForScope(selectedScope.value);
+
+    isFavorited.value = false;
+    favoritesAlbumId.value = albumId;
+
+    return true;
+
+  } catch (error) {
+    console.error("Erro ao remover imagem dos Favoritos:", error);
+    return false;
+
   }
 }
 
-// Clique no botão do modal: cria/usa Favoritos e adiciona a imagem.
+// Alterna o estado de Favoritos
+async function toggleFavorite() {
+  if (favoriteLoading.value) return;
+
+  if (!isLoggedIn.value) {
+    console.warn("Sem usuário logado ou sem id:", {
+      isLoggedIn: isLoggedIn.value,
+      loggedUser: loggedUser.value,
+    });
+    return;
+  }
+
+  favoriteLoading.value = true;
+  try {
+    if (isFavorited.value) {
+      const removed = await removeImageFromFavoritesCollection();
+      if (removed) {
+        showFavoriteToast("A imagem foi removida da coleção Favoritos.");
+      }
+      return;
+    }
+
+    const result = await addImageToFavoritesCollection();
+
+    if (!result) return;
+
+    if (result === "exists") {
+      showFavoriteToast("A imagem já está na coleção Favoritos.");
+    } else {
+      showFavoriteToast("A imagem foi adicionada à coleção Favoritos.");
+    }
+  } finally {
+    favoriteLoading.value = false;
+  }
+}
+
+/** Modal: botão "Adicionar a coleção" abre o picker (não re-favorita). */
 async function onFavoriteAddToCollection() {
-  const result = await addImageToFavoritesCollection();
-  if (!result) return;
-
-  if (addToAlbumToastTimeout) {
-    clearTimeout(addToAlbumToastTimeout);
-  }
-
-  if (result === "exists") {
-    addToAlbumToastMessage.value =
-      "A imagem já está na coleção Favoritos.";
-  } else {
-    addToAlbumToastMessage.value =
-      "A imagem foi adicionada à coleção Favoritos.";
-  }
-
-  showAddToAlbumToast.value = true;
-  addToAlbumToastTimeout = setTimeout(() => {
-    showAddToAlbumToast.value = false;
-    addToAlbumToastTimeout = null;
-  }, 4400);
+  showFavoriteModal.value = false;
+  await openAlbumPicker();
 }
+
+watch(
+  () => [props.image?.id, isLoggedIn.value],
+  () => {
+    refreshFavoriteState();
+  },
+  { immediate: true }
+);
 
 /**
  * End: Adicionar imagem a coleção de Favoritos
@@ -345,7 +464,7 @@ async function onFavoriteAddToCollection() {
 
 // Abre o seletor de coleção no escopo do usuário
 async function openAlbumPicker() {
-  if (!isLoggedIn.value || !loggedUser.value?.id) {
+  if (!isLoggedIn.value) {
     console.warn("Sem usuário logado ou sem id:", { isLoggedIn: isLoggedIn.value, loggedUser: loggedUser.value });
     return;
   }
@@ -549,10 +668,16 @@ async function onCollectionCreated() {
       <button
         type="button"
         class="menu-button"
-        aria-label="Adicionar aos favoritos"
-        @click="showFavoriteModal = true"
+        :class="{ 'menu-button--favorited': isFavorited }"
+        :aria-label="isFavorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos'"
+        :aria-pressed="isFavorited"
+        :disabled="favoriteLoading"
+        @click="toggleFavorite"
       >
-        <i class="bi bi-heart" aria-hidden="true" />
+        <i
+          :class="isFavorited ? 'bi bi-heart-fill' : 'bi bi-heart'"
+          aria-hidden="true"
+        />
       </button>
       <button
         type="button"
@@ -811,6 +936,19 @@ $breakpoint-md: 768px;
 .menu-button:hover {
   background-color: var(--Laranja_C);
   color: var(--Cinza_E);
+}
+
+.menu-button--favorited {
+  color: var(--Laranja_E, #aa4f28);
+}
+
+.menu-button--favorited:hover {
+  color: var(--Laranja_E, #aa4f28);
+}
+
+.menu-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .menu-button:focus-visible {

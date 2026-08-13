@@ -1,6 +1,7 @@
 <template>
   <div class="map-controls d-flex flex-row align-items-center gap-2 px-2 py-1">
     <button
+      v-if="showSearch"
       type="button"
       class="action-btn btn btn-link text-decoration-none text-white d-flex justify-content-center align-items-center"
       @click="$emit('search')"
@@ -29,6 +30,15 @@
 
 <script setup>
 defineEmits(["zoom-in", "zoom-out", "search"]);
+
+// Telas que já têm a própria caixa de busca escondem a lupa: sem quem escute
+// `search`, o botão fica sem função nenhuma.
+defineProps({
+  showSearch: {
+    type: Boolean,
+    default: true,
+  },
+});
 </script>
 
 <style scoped>

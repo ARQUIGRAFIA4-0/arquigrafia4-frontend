@@ -5,7 +5,7 @@
     </div>
     <div class="user-card__body">
       <h3 class="user-card__name">{{ user.name }}</h3>
-      <FitTags :subjects="user.tags ?? []" />
+      <FitTags v-if="user.tags?.length" :subjects="user.tags" />
     </div>
   </a>
 </template>
@@ -57,6 +57,8 @@ $breakpoint-sm: 425px;
   box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
   text-decoration: none;
   transition: box-shadow 0.2s ease-in-out;
+  overflow: hidden;
+  display: block;
 
   &:hover {
     box-shadow: 2px 2px 6px 3px rgba(0, 0, 0, 0.25);
@@ -64,21 +66,17 @@ $breakpoint-sm: 425px;
 
   &__media {
     width: 100%;
-    aspect-ratio: 1 / 1;
-    max-height: 220px;
     overflow: hidden;
-
-    @media (max-width: $breakpoint-sm) {
-      max-height: 142px;
-    }
+    line-height: 0;
+    background: #e8e8e8;
   }
 
   &__image {
     width: 100%;
-    height: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
     object-fit: cover;
     display: block;
-    border-radius: 0.25rem 0.25rem 0 0;
   }
 
   &__body {
@@ -86,7 +84,6 @@ $breakpoint-sm: 425px;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    flex: 1;
 
     @media (max-width: $breakpoint-md) {
       padding: 0.4rem;
@@ -105,28 +102,6 @@ $breakpoint-sm: 425px;
 
     @media (max-width: $breakpoint-sm) {
       font-size: 0.75rem;
-    }
-  }
-
-  &__tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  &__tag {
-    background-color: var(--branco, #ffffff);
-    color: var(--Cinza_M, #a6a6a6);
-    padding: 0.25rem 0.5rem;
-    border: 1px solid var(--Cinza_M, #a6a6a6);
-    border-radius: 2px;
-    font-size: 0.75rem;
-
-    @media (max-width: $breakpoint-sm) {
-      font-size: 0.625rem;
     }
   }
 }

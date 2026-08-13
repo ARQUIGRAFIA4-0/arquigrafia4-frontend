@@ -46,7 +46,10 @@
               <div>
                 <div
                   class="d-flex align-items-center p-2"
-                  :class="{ 'justify-content-between cursor-pointer rounded': hasCollectives }"
+                  :class="{
+                    'justify-content-between cursor-pointer rounded':
+                      hasCollectives,
+                  }"
                   @click="hasCollectives ? toggleIdentityDropdown() : null"
                   :role="hasCollectives ? 'button' : undefined"
                 >
@@ -328,16 +331,25 @@
             <div class="mb-4 px-3">
               <UiField label="Obra" explain="Informe a obra relacionada">
                 <!-- Selected state -->
-                <div v-if="form.work" class="form-control d-flex align-items-center justify-content-between gap-2" style="height: auto; min-height: 38px;">
+                <div
+                  v-if="form.work"
+                  class="form-control d-flex align-items-center justify-content-between gap-2"
+                  style="height: auto; min-height: 38px"
+                >
                   <div class="d-flex flex-column lh-sm">
                     <span class="fw-semibold">{{ form.work.label }}</span>
-                    <small v-if="form.work.address" class="text-muted">{{ form.work.address }}</small>
+                    <small v-if="form.work.address" class="text-muted">{{
+                      form.work.address
+                    }}</small>
                   </div>
                   <button
                     type="button"
                     class="btn-close flex-shrink-0"
                     aria-label="Remover obra"
-                    @click="form.work = null; workInput = ''"
+                    @click="
+                      form.work = null;
+                      workInput = '';
+                    "
                   />
                 </div>
                 <!-- Search state -->
@@ -353,8 +365,11 @@
                     autocomplete="off"
                   />
                   <div
-                    v-if="showWorkSuggestions && (filteredWorkSuggestions.length > 0 || canShowCreateWork)"
-                    class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
+                    v-if="
+                      showWorkSuggestions &&
+                      (filteredWorkSuggestions.length > 0 || canShowCreateWork)
+                    "
+                    class="dropdown-menu menu-light w-100 show position-absolute top-100 start-0 mt-1"
                     style="z-index: 1000; max-height: 320px; overflow-y: auto"
                   >
                     <button
@@ -364,18 +379,38 @@
                       class="dropdown-item d-flex flex-column align-items-start py-2"
                       @click="selectWork(work)"
                     >
-                      <span class="fw-semibold">{{ workPrimaryTitle(work) }}</span>
-                      <small v-if="workMatchedAlternate(work, workInput)" class="text-muted fst-italic">
-                        também conhecido como: {{ workMatchedAlternate(work, workInput) }}
+                      <span class="fw-semibold">{{
+                        workPrimaryTitle(work)
+                      }}</span>
+                      <small
+                        v-if="workMatchedAlternate(work, workInput)"
+                        class="text-muted fst-italic"
+                      >
+                        também conhecido como:
+                        {{ workMatchedAlternate(work, workInput) }}
                       </small>
-                      <small v-else-if="work.location?.label" class="text-muted">{{ work.location.label }}</small>
-                      <small v-if="workMatchedAlternate(work, workInput) && work.location?.label" class="text-muted">{{ work.location.label }}</small>
+                      <small
+                        v-else-if="work.location?.label"
+                        class="text-muted"
+                        >{{ work.location.label }}</small
+                      >
+                      <small
+                        v-if="
+                          workMatchedAlternate(work, workInput) &&
+                          work.location?.label
+                        "
+                        class="text-muted"
+                        >{{ work.location.label }}</small
+                      >
                     </button>
                     <button
                       v-if="canShowCreateWork"
                       type="button"
                       class="dropdown-item text-primary d-flex align-items-center gap-1"
-                      @click="showWorkCreateModal = true; showWorkSuggestions = false"
+                      @click="
+                        showWorkCreateModal = true;
+                        showWorkSuggestions = false;
+                      "
                     >
                       <i class="bi bi-plus-circle" />
                       <span>Criar obra "{{ workInput.trim() }}"</span>
@@ -403,8 +438,11 @@
                     autocomplete="off"
                   />
                   <div
-                    v-if="showTagSuggestions && (filteredTagSuggestions.length > 0 || canCreateSubject)"
-                    class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
+                    v-if="
+                      showTagSuggestions &&
+                      (filteredTagSuggestions.length > 0 || canCreateSubject)
+                    "
+                    class="dropdown-menu menu-light w-100 show position-absolute top-100 start-0 mt-1"
                     style="z-index: 1000; max-height: 300px; overflow-y: auto"
                   >
                     <button
@@ -424,7 +462,11 @@
                       @click="createAndAddSubject(tagInput.trim())"
                     >
                       <i class="bi bi-plus-circle" />
-                      <span>{{ isCreatingSubject ? "Criando..." : `Criar tag "${tagInput.trim()}"` }}</span>
+                      <span>{{
+                        isCreatingSubject
+                          ? "Criando..."
+                          : `Criar tag "${tagInput.trim()}"`
+                      }}</span>
                     </button>
                   </div>
                 </div>
@@ -566,34 +608,49 @@
 
             <div class="mb-4">
               <UiField
-                label="Buscar por localidade"
-                explain="Busque e selecione a localidade no mapa"
+                :label="
+                  isLocationSelected
+                    ? 'Localidade selecionada'
+                    : 'Buscar por localidade'
+                "
+                :explain="
+                  isLocationSelected
+                    ? 'Clique no mapa para escolher outro ponto'
+                    : 'Busque e selecione a localidade no mapa'
+                "
               >
-                <div class="position-relative mb-3">
-                  <div class="input-group">
-                    <input
-                      type="text"
-                      class="form-control"
-                      placeholder="Ex: Av. Paulista, 1578, São Paulo"
-                      v-model="form.location"
-                      @keydown.enter.prevent="searchLocation"
-                      @focus="showLocationSuggestions = true"
-                      @blur="hideLocationSuggestions"
-                      autocomplete="off"
-                    />
-                    <button
-                      type="button"
-                      class="btn btn-outline-secondary"
-                      @click="searchLocation"
-                    >
-                      <i class="bi bi-search" />
-                    </button>
-                  </div>
+                <!-- Estado de busca: enquanto não há marcador. -->
+                <div v-if="!isLocationSelected" class="position-relative mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Ex: Av. Paulista, 1578, São Paulo"
+                    v-model="locationQuery"
+                    @input="onLocationInput"
+                    @keydown.escape="closeLocationSuggestions"
+                    autocomplete="off"
+                  />
                   <div
-                    v-if="showLocationSuggestions && locationSuggestions.length > 0"
-                    class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
+                    v-if="
+                      isSearchingLocation ||
+                      locationSuggestions.length > 0 ||
+                      hasSearchedLocation
+                    "
+                    class="dropdown-menu menu-light w-100 show position-absolute top-100 start-0 mt-1"
                     style="z-index: 1000; max-height: 300px; overflow-y: auto"
                   >
+                    <span
+                      v-if="isSearchingLocation"
+                      class="dropdown-item-text text-muted fst-italic small"
+                    >
+                      Buscando…
+                    </span>
+                    <span
+                      v-else-if="locationSuggestions.length === 0"
+                      class="dropdown-item-text text-muted small"
+                    >
+                      Nenhum resultado encontrado.
+                    </span>
                     <button
                       v-for="(suggestion, index) in locationSuggestions"
                       :key="index"
@@ -601,9 +658,57 @@
                       class="dropdown-item text-wrap small"
                       @click="selectLocationSuggestion(suggestion)"
                     >
-                      {{ suggestion.display_name }}
+                      {{ labelFromResult(suggestion) }}
                     </button>
                   </div>
+                </div>
+
+                <!-- Estado selecionado: o endereço do marcador, com o X de
+                     remover no padrão de "Suas redes" do formulário de perfil. -->
+                <div v-else class="mb-3">
+                  <div class="input-group">
+                    <input
+                      v-if="isEditingLocationLabel"
+                      type="text"
+                      class="form-control border-end-0"
+                      v-model="form.location"
+                      aria-label="Endereço da imagem"
+                      @keydown.enter.prevent="finishEditingLocationLabel"
+                      @blur="finishEditingLocationLabel"
+                      v-focus
+                    />
+                    <!-- `readonly` em vez de `disabled`: mantém o endereço
+                         acessível ao teclado e ao leitor de tela, e permite
+                         rolar o texto quando ele é longo. -->
+                    <input
+                      v-else
+                      type="text"
+                      class="form-control border-end-0 location-readonly"
+                      aria-label="Endereço da imagem"
+                      readonly
+                      :value="
+                        isReverseGeocoding
+                          ? 'Buscando endereço…'
+                          : selectedLocationLabel
+                      "
+                    />
+                    <button
+                      type="button"
+                      class="btn btn-light location-clear-btn"
+                      aria-label="Limpar localização"
+                      @click="clearLocation"
+                    >
+                      <i class="bi bi-x-lg" />
+                    </button>
+                  </div>
+                  <button
+                    v-if="!isEditingLocationLabel && !isReverseGeocoding"
+                    type="button"
+                    class="btn btn-link btn-sm px-0 text-decoration-underline"
+                    @click="startEditingLocationLabel"
+                  >
+                    Editar endereço
+                  </button>
                 </div>
               </UiField>
 
@@ -628,18 +733,19 @@
                 >
                   <MapControls
                     class="position-absolute bottom-0 start-50 translate-middle-x mb-3"
+                    :show-search="false"
                     @zoom-in="zoomIn"
                     @zoom-out="zoomOut"
                   />
-                  <button
-                    v-if="form.coordinates"
-                    type="button"
-                    class="position-absolute top-0 end-0 m-2 btn btn-sm btn-light border"
+                  <!-- Sobreposto ao mapa: informa a busca sem empurrar o
+                       restante da página ao aparecer e sumir. -->
+                  <span
+                    v-if="isReverseGeocoding"
+                    class="position-absolute top-0 start-0 m-2 px-2 py-1 rounded bg-white border small text-muted"
                     style="z-index: 1"
-                    @click="form.coordinates = null"
                   >
-                    <i class="bi bi-x-circle me-1" />Remover marcador
-                  </button>
+                    Buscando o endereço deste ponto…
+                  </span>
                 </MapLibreMap>
               </div>
             </div>
@@ -757,6 +863,7 @@ import { useRouter, useRoute } from "vue-router";
 import { useQueryClient } from "@tanstack/vue-query";
 import { formatDate, parseYearFromDateString } from "@/helpers/dateUtils";
 import { isMetadataValid } from "@/helpers/imageMetadata";
+import { labelFromResult } from "@/helpers/locationLabel";
 import Fuse from "fuse.js";
 import { Popover } from "bootstrap";
 defineOptions({ name: "ImageMetadataUpload" });
@@ -783,7 +890,10 @@ function postUploadTarget() {
 async function invalidateImageCaches() {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["images"], refetchType: "all" }),
-    queryClient.invalidateQueries({ queryKey: ["collective-images"], refetchType: "all" }),
+    queryClient.invalidateQueries({
+      queryKey: ["collective-images"],
+      refetchType: "all",
+    }),
   ]);
 }
 const imageUploadStore = useImageUploadStore();
@@ -805,7 +915,9 @@ const getInitials = (name) => name?.charAt(0).toUpperCase() || "?";
 
 const resolveAvatarUrl = (entity) => {
   if (entity.avatar_url) {
-    return entity.avatar_url.startsWith("http") ? entity.avatar_url : `${API_BASE_URL}${entity.avatar_url}`;
+    return entity.avatar_url.startsWith("http")
+      ? entity.avatar_url
+      : `${API_BASE_URL}${entity.avatar_url}`;
   }
   if (entity.avatar_path) {
     return `${API_BASE_URL}/storage/${entity.avatar_path}`;
@@ -841,30 +953,39 @@ const publishingIdentities = computed(() => {
 });
 
 // Pré-seleciona a identidade com base no contexto de onde o upload foi iniciado
-watch(publishingIdentities, (identities) => {
-  if (selectedIdentityId.value !== null || !identities.length) return;
-  const { publishAs, publishAsId } = route.query;
-  if (!publishAs || !publishAsId) return;
-  const match = identities.find(
-    (i) => i.type === publishAs && String(i.id) === String(publishAsId)
-  );
-  if (match) selectedIdentityId.value = match.id;
-}, { immediate: true });
+watch(
+  publishingIdentities,
+  (identities) => {
+    if (selectedIdentityId.value !== null || !identities.length) return;
+    const { publishAs, publishAsId } = route.query;
+    if (!publishAs || !publishAsId) return;
+    const match = identities.find(
+      (i) => i.type === publishAs && String(i.id) === String(publishAsId),
+    );
+    if (match) selectedIdentityId.value = match.id;
+  },
+  { immediate: true },
+);
 
 // Padrão: identidade do usuário
 const selectedIdentity = computed(() => {
   if (!publishingIdentities.value.length) return null;
   if (!selectedIdentityId.value) return publishingIdentities.value[0];
-  return publishingIdentities.value.find((i) => i.id === selectedIdentityId.value) || publishingIdentities.value[0];
+  return (
+    publishingIdentities.value.find((i) => i.id === selectedIdentityId.value) ||
+    publishingIdentities.value[0]
+  );
 });
 
-const hasCollectives = computed(() =>
-  Array.isArray(loggedUser.value?.collectives) && loggedUser.value.collectives.length > 0
+const hasCollectives = computed(
+  () =>
+    Array.isArray(loggedUser.value?.collectives) &&
+    loggedUser.value.collectives.length > 0,
 );
 
 const availableIdentities = computed(() => {
   return publishingIdentities.value.filter(
-    (identity) => identity.id !== selectedIdentity.value?.id
+    (identity) => identity.id !== selectedIdentity.value?.id,
   );
 });
 
@@ -910,11 +1031,14 @@ onBeforeUnmount(() => {
     sameDataPopover.dispose();
     sameDataPopover = null;
   }
+  if (locationDebounce) clearTimeout(locationDebounce);
+  locationAbortController?.abort();
+  reverseAbortController?.abort();
 });
 
 const isTitleTouched = ref(false);
 const isTitleInvalid = computed(
-  () => isTitleTouched.value && !form.value.title.trim()
+  () => isTitleTouched.value && !form.value.title.trim(),
 );
 
 const isAuthorNameTouched = ref(false);
@@ -959,11 +1083,7 @@ const formatExifDateToIso = (exifDate) => {
   try {
     const date = exifDate instanceof Date ? exifDate : new Date(exifDate);
     if (isNaN(date.getTime())) return "";
-    return formatDate(
-      date.getFullYear(),
-      date.getMonth() + 1,
-      date.getDate()
-    );
+    return formatDate(date.getFullYear(), date.getMonth() + 1, date.getDate());
   } catch {
     return "";
   }
@@ -1005,7 +1125,11 @@ watch(
         dateEnd = exifDate;
       }
       // Se o usuário informou uma data e o tipo é 'year', expande para o ano completo
-      else if (date && !storedMetadata.dateEnd && form.value.dateType === 'year') {
+      else if (
+        date &&
+        !storedMetadata.dateEnd &&
+        form.value.dateType === "year"
+      ) {
         const year = parseYearFromDateString(date);
         if (year) {
           date = formatDate(year, 1, 1);
@@ -1013,7 +1137,7 @@ watch(
         }
       }
       // Se o usuário informou uma data e o tipo é 'interval', expande as duas datas
-      else if (date && dateEnd && form.value.dateType === 'interval') {
+      else if (date && dateEnd && form.value.dateType === "interval") {
         const startYear = parseYearFromDateString(date);
         const endYear = parseYearFromDateString(dateEnd);
         if (startYear) date = formatDate(startYear, 1, 1);
@@ -1038,7 +1162,7 @@ watch(
       isAuthorNameTouched.value = false;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 watch(
@@ -1064,7 +1188,7 @@ watch(
       }
     }
   },
-  { deep: true }
+  { deep: true },
 );
 
 const mapStyleUrl = "https://tiles.openfreemap.org/styles/positron";
@@ -1080,8 +1204,39 @@ const handleMapError = (error) => {
   console.error("Erro no mapa:", error);
 };
 
-const handleMapClick = ({ lng, lat }) => {
+// Clicar no mapa também preenche o endereço, como no WorkCreateModal: sem isso
+// o rótulo salvo continuaria apontando para um lugar diferente do marcador.
+const handleMapClick = async ({ lng, lat }) => {
   form.value.coordinates = { lng, lat };
+
+  // Uma busca por texto pendente sobrescreveria o endereço que vamos escrever
+  // aqui, então ela é descartada junto com a lista de sugestões.
+  if (locationDebounce) clearTimeout(locationDebounce);
+  locationAbortController?.abort();
+  isSearchingLocation.value = false;
+  closeLocationSuggestions();
+
+  reverseAbortController?.abort();
+  reverseAbortController = new AbortController();
+  const { signal } = reverseAbortController;
+
+  isReverseGeocoding.value = true;
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`,
+      { headers: { "Accept-Language": "pt-BR,pt" }, signal },
+    );
+    const data = await response.json();
+    form.value.location = labelFromResult(data, { lat, lng });
+  } catch (error) {
+    if (error.name === "AbortError") return;
+    console.warn("Erro no reverse geocoding:", error);
+    // Sem endereço, o rótulo vira a própria coordenada: o estado selecionado
+    // continua descrevendo o marcador, em vez de ficar em branco.
+    form.value.location = labelFromResult(null, { lat, lng });
+  } finally {
+    if (!signal.aborted) isReverseGeocoding.value = false;
+  }
 };
 
 const zoomIn = () => {
@@ -1093,40 +1248,151 @@ const zoomOut = () => {
 };
 
 // Geocodificação de localização
+//
+// `locationQuery` é o que o usuário digita para procurar, e `form.location` é
+// o rótulo do ponto escolhido — o valor que vai para o backend. Só existe
+// rótulo quando existe coordenada, o que impede o endereço de apontar para um
+// lugar diferente do marcador.
+const locationQuery = ref("");
 const locationSuggestions = ref([]);
-const showLocationSuggestions = ref(false);
+const isSearchingLocation = ref(false);
+const hasSearchedLocation = ref(false);
+const isReverseGeocoding = ref(false);
+const isEditingLocationLabel = ref(false);
+const LOCATION_MIN_LENGTH = 3;
+let locationDebounce = null;
+let locationAbortController = null;
+let reverseAbortController = null;
+
+// A coordenada é a fonte da verdade: havendo marcador, a tela está no estado
+// "selecionado" e a busca dá lugar ao endereço escolhido.
+const isLocationSelected = computed(() => form.value.coordinates !== null);
+
+// Uma coordenada sem rótulo chega pelo EXIF da foto, que é adotado sem passar
+// pela Nominatim. Nesse caso o ponto se descreve pelas próprias coordenadas em
+// vez de deixar a caixa vazia.
+const selectedLocationLabel = computed(() => {
+  if (form.value.location?.trim()) return form.value.location;
+  if (!form.value.coordinates) return "";
+  const { lat, lng } = form.value.coordinates;
+  return labelFromResult(null, { lat, lng });
+});
 
 const searchLocation = async () => {
-  const query = form.value.location.trim();
-  if (!query || query.length < 3) {
+  const query = locationQuery.value.trim();
+  if (query.length < LOCATION_MIN_LENGTH) {
     locationSuggestions.value = [];
+    hasSearchedLocation.value = false;
     return;
   }
+  // Cancela a busca anterior para que uma resposta atrasada não sobrescreva
+  // o resultado da digitação mais recente.
+  locationAbortController?.abort();
+  locationAbortController = new AbortController();
+  const { signal } = locationAbortController;
+
+  isSearchingLocation.value = true;
   try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`,
-      { headers: { "Accept-Language": "pt-BR,pt" } }
+      // `addressdetails=1` traz o objeto `address` estruturado, de onde o
+      // rótulo é composto sem o nome do estabelecimento.
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`,
+      { headers: { "Accept-Language": "pt-BR,pt" }, signal },
     );
     locationSuggestions.value = await response.json();
+    hasSearchedLocation.value = true;
   } catch (error) {
+    if (error.name === "AbortError") return;
     console.warn("Erro ao buscar localidade:", error);
+    locationSuggestions.value = [];
+    hasSearchedLocation.value = true;
+  } finally {
+    if (!signal.aborted) isSearchingLocation.value = false;
   }
+};
+
+// A Nominatim é gratuita e limita a 1 req/s: só buscamos depois que
+// o usuário para de digitar.
+const onLocationInput = () => {
+  hasSearchedLocation.value = false;
+  if (locationDebounce) clearTimeout(locationDebounce);
+  locationDebounce = setTimeout(searchLocation, 500);
 };
 
 const selectLocationSuggestion = (suggestion) => {
   const lng = parseFloat(suggestion.lon);
   const lat = parseFloat(suggestion.lat);
-  form.value.location = suggestion.display_name;
   form.value.coordinates = { lng, lat };
+  form.value.location = labelFromResult(suggestion, { lat, lng });
   mapInstance.value?.flyTo({ center: [lng, lat], zoom: 14 });
   locationSuggestions.value = [];
-  showLocationSuggestions.value = false;
+  hasSearchedLocation.value = false;
 };
 
-const hideLocationSuggestions = () => {
-  setTimeout(() => {
-    showLocationSuggestions.value = false;
-  }, 200);
+// Fecha a lista sem descartar o que já foi digitado ou selecionado.
+const closeLocationSuggestions = () => {
+  if (locationDebounce) clearTimeout(locationDebounce);
+  locationSuggestions.value = [];
+  hasSearchedLocation.value = false;
+};
+
+// Volta ao estado de busca: descarta rótulo e marcador juntos, nunca um só.
+// O texto digitado antes da seleção é devolvido ao campo, para que corrigir um
+// endereço seja ajustar a busca em vez de redigitá-la do zero.
+const clearLocation = () => {
+  if (locationDebounce) clearTimeout(locationDebounce);
+  locationAbortController?.abort();
+  reverseAbortController?.abort();
+  form.value.location = "";
+  form.value.coordinates = null;
+  locationSuggestions.value = [];
+  hasSearchedLocation.value = false;
+  isSearchingLocation.value = false;
+  isReverseGeocoding.value = false;
+  isEditingLocationLabel.value = false;
+};
+
+// Leva o cursor ao campo assim que ele aparece, para "Editar endereço" já sair
+// digitável.
+const vFocus = {
+  mounted: (el) => el.focus(),
+};
+
+// Zera só o que é estado de tela, preservando rótulo e coordenada da imagem.
+// Declarado aqui, junto do estado que manipula, e ligado à troca de imagem por
+// um watcher próprio — o watcher de `selectedIndex` que restaura o formulário
+// roda com `immediate: true`, ou seja, ainda durante o setup, quando estas
+// referências não existem.
+const resetLocationUi = () => {
+  if (locationDebounce) clearTimeout(locationDebounce);
+  locationAbortController?.abort();
+  reverseAbortController?.abort();
+  locationQuery.value = "";
+  locationSuggestions.value = [];
+  hasSearchedLocation.value = false;
+  isSearchingLocation.value = false;
+  isReverseGeocoding.value = false;
+  isEditingLocationLabel.value = false;
+};
+
+watch(selectedIndex, resetLocationUi);
+
+// Saída de emergência para os casos em que a Nominatim não descreve bem o
+// lugar: o rótulo passa a ser editável, mas a coordenada permanece a do
+// marcador. É a única forma de texto e ponto divergirem, e exige ação
+// deliberada.
+const startEditingLocationLabel = () => {
+  isEditingLocationLabel.value = true;
+};
+
+const finishEditingLocationLabel = () => {
+  isEditingLocationLabel.value = false;
+  // Rótulo apagado por inteiro volta a ser o do ponto marcado, para o envio
+  // nunca sair com coordenada sem endereço.
+  if (!form.value.location.trim() && form.value.coordinates) {
+    const { lat, lng } = form.value.coordinates;
+    form.value.location = labelFromResult(null, { lat, lng });
+  }
 };
 
 const isRightsInvalid = computed(() => {
@@ -1139,7 +1405,7 @@ const isRightsInvalid = computed(() => {
 
 const isEssenciaisInvalid = computed(
   () =>
-    isRightsInvalid.value || isTitleInvalid.value || isAuthorNameInvalid.value
+    isRightsInvalid.value || isTitleInvalid.value || isAuthorNameInvalid.value,
 );
 
 const dateYearInput = computed({
@@ -1182,7 +1448,7 @@ const canCreateSubject = computed(() => {
   if (!term) return false;
   if (form.value.tags.includes(term)) return false;
   return !allSubjects.value.some(
-    (s) => s.term.toLowerCase() === term.toLowerCase()
+    (s) => s.term.toLowerCase() === term.toLowerCase(),
   );
 });
 
@@ -1245,8 +1511,8 @@ const onTagInputChange = () => {
       const results = fuseInstance.search(tagInput.value);
       // Exclui tags que já foram adicionadas
       filteredTagSuggestions.value = results
-        .map(result => result.item) // extrai o assunto em si
-        .filter(item => !form.value.tags.includes(item.term))
+        .map((result) => result.item) // extrai o assunto em si
+        .filter((item) => !form.value.tags.includes(item.term))
         .slice(0, 10);
     }
   }, 300); // 300ms debounce
@@ -1269,7 +1535,8 @@ const selectTagSuggestion = (term) => {
 };
 
 const createAndAddSubject = async (term) => {
-  if (!term || form.value.tags.includes(term) || isCreatingSubject.value) return;
+  if (!term || form.value.tags.includes(term) || isCreatingSubject.value)
+    return;
   isCreatingSubject.value = true;
   try {
     const subjectData = await vracStore.addVRACSubject(term);
@@ -1302,7 +1569,7 @@ const addTag = async () => {
     return;
   }
   const exactMatch = allSubjects.value.find(
-    (s) => s.term.toLowerCase() === term.toLowerCase()
+    (s) => s.term.toLowerCase() === term.toLowerCase(),
   );
   if (exactMatch) {
     selectTagSuggestion(exactMatch.term);
@@ -1336,7 +1603,7 @@ const workMatchedAlternate = (work, query) => {
   const preferred = workPrimaryTitle(work).toLowerCase();
   if (preferred.includes(q)) return null;
   const alt = (work?.titles || []).find(
-    (t) => !t.pref && t.label.toLowerCase().includes(q)
+    (t) => !t.pref && t.label.toLowerCase().includes(q),
   );
   return alt?.label || null;
 };
@@ -1350,7 +1617,7 @@ watch(
   () => form.value.work,
   (selected) => {
     if (!selected) workInput.value = "";
-  }
+  },
 );
 
 const onWorkInputChange = () => {
@@ -1413,7 +1680,7 @@ const materializeWork = async (draft) => {
     const res = await axios.post(
       "/api/vrac-titles",
       { label: t.label, type: t.type, pref: t.pref },
-      { headers: authHeader }
+      { headers: authHeader },
     );
     titleIds.push(res.data.title.id);
   }
@@ -1424,7 +1691,9 @@ const materializeWork = async (draft) => {
   const resolveRoleId = async (label) => {
     if (roleIdCache[label]) return roleIdCache[label];
     if (!roles) roles = (await vracStore.getVRACAgentRoles()) || [];
-    const match = roles.find((r) => r.label?.toLowerCase() === label.toLowerCase());
+    const match = roles.find(
+      (r) => r.label?.toLowerCase() === label.toLowerCase(),
+    );
     if (match) {
       roleIdCache[label] = match.id;
       return match.id;
@@ -1432,7 +1701,7 @@ const materializeWork = async (draft) => {
     const res = await axios.post(
       "/api/vrac-agent-roles",
       { label: label.toLowerCase() },
-      { headers: authHeader }
+      { headers: authHeader },
     );
     const id = res.data.role.id;
     roles.push(res.data.role);
@@ -1447,7 +1716,7 @@ const materializeWork = async (draft) => {
       const res = await axios.post(
         "/api/vrac-contributor-names",
         { name: a.contributorName, type: "personal" },
-        { headers: authHeader }
+        { headers: authHeader },
       );
       contribId = res.data.name.id;
     }
@@ -1455,7 +1724,7 @@ const materializeWork = async (draft) => {
     const res = await axios.post(
       "/api/vrac-agents",
       { contributor_name_id: contribId, role_id: roleId },
-      { headers: authHeader }
+      { headers: authHeader },
     );
     agentIds.push(res.data.agent.id);
   }
@@ -1468,12 +1737,36 @@ const materializeWork = async (draft) => {
 
   // Vocabulários: IDs existentes são usados diretamente; novos termos são criados via POST (em minúsculas).
   const VOCAB_CREATE = {
-    stylePeriods: { endpoint: "vrac-style-periods",     payload: (v) => ({ label: v }),                              responseKey: "period"    },
-    culturalCtxs: { endpoint: "vrac-cultural-contexts", payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "context"   },
-    workTypes:    { endpoint: "vrac-work-types",        payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "work_type" },
-    techniques:   { endpoint: "vrac-techniques",        payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "technique" },
-    materials:    { endpoint: "vrac-materials",         payload: (v) => ({ label: v, type: "other", vocab: "ARQUIGRAFIA" }), responseKey: "material"  },
-    subjects:     { endpoint: "vrac-subjects",          payload: (v) => ({ term: v, type: "otherTopic", vocab: "ARQUIGRAFIA" }), responseKey: "data" },
+    stylePeriods: {
+      endpoint: "vrac-style-periods",
+      payload: (v) => ({ label: v }),
+      responseKey: "period",
+    },
+    culturalCtxs: {
+      endpoint: "vrac-cultural-contexts",
+      payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),
+      responseKey: "context",
+    },
+    workTypes: {
+      endpoint: "vrac-work-types",
+      payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),
+      responseKey: "work_type",
+    },
+    techniques: {
+      endpoint: "vrac-techniques",
+      payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),
+      responseKey: "technique",
+    },
+    materials: {
+      endpoint: "vrac-materials",
+      payload: (v) => ({ label: v, type: "other", vocab: "ARQUIGRAFIA" }),
+      responseKey: "material",
+    },
+    subjects: {
+      endpoint: "vrac-subjects",
+      payload: (v) => ({ term: v, type: "otherTopic", vocab: "ARQUIGRAFIA" }),
+      responseKey: "data",
+    },
   };
 
   const resolvedVocab = {};
@@ -1483,7 +1776,9 @@ const materializeWork = async (draft) => {
     const cfg = VOCAB_CREATE[key];
     for (const term of bucket.newTerms) {
       const lower = term.toLowerCase();
-      const res = await axios.post(`/api/${cfg.endpoint}`, cfg.payload(lower), { headers: authHeader });
+      const res = await axios.post(`/api/${cfg.endpoint}`, cfg.payload(lower), {
+        headers: authHeader,
+      });
       const created = res.data[cfg.responseKey];
       if (created?.id) ids.push(created.id);
     }
@@ -1496,17 +1791,25 @@ const materializeWork = async (draft) => {
     location_label: draft.locationLabel || undefined,
     titles: titleIds,
   };
-  if (agentIds.length)                       workPayload.agents            = agentIds;
-  if (dateIds.length)                        workPayload.dates             = dateIds;
-  if (draft.description)                     workPayload.description       = draft.description;
-  if (resolvedVocab.stylePeriods.length)     workPayload.style_periods     = resolvedVocab.stylePeriods;
-  if (resolvedVocab.culturalCtxs.length)     workPayload.cultural_contexts = resolvedVocab.culturalCtxs;
-  if (resolvedVocab.workTypes.length)        workPayload.work_types        = resolvedVocab.workTypes;
-  if (resolvedVocab.techniques.length)       workPayload.techniques        = resolvedVocab.techniques;
-  if (resolvedVocab.materials.length)        workPayload.materials         = resolvedVocab.materials;
-  if (resolvedVocab.subjects.length)         workPayload.subjects          = resolvedVocab.subjects;
+  if (agentIds.length) workPayload.agents = agentIds;
+  if (dateIds.length) workPayload.dates = dateIds;
+  if (draft.description) workPayload.description = draft.description;
+  if (resolvedVocab.stylePeriods.length)
+    workPayload.style_periods = resolvedVocab.stylePeriods;
+  if (resolvedVocab.culturalCtxs.length)
+    workPayload.cultural_contexts = resolvedVocab.culturalCtxs;
+  if (resolvedVocab.workTypes.length)
+    workPayload.work_types = resolvedVocab.workTypes;
+  if (resolvedVocab.techniques.length)
+    workPayload.techniques = resolvedVocab.techniques;
+  if (resolvedVocab.materials.length)
+    workPayload.materials = resolvedVocab.materials;
+  if (resolvedVocab.subjects.length)
+    workPayload.subjects = resolvedVocab.subjects;
 
-  const workRes = await axios.post("/api/vrac-works", workPayload, { headers: authHeader });
+  const workRes = await axios.post("/api/vrac-works", workPayload, {
+    headers: authHeader,
+  });
   return workRes.data.data;
 };
 
@@ -1591,7 +1894,7 @@ const handleSubmit = async () => {
   if (!canSubmit.value) {
     toast.show(
       "Por favor, preencha todos os dados obrigatórios de todas as imagens.",
-      "error"
+      "error",
     );
     return;
   }
@@ -1636,14 +1939,13 @@ const handleSubmit = async () => {
 
         if (photographerName) {
           let contributor = allContributorNames.value.find(
-            (c) => c.name.toLowerCase() === photographerName.toLowerCase()
+            (c) => c.name.toLowerCase() === photographerName.toLowerCase(),
           );
 
           // Se o fotógrafo não existe, cria um novo
           if (!contributor) {
-            const newContributor = await vracStore.addVRACContributorName(
-              photographerName
-            );
+            const newContributor =
+              await vracStore.addVRACContributorName(photographerName);
             if (newContributor?.id) {
               contributor = newContributor;
               allContributorNames.value.push(contributor);
@@ -1678,8 +1980,7 @@ const handleSubmit = async () => {
         }
         if (metadata.dateAccuracy === "approximate") {
           formData.append("circa", "1");
-        }
-        else {
+        } else {
           formData.append("circa", "0");
         }
         if (metadata.coordinates) {
@@ -1810,7 +2111,7 @@ const handleSubmit = async () => {
     toast.show(
       error.response?.data?.message ||
         "Erro ao enviar imagens. Por favor, tente novamente.",
-      "error"
+      "error",
     );
   }
 };
@@ -1823,6 +2124,32 @@ $breakpoint-md: 768px;
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
     @content;
+  }
+}
+
+.location-readonly {
+  cursor: default;
+}
+
+// X de remover a localização: claro em repouso, invertido no hover.
+.location-clear-btn {
+  display: flex;
+  align-items: center;
+  padding-top: 0;
+  padding-bottom: 0;
+  border: var(--bs-border-width) solid var(--Preto);
+  border-left: 0;
+
+  .bi {
+    line-height: 1;
+    vertical-align: 0;
+  }
+
+  &:hover,
+  &:focus {
+    background-color: var(--Preto);
+    border-color: var(--Preto);
+    color: var(--Branco);
   }
 }
 
