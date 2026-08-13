@@ -72,10 +72,18 @@ const { pendingImages, selectedIndex } = storeToRefs(imageUploadStore);
 const fileInput = ref(null);
 const previewItems = ref([]);
 
+// Assinatura do que de fato altera as prévias: quais imagens existem e como
+// estão giradas. Sem isso, um watcher profundo em `pendingImages` reagiria
+// também a cada tecla digitada no formulário de metadados, recriando todas as
+// object URLs e forçando o browser a redecodificar as fotos.
+const previewSignature = computed(() =>
+  pendingImages.value.map((item) => `${item.id}:${item.rotation || 0}`).join("|")
+);
+
 watch(
-  pendingImages,
-  (newItems, _, onCleanup) => {
-    const generatedPreviews = newItems.map((item) => ({
+  previewSignature,
+  (_signature, _prev, onCleanup) => {
+    const generatedPreviews = pendingImages.value.map((item) => ({
       id: item.id,
       file: item.file,
       url: item.file ? URL.createObjectURL(item.file) : "",
@@ -92,7 +100,7 @@ watch(
       });
     });
   },
-  { immediate: true, deep: true }
+  { immediate: true }
 );
 
 // Indica se a imagem no índice já tem os metadados mínimos preenchidos.
