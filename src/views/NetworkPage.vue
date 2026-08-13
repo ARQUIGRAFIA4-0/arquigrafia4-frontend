@@ -25,8 +25,27 @@
     </div>
 
     <div ref="gridRef" class="user-grid">
-      <div v-if="isLoading && results.length === 0" class="user-grid__skeletons">
-        <div v-for="n in 6" :key="`skeleton-${n}`" class="user-grid__skeleton" />
+      <div v-if="isLoading && results.length === 0" class="user-masonry" aria-hidden="true">
+        <div
+          v-for="(column, colIndex) in skeletonColumns"
+          :key="`skeleton-col-${colIndex}`"
+          class="user-masonry__column"
+        >
+          <div
+            v-for="(slot, slotIndex) in column"
+            :key="`skeleton-${colIndex}-${slotIndex}`"
+            class="user-masonry__item"
+          >
+            <div
+              class="user-grid__skeleton"
+              :class="
+                slot === 'collective'
+                  ? 'user-grid__skeleton--collective'
+                  : 'user-grid__skeleton--user'
+              "
+            />
+          </div>
+        </div>
       </div>
 
       <div v-else-if="hasResults" class="user-masonry">
@@ -159,6 +178,19 @@ const masonryColumns = computed(() => {
   }
 
   return buildRoundRobinColumns(items, cols);
+});
+
+/** Placeholder no mesmo xadrez do masonry (C curto / P alto). */
+const SKELETON_ROWS = 3;
+
+const skeletonColumns = computed(() => {
+  const cols = columnCount.value;
+  return Array.from({ length: cols }, (_, col) =>
+    Array.from({ length: SKELETON_ROWS }, (_, row) => {
+      const wantCollective = (col % 2 === 0) === (row % 2 === 0);
+      return wantCollective ? "collective" : "user";
+    })
+  );
 });
 
 /**
@@ -328,22 +360,22 @@ $breakpoint-sm: 425px;
   width: 100%;
 }
 
-.user-grid__skeletons {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
-  gap: 1rem;
-
-  @media (max-width: $breakpoint-sm) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 .user-grid__skeleton {
-  min-height: 211px;
+  width: 100%;
   border-radius: 0.25rem;
   background: linear-gradient(90deg, #e8e8e8 25%, #f5f5f5 50%, #e8e8e8 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
+}
+
+.user-grid__skeleton--collective {
+  height: 116px;
+  border-radius: 0.625rem;
+}
+
+.user-grid__skeleton--user {
+  height: 280px;
+  border-radius: 0.25rem;
 }
 
 @keyframes shimmer {

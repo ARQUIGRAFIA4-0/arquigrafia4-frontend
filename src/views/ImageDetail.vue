@@ -31,8 +31,34 @@
             class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-4">
             <ul class="nav nav-underline image-detail__navbar-links">
               <li v-for="tab in tabs" :key="tab.section" class="nav-item">
-                <RouterLink class="nav-link" :class="{ active: currentSection === tab.section }" :aria-current="currentSection === tab.section ? 'page' : undefined
-                  " :data-label="tab.label" :to="{ name: tab.routeName, params: { id: route.params.id } }">
+                <!-- Em edição/sugestão: só a tab do modo atual fica ativa -->
+                <span
+                  v-if="lockedTabSection && tab.section !== lockedTabSection"
+                  class="nav-link image-detail__nav-link--inactive"
+                  :data-label="tab.label"
+                  aria-disabled="true"
+                >
+                  {{ tab.label }}
+                </span>
+
+                <RouterLink
+                  v-else
+                  class="nav-link"
+                  :class="{
+                    active: lockedTabSection
+                      ? tab.section === lockedTabSection
+                      : currentSection === tab.section,
+                  }"
+                  :aria-current="
+                    (lockedTabSection
+                      ? tab.section === lockedTabSection
+                      : currentSection === tab.section)
+                      ? 'page'
+                      : undefined
+                  "
+                  :data-label="tab.label"
+                  :to="{ name: tab.routeName, params: { id: route.params.id } }"
+                >
                   {{ tab.label }}
                 </RouterLink>
               </li>
@@ -153,6 +179,40 @@ const isSuggesting = computed(
 );
 
 const currentSection = computed(() => route.meta?.section ?? "dados");
+
+// Edição → só Dados; sugestão → só Sugestões
+const lockedTabSection = computed(() => {
+  if (isEditing.value) return "dados";
+  if (isSuggesting.value) return "sugestoes";
+  return null;
+});
+
+const lockedTabRouteName = computed(() => {
+  if (lockedTabSection.value === "dados") return "image-detail-dados";
+  if (lockedTabSection.value === "sugestoes") return "image-detail-sugestoes";
+  return null;
+});
+
+const lockedTabQuery = computed(() => {
+  if (isEditing.value) return { edit: "true" };
+  if (isSuggesting.value) return { suggest: "true" };
+  return {};
+});
+
+// Se estiver em modo bloqueado e cair em outra seção (URL direta), volta para a tab permitida
+watch(
+  [lockedTabSection, currentSection],
+  ([locked, section]) => {
+    if (locked && section !== locked) {
+      router.replace({
+        name: lockedTabRouteName.value,
+        params: { id: route.params.id },
+        query: lockedTabQuery.value,
+      });
+    }
+  },
+  { immediate: true }
+);
 
 const licenseInfo = computed(() => {
   const rightsUrl = image.value?.rights?.[0]?.href;
@@ -376,6 +436,19 @@ $breakpoint-desk: 1425px;
 
   &::-webkit-scrollbar-track {
     background: transparent;
+  }
+}
+
+.image-detail__nav-link--inactive {
+  color: var(--Cinza_C, #a6a6a6) !important;
+  font-weight: 300 !important;
+  cursor: not-allowed;
+  pointer-events: none;
+  user-select: none;
+
+  &:hover {
+    color: var(--Cinza_C, #a6a6a6) !important;
+    font-weight: 300 !important;
   }
 }
 </style>
