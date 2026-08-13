@@ -141,8 +141,13 @@ $breakpoint-md: 768px;
   padding-right: 1rem;
 
   @include md {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    margin-bottom: 0;
     padding-left: 50px;
     padding-right: 50px;
+    background-color: var(--Branco, #ffffff);
   }
 }
 
