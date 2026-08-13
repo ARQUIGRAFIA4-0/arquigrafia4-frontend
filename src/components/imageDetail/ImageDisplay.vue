@@ -91,7 +91,7 @@ async function initViewer(image) {
       element: viewerContainer.value,
       tileSources: [`${serviceId}/info.json`],
       showNavigationControl: false,
-      constrainDuringPan: true,
+      visibilityRatio: 1.0,
       crossOriginPolicy: "Anonymous",
       gestureSettingsMouse: { clickToZoom: false },
     });
