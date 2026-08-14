@@ -11,7 +11,10 @@
       </div>
 
       <div class="modal-body">
+
+        <!-- Termos -->
         <div class="mb-3">
+          <h3 class="h3 pt-2">Termos</h3>
           <div class="input-group">
             <button
               class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal"
@@ -47,11 +50,10 @@
               <i class="bi bi-plus-square-fill"></i>
             </button>
           </div>
-        </div>
 
-        <div class="mb-4">
-          <div class="h3 pt-2">Termos de busca</div>
-          <div class="d-flex flex-wrap gap-2">
+
+          <!-- Listagem de termos adicionados e tags selecionadas (vindas do ViewGrid, etc.) -->
+          <div class="list-group-item">
             <span v-if="searchTerms.length === 0 && extraSelectedTags.length === 0" class="text-muted"
               >Nenhum termo adicionado.</span
             >
@@ -87,112 +89,196 @@
           </div>
         </div>
 
-        <div class="mb-3 pt-1">
-          <div class="h3">Sugestões de busca</div>
-        </div>
+        <!-- Período e Características -->
+        <div class="filter-panel">
+          <div class="filter-panel__column">
+            
+            <section class="period-filter">
+              <h3 class="period-filter__title">Período da imagem</h3>
+              <div class="period-filter__inputs">
+                <span class="period-filter__label">Entre</span>
+                
+                <input
+                  v-model.number="imageStartYear"
+                  type="number"
+                  class="year-field__input"
+                  min="0"
+                  :max="currentYear"
+                  placeholder="Ano"
+                  aria-label="Ano inicial do período da imagem"
+                  @keydown="onYearKeydown"
+                  @change="validateYearRange(imageStartYear, imageEndYear, 'start', v => imageStartYear = v, v => imageEndYear = v)"
+                />
+                <span class="period-filter__label">e</span>
+                <input
+                  v-model.number="imageEndYear"
+                  type="number"
+                  class="year-field__input"
+                  min="0"
+                  :max="currentYear"
+                  placeholder="Ano"
+                  aria-label="Ano final do período da imagem"
+                  @keydown="onYearKeydown"
+                  @change="validateYearRange(imageStartYear, imageEndYear, 'end', v => imageStartYear = v, v => imageEndYear = v)"
+                />
+              </div>
+            </section>
 
-        <div class="row g-4">
-          <div class="col-12 col-md-6" style="opacity: 0.4; pointer-events: none;">
-            <div class="p">Localização</div>
-            <div class="text-muted small mb-2">
-              (localizações mais utilizadas em nosso acervo)
-            </div>
-            <div class="d-flex flex-wrap gap-2">
-              <button
-                v-for="city in locationSuggestions"
-                :key="city"
-                type="button"
-                :class="[
-                  'btn btn-sm',
-                  selectedLocations.includes(city)
-                    ? 'btn-dark'
-                    : 'btn-outline-secondary',
-                ]"
-                disabled
-              >
-                {{ city }}
-              </button>
-            </div>
+            <section class="period-filter">
+              <h3 class="period-filter__title">Período da obra</h3>
+              <div class="period-filter__inputs">
+                <span class="period-filter__label">Entre</span>
+                <input
+                  v-model.number="workStartYear"
+                  type="number"
+                  class="year-field__input"
+                  min="0"
+                  :max="currentYear"
+                  placeholder="Ano"
+                  aria-label="Ano inicial do período da obra"
+                  @keydown="onYearKeydown"
+                  @change="validateYearRange(workStartYear, workEndYear, 'start', v => workStartYear = v, v => workEndYear = v)"
+                />
+
+                <span class="period-filter__label">e</span>
+                
+                <input
+                  v-model.number="workEndYear"
+                  type="number"
+                  class="year-field__input"
+                  min="0"
+                  :max="currentYear"
+                  placeholder="Ano"
+                  aria-label="Ano final do período da obra"
+                  @keydown="onYearKeydown"
+                  @change="validateYearRange(workStartYear, workEndYear, 'end', v => workStartYear = v, v => workEndYear = v)"
+                />
+              </div>
+            </section>
+
+            <!-- <section class="color-picker">
+              <h3 class="color-picker__title">Cor predominante</h3>
+              <div class="color-picker__wrapper">
+                <input
+                  type="range"
+                  min="0"
+                  max="359"
+                  step="1"
+                  class="color-picker__slider"
+                  v-model.number="predominantHue"
+                  aria-label="Cor predominante"
+                />
+              </div>
+            </section> -->
           </div>
 
-          <div class="col-12 col-md-6">
-            <div class="p">Tags</div>
-            <div class="text-muted small mb-2">
-              (termos mais utilizados em nosso acervo)
-            </div>
-            <div class="d-flex flex-wrap gap-2">
-              <button
-                v-for="tag in tagSuggestions"
-                :key="tag.id"
-                type="button"
-                :class="[
-                  'btn btn-sm',
-                  selectedTags.includes(tag.id)
-                    ? 'btn-primary'
-                    : 'btn-outline-secondary',
-                ]"
-                @click="toggleTag(tag.id)"
-              >
-                {{ tag.label }}
-              </button>
-            </div>
+          <div class="filter-panel__column">
+            <section class="characteristics">
+              <h3 class="characteristics__title">Características da imagem</h3>
+              <p class="characteristics__subtitle">Interpretação da comunidade</p>
+              
+              <div class="characteristics__grid">
+                <div
+                  v-for="pair in CHARACTERISTIC_PAIRS"
+                  :key="pair.left.key"
+                  class="characteristics__row"
+                >
+                  <div class="checkbox-option">
+                    <input
+                      :id="`char-${pair.left.key}-left`"
+                      class="checkbox-option__input"
+                      type="checkbox"
+                      :checked="selectedCharacteristics[pair.left.key] === 'left'"
+                      @change="toggleCharacteristic(pair.left.key, 'left')"
+                    />
+                    <label class="checkbox-option__label" :for="`char-${pair.left.key}-left`">
+                      {{ pair.left.label }}
+                    </label>
+                  </div>
+  
+                  <div class="checkbox-option">
+                    <input
+                      :id="`char-${pair.right.key}-right`"
+                      class="checkbox-option__input"
+                      type="checkbox"
+                      :checked="selectedCharacteristics[pair.left.key] === 'right'"
+                      @change="toggleCharacteristic(pair.left.key, 'right')"
+                    />
+                    <label class="checkbox-option__label" :for="`char-${pair.right.key}-right`">
+                      {{ pair.right.label }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
 
-        <div class="row g-4 mt-0">
-          <div class="col-12">
-            <div class="p">Licença de uso</div>
-            <div class="text-muted small mb-2">
-              (selecione uma ou mais licenças; a busca retorna imagens com qualquer uma das selecionadas)
-            </div>
-            <div class="d-flex flex-wrap gap-2">
-              <button
-                v-for="license in CC_LICENSES"
-                :key="license.label"
-                type="button"
-                :class="[
-                  'btn btn-sm',
-                  selectedLicenses.includes(license.label)
-                    ? 'btn-primary'
-                    : 'btn-outline-secondary',
-                ]"
-                @click="toggleLicense(license.label)"
+        
+        <!-- Sugestões -->
+        <div class="tags-Suggestions">
+          <div class="tags-Suggestions__title">Sugestões</div>
+          <div class="tags-Suggestions__subtitle">
+            Termos mais utilizados em nosso acervo
+          </div>
+          <div class="tags-Suggestions__tags">
+            <button
+              v-for="tag in tagSuggestions"
+              :key="tag.id"
+              type="button"
+              :class="[
+                'btn btn-sm',
+                selectedTags.includes(tag.id)
+                  ? 'btn-primary'
+                  : 'btn-outline-secondary',
+              ]"
+              @click="toggleTag(tag.id)"
+            >
+              {{ tag.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Direitos de uso -->
+        <div class="rights">
+          <div class="rights__header">
+            <div class="rights__title">Direitos de uso</div>
+
+            <a
+              class="cc-link"
+              href="https://creativecommons.org/licenses/"
+              target="_blank"
+              rel="noopener"
+            >
+              <i class="bi bi-book"></i>
+              Sobre os Creative Commons
+            </a>
+          </div>
+
+          <div class="rights__licenses">
+            <div
+              v-for="license in CC_LICENSES"
+              :key="license.label"
+              class="rights__license"
+            >
+              <input
+                :id="`license-${license.label}`"
+                class="rights__checkbox"
+                type="checkbox"
+                :checked="selectedLicenses.includes(license.label)"
+                @change="toggleLicense(license.label)"
+              />
+
+              <label
+                class="rights__label"
+                :for="`license-${license.label}`"
               >
                 {{ license.label }}
-              </button>
+              </label>
             </div>
           </div>
         </div>
-
-        <!-- <div class="mb-1 mt-2" style="opacity: 0.4; pointer-events: none;">
-          <div class="p pb-2">Uso permitido</div>
-          <div class="d-flex flex-wrap gap-2">
-            <button
-              type="button"
-              :class="[
-                'btn btn-sm',
-                selectedUse === 'commercial'
-                  ? 'btn-dark'
-                  : 'btn-outline-secondary',
-              ]"
-              @click="setUse('commercial')"
-            >
-              Permite uso comercial
-            </button>
-            <button
-              type="button"
-              :class="[
-                'btn btn-sm',
-                selectedUse === 'nonCommercial'
-                  ? 'btn-dark'
-                  : 'btn-outline-secondary',
-              ]"
-              @click="setUse('nonCommercial')"
-            >
-              Não permite uso comercial
-            </button>
-          </div>
-        </div> -->
+        
       </div>
 
       <div class="modal-footer footer-grid">
@@ -221,6 +307,7 @@ import toggleArrayItem from "@/helpers/toggleArrayItem";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
 import { CC_LICENSES } from "@/constants/creativeCommonsLicenses";
+import { CHARACTERISTIC_PAIRS } from "@/constants/characteristicPairs";
 
 defineOptions({
   name: "AdvancedSearchModal",
@@ -237,6 +324,7 @@ const props = defineProps({
   },
 });
 
+
 const emit = defineEmits(["update:modelValue", "confirm"]);
 
 const { getTermById, isTermLoaded, loadSubjectTerms } = useSubjectTerms();
@@ -251,19 +339,19 @@ const fieldOptions = [
 const selectedField = ref("all");
 const textQueryInput = ref("");
 const searchTerms = ref([]);
-const locationSuggestions = [
-  "São Paulo",
-  "Rio de Janeiro",
-  "Brasilia",
-  "Jaú",
-  "Ribeirão Preto",
-  "Londrina",
-  "Mauá",
-  "Itu",
-  "Ouro Preto",
-  "Praia Grande",
-];
-const selectedLocations = ref([]);
+// const locationSuggestions = [
+//   "São Paulo",
+//   "Rio de Janeiro",
+//   "Brasilia",
+//   "Jaú",
+//   "Ribeirão Preto",
+//   "Londrina",
+//   "Mauá",
+//   "Itu",
+//   "Ouro Preto",
+//   "Praia Grande",
+// ];
+// const selectedLocations = ref([]);
 const tagSuggestions = [
   { id: "f5c68f66-549f-43db-96b2-ac34ebbd9f9b", label: "alvenaria" },
   { id: "019adaf3-b4f0-7139-be65-66b693091ff5", label: "concreto" },
@@ -278,8 +366,88 @@ const tagSuggestions = [
 ];
 const knownTagIds = new Set(tagSuggestions.map((t) => t.id));
 const selectedTags = ref([]);
-const selectedUse = ref(null);
+// const selectedUse = ref(null);
 const selectedLicenses = ref([]);
+
+//----------------
+const currentYear = new Date().getFullYear();
+
+const imageStartYear = ref(null);
+const imageEndYear = ref(null);
+
+const workStartYear = ref(null);
+const workEndYear = ref(null);
+
+const selectedCharacteristics = ref({});
+
+
+function toggleCharacteristic(pairKey, side) {
+  // Clicar no lado já selecionado desmarca (volta ao neutro, nenhum lado
+  // marcado); clicar no outro lado troca. Mutuamente exclusivo por par.
+  if (selectedCharacteristics.value[pairKey] === side) {
+    delete selectedCharacteristics.value[pairKey];
+  } else {
+    selectedCharacteristics.value[pairKey] = side;
+  }
+}
+
+function onYearKeydown(event) {
+  const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+  if (allowedKeys.includes(event.key)) return;
+
+  // Bloqueia qualquer coisa que não seja dígito: sinais (+/-), 'e'/'E', '.', ','
+  if (!/^\d$/.test(event.key)) {
+    event.preventDefault();
+    return;
+  }
+
+  // Bloqueia um 5º dígito quando não há seleção pra substituir
+  const input = event.target;
+  const alreadyAtMax =
+    input.value.length >= 4 &&
+    input.selectionStart === input.selectionEnd;
+  if (alreadyAtMax) {
+    event.preventDefault();
+  }
+}
+
+function normalizeYear(value) {
+  if (value === null || value === "" || value === undefined) {
+    return null;
+  }
+
+  let year = Number(value);
+
+  if (Number.isNaN(year)) {
+    return null;
+  }
+
+  year = Math.floor(year);
+
+  return Math.min(Math.max(year, 0), currentYear);
+}
+
+function validateYearRange(start, end, changedField, setStart, setEnd) {
+  let normalizedStart = normalizeYear(start);
+  let normalizedEnd = normalizeYear(end);
+
+  if (
+    normalizedStart !== null &&
+    normalizedEnd !== null &&
+    normalizedStart > normalizedEnd
+  ) {
+    if (changedField === "start") {
+      normalizedEnd = normalizedStart;
+    } else {
+      normalizedStart = normalizedEnd;
+    }
+  }
+
+  setStart(normalizedStart);
+  setEnd(normalizedEnd);
+}
+
+//----------------
 
 // Tags selecionadas que não estão nas sugestões hardcoded (vindas do ViewGrid, etc.)
 const extraSelectedTags = computed(() =>
@@ -302,10 +470,15 @@ function syncFromFilters(filters) {
     value: term.value,
     label: term.label,
   }));
-  selectedLocations.value = [...(safeFilters.locations || [])];
+  // selectedLocations.value = [...(safeFilters.locations || [])];
   selectedTags.value = [...(safeFilters.tags || [])];
-  selectedUse.value = safeFilters.use || null;
+  // selectedUse.value = safeFilters.use || null;
   selectedLicenses.value = [...(safeFilters.licenses || [])];
+  imageStartYear.value = safeFilters.imageStartYear || null;
+  imageEndYear.value = safeFilters.imageEndYear || null;
+  workStartYear.value = safeFilters.workStartYear || null;
+  workEndYear.value = safeFilters.workEndYear || null;
+  selectedCharacteristics.value = { ...(safeFilters.characteristics || {}) };
 }
 
 syncFromFilters(props.filters);
@@ -364,9 +537,9 @@ function removeSearchTerm(index) {
 
 // TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
 // eslint-disable-next-line no-unused-vars
-function toggleLocation(city) {
-  toggleArrayItem(selectedLocations.value, city);
-}
+// function toggleLocation(city) {
+//   toggleArrayItem(selectedLocations.value, city);
+// }
 
 function toggleTag(tag) {
   toggleArrayItem(selectedTags.value, tag);
@@ -378,24 +551,34 @@ function toggleLicense(label) {
 
 // TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
 // eslint-disable-next-line no-unused-vars
-function setUse(use) {
-  selectedUse.value = selectedUse.value === use ? null : use;
-}
+// function setUse(use) {
+//   selectedUse.value = selectedUse.value === use ? null : use;
+// }
 
 function confirm() {
   const payload = {
     terms: searchTerms.value,
-    locations: selectedLocations.value,
+    // locations: selectedLocations.value,
     tags: selectedTags.value,
-    use: selectedUse.value,
+    // use: selectedUse.value,
     licenses: selectedLicenses.value,
+
+    imageStartYear: imageStartYear.value,
+    imageEndYear: imageEndYear.value,
+
+    workStartYear: workStartYear.value,
+    workEndYear: workEndYear.value,
+
+    characteristics: { ...selectedCharacteristics.value },
   };
   emit("confirm", payload);
   emit("update:modelValue", false);
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use "@/scss/variables" as *;
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -408,11 +591,17 @@ function confirm() {
 
 .modal-panel {
   width: 100%;
+  // height: 100%;
   max-width: 750px;
+  max-height: 90vh;
   background: #ffffff;
   border-radius: 12px;
   box-shadow: var(--shadow-elevation-medium);
   padding: 0px 40px;
+
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .modal-header {
@@ -422,10 +611,219 @@ function confirm() {
 
 .modal-body {
   padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px; /* Largura bem fina */
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent; /* Fundo do trilho transparente */
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #ccc; /* Cor da barra */
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: #999; /* Cor ao passar o mouse */
+  }
+
+  .list-group-item {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .filter-panel {
+    display: flex;
+    gap: 1.5rem;
+
+    &__column {
+      flex: 1 1 300px;
+    }
+  }
+
+  /* Block: Period Filter */
+  .period-filter {
+    margin-bottom: 1.5rem;
+
+    &__title {
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    &__inputs {
+      display: flex;
+      align-items: center;
+      /* gap: 1.5rem; */
+      gap: .5rem;
+    }
+
+    &__label {
+      font-size: .75rem;
+      font-weight: 400;
+    }
+  }
+
+  /* Block: Year Field (Já existente com melhorias de modulação) */
+  .year-field {
+    position: relative;
+
+    &__input {
+      width: 5.875rem;
+      height: 1.875rem;
+      border-radius: .3125rem;
+      border: 1px solid var(--Preto);
+      padding: 1rem .5rem;
+    }
+  }
+
+  /* Block: Color Picker */
+  .color-picker {
+    &__title {
+      font-size: 1.25rem;
+    }
+
+    &__slider {
+      width: 100%;
+    }
+  }
+
+  /* Block: Characteristics */
+  .characteristics {
+
+    &__title {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: .25rem;
+    }
+
+    &__subtitle {
+      font-size: .75rem;
+      font-weight: 400;
+      margin-bottom: .5rem;
+    }
+
+    &__grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    &__row {
+      display: flex;
+    }
+  }
+
+  /* Block: Checkbox Option */
+  .checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    width: 100%;
+    max-width: 120px;
+    min-width: 90px;
+
+    &__input {
+      cursor: pointer;
+      accent-color: var(--Cinza_M);
+    }
+
+    &__label {
+      cursor: pointer;
+    }
+  }
+
+  .tags-Suggestions {
+    margin-top: 32px;
+    margin-bottom: 32px;
+
+    &__title {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: .25rem;
+    }
+
+    &__subtitle {
+      font-size: .75rem;
+      font-weight: 400;
+      margin-bottom: 1rem;
+    }
+
+    &__tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+  }
+
+  .rights {
+    &__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: .5rem;
+    }
+
+    &__title {
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .cc-link {
+      display: flex;
+      align-items: center;
+      gap: .4375rem;
+      font-size: .75rem;
+      color: var(--Cinza_E);
+      cursor: pointer;
+
+      i.bi {
+        font-size: 14px;
+      }
+    }
+
+    .rights__licenses {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      column-gap: 2rem;
+      row-gap: 0.5rem;
+    }
+
+    .rights__license {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .rights__checkbox {
+      accent-color: var(--Cinza_M);
+    }
+
+    @media (max-width: 768px) {
+      .rights__licenses {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 576px) {
+      .rights__licenses {
+        grid-template-columns: 1fr;
+      }
+    }
+  }
 }
 
 .modal-footer {
   padding: 12px 20px 20px 20px;
+
 }
 
 .footer-grid {

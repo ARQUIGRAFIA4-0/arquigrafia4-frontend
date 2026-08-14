@@ -674,20 +674,47 @@ function buildAdvancedFiltersFromUrl() {
     ? (Array.isArray(rawLicenses) ? rawLicenses : [rawLicenses])
     : [];
 
+  // Período da imagem: extrai o ano do início do date_from/date_to (formato YYYY-MM-DD)
+  const imageStartYear = query.date_from ? parseInt(String(query.date_from).substring(0, 4), 10) : null;
+  const imageEndYear = query.date_to ? parseInt(String(query.date_to).substring(0, 4), 10) : null;
+
+  // Período da obra
+  const workStartYear = query.work_date_from ? parseInt(String(query.work_date_from).substring(0, 4), 10) : null;
+  const workEndYear = query.work_date_to ? parseInt(String(query.work_date_to).substring(0, 4), 10) : null;
+
+  // Características (binomial[chave] = left|right)
+  const characteristics = {};
+  Object.keys(query).forEach((key) => {
+    const match = key.match(/^binomial\[(.+)\]$/);
+    if (match) {
+      const side = query[key];
+      if (side === 'left' || side === 'right') {
+        characteristics[match[1]] = side;
+      }
+    }
+  });
+
   return {
     ...createDefaultAdvancedFilters(),
     terms,
     tags,
     licenses,
+    imageStartYear,
+    imageEndYear,
+    workStartYear,
+    workEndYear,
+    characteristics,
   };
 }
 
+//Abre o modal de busca avançada, sincronizando os filtros com a URL atual
 function openAdvancedSearch() {
   advancedFilters.value = buildAdvancedFiltersFromUrl();
   modalAdvancedSearch.value = true;
 }
 
 function confirmAdvancedSearch(payload) {
+  
   // Mantém advancedFilters sincronizado (necessário para "Editar" reabrir com dados)
   handleAdvancedFiltersUpdate(payload);
 
@@ -717,9 +744,16 @@ function confirmAdvancedSearch(payload) {
     'searchMode', 'author', 'subject_term', 'subject', 'dateStart',
     'dateEnd', 'color', 'location', 'use',
   ];
-  const bypassKeys = ['q', 'title', 'contributor', 'subject_term[]', 'date_from', 'date_to', 'subject[]', 'license[]'];
+  const bypassKeys = ['q', 'title', 'contributor', 'subject_term[]', 'date_from', 'date_to', 'subject[]', 'license[]', 'work_date_from', 'work_date_to'];
   const newQuery = { ...route.query };
   [...legacyKeys, ...bypassKeys].forEach((k) => { delete newQuery[k]; });
+
+   // Remove características antigas antes de reaplicar as atuais (chaves dinâmicas)
+  Object.keys(newQuery).forEach((key) => {
+    if (/^binomial\[.+\]$/.test(key)) {
+      delete newQuery[key];
+    }
+  });
 
   // Atribui novos params de bypass
   if (qValues.length > 0) newQuery.q = qValues.join(' ');
@@ -747,6 +781,26 @@ function confirmAdvancedSearch(payload) {
     newQuery['license[]'] = licenseValues;
   }
 
+  if (typeof payload.imageStartYear === 'number') {
+    newQuery.date_from = `${payload.imageStartYear}-01-01`;
+  }
+  if (typeof payload.imageEndYear === 'number') {
+    newQuery.date_to = `${payload.imageEndYear}-12-31`;
+  }
+
+  // --- Período da obra → work_date_from / work_date_to ---
+  if (typeof payload.workStartYear === 'number') {
+    newQuery.work_date_from = `${payload.workStartYear}-01-01`;
+  }
+  if (typeof payload.workEndYear === 'number') {
+    newQuery.work_date_to = `${payload.workEndYear}-12-31`;
+  }
+
+   // --- Características → binomial[id] = left|right ---
+  Object.entries(payload.characteristics || {}).forEach(([pairKey, side]) => {
+    newQuery[`binomial[${pairKey}]`] = side;
+  });
+  
   router.push({ query: newQuery });
   modalAdvancedSearch.value = false;
 }
@@ -897,11 +951,16 @@ function handleAdvancedFiltersUpdate(filters) {
   advancedFilters.value = {
     ...createDefaultAdvancedFilters(),
     terms: filters?.terms || [],
-    locations: filters?.locations || [],
+    // locations: filters?.locations || [],
     tags: filters?.tags || [],
     subjects: filters?.subjects || [],
-    use: filters?.use || null,
+    // use: filters?.use || null,
     licenses: filters?.licenses || [],
+    imageStartYear: filters?.imageStartYear ?? null,
+    imageEndYear: filters?.imageEndYear ?? null,
+    workStartYear: filters?.workStartYear ?? null,
+    workEndYear: filters?.workEndYear ?? null,
+    characteristics: filters?.characteristics || {},
   };
 }
 
@@ -991,11 +1050,21 @@ function handleClearAllFilters() {
   delete query.q;
   delete query.date_from;
   delete query.date_to;
+  delete query.work_date_from;
+  delete query.work_date_to;
   delete query['subject[]'];
   delete query['subject_term[]'];
   delete query.title;
   delete query.contributor;
   delete query['license[]'];
+
+  // binomial[chave] tem nome dinâmico, precisa varrer as chaves
+  Object.keys(query).forEach((key) => {
+    if (/^binomial\[.+\]$/.test(key)) {
+      delete query[key];
+    }
+  });
+
   router.push({ query });
 }
 
