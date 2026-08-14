@@ -5,8 +5,9 @@
     title=""
   >
     <div class="p-3 drawer-content">
+      
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <div class="h2 m-0">Busca por palavras</div>
+        <div class="h2 m-0">Busca Avançada</div>
         <button
           type="button"
           class="drawer-close-btn"
@@ -18,6 +19,7 @@
       </div>
 
       <div class="mb-3">
+        <h3 class="h3 pt-2">Termos</h3>
         <div class="input-group">
           <button
             class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal"
@@ -56,7 +58,6 @@
       </div>
 
       <div class="mb-4">
-        <div class="h2 pt-3">Termos de busca</div>
         <div class="d-flex flex-wrap gap-2">
           <span v-if="searchTerms.length === 0 && extraSelectedTags.length === 0" class="text-muted"
             >Nenhum termo adicionado.</span
@@ -93,10 +94,6 @@
         </div>
       </div>
 
-      <div class="mb-3 pt-3">
-        <div class="h2">Sugestões de busca</div>
-      </div>
-
       <!-- <div class="mb-3">
         <div class="p">Localização</div>
         <div class="text-muted small mb-2">
@@ -120,6 +117,104 @@
         </div>
       </div> -->
 
+      <div class="mb-4 pt-2">
+        <div class="h2">Período da imagem</div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="period-filter__label">Entre</span>
+          <input
+            v-model.number="imageStartYear"
+            type="number"
+            class="form-control border-preto"
+            min="0"
+            :max="currentYear"
+            placeholder="Ano inicial"
+            aria-label="Ano inicial do período da imagem"
+            @keydown="onYearKeydown"
+            @change="validateYearRange(imageStartYear, imageEndYear, 'start', v => imageStartYear = v, v => imageEndYear = v)"
+          />
+          <span>e</span>
+          <input
+            v-model.number="imageEndYear"
+            type="number"
+            class="form-control border-preto"
+            min="0"
+            :max="currentYear"
+            placeholder="Ano final"
+            aria-label="Ano final do período da imagem"
+            @keydown="onYearKeydown"
+            @change="validateYearRange(imageStartYear, imageEndYear, 'end', v => imageStartYear = v, v => imageEndYear = v)"
+          />
+        </div>
+      </div>
+
+      <div class="mb-4 pt-2">
+        <div class="h2">Período da obra</div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="period-filter__label">Entre</span>
+          <input
+            v-model.number="workStartYear"
+            type="number"
+            class="form-control border-preto"
+            min="0"
+            :max="currentYear"
+            placeholder="Ano inicial"
+            aria-label="Ano inicial do período da obra"
+            @keydown="onYearKeydown"
+            @change="validateYearRange(workStartYear, workEndYear, 'start', v => workStartYear = v, v => workEndYear = v)"
+          />
+          <span>e</span>
+          <input
+            v-model.number="workEndYear"
+            type="number"
+            class="form-control border-preto"
+            min="0"
+            :max="currentYear"
+            placeholder="Ano final"
+            aria-label="Ano final do período da obra"
+            @keydown="onYearKeydown"
+            @change="validateYearRange(workStartYear, workEndYear, 'end', v => workStartYear = v, v => workEndYear = v)"
+          />
+        </div>
+      </div>
+
+      <div class="mb-4 pt-2">
+        <div class="h2">Características da imagem</div>
+        <div class="text-muted small mb-2">Interpretação da comunidade</div>
+        <div class="d-flex flex-column gap-2">
+          <div
+            v-for="pair in CHARACTERISTIC_PAIRS"
+            :key="pair.left.key"
+            class="d-flex flex-wrap gap-2"
+          >
+            <div class="checkbox-option">
+              <input
+                :id="`char-${pair.left.key}-left`"
+                class="checkbox-option__input"
+                type="checkbox"
+                :checked="selectedCharacteristics[pair.left.key] === 'left'"
+                @change="toggleCharacteristic(pair.left.key, 'left')"
+              />
+              <label class="checkbox-option__label" :for="`char-${pair.left.key}-left`">
+                {{ pair.left.label }}
+              </label>
+            </div>
+
+            <div class="checkbox-option">
+              <input
+                :id="`char-${pair.right.key}-right`"
+                class="checkbox-option__input"
+                type="checkbox"
+                :checked="selectedCharacteristics[pair.left.key] === 'right'"
+                @change="toggleCharacteristic(pair.left.key, 'right')"
+              />
+              <label class="checkbox-option__label" :for="`char-${pair.right.key}-right`">
+                {{ pair.right.label }}
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="mb-3">
         <div class="p">Tags</div>
         <div class="text-muted small mb-2">
@@ -141,26 +236,45 @@
         </div>
       </div>
 
-      <div class="mb-3 pt-2">
-        <div class="p">Licença de uso</div>
-        <div class="text-muted small mb-2">
-          (selecione uma ou mais licenças; a busca retorna imagens com qualquer uma das selecionadas)
+      <!-- Direitos de uso -->
+        <div class="rights">
+          <div class="rights__header">
+            <div class="rights__title">Direitos de uso</div>
+
+            <a
+              class="cc-link"
+              href="https://creativecommons.org/licenses/"
+              target="_blank"
+              rel="noopener"
+            >
+              <i class="bi bi-book"></i>
+              Sobre os Creative Commons
+            </a>
+          </div>
+
+          <div class="rights__licenses">
+            <div
+              v-for="license in CC_LICENSES"
+              :key="license.label"
+              class="rights__license"
+            >
+              <input
+                :id="`license-${license.label}`"
+                class="rights__checkbox"
+                type="checkbox"
+                :checked="selectedLicenses.includes(license.label)"
+                @change="toggleLicense(license.label)"
+              />
+
+              <label
+                class="rights__label"
+                :for="`license-${license.label}`"
+              >
+                {{ license.label }}
+              </label>
+            </div>
+          </div>
         </div>
-        <div class="d-flex flex-wrap gap-2">
-          <button
-            v-for="license in CC_LICENSES"
-            :key="license.label"
-            type="button"
-            :class="[
-              'btn btn-sm',
-              selectedLicenses.includes(license.label) ? 'btn-primary' : 'btn-outline-secondary',
-            ]"
-            @click="toggleLicense(license.label)"
-          >
-            {{ license.label }}
-          </button>
-        </div>
-      </div>
 
       <!-- <div class="mb-4">
         <div class="p pb-2">Uso permitido</div>
@@ -209,6 +323,7 @@ import toggleArrayItem from "@/helpers/toggleArrayItem";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
 import { CC_LICENSES } from "@/constants/creativeCommonsLicenses";
+import { CHARACTERISTIC_PAIRS } from "@/constants/characteristicPairs";
 
 defineOptions({ name: "MobileDrawerSearchText" });
 
@@ -258,6 +373,54 @@ const selectedLocations = ref([]);
 const selectedTags = ref([]);
 const selectedUse = ref(null);
 const selectedLicenses = ref([]);
+//--------
+const currentYear = new Date().getFullYear();
+const imageStartYear = ref(null);
+const imageEndYear = ref(null);
+const workStartYear = ref(null);
+const workEndYear = ref(null);
+const selectedCharacteristics = ref({});
+
+function toggleCharacteristic(pairKey, side) {
+  if (selectedCharacteristics.value[pairKey] === side) {
+    delete selectedCharacteristics.value[pairKey];
+  } else {
+    selectedCharacteristics.value[pairKey] = side;
+  }
+}
+
+function onYearKeydown(event) {
+  const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+  if (allowedKeys.includes(event.key)) return;
+  if (!/^\d$/.test(event.key)) {
+    event.preventDefault();
+    return;
+  }
+  const input = event.target;
+  const alreadyAtMax = input.value.length >= 4 && input.selectionStart === input.selectionEnd;
+  if (alreadyAtMax) {
+    event.preventDefault();
+  }
+}
+
+function normalizeYear(value) {
+  if (value === null || value === "" || value === undefined) return null;
+  let year = Number(value);
+  if (Number.isNaN(year)) return null;
+  year = Math.floor(year);
+  return Math.min(Math.max(year, 0), currentYear);
+}
+
+function validateYearRange(start, end, changedField, setStart, setEnd) {
+  let normalizedStart = normalizeYear(start);
+  let normalizedEnd = normalizeYear(end);
+  if (normalizedStart !== null && normalizedEnd !== null && normalizedStart > normalizedEnd) {
+    if (changedField === "start") normalizedEnd = normalizedStart;
+    else normalizedStart = normalizedEnd;
+  }
+  setStart(normalizedStart);
+  setEnd(normalizedEnd);
+}
 
 watch(
   () => props.filters,
@@ -271,6 +434,13 @@ watch(
     selectedTags.value = [...(filters?.tags || [])];
     selectedUse.value = filters?.use || null;
     selectedLicenses.value = [...(filters?.licenses || [])];
+
+    imageStartYear.value = filters?.imageStartYear ?? null;
+    imageEndYear.value = filters?.imageEndYear ?? null;
+    workStartYear.value = filters?.workStartYear ?? null;
+    workEndYear.value = filters?.workEndYear ?? null;
+    selectedCharacteristics.value = { ...(filters?.characteristics || {}) };
+
     // Load labels for extra tags (IDs not in hardcoded suggestions)
     const extras = selectedTags.value.filter((id) => !knownTagIds.has(id));
     if (extras.length > 0) loadSubjectTerms(extras);
@@ -285,6 +455,11 @@ const emitFiltersUpdate = () => {
     tags: selectedTags.value,
     use: selectedUse.value,
     licenses: selectedLicenses.value,
+    imageStartYear: imageStartYear.value,
+    imageEndYear: imageEndYear.value,
+    workStartYear: workStartYear.value,
+    workEndYear: workEndYear.value,
+    characteristics: { ...selectedCharacteristics.value },
   });
 };
 
@@ -377,6 +552,11 @@ function confirm() {
     tags: selectedTags.value,
     use: selectedUse.value,
     licenses: selectedLicenses.value,
+    imageStartYear: imageStartYear.value,
+    imageEndYear: imageEndYear.value,
+    workStartYear: workStartYear.value,
+    workEndYear: workEndYear.value,
+    characteristics: { ...selectedCharacteristics.value },
   };
   emit("confirm", { mode: "avancada", value: payload });
   open.value = false;
@@ -400,7 +580,9 @@ onUnmounted(() => {
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use "@/scss/variables" as *;
+
 .drawer-content .btn.btn-sm {
   border-radius: 2px !important;
 }
@@ -445,5 +627,75 @@ onUnmounted(() => {
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
+}
+
+/* Block: Checkbox Option */
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+  flex: 1;
+  min-width: 90px;
+
+  &__input {
+    cursor: pointer;
+    accent-color: var(--Cinza_M);
+  }
+
+  &__label {
+    cursor: pointer;
+  }
+}
+
+.rights {
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: .5rem;
+  }
+
+  &__title {
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .cc-link {
+    display: flex;
+    align-items: center;
+    gap: .4375rem;
+    font-size: .75rem;
+    color: var(--Cinza_E);
+    cursor: pointer;
+
+    i.bi {
+      font-size: 14px;
+    }
+  }
+
+  .rights__licenses {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    column-gap: 2rem;
+    row-gap: 0.5rem;
+  }
+
+  .rights__license {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .rights__checkbox {
+    accent-color: var(--Cinza_M);
+  }
+
+  @media (max-width: 768px) {
+    .rights__licenses {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
 }
 </style>
