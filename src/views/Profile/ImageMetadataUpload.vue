@@ -1526,6 +1526,27 @@ const handleUploadError = (message) => {
   toast.show(message, "error");
 };
 
+// Traduz a falha de um POST /api/images em frase.
+// A API responde 422 com `errors`/`message` legíveis na validação;
+// um 5xx não traz motivo aproveitável (o corpo é genérico).
+function describeUploadError(error) {
+  const status = error.response?.status;
+
+  if (status >= 500) {
+    return "o servidor não conseguiu processar o arquivo. Tente novamente ou avise a equipe.";
+  }
+
+  const apiErrors = error.response?.data?.errors;
+  if (apiErrors) {
+    const firstError = Object.values(apiErrors)[0]?.[0];
+    if (firstError) return firstError;
+  }
+
+  return (
+    error.response?.data?.message || error.message || "erro inesperado no envio."
+  );
+}
+
 const canSubmit = computed(() => {
   if (pendingImages.value.length === 0) {
     return false;
@@ -1703,7 +1724,7 @@ const handleSubmit = async () => {
         console.error(`Erro ao enviar imagem ${index + 1}:`, error);
         failedUploads.push({
           title: metadata.title || `Imagem ${index + 1}`,
-          error: error.response?.data?.message || error.message,
+          error: describeUploadError(error),
         });
       }
     }
@@ -1725,7 +1746,7 @@ const handleSubmit = async () => {
     } else if (failedUploads.length > 0) {
       // Reabilita a UI para permitir correção e reenvio
       isSubmitting.value = false;
-      const message =
+      const intro =
         successfulUploads.length > 0
           ? `${successfulUploads.length} ${
               successfulUploads.length === 1
@@ -1738,7 +1759,16 @@ const handleSubmit = async () => {
               failedUploads.length === 1 ? "imagem" : "imagens"
             }.`;
 
-      toast.show(message, "error");
+      // O motivo de cada falha (uma só, ou uma linha por imagem) — sem ele a
+      // contagem não diz ao usuário o que houve nem o que tentar em seguida.
+      const reasons =
+        failedUploads.length === 1
+          ? ` ${failedUploads[0].error}`
+          : ` ${failedUploads
+              .map((failure) => `${failure.title}: ${failure.error}`)
+              .join("; ")}`;
+
+      toast.show(`${intro}${reasons}`, "error");
 
       // Se alguns enviaram com sucesso, remove-os da lista
       if (successfulUploads.length > 0) {
