@@ -2,7 +2,11 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useImageUploadStore, MAX_FILE_SIZE_MB } from "@/store/imageUploads";
-import { convertFilesIfHeic, isHeicFile } from "@/helpers/convertHeic";
+import {
+  buildHeicFallbackMessage,
+  convertFilesIfHeic,
+  isHeicFile,
+} from "@/helpers/convertHeic";
 import { useToast } from "@/composables/useToast";
 import AppToast from "@/components/ui/AppToast.vue";
 
@@ -48,6 +52,16 @@ onUnmounted(() => {
   imagePreviews.value.forEach((preview) => URL.revokeObjectURL(preview.url));
 });
 
+// Arquivos que o browser não consegue desenhar (HEIC cuja conversão falhou e
+// segue no formato original, para o back-end converter). Em vez da imagem
+// quebrada, mostramos um placeholder com o nome do arquivo.
+const unrenderableNames = ref(new Set());
+
+function markUnrenderable(name) {
+  if (unrenderableNames.value.has(name)) return;
+  unrenderableNames.value = new Set(unrenderableNames.value).add(name);
+}
+
 const fileInputRef = ref();
 const isDragging = ref(false);
 const toast = useToast();
@@ -65,7 +79,10 @@ function openFileDialog() {
 }
 
 async function uploadImages(event) {
-  const files = await convertFilesIfHeic(Array.from(event.target.files));
+  const { files, failed } = await convertFilesIfHeic(
+    Array.from(event.target.files)
+  );
+  if (failed.length) toast.show(buildHeicFallbackMessage(failed), "neutral");
 
   const result = await uploadStore.setImages(files);
   if (!result.success) {
@@ -76,7 +93,10 @@ async function uploadImages(event) {
 }
 
 async function appendImagesToUpload(event) {
-  const newFiles = await convertFilesIfHeic(Array.from(event.target.files));
+  const { files: newFiles, failed } = await convertFilesIfHeic(
+    Array.from(event.target.files)
+  );
+  if (failed.length) toast.show(buildHeicFallbackMessage(failed), "neutral");
 
   const result = await uploadStore.appendImages(newFiles);
   if (!result.success) {
@@ -109,7 +129,10 @@ async function handleDrop(event) {
     return;
   }
 
-  const convertedFiles = await convertFilesIfHeic(filteredFiles);
+  const { files: convertedFiles, failed } =
+    await convertFilesIfHeic(filteredFiles);
+  if (failed.length) toast.show(buildHeicFallbackMessage(failed), "neutral");
+
   const result = await uploadStore.setImages(convertedFiles);
   if (!result.success) {
     toast.show(result.message, "error");
@@ -139,7 +162,12 @@ function goToMetadata() {
           </label>
         </div>
         <div v-for="(preview, index) in imagePreviews" :key="index" class="preview-box__item">
-          <img :src="preview.url" :alt="preview.file.name" class="preview-box__image" />
+          <div v-if="unrenderableNames.has(preview.file.name)" class="preview-box__image preview-box__fallback">
+            <i class="bi bi-file-earmark-image" aria-hidden="true"></i>
+            <span>{{ preview.file.name }}</span>
+          </div>
+          <img v-else :src="preview.url" :alt="preview.file.name" class="preview-box__image"
+            @error="markUnrenderable(preview.file.name)" />
           <button @click="removeImage(index)" class="preview-box__remove-btn">
             &times;
           </button>
@@ -248,6 +276,27 @@ $breakpoint-md: 768px;
     height: 100px;
     object-fit: cover;
     border-radius: 8px;
+  }
+
+  // Placeholder para arquivos que o browser não desenha (HEIC não convertido).
+  &__fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    text-align: center;
+    background-color: #efefef;
+    border: 1px dashed #9a9a9a;
+    color: #575757;
+    font-size: 12px;
+    word-break: break-all;
+    overflow: hidden;
+
+    i {
+      font-size: 24px;
+    }
   }
 
   &__remove-btn {
