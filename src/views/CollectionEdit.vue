@@ -116,17 +116,36 @@ async function fetchCollectionImages() {
   }
 }
 
-// Volta para a página da coleção.
+// Volta para a página da coleção, sem deixar a edição no histórico — do
+// contrário o "Voltar" da coleção (`goBack` em CollectionDetail.vue) devolveria
+// o usuário para cá, em vez de para a página de onde ele veio.
 function goToCollectionDetail() {
   if (!collectionId.value) return;
 
-  router.push({
+  if (isPreviousEntryThisCollection()) {
+    router.back();
+    return;
+  }
+
+  router.replace({
     name: "collection-detail",
     params: {
       collectionId: String(collectionId.value),
       viewMode: String(route.query.viewMode || "grid"),
     },
   });
+}
+
+// A entrada anterior do histórico é a página desta mesma coleção?
+function isPreviousEntryThisCollection() {
+  const back = window.history.state?.back;
+  if (!back) return false;
+
+  const previous = router.resolve(back);
+  return (
+    previous.name === "collection-detail" &&
+    String(previous.params.collectionId) === String(collectionId.value)
+  );
 }
 
 // Cancela a edição da coleção.
