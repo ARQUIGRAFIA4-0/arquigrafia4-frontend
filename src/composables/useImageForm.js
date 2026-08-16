@@ -121,7 +121,9 @@ export function useImageForm() {
     authorName: "",
     unknownAuthor: false,
     hasAuthorization: true,
-    work: "",
+    // Obra vinculada: `{ id, label, address }` ou `{ draft, label, address }`
+    // (rascunho do WorkCreateModal). Ver `useWorkAutocomplete`.
+    work: null,
     tags: [],
     description: "",
     date: "",
@@ -550,8 +552,19 @@ export function useImageForm() {
         ? { lat: data.locationCoordinates[0], lng: data.locationCoordinates[1] }
         : null;
 
+    // O backend modela obras como N:N, mas o formulário é de seleção única:
+    // mostramos a primeira. As demais são preservadas no salvamento.
+    const firstWork = data.works?.[0] || null;
+
     form.value = {
       ...defaultForm,
+      work: firstWork
+        ? {
+            id: firstWork.id,
+            label: firstWork.title || "(sem título)",
+            address: firstWork.locationLabel || null,
+          }
+        : null,
       title: data.title || "",
       authorName: isAuthor ? "" : authorName,
       isAuthor,

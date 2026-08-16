@@ -185,11 +185,9 @@
         <section id="geral" class="py-4">
           <h2 class="mb-4">Dados gerais</h2>
 
-          <!-- <div class="mb-4 px-3">
-            <UiField label="Obra" explain="Informe a obra relacionada">
-              <input type="text" class="form-control" placeholder="Texto exemplo" v-model="form.work" />
-            </UiField>
-          </div> -->
+          <div class="mb-4 px-3">
+            <WorkAutocompleteField ref="workFieldRef" v-model="form.work" />
+          </div>
 
           <div class="mb-4 px-3">
             <UiField label="Tags da imagem" explain="Adicione tags para classificar a imagem">
@@ -360,6 +358,8 @@ import { useAuthStore } from "@/store/auth";
 import { useRouter } from "vue-router";
 import { useQueryClient } from "@tanstack/vue-query";
 import { useImageForm } from "@/composables/useImageForm";
+import WorkAutocompleteField from "@/components/work/WorkAutocompleteField.vue";
+import { resolveWorkId } from "@/composables/useWorkAutocomplete";
 
 defineOptions({ name: "ImageMetadataEdit" });
 
@@ -377,9 +377,31 @@ const authStore = useAuthStore();
 const queryClient = useQueryClient();
 const isSaved = ref(false);
 
-const buildPayload = async () => {
+// Referência ao campo de obra, para registrar na busca uma obra recém-criada.
+const workFieldRef = ref(null);
+
+/**
+ * Monta o array de obras a enviar. O backend faz `sync` — o que for enviado
+ * substitui todos os vínculos — mas o formulário só edita a primeira obra.
+ * Então recompomos o conjunto: a obra selecionada mais as demais já vinculadas.
+ * Devolve `null` quando nada mudou, para omitir o campo (omitir preserva).
+ */
+const buildWorksPayload = (workId) => {
+  const originalIds = (props.image?.works || []).map((work) => work.id);
+  const otherIds = originalIds.slice(1);
+  const nextIds = workId ? [workId, ...otherIds] : otherIds;
+
+  const unchanged =
+    nextIds.length === originalIds.length &&
+    nextIds.every((id, index) => id === originalIds[index]);
+
+  return unchanged ? null : nextIds;
+};
+
+const buildPayload = async (workId) => {
   const photographerUuid = await resolvePhotographerUuid(form.value);
   const subjectUuids = resolveSubjectUuids(form.value.tags);
+  const works = buildWorksPayload(workId);
 
   const payload = {
     title: form.value.title || null,
@@ -398,10 +420,16 @@ const buildPayload = async () => {
     circa: form.value.dateAccuracy === "approximate",
   };
 
-  return Object.fromEntries(
+  const cleaned = Object.fromEntries(
     Object.entries(payload).filter(([key, v]) =>
       v !== null || ["latitude", "longitude", "location_label"].includes(key))
   );
+
+  // Só entra no payload quando o vínculo mudou: omitir preserva o que existe,
+  // e o backend rejeita `null` (a regra é `sometimes|array`).
+  if (works) cleaned.works = works;
+
+  return cleaned;
 };
 
 // ─── Composable 
@@ -492,7 +520,12 @@ const handleSubmit = async () => {
 
   try {
 
-    const payload = await buildPayload();
+    // Se a obra ainda é um rascunho do WorkCreateModal, ela é criada agora —
+    // este é o primeiro momento em que o usuário confirmou o salvamento.
+    const { id: workId, work: newWork } = await resolveWorkId(form.value.work);
+    if (newWork) workFieldRef.value?.registerWork(newWork);
+
+    const payload = await buildPayload(workId);
 
     await axios.put(`/api/images/${props.image.id}`, payload, {
       headers: {
