@@ -137,6 +137,4 @@ const dots = computed(() => {
 .album-cover-art__dot {
   fill: #1a1a1a;
 }
-
-// y = 19/55
 </style>
