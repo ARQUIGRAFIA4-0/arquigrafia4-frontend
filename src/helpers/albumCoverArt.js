@@ -26,15 +26,15 @@ const YEARS_THRESHOLD_SECULOS = 100;
 // ----- Fundo --------------------------------------------------------------
 // Decide qual fundo usar com base na quantidade de imagens no album
 export function pickBackgroundKey(imageCount = 0) {
-  if (imageCount <= 5) {
+  if (imageCount <= 3) {
     return BACKGROUND_KEYS.VERDE;
   }
 
-  if (imageCount <= 10) {
+  if (imageCount <= 7) {
     return BACKGROUND_KEYS.AZUL;
   }
 
-  if (imageCount <= 20) {
+  if (imageCount <= 12) {
     return BACKGROUND_KEYS.LARANJA;
   }
 
@@ -91,9 +91,9 @@ export function getLineStyle(spanYears) {
 
 /**
  * Relação tags/imagens conforme regra do design:
- * total_unique_tags < total_images  -> baixa
- * total_unique_tags === total_images -> media
- * total_unique_tags > total_images  -> alta
+ * total_unique_tags <= total_images        -> baixa (até 1 tag por imagem)
+ * total_unique_tags <= total_images * 5    -> media (até 5 tags por imagem)
+ * total_unique_tags > total_images * 5     -> alta  (acima de 5 tags por imagem)
  * @param {number} totalUniqueTags stats.total_unique_tags
  * @param {number} totalImages stats.total_images
  * @returns {'baixa'|'media'|'alta'}
@@ -101,7 +101,7 @@ export function getLineStyle(spanYears) {
 export function getRelationBucket(totalUniqueTags = 0, totalImages = 0) {
   if (!totalImages) return PROPORTION_BUCKETS.BAIXA;
   if (totalUniqueTags < totalImages) return PROPORTION_BUCKETS.BAIXA;
-  if (totalUniqueTags === totalImages) return PROPORTION_BUCKETS.MEDIA;
+  if (totalUniqueTags === totalImages * 5) return PROPORTION_BUCKETS.MEDIA;
   return PROPORTION_BUCKETS.ALTA;
 }
 
