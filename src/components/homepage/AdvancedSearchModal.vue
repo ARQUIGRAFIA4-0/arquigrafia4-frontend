@@ -185,26 +185,26 @@
                 >
                   <div class="checkbox-option">
                     <input
-                      :id="`char_${pair.left.key}_left`"
+                      :id="`char${pair.left.key}left`"
                       class="checkbox-option__input"
                       type="checkbox"
                       :checked="selectedCharacteristics[pair.left.key] === 'left'"
                       @change="toggleCharacteristic(pair.left.key, 'left')"
                     />
-                    <label class="checkbox-option__label" :for="`char_${pair.left.key}_left`">
+                    <label class="checkbox-option__label" :for="`char${pair.left.key}left`">
                       {{ pair.left.label }}
                     </label>
                   </div>
   
                   <div class="checkbox-option">
                     <input
-                      :id="`char_${pair.left.key}_right`"
+                      :id="`char${pair.left.key}right`"
                       class="checkbox-option__input"
                       type="checkbox"
                       :checked="selectedCharacteristics[pair.left.key] === 'right'"
                       @change="toggleCharacteristic(pair.left.key, 'right')"
                     />
-                    <label class="checkbox-option__label" :for="`char_${pair.left.key}_right`">
+                    <label class="checkbox-option__label" :for="`char${pair.left.key}right`">
                       {{ pair.right.label }}
                     </label>
                   </div>

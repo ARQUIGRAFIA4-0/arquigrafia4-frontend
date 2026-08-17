@@ -179,7 +179,7 @@
 
       <div class="mb-4 pt-2">
         <div class="h2">Características da imagem</div>
-        <div class="text-muted small mb-2">Interpretação da comunidade</div>
+        <div class="small mb-2">Interpretação da comunidade</div>
         <div class="d-flex flex-column gap-2">
           <div
             v-for="pair in CHARACTERISTIC_PAIRS"
@@ -216,9 +216,9 @@
       </div>
 
       <div class="mb-3">
-        <div class="p">Tags</div>
-        <div class="text-muted small mb-2">
-          (termos mais utilizados em nosso acervo)
+        <div class="h2">Sugestoes</div>
+        <div class="small mb-2">
+          Termos mais utilizados em nosso acervo
         </div>
         <div class="d-flex flex-wrap gap-2">
           <button

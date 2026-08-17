@@ -798,7 +798,7 @@ function onViewSubcontrol() {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .toolbar-acervo {
   display: flex;
   flex-direction: row;
@@ -816,6 +816,10 @@ function onViewSubcontrol() {
   background: var(--Off_white, #faf9f9);
   box-shadow: 4px 4px 20px 4px rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
+
+  .btn {
+    border: none;
+  }
 }
 
 .toolbar-acervo__panel--search {

@@ -1,11 +1,11 @@
 <template>
   <div
     id="toolbar-mobile"
-    class="d-flex flex-row justify-content-between gap-3"
+    class="toolbar-mobile"
   >
     <div
       id="view-group"
-      class="d-flex align-items-center bg-white rounded-3 p-2 toolbar-group"
+      class="toolbar-wrapper toolbar-group"
     >
       <button
         id="view-mode-button"
@@ -20,7 +20,7 @@
 
     <div
       id="search-group"
-      class="d-flex align-items-center bg-white rounded-3 p-2 toolbar-group gap-1"
+      class="toolbar-wrapper toolbar-group gap-1"
     >
       <!-- <button
         id="search-date-button"
@@ -52,7 +52,6 @@
       >
         <span class="search-icon-wrapper">
           <i class="bi bi-search"></i>
-          <!-- <i class="bi bi-sliders" /> -->
           <span v-if="hasActiveTextFilter" class="search-active-dot" />
         </span>
       </button>
@@ -134,9 +133,32 @@ function openViewMenu() {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+
 #toolbar-mobile .toolbar-group {
   box-shadow: var(--shadow-elevation-medium);
+}
+
+.toolbar-mobile {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.toolbar-wrapper {
+  width: 56px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--Branco);
+  border-radius: 6px;
+
+  .bi {
+    font-size: 24px;
+    line-height: 23px;
+  }
 }
 
 .btn.active {
