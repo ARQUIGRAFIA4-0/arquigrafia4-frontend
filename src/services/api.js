@@ -353,6 +353,23 @@ const fetchImages = async (page = 1, filters = {}) => {
       params.date_to = filters.date_to;
     }
 
+    // Filtro por período da obra
+    if (filters.workDateFrom) {
+      params.work_date_from = filters.workDateFrom;
+    }
+    if (filters.workDateTo) {
+      params.work_date_to = filters.workDateTo;
+    }
+
+    // Filtro por características (binômios da comunidade)
+    if (filters.characteristics && typeof filters.characteristics === 'object') {
+      Object.entries(filters.characteristics).forEach(([key, side]) => {
+        if (side === 'left' || side === 'right') {
+          params[`binomial[${key}]`] = side;
+        }
+      });
+    }
+
     // Filtro por user_id
     if (filters.userId) {
       params.user_id = filters.userId;
@@ -395,7 +412,7 @@ const fetchImages = async (page = 1, filters = {}) => {
     if (filters.sortOrder) {
       params.sort_order = filters.sortOrder;
     }
-
+    
     const { data } = await axios.get("/api/images", { params });
 
     const rawItems = filters.excludeCollectives

@@ -283,16 +283,37 @@ const emit = defineEmits([
   "update:addToCollectionMode",
 ]);
 
+// Detecta pares de características ativos na URL (binomial[chave]=left|right)
+const activeCharacteristicEntries = computed(() => {
+  return Object.keys(route.query)
+    .map((key) => {
+      const match = key.match(/^binomial\[(.+)\]$/);
+      if (!match) return null;
+      const side = route.query[key];
+      if (side !== 'left' && side !== 'right') return null;
+      return { key: match[1], side, queryKey: key };
+    })
+    .filter(Boolean);
+});
+
+const hasWorkOrCharacteristicsFilter = computed(() =>
+  Boolean(route.query.work_date_from || route.query.work_date_to) ||
+  activeCharacteristicEntries.value.length > 0
+);
+
 // Detecta se há filtro de URL ativo
 const hasActiveUrlFilter = computed(() => Boolean(
   route.query.q ||
   route.query.date_from ||
   route.query.date_to ||
+  route.query.work_date_from ||
+  route.query.work_date_to ||
   route.query['subject[]'] ||
   route.query['subject_term[]'] ||
   route.query.title ||
   route.query.contributor ||
-  route.query['license[]']
+  route.query['license[]'] ||
+  activeCharacteristicEntries.value.length > 0
 ));
 
 // Conta tipos de filtro distintos na URL (date_from + date_to = 1 tipo; arrays acumuláveis contam individualmente)
@@ -300,6 +321,7 @@ const activeFilterTypeCount = computed(() => {
   let count = 0;
   if (route.query.q) count++;
   if (route.query.date_from || route.query.date_to) count++;
+  if (route.query.work_date_from || route.query.work_date_to) count++;
   if (route.query.title) count++;
   if (route.query.contributor) count++;
   const rawSubjects = route.query['subject[]'];
@@ -314,11 +336,12 @@ const activeFilterTypeCount = computed(() => {
   if (rawLicenses) {
     count += Array.isArray(rawLicenses) ? rawLicenses.length : 1;
   }
+  count += activeCharacteristicEntries.value.length;
   return count;
 });
 
 // Se 2+ tipos distintos de filtro, considera busca avançada derivada da URL
-const isAdvancedByUrl = computed(() => activeFilterTypeCount.value >= 2);
+const isAdvancedByUrl = computed(() => activeFilterTypeCount.value >= 2 || hasWorkOrCharacteristicsFilter.value);
 
 // Modo visual efetivo: avançada se derivado da URL, senão usa o prop
 const effectiveSearchMode = computed(() => isAdvancedByUrl.value ? 'avancada' : currentSearchMode.value);
@@ -775,7 +798,7 @@ function onViewSubcontrol() {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .toolbar-acervo {
   display: flex;
   flex-direction: row;
@@ -793,6 +816,10 @@ function onViewSubcontrol() {
   background: var(--Off_white, #faf9f9);
   box-shadow: 4px 4px 20px 4px rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
+
+  .btn {
+    border: none;
+  }
 }
 
 .toolbar-acervo__panel--search {

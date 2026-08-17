@@ -151,6 +151,29 @@ const filters = computed(() => {
   if (route.query.date_to) {
     f.date_to = sanitizeDateParam(route.query.date_to, false) || route.query.date_to;
   }
+
+  if (route.query.work_date_from) {
+    f.workDateFrom = sanitizeDateParam(route.query.work_date_from, true) || route.query.work_date_from;
+  }
+
+  if (route.query.work_date_to) {
+    f.workDateTo = sanitizeDateParam(route.query.work_date_to, false) || route.query.work_date_to;
+  }
+
+  const characteristics = {};
+  Object.keys(route.query).forEach((key) => {
+    const match = key.match(/^binomial\[(.+)\]$/);
+    if (match) {
+      const side = route.query[key];
+      if (side === 'left' || side === 'right') {
+        characteristics[match[1]] = side;
+      }
+    }
+  });
+  if (Object.keys(characteristics).length > 0) {
+    f.characteristics = characteristics;
+  }
+
   const rawSubjects = route.query['subject[]'];
   if (rawSubjects) {
     f.subjects = Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects];
@@ -180,8 +203,10 @@ const {
   isFetchingNextPage,
 } = useImagesInfiniteQuery({ search: toRef(props, "search"), filters });
 
+const hasActiveFilters = computed(() => Object.keys(filters.value).length > 0);
+
 watch(items, (val) => {
-  if (props.search && !isPending.value && val.length === 0) {
+  if ((props.search || hasActiveFilters.value) && !isPending.value && val.length === 0) {
     emit("no-results");
   }
 });

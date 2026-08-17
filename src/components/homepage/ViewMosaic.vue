@@ -117,6 +117,29 @@ const filters = computed(() => {
   if (route.query.date_to) {
     f.date_to = sanitizeDateParam(route.query.date_to, false) || route.query.date_to;
   }
+
+  if (route.query.work_date_from) {
+    f.workDateFrom = sanitizeDateParam(route.query.work_date_from, true) || route.query.work_date_from;
+  }
+
+  if (route.query.work_date_to) {
+    f.workDateTo = sanitizeDateParam(route.query.work_date_to, false) || route.query.work_date_to;
+  }
+
+  const characteristics = {};
+  Object.keys(route.query).forEach((key) => {
+    const match = key.match(/^binomial\[(.+)\]$/);
+    if (match) {
+      const side = route.query[key];
+      if (side === 'left' || side === 'right') {
+        characteristics[match[1]] = side;
+      }
+    }
+  });
+  if (Object.keys(characteristics).length > 0) {
+    f.characteristics = characteristics;
+  }
+
   const rawSubjects = route.query['subject[]'];
   if (rawSubjects) {
     f.subjects = Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects];
@@ -146,8 +169,10 @@ const {
   isFetchingNextPage,
 } = useImagesInfiniteQuery({ search: toRef(props, "search"), filters });
 
+const hasActiveFilters = computed(() => Object.keys(filters.value).length > 0);
+
 watch(rawItems, (val) => {
-  if (props.search && !isPending.value && val.length === 0) {
+  if ((props.search || hasActiveFilters.value) && !isPending.value && val.length === 0) {
     emit("no-results");
   }
 });
@@ -178,7 +203,28 @@ watch(
     const subjectTermsKey = rawSubjectTerms ? (Array.isArray(rawSubjectTerms) ? [...rawSubjectTerms].sort().join(',') : rawSubjectTerms) : null;
     const rawLicenses = route.query['license[]'];
     const licensesKey = rawLicenses ? (Array.isArray(rawLicenses) ? [...rawLicenses].sort().join(',') : rawLicenses) : null;
-    const searchKey = JSON.stringify({ search: props.search, q: route.query.q || null, date_from: route.query.date_from || null, date_to: route.query.date_to || null, subjects: subjectsKey, subjectTerms: subjectTermsKey, title: route.query.title || null, contributor: route.query.contributor || null, licenses: licensesKey });
+
+    // Chave das características (binomial[chave]), na mesma lógica do filters computed
+    const characteristicsKey = Object.keys(route.query)
+      .filter((key) => /^binomial\[.+\]$/.test(key))
+      .sort()
+      .map((key) => `${key}:${route.query[key]}`)
+      .join(',') || null;
+
+    const searchKey = JSON.stringify({ 
+      search: props.search, 
+      q: route.query.q || null, 
+      date_from: route.query.date_from || null, 
+      date_to: route.query.date_to || null,
+      work_date_from: route.query.work_date_from || null,
+      work_date_to: route.query.work_date_to || null,
+      characteristics: characteristicsKey,
+      subjects: subjectsKey, 
+      subjectTerms: subjectTermsKey, 
+      title: route.query.title || null, 
+      contributor: route.query.contributor || null, 
+      licenses: licensesKey 
+    });
     if (searchKey !== lastSearchKey) {
       // Reset when search params change (including going from search to browse)
       mosaicItems.value = [];
