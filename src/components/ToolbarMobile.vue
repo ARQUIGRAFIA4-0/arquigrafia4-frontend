@@ -22,7 +22,7 @@
       id="search-group"
       class="d-flex align-items-center bg-white rounded-3 p-2 toolbar-group gap-1"
     >
-      <button
+      <!-- <button
         id="search-date-button"
         :class="searchButtonClasses('data')"
         type="button"
@@ -33,7 +33,7 @@
           <i class="bi bi-calendar2-week" />
           <span v-if="hasActiveDateFilter" class="search-active-dot" />
         </span>
-      </button>
+      </button> -->
       <!-- <button
         id="search-color-button"
         :class="searchButtonClasses('cor')"
@@ -51,7 +51,8 @@
         @click="handleSearchButton('textual', 'open-search-text')"
       >
         <span class="search-icon-wrapper">
-          <i class="bi bi-sliders" />
+          <i class="bi bi-search"></i>
+          <!-- <i class="bi bi-sliders" /> -->
           <span v-if="hasActiveTextFilter" class="search-active-dot" />
         </span>
       </button>

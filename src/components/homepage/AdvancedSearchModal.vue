@@ -185,26 +185,26 @@
                 >
                   <div class="checkbox-option">
                     <input
-                      :id="`char-${pair.left.key}-left`"
+                      :id="`char_${pair.left.key}_left`"
                       class="checkbox-option__input"
                       type="checkbox"
                       :checked="selectedCharacteristics[pair.left.key] === 'left'"
                       @change="toggleCharacteristic(pair.left.key, 'left')"
                     />
-                    <label class="checkbox-option__label" :for="`char-${pair.left.key}-left`">
+                    <label class="checkbox-option__label" :for="`char_${pair.left.key}_left`">
                       {{ pair.left.label }}
                     </label>
                   </div>
   
                   <div class="checkbox-option">
                     <input
-                      :id="`char-${pair.right.key}-right`"
+                      :id="`char_${pair.left.key}_right`"
                       class="checkbox-option__input"
                       type="checkbox"
                       :checked="selectedCharacteristics[pair.left.key] === 'right'"
                       @change="toggleCharacteristic(pair.left.key, 'right')"
                     />
-                    <label class="checkbox-option__label" :for="`char-${pair.right.key}-right`">
+                    <label class="checkbox-option__label" :for="`char_${pair.left.key}_right`">
                       {{ pair.right.label }}
                     </label>
                   </div>
@@ -243,7 +243,6 @@
         <div class="rights">
           <div class="rights__header">
             <div class="rights__title">Direitos de uso</div>
-
             <a
               class="cc-link"
               href="https://creativecommons.org/licenses/"
@@ -261,18 +260,13 @@
               :key="license.label"
               class="rights__license"
             >
-              <input
-                :id="`license-${license.label}`"
-                class="rights__checkbox"
-                type="checkbox"
-                :checked="selectedLicenses.includes(license.label)"
-                @change="toggleLicense(license.label)"
-              />
-
-              <label
-                class="rights__label"
-                :for="`license-${license.label}`"
-              >
+              <label class="rights__label">
+                <input
+                  class="rights__checkbox"
+                  type="checkbox"
+                  :checked="selectedLicenses.includes(license.label)"
+                  @change="toggleLicense(license.label)"
+                />
                 {{ license.label }}
               </label>
             </div>
