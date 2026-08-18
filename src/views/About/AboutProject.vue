@@ -131,6 +131,18 @@
           class="about-project__vertical-image-wrapper about-project__vertical-image-wrapper--contain" />
       </div>
     </div>
+    <div class="col-12">
+      <article class="about-project__contact">
+        <div class="about-project__contact-body">
+          <h2 class="about-project__contact-title">Entre em contato conosco</h2>
+          <p class="about-project__contact-text">
+            Para saber mais sobre a comunidade Arquigrafia, envie um e-mail para
+            <a class="about-project__contact-link" href="mailto:ARQUIGRAFIA@usp.br">arquigrafia.org.br</a>.
+            Obrigado!
+          </p>
+        </div>
+      </article>
+    </div>
   </AboutLayout>
 </template>
 
@@ -304,6 +316,63 @@ $breakpoint-md: 768px;
     object-fit: cover;
     object-position: center;
     display: block;
+  }
+
+  &__contact {
+    display: flex;
+    width: 100%;
+    max-width: 697px;
+    margin: 32px 0 0;
+    padding: 32px 24px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    border-radius: 16px;
+    background: var(--Off_white, #faf9f9);
+    box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+
+    @include md {
+      padding: 32px 40px;
+      margin-top: 48px;
+    }
+  }
+
+  &__contact-body {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  &__contact-title {
+    margin: 0;
+    align-self: stretch;
+    color: var(--Laranja_E, #aa4f28);
+    font-family: "DM Sans", sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 150%;
+  }
+
+  &__contact-text {
+    margin: 0;
+    align-self: stretch;
+    color: var(--Gray-900, #212529);
+    font-family: "DM Sans", sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 150%;
+  }
+
+  &__contact-link {
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    text-decoration-style: solid;
+    text-decoration-skip-ink: none;
+    text-underline-position: from-font;
   }
 }
 </style>
