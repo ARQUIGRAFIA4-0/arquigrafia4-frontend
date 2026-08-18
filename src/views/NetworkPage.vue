@@ -249,21 +249,46 @@ function updateColumnCount() {
   columnCount.value = Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, cols || MIN_COLUMNS));
 }
 
+const LOAD_MORE_MARGIN = 400;
+
+function shouldLoadMore() {
+  if (isLoading.value || hasReachedEnd.value) return false;
+  const el = sentinel.value;
+  if (!el) return false;
+  return el.getBoundingClientRect().top <= window.innerHeight + LOAD_MORE_MARGIN;
+}
+
 async function fetchPage(page) {
   if (isLoading.value || hasReachedEnd.value) return;
 
   isLoading.value = true;
+  let succeeded = false;
   try {
     const { data, meta } = await store.searchNetworks(buildQueryParams(page));
+    const items = Array.isArray(data) ? data : [];
+    results.value = [...results.value, ...items];
 
-    results.value = [...results.value, ...data];
-    currentPage.value = meta.current_page;
+    const current = meta?.current_page ?? page;
+    const last = meta?.last_page;
+    currentPage.value = current;
 
-    if (meta.current_page >= meta.last_page) {
+    if ((last != null && current >= last) || items.length === 0) {
       hasReachedEnd.value = true;
     }
+    succeeded = true;
+  } catch (error) {
+    console.error(error);
   } finally {
     isLoading.value = false;
+  }
+
+  // O observer só dispara na mudança de interseção. Se o sentinel já está
+  // na tela (página curta após o masonry), precisa encadear a próxima página.
+  if (succeeded) {
+    await nextTick();
+    if (shouldLoadMore()) {
+      await fetchPage(currentPage.value + 1);
+    }
   }
 }
 
@@ -304,16 +329,24 @@ onMounted(async () => {
         fetchPage(currentPage.value + 1);
       }
     },
-    { rootMargin: "200px" }
+    { rootMargin: `${LOAD_MORE_MARGIN}px` }
   );
 
   if (sentinel.value) observer.observe(sentinel.value);
+  window.addEventListener("scroll", handleWindowScroll, { passive: true });
 });
+
+function handleWindowScroll() {
+  if (shouldLoadMore()) {
+    fetchPage(currentPage.value + 1);
+  }
+}
 
 onBeforeUnmount(() => {
   observer?.disconnect();
   resizeObserver?.disconnect();
   window.removeEventListener("resize", updateColumnCount);
+  window.removeEventListener("scroll", handleWindowScroll);
 });
 
 </script>
