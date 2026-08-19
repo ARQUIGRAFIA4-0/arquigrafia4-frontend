@@ -5,9 +5,7 @@
 export default function createDefaultAdvancedFilters() {
   return {
     terms: [],
-    // locations: [],
     tags: [],
-    // use: null,
     licenses: [],
     imageStartYear: null,
     imageEndYear: null,

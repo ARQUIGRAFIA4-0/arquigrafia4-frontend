@@ -78,7 +78,7 @@
               class="btn btn-primary btn-sm btn-tag"
             >
               <span v-if="!isTermLoaded(id)" class="spinner-border spinner-border-sm" role="status" aria-label="Carregando..." />
-              <template v-else>Tag [id]: {{ getTermById(id) }}</template>
+              <template v-else>{{ getTermById(id) }}</template>
               <button
                 type="button"
                 class="btn-close ms-1"
@@ -306,7 +306,6 @@ import { CHARACTERISTIC_PAIRS } from "@/constants/characteristicPairs";
 defineOptions({
   name: "AdvancedSearchModal",
 });
-
 const props = defineProps({
   modelValue: {
     type: Boolean,
@@ -317,35 +316,29 @@ const props = defineProps({
     default: () => createDefaultAdvancedFilters(),
   },
 });
-
-
 const emit = defineEmits(["update:modelValue", "confirm"]);
-
 const { getTermById, isTermLoaded, loadSubjectTerms } = useSubjectTerms();
-
+// const fieldOptions = [
+//   { value: "all", label: "Todos os campos" },
+//   { value: "author", label: "Autoria" },
+//   { value: "tag", label: "Tag" },
+//   { value: "title", label: "Título" },
+//   { value: "aesthetics", label: "Aspectos estéticos" },
+//   { value: "cultural", label: "Contexto cultural" },
+//   { value: "typology", label: "Tipologia" },
+//   { value: "techniques", label: "Técnicas de construção" },
+//   { value: "materials", label: "Materiais" },
+//   { value: "subjects", label: "Assuntos" },
+// ];
 const fieldOptions = [
   { value: "all", label: "Todos os campos" },
   { value: "author", label: "Autoria" },
   { value: "tag", label: "Tag" },
   { value: "title", label: "Título" },
 ];
-
 const selectedField = ref("all");
 const textQueryInput = ref("");
 const searchTerms = ref([]);
-// const locationSuggestions = [
-//   "São Paulo",
-//   "Rio de Janeiro",
-//   "Brasilia",
-//   "Jaú",
-//   "Ribeirão Preto",
-//   "Londrina",
-//   "Mauá",
-//   "Itu",
-//   "Ouro Preto",
-//   "Praia Grande",
-// ];
-// const selectedLocations = ref([]);
 const tagSuggestions = [
   { id: "f5c68f66-549f-43db-96b2-ac34ebbd9f9b", label: "alvenaria" },
   { id: "019adaf3-b4f0-7139-be65-66b693091ff5", label: "concreto" },
@@ -360,20 +353,13 @@ const tagSuggestions = [
 ];
 const knownTagIds = new Set(tagSuggestions.map((t) => t.id));
 const selectedTags = ref([]);
-// const selectedUse = ref(null);
 const selectedLicenses = ref([]);
-
-//----------------
 const currentYear = new Date().getFullYear();
-
 const imageStartYear = ref(null);
 const imageEndYear = ref(null);
-
 const workStartYear = ref(null);
 const workEndYear = ref(null);
-
 const selectedCharacteristics = ref({});
-
 
 function toggleCharacteristic(pairKey, side) {
   // Clicar no lado já selecionado desmarca (volta ao neutro, nenhum lado
@@ -441,8 +427,6 @@ function validateYearRange(start, end, changedField, setStart, setEnd) {
   setEnd(normalizedEnd);
 }
 
-//----------------
-
 // Tags selecionadas que não estão nas sugestões hardcoded (vindas do ViewGrid, etc.)
 const extraSelectedTags = computed(() =>
   selectedTags.value.filter((id) => !knownTagIds.has(id))
@@ -457,6 +441,54 @@ function setSelectedField(value) {
   selectedField.value = value;
 }
 
+function close() {
+  emit("update:modelValue", false);
+}
+
+function addSearchTerm() {
+  const value = textQueryInput.value.trim();
+  if (!value) return;
+  const fieldLabel =
+    fieldOptions.find((f) => f.value === selectedField.value)?.label || "Termo";
+  searchTerms.value.push({
+    field: selectedField.value,
+    value,
+    label: `${fieldLabel}: ${value}`,
+  });
+  textQueryInput.value = "";
+}
+
+function removeSearchTerm(index) {
+  searchTerms.value.splice(index, 1);
+}
+
+function toggleTag(tag) {
+  toggleArrayItem(selectedTags.value, tag);
+}
+
+function toggleLicense(label) {
+  toggleArrayItem(selectedLicenses.value, label);
+}
+
+function confirm() {
+  const payload = {
+    terms: searchTerms.value,
+    tags: selectedTags.value,
+    licenses: selectedLicenses.value,
+
+    imageStartYear: imageStartYear.value,
+    imageEndYear: imageEndYear.value,
+
+    workStartYear: workStartYear.value,
+    workEndYear: workEndYear.value,
+
+    characteristics: { ...selectedCharacteristics.value },
+  };
+  
+  emit("confirm", payload);
+  emit("update:modelValue", false);
+}
+
 function syncFromFilters(filters) {
   const safeFilters = filters || {};
   searchTerms.value = (safeFilters.terms || []).map((term) => ({
@@ -464,9 +496,7 @@ function syncFromFilters(filters) {
     value: term.value,
     label: term.label,
   }));
-  // selectedLocations.value = [...(safeFilters.locations || [])];
   selectedTags.value = [...(safeFilters.tags || [])];
-  // selectedUse.value = safeFilters.use || null;
   selectedLicenses.value = [...(safeFilters.licenses || [])];
   imageStartYear.value = safeFilters.imageStartYear || null;
   imageEndYear.value = safeFilters.imageEndYear || null;
@@ -507,67 +537,6 @@ watch(
   },
   { deep: true }
 );
-
-function close() {
-  emit("update:modelValue", false);
-}
-
-function addSearchTerm() {
-  const value = textQueryInput.value.trim();
-  if (!value) return;
-  const fieldLabel =
-    fieldOptions.find((f) => f.value === selectedField.value)?.label || "Termo";
-  searchTerms.value.push({
-    field: selectedField.value,
-    value,
-    label: `${fieldLabel}: ${value}`,
-  });
-  textQueryInput.value = "";
-}
-
-function removeSearchTerm(index) {
-  searchTerms.value.splice(index, 1);
-}
-
-// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
-// eslint-disable-next-line no-unused-vars
-// function toggleLocation(city) {
-//   toggleArrayItem(selectedLocations.value, city);
-// }
-
-function toggleTag(tag) {
-  toggleArrayItem(selectedTags.value, tag);
-}
-
-function toggleLicense(label) {
-  toggleArrayItem(selectedLicenses.value, label);
-}
-
-// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
-// eslint-disable-next-line no-unused-vars
-// function setUse(use) {
-//   selectedUse.value = selectedUse.value === use ? null : use;
-// }
-
-function confirm() {
-  const payload = {
-    terms: searchTerms.value,
-    // locations: selectedLocations.value,
-    tags: selectedTags.value,
-    // use: selectedUse.value,
-    licenses: selectedLicenses.value,
-
-    imageStartYear: imageStartYear.value,
-    imageEndYear: imageEndYear.value,
-
-    workStartYear: workStartYear.value,
-    workEndYear: workEndYear.value,
-
-    characteristics: { ...selectedCharacteristics.value },
-  };
-  emit("confirm", payload);
-  emit("update:modelValue", false);
-}
 </script>
 
 <style lang="scss" scoped>
