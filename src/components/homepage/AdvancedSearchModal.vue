@@ -24,7 +24,7 @@
             >
               {{ selectedFieldLabel }}
             </button>
-            <ul class="dropdown-menu menu-light">
+            <ul class="dropdown-menu menu-light dropdown-menu-scroll">
               <li v-for="opt in fieldOptions" :key="opt.value">
                 <button
                   class="dropdown-item"
@@ -38,7 +38,7 @@
               v-model="textQueryInput"
               type="text"
               class="form-control border-preto border-end-0"
-              placeholder="Texto exemplo"
+              :placeholder="textQueryPlaceholder"
               @keydown.enter="addSearchTerm"
             />
             <button
@@ -306,6 +306,7 @@ import { CHARACTERISTIC_PAIRS } from "@/constants/characteristicPairs";
 defineOptions({
   name: "AdvancedSearchModal",
 });
+
 const props = defineProps({
   modelValue: {
     type: Boolean,
@@ -316,26 +317,29 @@ const props = defineProps({
     default: () => createDefaultAdvancedFilters(),
   },
 });
+
 const emit = defineEmits(["update:modelValue", "confirm"]);
+
 const { getTermById, isTermLoaded, loadSubjectTerms } = useSubjectTerms();
+
+const fieldOptions = [
+  { value: "all", label: "Todos os campos", placeholder: "Texto exemplo" },
+  { value: "author", label: "Autoria", placeholder: "Ex: Le Corbusier" },
+  { value: "tag", label: "Tag", placeholder: "Ex: fachada" },
+  { value: "title", label: "Título", placeholder: "Ex: Edifício Copan" },
+  { value: "aesthetics", label: "Aspectos estéticos", placeholder: "Ex: modernista" },
+  { value: "cultural", label: "Contexto cultural", placeholder: "Ex: movimento moderno brasileiro" },
+  { value: "typology", label: "Tipologia", placeholder: "Ex: residencial" },
+  { value: "techniques", label: "Técnicas de construção", placeholder: "Ex: concreto armado" },
+  { value: "materials", label: "Materiais", placeholder: "Ex: vidro" },
+  { value: "subjects", label: "Assuntos", placeholder: "Ex: urbanismo" },
+];
 // const fieldOptions = [
 //   { value: "all", label: "Todos os campos" },
 //   { value: "author", label: "Autoria" },
 //   { value: "tag", label: "Tag" },
 //   { value: "title", label: "Título" },
-//   { value: "aesthetics", label: "Aspectos estéticos" },
-//   { value: "cultural", label: "Contexto cultural" },
-//   { value: "typology", label: "Tipologia" },
-//   { value: "techniques", label: "Técnicas de construção" },
-//   { value: "materials", label: "Materiais" },
-//   { value: "subjects", label: "Assuntos" },
 // ];
-const fieldOptions = [
-  { value: "all", label: "Todos os campos" },
-  { value: "author", label: "Autoria" },
-  { value: "tag", label: "Tag" },
-  { value: "title", label: "Título" },
-];
 const selectedField = ref("all");
 const textQueryInput = ref("");
 const searchTerms = ref([]);
@@ -360,6 +364,9 @@ const imageEndYear = ref(null);
 const workStartYear = ref(null);
 const workEndYear = ref(null);
 const selectedCharacteristics = ref({});
+const textQueryPlaceholder = computed(
+  () => fieldOptions.find((f) => f.value === selectedField.value)?.placeholder || "Texto exemplo"
+);
 
 function toggleCharacteristic(pairKey, side) {
   // Clicar no lado já selecionado desmarca (volta ao neutro, nenhum lado
@@ -484,7 +491,6 @@ function confirm() {
 
     characteristics: { ...selectedCharacteristics.value },
   };
-  
   emit("confirm", payload);
   emit("update:modelValue", false);
 }
@@ -577,7 +583,7 @@ watch(
   flex: 1;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #ccc transparent;
+  scrollbar-color: var(--Branco);
 
   &::-webkit-scrollbar {
     width: 4px; /* Largura bem fina */
@@ -594,6 +600,15 @@ watch(
 
   &::-webkit-scrollbar-thumb:hover {
     background-color: #999; /* Cor ao passar o mouse */
+  }
+
+  .dropdown-menu-scroll {
+    max-height: 240px; /* ajuste o valor conforme o espaço do seu modal */
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #ccc;
+
   }
 
   .list-group-item {
