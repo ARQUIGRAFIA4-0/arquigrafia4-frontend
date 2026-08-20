@@ -1,5 +1,10 @@
 import { defineStore } from "pinia";
 import axios from "../axios";
+import {
+  isFavoritesAlbum,
+  sortAlbumsWithFavoritesFirst,
+  buildDefaultFavoritesAlbumPayload,
+} from "@/constants/favoritesCollection";
 
 export const useAlbumsStore = defineStore("albums", () => {
 
@@ -235,5 +240,22 @@ export const useAlbumsStore = defineStore("albums", () => {
         }
     }
 
-    return { createAlbum, getUserAlbums, getCollectiveAlbums, deleteAlbum, getDataAlbumByAlbumId, updateAlbum, getAlbumDetail, addImageToAlbum, removeImagesFromAlbum, syncImages, getTagsByAlbumId };
+    async function ensureDefaultFavoritesAlbum(authHeader, userId, albums = null) {
+        const list = Array.isArray(albums) ? albums : await getUserAlbums(authHeader, userId);
+
+        if (list.some(isFavoritesAlbum)) {
+            return sortAlbumsWithFavoritesFirst(list);
+        }
+
+        try {
+            await createAlbum(authHeader, buildDefaultFavoritesAlbumPayload());
+        } catch (error) {
+            console.warn("Falha ao garantir coleção Favoritos:", error);
+        }
+
+        const refreshed = await getUserAlbums(authHeader, userId);
+        return sortAlbumsWithFavoritesFirst(refreshed);
+    }
+
+    return { createAlbum, getUserAlbums, getCollectiveAlbums, deleteAlbum, getDataAlbumByAlbumId, updateAlbum, getAlbumDetail, addImageToAlbum, removeImagesFromAlbum, syncImages, getTagsByAlbumId, ensureDefaultFavoritesAlbum };
 })

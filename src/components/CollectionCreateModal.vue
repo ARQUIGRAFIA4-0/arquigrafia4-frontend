@@ -2,6 +2,7 @@
   import { ref, computed, watch, onUnmounted } from "vue";
   import { useAuthStore } from "@/store/auth";
   import { useAlbumsStore } from "@/store/albums";
+  import { isFavoritesAlbumTitle } from "@/constants/favoritesCollection";
 
   const authStore = useAuthStore();
   const albumsStore = useAlbumsStore();
@@ -72,6 +73,14 @@
     const description = collectionDescription.value.trim();
     if (!title) {
       openCollectionToast("Preencha o título.", "error");
+      return;
+    }
+
+    if (isFavoritesAlbumTitle(title)) {
+      openCollectionToast(
+        'O nome "Favoritos" é reservado para a coleção padrão.',
+        "error",
+      );
       return;
     }
 

@@ -459,10 +459,15 @@ async function handleCollectionDownloadConfirm() {
 // "Voltar": retorna à página anterior se houver histórico interno;
 // senão, cai na página do dono (coletivo/perfil) derivada do álbum.
 function goBack() {
-  if (window.history.state?.back) {
+  const backPath = window.history.state?.back ?? null;
+  const isBackToEdit =
+    typeof backPath === "string" && backPath.includes("/edit");
+
+  if (backPath && !isBackToEdit) {
     router.back();
     return;
   }
+
   const target = ownerProfileTo.value;
   if (target) router.push(target);
   else router.push("/");

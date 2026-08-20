@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, computed } from "vue";
 import AlbumCoverArt from "@/components/AlbumCoverArt.vue";
+import { excludeFavoritesAlbums } from "@/constants/favoritesCollection";
 
 // Options
 defineOptions({
@@ -15,6 +16,7 @@ const props = defineProps({
   scopes: { type: Array, default: () => [] },
   selectedScopeId: { type: [String, Number], default: null },
   loadingAlbums: { type: Boolean, default: false },
+  excludeFavorites: { type: Boolean, default: true },
 });
 
 const emit = defineEmits([
@@ -65,6 +67,16 @@ function selectScope(scope) {
 const selectedAlbumIds = ref([]);
 const hasAlbumSelection = computed(() => selectedAlbumIds.value.length > 0);
 
+const visibleAlbums = computed(() =>
+  props.excludeFavorites ? excludeFavoritesAlbums(props.albums) : props.albums,
+);
+
+function normalizePreselectedIds(ids = []) {
+  if (!props.excludeFavorites) return [...ids];
+  const visibleIds = new Set(visibleAlbums.value.map((album) => album.id));
+  return ids.filter((id) => visibleIds.has(id));
+}
+
 const primaryActionLabel = computed(() =>
   props.preselectedAlbumIds.length ? "Atualizar" : "Adicionar",
 );
@@ -107,7 +119,7 @@ watch(
     }
 
     document.body.style.overflow = "hidden";
-    selectedAlbumIds.value = [...(props.preselectedAlbumIds || [])];
+    selectedAlbumIds.value = normalizePreselectedIds(props.preselectedAlbumIds);
   },
 );
 
@@ -116,7 +128,7 @@ watch(
   () => props.preselectedAlbumIds,
   (ids) => {
     if (props.modelValue) {
-      selectedAlbumIds.value = [...(ids || [])];
+      selectedAlbumIds.value = normalizePreselectedIds(ids);
     }
   },
 );
@@ -256,7 +268,7 @@ watch(
               <span class="album-picker__label">Criar coleção</span>
             </button>
             <button
-              v-for="album in albums"
+              v-for="album in visibleAlbums"
               :key="album.id"
               type="button"
               class="album-picker__cell album-picker__cell--action"

@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/auth";
 import { useAlbumsStore } from "@/store/albums";
 import { api } from "@/services/api";
 import CollectionEditForm from "@/components/collection/CollectionEditForm.vue";
+import { isFavoritesAlbumTitle } from "@/constants/favoritesCollection";
 
 defineOptions({ name: "CollectionEdit" });
 
@@ -116,11 +117,11 @@ async function fetchCollectionImages() {
   }
 }
 
-// Volta para a página da coleção.
+// Volta para a página da coleção (replace evita que "voltar" retorne à edição).
 function goToCollectionDetail() {
   if (!collectionId.value) return;
 
-  router.push({
+  router.replace({
     name: "collection-detail",
     params: {
       collectionId: String(collectionId.value),
@@ -180,6 +181,10 @@ const canSave = computed(() => {
   );
 });
 
+const isFavoritesCollection = computed(() =>
+  isFavoritesAlbumTitle(collectionTitle.value),
+);
+
 function buildSavePayload() {
   return {
     title: collectionTitle.value.trim(),
@@ -190,6 +195,14 @@ function buildSavePayload() {
 
 async function handleSave() {
   if (!canSave.value || !collectionId.value) return;
+
+  if (
+    isFavoritesCollection.value &&
+    collectionTitle.value.trim() !== initialTitle.value
+  ) {
+    console.warn("A coleção Favoritos não pode ser renomeada.");
+    return;
+  }
 
   const payload = buildSavePayload();
 
@@ -323,6 +336,7 @@ watch(collectionId, () => {
                   v-model:description="collectionDescription"
                   v-model:is-private="collectionIsPrivate"
                   :disabled="isSaving"
+                  :title-disabled="isFavoritesCollection"
                 />
               </div>
             </template>
