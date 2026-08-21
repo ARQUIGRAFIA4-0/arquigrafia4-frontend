@@ -177,6 +177,7 @@ import {
 } from "@/constants/viewModes";
 import { useSearchQuery } from "@/composables/useSearchQuery";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
+import { buildSearchParamsFromAdvancedFilters } from "@/helpers/buildSearchParams";
 import { sanitizeDateParam } from "@/helpers/dateUtils";
 
 const route = useRoute();
@@ -260,6 +261,11 @@ const hasActiveDrawerTextFilters = computed(() => {
     route.query.date_to ||
     route.query.work_date_from ||
     route.query.work_date_to ||
+    route.query['material_term[]'] ||
+    route.query['technique_term[]'] ||
+    route.query['aesthetics_term[]'] ||
+    route.query['cultural_context_term[]'] ||
+    route.query['typology_term[]'] ||
     hasCharacteristics
   );
 });
@@ -665,6 +671,27 @@ function buildAdvancedFiltersFromUrl() {
   const query = route.query;
   const terms = [];
 
+  const readTermsArray = (query, key) => {
+    const raw = query[key];
+    return raw ? (Array.isArray(raw) ? raw : [raw]) : [];
+  };
+
+  readTermsArray(query, 'material_term[]').forEach((term) => {
+    terms.push({ field: 'materials', value: term, label: `Materiais: ${term}` });
+  });
+  readTermsArray(query, 'technique_term[]').forEach((term) => {
+    terms.push({ field: 'techniques', value: term, label: `Técnicas de construção: ${term}` });
+  });
+  readTermsArray(query, 'aesthetics_term[]').forEach((term) => {
+    terms.push({ field: 'aesthetics', value: term, label: `Aspectos estéticos: ${term}` });
+  });
+  readTermsArray(query, 'cultural_context_term[]').forEach((term) => {
+    terms.push({ field: 'cultural', value: term, label: `Contexto cultural: ${term}` });
+  });
+  readTermsArray(query, 'typology_term[]').forEach((term) => {
+    terms.push({ field: 'typology', value: term, label: `Tipologia: ${term}` });
+  });
+
   if (query.q) {
     terms.push({ field: 'all', value: query.q, label: `Todos os campos: ${query.q}` });
   }
@@ -679,7 +706,7 @@ function buildAdvancedFiltersFromUrl() {
     ? (Array.isArray(rawSubjectTerms) ? rawSubjectTerms : [rawSubjectTerms])
     : [];
   subjectTerms.forEach((term) => {
-    terms.push({ field: 'tag', value: term, label: `Tag [termo]: ${term}` });
+    terms.push({ field: 'tag', value: term, label: `Tag: ${term}` });
   });
 
   // Tags/subjects selecionados (IDs) vindos de subject[] na URL
@@ -734,92 +761,35 @@ function openAdvancedSearch() {
 }
 
 function confirmAdvancedSearch(payload) {
-  
   // Mantém advancedFilters sincronizado (necessário para "Editar" reabrir com dados)
   handleAdvancedFiltersUpdate(payload);
 
   // --- Bypass: monta URL diretamente a partir do payload ---
-  const terms = Array.isArray(payload.terms) ? payload.terms : [];
-
-  // Agrupa termos por campo
-  const qValues = [];
-  const titleValues = [];
-  const contributorValues = [];
-  const subjectTermValues = [];
-
-  terms.forEach((term) => {
-    if (!term || typeof term.value !== 'string' || !term.value.trim()) return;
-    const v = term.value.trim();
-    switch (term.field) {
-      case 'title': titleValues.push(v); break;
-      case 'author': contributorValues.push(v); break;
-      case 'tag': subjectTermValues.push(v); break;
-      case 'all':
-      default: qValues.push(v); break;
-    }
-  });
 
   // Clona query atual e remove chaves do pipeline legado + bypass anteriores
   const legacyKeys = [
     'searchMode', 'author', 'subject_term', 'subject', 'dateStart',
     'dateEnd', 'color', 'location', 'use',
   ];
-  const bypassKeys = ['q', 'title', 'contributor', 'subject_term[]', 'date_from', 'date_to', 'subject[]', 'license[]', 'work_date_from', 'work_date_to'];
+  const bypassKeys = [
+    'q', 'title', 'contributor', 'subject_term[]', 
+    'date_from', 'date_to', 'subject[]', 'license[]', 
+    'work_date_from', 'work_date_to', 'material_term[]', 
+    'technique_term[]', 'aesthetics_term[]',
+    'cultural_context_term[]', 'typology_term[]',
+  ];
   const newQuery = { ...route.query };
   [...legacyKeys, ...bypassKeys].forEach((k) => { delete newQuery[k]; });
 
-   // Remove características antigas antes de reaplicar as atuais (chaves dinâmicas)
+  // Remove características antigas antes de reaplicar as atuais (chaves dinâmicas)
   Object.keys(newQuery).forEach((key) => {
     if (/^binomial\[.+\]$/.test(key)) {
       delete newQuery[key];
     }
   });
 
-  // Atribui novos params de bypass
-  if (qValues.length > 0) newQuery.q = qValues.join(' ');
-  if (titleValues.length > 0) newQuery.title = titleValues.join(' ');
-  if (contributorValues.length > 0) newQuery.contributor = contributorValues.join(' ');
-  if (subjectTermValues.length === 1) {
-    newQuery['subject_term[]'] = subjectTermValues[0];
-  } else if (subjectTermValues.length > 1) {
-    newQuery['subject_term[]'] = subjectTermValues;
-  }
-
-  // Tags sugeridas (IDs de subjects)
-  const subjectIds = Array.isArray(payload.tags) ? payload.tags.filter((id) => typeof id === 'string' && id.length > 0) : [];
-  if (subjectIds.length === 1) {
-    newQuery['subject[]'] = subjectIds[0];
-  } else if (subjectIds.length > 1) {
-    newQuery['subject[]'] = subjectIds;
-  }
-
-  // Licenças CC
-  const licenseValues = Array.isArray(payload.licenses) ? payload.licenses.filter((l) => typeof l === 'string' && l.length > 0) : [];
-  if (licenseValues.length === 1) {
-    newQuery['license[]'] = licenseValues[0];
-  } else if (licenseValues.length > 1) {
-    newQuery['license[]'] = licenseValues;
-  }
-
-  if (typeof payload.imageStartYear === 'number') {
-    newQuery.date_from = `${payload.imageStartYear}-01-01`;
-  }
-  if (typeof payload.imageEndYear === 'number') {
-    newQuery.date_to = `${payload.imageEndYear}-12-31`;
-  }
-
-  // --- Período da obra → work_date_from / work_date_to ---
-  if (typeof payload.workStartYear === 'number') {
-    newQuery.work_date_from = `${payload.workStartYear}-01-01`;
-  }
-  if (typeof payload.workEndYear === 'number') {
-    newQuery.work_date_to = `${payload.workEndYear}-12-31`;
-  }
-
-   // --- Características → binomial[id] = left|right ---
-  Object.entries(payload.characteristics || {}).forEach(([pairKey, side]) => {
-    newQuery[`binomial[${pairKey}]`] = side;
-  });
+    // Atribui novos params de bypass — mesma lógica usada em searchImages (api.js)
+  Object.assign(newQuery, buildSearchParamsFromAdvancedFilters(payload));
   
   router.push({ query: newQuery });
   modalAdvancedSearch.value = false;
@@ -879,31 +849,16 @@ function confirmAdvancedDrawer({ value }) {
   handleAdvancedFiltersUpdate(value);
 
   // Bypass: build URL directly from payload (same logic as confirmAdvancedSearch)
-  const terms = Array.isArray(value.terms) ? value.terms : [];
-  const qValues = [];
-  const titleValues = [];
-  const contributorValues = [];
-  const subjectTermValues = [];
-
-  terms.forEach((term) => {
-    if (!term || typeof term.value !== 'string' || !term.value.trim()) return;
-    const v = term.value.trim();
-    switch (term.field) {
-      case 'title': titleValues.push(v); break;
-      case 'author': contributorValues.push(v); break;
-      case 'tag': subjectTermValues.push(v); break;
-      case 'all':
-      default: qValues.push(v); break;
-    }
-  });
-
   const legacyKeys = [
     'searchMode', 'author', 'subject_term', 'subject', 'dateStart',
     'dateEnd', 'color', 'location', 'use',
   ];
   const bypassKeys = [
-    'q', 'title', 'contributor', 'subject_term[]', 'subject[]', 'license[]',
-    'date_from', 'date_to', 'work_date_from', 'work_date_to',
+    'q', 'title', 'contributor', 'subject_term[]', 
+    'date_from', 'date_to', 'subject[]', 'license[]', 
+    'work_date_from', 'work_date_to', 'material_term[]', 
+    'technique_term[]', 'aesthetics_term[]',
+    'cultural_context_term[]', 'typology_term[]',
   ];
   const newQuery = { ...route.query };
   [...legacyKeys, ...bypassKeys].forEach((k) => { delete newQuery[k]; });
@@ -915,50 +870,7 @@ function confirmAdvancedDrawer({ value }) {
     }
   });
 
-  if (qValues.length > 0) newQuery.q = qValues.join(' ');
-  if (titleValues.length > 0) newQuery.title = titleValues.join(' ');
-  if (contributorValues.length > 0) newQuery.contributor = contributorValues.join(' ');
-  if (subjectTermValues.length === 1) {
-    newQuery['subject_term[]'] = subjectTermValues[0];
-  } else if (subjectTermValues.length > 1) {
-    newQuery['subject_term[]'] = subjectTermValues;
-  }
-
-  const subjectIds = Array.isArray(value.tags)
-    ? value.tags.filter((id) => typeof id === 'string' && id.length > 0)
-    : [];
-  if (subjectIds.length === 1) newQuery['subject[]'] = subjectIds[0];
-  else if (subjectIds.length > 1) newQuery['subject[]'] = subjectIds;
-
-  // Licenças CC
-  const licenseValues = Array.isArray(value.licenses) ? value.licenses.filter((l) => typeof l === 'string' && l.length > 0) : [];
-  if (licenseValues.length === 1) newQuery['license[]'] = licenseValues[0];
-  else if (licenseValues.length > 1) newQuery['license[]'] = licenseValues;
-
-  // Período da imagem
-  if (typeof value.imageStartYear === 'number') {
-    newQuery.date_from = `${value.imageStartYear}-01-01`;
-  }
-  if (typeof value.imageEndYear === 'number') {
-    newQuery.date_to = `${value.imageEndYear}-12-31`;
-  }
-
-  // Período da obra
-  if (typeof value.workStartYear === 'number') {
-    newQuery.work_date_from = `${value.workStartYear}-01-01`;
-  }
-  if (typeof value.workEndYear === 'number') {
-    newQuery.work_date_to = `${value.workEndYear}-12-31`;
-  }
-
-  // Características (binômios)
-  if (value.characteristics && typeof value.characteristics === 'object') {
-    Object.entries(value.characteristics).forEach(([key, side]) => {
-      if (side === 'left' || side === 'right') {
-        newQuery[`binomial[${key}]`] = side;
-      }
-    });
-  }
+  Object.assign(newQuery, buildSearchParamsFromAdvancedFilters(value));
 
   drawerSearchText.value = false;
   router.push({ query: newQuery });
@@ -971,6 +883,11 @@ function handleClearTextFilters() {
   delete query.contributor;
   delete query['subject_term[]'];
   delete query['subject[]'];
+  delete query['material_term[]'];
+  delete query['technique_term[]'];
+  delete query['cultural_context_term[]'];
+  delete query['aesthetics_term[]'];
+  delete query['typology_term[]'];
   delete query['license[]'];
   delete query.date_from;
   delete query.date_to;
@@ -1104,6 +1021,16 @@ function handleRemoveUrlChip(chip) {
     } else {
       query['license[]'] = updated.length === 1 ? updated[0] : updated;
     }
+  } else if (['material_term', 'technique_term', 'aesthetics_term', 'cultural_context_term', 'typology_term'].includes(chip.type)) {
+    const queryKey = `${chip.type}[]`;
+    const raw = query[queryKey];
+    const existing = raw ? (Array.isArray(raw) ? raw : [raw]) : [];
+    const updated = existing.filter((t) => t !== chip.termValue);
+    if (updated.length === 0) {
+      delete query[queryKey];
+    } else {
+      query[queryKey] = updated.length === 1 ? updated[0] : updated;
+    }
   }
 
   router.push({ query });
@@ -1121,6 +1048,11 @@ function handleClearAllFilters() {
   delete query.title;
   delete query.contributor;
   delete query['license[]'];
+  delete query['material_term[]'];
+  delete query['technique_term[]'];
+  delete query['aesthetics_term[]'];
+  delete query['cultural_context_term[]'];
+  delete query['typology_term[]'];
 
   // binomial[chave] tem nome dinâmico, precisa varrer as chaves
   Object.keys(query).forEach((key) => {

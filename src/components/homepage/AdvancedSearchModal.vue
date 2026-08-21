@@ -332,7 +332,6 @@ const fieldOptions = [
   { value: "typology", label: "Tipologia", placeholder: "Ex: residencial" },
   { value: "techniques", label: "Técnicas de construção", placeholder: "Ex: concreto armado" },
   { value: "materials", label: "Materiais", placeholder: "Ex: vidro" },
-  { value: "subjects", label: "Assuntos", placeholder: "Ex: urbanismo" },
 ];
 // const fieldOptions = [
 //   { value: "all", label: "Todos os campos" },
@@ -608,7 +607,6 @@ watch(
     overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: #ccc;
-
   }
 
   .list-group-item {

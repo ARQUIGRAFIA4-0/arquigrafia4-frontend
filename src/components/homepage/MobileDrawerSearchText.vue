@@ -43,7 +43,7 @@
             v-model="textQueryInput"
             type="text"
             class="form-control border-preto border-end-0"
-            placeholder="Digite o termo de busca"
+            :placeholder="textQueryPlaceholder"
             @keydown.enter="addSearchTerm"
           />
           <button
@@ -271,36 +271,6 @@
           </div>
         </div>
 
-      <!-- <div class="mb-4">
-        <div class="p pb-2">Uso permitido</div>
-        <div class="d-flex flex-wrap gap-2">
-          <button
-            type="button"
-            :class="[
-              'btn btn-sm',
-              selectedUse === 'commercial'
-                ? 'btn-dark'
-                : 'btn-outline-secondary',
-            ]"
-            @click="setUse('commercial')"
-          >
-            Permite uso comercial
-          </button>
-          <button
-            type="button"
-            :class="[
-              'btn btn-sm',
-              selectedUse === 'nonCommercial'
-                ? 'btn-dark'
-                : 'btn-outline-secondary',
-            ]"
-            @click="setUse('nonCommercial')"
-          >
-            Não permite uso comercial
-          </button>
-        </div>
-      </div> -->
-
       <div class="drawer-actions d-grid gap-2 pt-3">
         <button class="btn btn-outline-secondary" @click="hasActiveFilters ? emit('clear') : open = false">
           {{ hasActiveFilters ? 'Limpar busca' : 'Cancelar' }}
@@ -355,18 +325,27 @@ const extraSelectedTags = computed(() =>
   selectedTags.value.filter((id) => !knownTagIds.has(id))
 );
 
+// const fieldOptions = ref([
+//   { value: "all", label: "Todos os campos" },
+//   { value: "author", label: "Autoria" },
+//   { value: "tag", label: "Tag" },
+//   { value: "title", label: "Título" },
+// ]);
 const fieldOptions = ref([
-  { value: "all", label: "Todos os campos" },
-  { value: "author", label: "Autoria" },
-  { value: "tag", label: "Tag" },
-  { value: "title", label: "Título" },
+  { value: "all", label: "Todos os campos", placeholder: "Texto exemplo" },
+  { value: "author", label: "Autoria", placeholder: "Ex: Le Corbusier" },
+  { value: "tag", label: "Tag", placeholder: "Ex: fachada" },
+  { value: "title", label: "Título", placeholder: "Ex: Edifício Copan" },
+  { value: "aesthetics", label: "Aspectos estéticos", placeholder: "Ex: modernista" },
+  { value: "cultural", label: "Contexto cultural", placeholder: "Ex: movimento moderno brasileiro" },
+  { value: "typology", label: "Tipologia", placeholder: "Ex: residencial" },
+  { value: "techniques", label: "Técnicas de construção", placeholder: "Ex: concreto armado" },
+  { value: "materials", label: "Materiais", placeholder: "Ex: vidro" },
 ]);
 const selectedField = ref("all");
 const textQueryInput = ref("");
 const searchTerms = ref([]); // { field, value, label }
-const selectedLocations = ref([]);
 const selectedTags = ref([]);
-const selectedUse = ref(null);
 const selectedLicenses = ref([]);
 //--------
 const currentYear = new Date().getFullYear();
@@ -375,6 +354,10 @@ const imageEndYear = ref(null);
 const workStartYear = ref(null);
 const workEndYear = ref(null);
 const selectedCharacteristics = ref({});
+
+const textQueryPlaceholder = computed(
+  () => fieldOptions.value.find((f) => f.value === selectedField.value)?.placeholder || "Texto exemplo"
+);
 
 function toggleCharacteristic(pairKey, side) {
   if (selectedCharacteristics.value[pairKey] === side) {
@@ -425,9 +408,7 @@ watch(
       value: term.value,
       label: term.label,
     }));
-    selectedLocations.value = [...(filters?.locations || [])];
     selectedTags.value = [...(filters?.tags || [])];
-    selectedUse.value = filters?.use || null;
     selectedLicenses.value = [...(filters?.licenses || [])];
 
     imageStartYear.value = filters?.imageStartYear ?? null;
@@ -446,9 +427,7 @@ watch(
 const emitFiltersUpdate = () => {
   emit("update:filters", {
     terms: searchTerms.value,
-    locations: selectedLocations.value,
     tags: selectedTags.value,
-    use: selectedUse.value,
     licenses: selectedLicenses.value,
     imageStartYear: imageStartYear.value,
     imageEndYear: imageEndYear.value,
@@ -493,27 +472,6 @@ function toggleLicense(label) {
   emitFiltersUpdate();
 }
 
-// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
-// eslint-disable-next-line no-unused-vars
-const locationSuggestions = ref([
-  "São Paulo",
-  "Rio de Janeiro",
-  "Brasilia",
-  "Jaú",
-  "Ribeirão Preto",
-  "Londrina",
-  "Mauá",
-  "Itu",
-  "Ouro Preto",
-  "Praia Grande",
-]);
-// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
-// eslint-disable-next-line no-unused-vars
-function toggleLocation(city) {
-  toggleArrayItem(selectedLocations.value, city);
-  emitFiltersUpdate();
-}
-
 const tagSuggestions = [
   { id: "f5c68f66-549f-43db-96b2-ac34ebbd9f9b", label: "alvenaria" },
   { id: "019adaf3-b4f0-7139-be65-66b693091ff5", label: "concreto" },
@@ -533,19 +491,10 @@ function toggleTag(id) {
   emitFiltersUpdate();
 }
 
-// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
-// eslint-disable-next-line no-unused-vars
-function setUse(use) {
-  selectedUse.value = selectedUse.value === use ? null : use;
-  emitFiltersUpdate();
-}
-
 function confirm() {
   const payload = {
     terms: searchTerms.value,
-    locations: selectedLocations.value,
     tags: selectedTags.value,
-    use: selectedUse.value,
     licenses: selectedLicenses.value,
     imageStartYear: imageStartYear.value,
     imageEndYear: imageEndYear.value,

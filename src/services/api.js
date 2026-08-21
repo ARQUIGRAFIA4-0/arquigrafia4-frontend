@@ -2,6 +2,7 @@ import axios from "@/axios";
 import {
   createEmptyFeatureCollection,
 } from "@/helpers/geojson";
+import { buildSearchParamsFromAdvancedFilters } from "@/helpers/buildSearchParams";
 
 const baseURL = () => axios.defaults.baseURL;
 
@@ -282,36 +283,7 @@ const searchImages = async ({ mode, value, page = 1 } = {}) => {
     if (value?.start) params.date_from = value.start;
     if (value?.end) params.date_to = value.end;
   } else if (mode === "avancada") {
-    const filters = value || {};
-    const terms = Array.isArray(filters.terms) ? filters.terms : [];
-    const tags = Array.isArray(filters.tags) ? filters.tags : [];
-    const subjects = Array.isArray(filters.subjects) ? filters.subjects : [];
-
-    for (const term of terms) {
-      if (!term?.value) continue;
-      switch (term.field) {
-        case "all":
-          params.q = term.value;
-          break;
-        case "author":
-          params.contributor = term.value;
-          break;
-        case "tag":
-          params.subject_term = term.value;
-          break;
-        case "title":
-          params.title = term.value;
-          break;
-      }
-    }
-
-    for (const tag of tags) {
-      if (tag) params.subject_term = tag;
-    }
-
-    if (subjects.length > 0) {
-      params["subject[]"] = subjects.length === 1 ? subjects[0] : subjects;
-    }
+    Object.assign(params, buildSearchParamsFromAdvancedFilters(value));
   }
 
   // Only page param means no actual search filters were added
@@ -388,6 +360,23 @@ const fetchImages = async (page = 1, filters = {}) => {
     // Filtro por termos de assunto (partial match)
     if (filters.subjectTerms?.length) {
       params['subject_term[]'] = filters.subjectTerms.length === 1 ? filters.subjectTerms[0] : filters.subjectTerms;
+    }
+
+    // --- Novos campos ---
+    if (filters.materialTerms?.length) {
+      params['material_term[]'] = filters.materialTerms.length === 1 ? filters.materialTerms[0] : filters.materialTerms;
+    }
+    if (filters.techniqueTerms?.length) {
+      params['technique_term[]'] = filters.techniqueTerms.length === 1 ? filters.techniqueTerms[0] : filters.techniqueTerms;
+    }
+    if (filters.aestheticsTerms?.length) {
+      params['aesthetics_term[]'] = filters.aestheticsTerms.length === 1 ? filters.aestheticsTerms[0] : filters.aestheticsTerms;
+    }
+    if (filters.culturalContextTerms?.length) {
+      params['cultural_context_term[]'] = filters.culturalContextTerms.length === 1 ? filters.culturalContextTerms[0] : filters.culturalContextTerms;
+    }
+    if (filters.typologyTerms?.length) {
+      params['typology_term[]'] = filters.typologyTerms.length === 1 ? filters.typologyTerms[0] : filters.typologyTerms;
     }
 
     // Filtro por título (partial match)
