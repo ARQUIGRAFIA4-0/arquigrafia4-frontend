@@ -606,7 +606,7 @@ function handleCancel() {
             </div>
           </div>
         </div>
-        <button type="button" class="btn btn-outline-secondary lh-1" @click="openProfileImageDialog"
+        <button type="button" class="btn btn-outline-secondary lh-1 profile-form__change-image-btn" @click="openProfileImageDialog"
           :disabled="isProcessingImage">
           <span v-if="isProcessingImage">
             <i class="bi bi-hourglass-split me-1"></i>Processando...
@@ -1053,10 +1053,10 @@ function handleCancel() {
     <!-- Botões de submit e cancelamento -->
     <div class="row row-cols-2 g-3 mb-5">
       <div class="col">
-        <button class="btn btn-outline-secondary btn-sm w-100" @click="handleCancel">Cancelar</button>
+        <button class="btn btn-outline-secondary w-100" @click="handleCancel">Cancelar</button>
       </div>
       <div class="col">
-        <button class="btn btn-secondary btn-sm w-100" type="submit">Salvar alterações</button>
+        <button class="btn btn-secondary w-100" type="submit">Salvar alterações</button>
       </div>
     </div>
   </form>
@@ -1107,6 +1107,13 @@ $breakpoint-md: 768px;
 
     button {
       height: fit-content;
+    }
+
+    .profile-form__change-image-btn {
+      height: auto;
+      min-height: 0;
+      padding-top: 0.375rem;
+      padding-bottom: 0.375rem;
     }
 
     small {
@@ -1282,7 +1289,8 @@ $breakpoint-md: 768px;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    height: 30px;
+    height: var(--control-height-desk, 38px);
+    min-height: var(--control-height-desk, 38px);
     box-sizing: border-box;
     padding: 6px 10px;
     background: var(--off_white, #faf9f9);
@@ -1421,6 +1429,8 @@ $breakpoint-md: 768px;
     min-width: 0;
     margin: 0;
     padding: 2px 14px;
+    height: var(--control-height-desk, 38px);
+    min-height: var(--control-height-desk, 38px);
     border-radius: 5px;
     border-style: solid;
     border-width: 1px;
@@ -1622,7 +1632,8 @@ $breakpoint-md: 768px;
       }
 
       &__pwd-input-shell {
-        height: 34px;
+        height: var(--control-height-mobile, 48px);
+        min-height: var(--control-height-mobile, 48px);
         padding: 4px 10px;
       }
 
@@ -1654,10 +1665,10 @@ $breakpoint-md: 768px;
       &__pwd-btn {
         width: 100%;
         flex: 0 0 auto;
-        min-height: 32px;
-        height: 32px;
-        padding: 2px 12px;
-        line-height: 1.2;
+        height: var(--control-height-mobile, 48px);
+        min-height: var(--control-height-mobile, 48px);
+        padding: 2px 14px;
+        line-height: 1.5;
       }
 
       &__pwd-btn--secondary {

@@ -189,7 +189,7 @@ onMounted(() => {
       <div class="d-flex gap-2 mb-3">
         <button
           type="button"
-          class="btn btn-outline-secondary btn-sm flex-fill"
+          class="btn btn-outline-secondary flex-fill"
           :disabled="isLoading"
           @click="resetPasswordFlow(); isRegistering = false; closeAlert();"
         >
@@ -197,7 +197,7 @@ onMounted(() => {
         </button>
         <button
           type="button"
-          class="btn btn-outline-secondary btn-sm flex-fill"
+          class="btn btn-outline-secondary flex-fill"
           :disabled="isLoading"
           @click.prevent="resendCodeWithAlert"
         >
@@ -207,7 +207,7 @@ onMounted(() => {
       <div class="d-grid mb-4">
         <button
           type="submit"
-          class="btn btn-primary btn-sm"
+          class="btn btn-primary"
           :disabled="!isCodeComplete || isLoading"
         >
           Validar código
@@ -237,7 +237,7 @@ onMounted(() => {
       <div class="d-grid d-md-flex gap-2 form-btn-row">
         <button
           type="button"
-          class="btn btn-outline-secondary btn-sm form-btn-half"
+          class="btn btn-outline-secondary form-btn-half"
           :disabled="isLoading"
           @click="isForgotPassword = false; resetForm(); closeAlert();"
         >
@@ -245,7 +245,7 @@ onMounted(() => {
         </button>
         <button
           type="button"
-          class="btn btn-primary btn-sm form-btn-half"
+          class="btn btn-primary form-btn-half"
           :disabled="isLoading"
           @click="sendPasswordResetEmailWithAlert()"
         >
@@ -300,13 +300,13 @@ onMounted(() => {
       <div class="form-btn-row">
         <button
           type="button"
-          class="btn btn-outline-secondary btn-sm form-btn-half"
+          class="btn btn-outline-secondary form-btn-half"
           :disabled="isLoading"
           @click="resetPasswordFlow(); closeAlert();"
         >
           Cancelar
         </button>
-        <button type="submit" class="btn btn-primary btn-sm form-btn-half" :disabled="isLoading">
+        <button type="submit" class="btn btn-primary form-btn-half" :disabled="isLoading">
           Salvar nova senha
         </button>
       </div>
@@ -425,13 +425,13 @@ onMounted(() => {
       <div class="form-btn-row">
         <button
           type="button"
-          class="btn btn-outline-secondary btn-sm form-btn-half"
+          class="btn btn-outline-secondary form-btn-half"
           :disabled="isLoading"
           @click="toggleRegister"
         >
           {{ isRegistering ? "Já tenho conta" : "Criar conta" }}
         </button>
-        <button type="submit" class="btn btn-primary btn-sm form-btn-half" :disabled="isLoading">
+        <button type="submit" class="btn btn-primary form-btn-half" :disabled="isLoading">
           {{ isRegistering ? "Registrar" : "Entrar" }}
         </button>
       </div>
@@ -457,11 +457,19 @@ $breakpoint-md: 768px;
 .login-container {
   background-color: #faf9f9;
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1.25rem;
   font-weight: 500;
   position: sticky;
   top: 32px;
   z-index: 100;
+
+  @include md {
+    padding: 1.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    padding: 2rem;
+  }
 }
 
 .login-form-box {
@@ -497,7 +505,7 @@ $breakpoint-md: 768px;
   line-height: 150%;
   letter-spacing: 0%;
 
-  @include md {
+  @media (min-width: 1024px) {
     font-size: 30px;
   }
 }
@@ -509,7 +517,7 @@ $breakpoint-md: 768px;
   letter-spacing: 0%;
   padding-bottom: 10px;
 
-  @include md {
+  @media (min-width: 1024px) {
     font-size: 20px;
   }
 }

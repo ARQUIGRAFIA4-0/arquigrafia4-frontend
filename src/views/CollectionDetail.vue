@@ -459,10 +459,15 @@ async function handleCollectionDownloadConfirm() {
 // "Voltar": retorna à página anterior se houver histórico interno;
 // senão, cai na página do dono (coletivo/perfil) derivada do álbum.
 function goBack() {
-  if (window.history.state?.back) {
+  const backPath = window.history.state?.back ?? null;
+  const isBackToEdit =
+    typeof backPath === "string" && backPath.includes("/edit");
+
+  if (backPath && !isBackToEdit) {
     router.back();
     return;
   }
+
   const target = ownerProfileTo.value;
   if (target) router.push(target);
   else router.push("/");
@@ -1721,7 +1726,9 @@ a.collection-detail__actor-name:hover {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 8px 14px;
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+    padding: 2px 14px;
     border: none;
     border-radius: 5px;
     background: var(--Laranja_E, #aa4f28);

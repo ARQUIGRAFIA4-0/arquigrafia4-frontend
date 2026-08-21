@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/auth";
 import { useAlbumsStore } from "@/store/albums";
 import { api } from "@/services/api";
 import CollectionEditForm from "@/components/collection/CollectionEditForm.vue";
+import { isFavoritesAlbumTitle } from "@/constants/favoritesCollection";
 
 defineOptions({ name: "CollectionEdit" });
 
@@ -116,11 +117,11 @@ async function fetchCollectionImages() {
   }
 }
 
-// Volta para a página da coleção.
+// Volta para a página da coleção (replace evita que "voltar" retorne à edição).
 function goToCollectionDetail() {
   if (!collectionId.value) return;
 
-  router.push({
+  router.replace({
     name: "collection-detail",
     params: {
       collectionId: String(collectionId.value),
@@ -180,6 +181,10 @@ const canSave = computed(() => {
   );
 });
 
+const isFavoritesCollection = computed(() =>
+  isFavoritesAlbumTitle(collectionTitle.value),
+);
+
 function buildSavePayload() {
   return {
     title: collectionTitle.value.trim(),
@@ -190,6 +195,14 @@ function buildSavePayload() {
 
 async function handleSave() {
   if (!canSave.value || !collectionId.value) return;
+
+  if (
+    isFavoritesCollection.value &&
+    collectionTitle.value.trim() !== initialTitle.value
+  ) {
+    console.warn("A coleção Favoritos não pode ser renomeada.");
+    return;
+  }
 
   const payload = buildSavePayload();
 
@@ -323,6 +336,7 @@ watch(collectionId, () => {
                   v-model:description="collectionDescription"
                   v-model:is-private="collectionIsPrivate"
                   :disabled="isSaving"
+                  :title-disabled="isFavoritesCollection"
                 />
               </div>
             </template>
@@ -388,8 +402,9 @@ watch(collectionId, () => {
   display: flex;
   padding: 2px 14px;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
   border-radius: 5px;
   border-width: 1px;
   border-style: solid;
@@ -401,6 +416,15 @@ watch(collectionId, () => {
   cursor: pointer;
   box-sizing: border-box;
   white-space: nowrap;
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
+}
+
+@media (max-width: 767.98px) {
+  .collection-edit__btn {
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+  }
 }
 
 .collection-edit__btn--cancel {
@@ -650,7 +674,9 @@ watch(collectionId, () => {
     width: 100%;
     align-items: center;
     justify-content: center;
-    padding: 8px 14px;
+    padding: 2px 14px;
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
   }
 
   .collection-edit__btn-label--desktop {

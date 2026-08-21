@@ -243,7 +243,10 @@ $breakpoint-md: 768px;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 30px;
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
+  box-sizing: border-box;
+  padding: 2px 14px;
 }
 
 .network-offcanvas__btn-salvar {
@@ -255,6 +258,17 @@ $breakpoint-md: 768px;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 30px;
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
+  box-sizing: border-box;
+  padding: 2px 14px;
+}
+
+@media (max-width: 767.98px) {
+  .network-offcanvas__btn-voltar,
+  .network-offcanvas__btn-salvar {
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+  }
 }
 </style>
