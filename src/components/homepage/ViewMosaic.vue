@@ -148,6 +148,31 @@ const filters = computed(() => {
   if (rawSubjectTerms) {
     f.subjectTerms = Array.isArray(rawSubjectTerms) ? rawSubjectTerms : [rawSubjectTerms];
   }
+
+  //--- Novos campos adicionados para material, técnica, período de estilo, contexto cultural e tipo de obra
+
+  const rawMaterialTerms = route.query['material_term[]'];
+  if (rawMaterialTerms) {
+    f.materialTerms = Array.isArray(rawMaterialTerms) ? rawMaterialTerms : [rawMaterialTerms];
+  }
+  const rawTechniqueTerms = route.query['technique_term[]'];
+  if (rawTechniqueTerms) {
+    f.techniqueTerms = Array.isArray(rawTechniqueTerms) ? rawTechniqueTerms : [rawTechniqueTerms];
+  }
+  const rawAestheticsTerms = route.query['aesthetics_term[]'];
+  if (rawAestheticsTerms) {
+    f.AestheticsTerms = Array.isArray(rawAestheticsTerms) ? rawAestheticsTerms : [rawAestheticsTerms];
+  }
+  const rawCulturalContextTerms = route.query['cultural_context_term[]'];
+  if (rawCulturalContextTerms) {
+    f.culturalContextTerms = Array.isArray(rawCulturalContextTerms) ? rawCulturalContextTerms : [rawCulturalContextTerms];
+  }
+  const rawTypologyTerms = route.query['typology_term[]'];
+  if (rawTypologyTerms) {
+    f.TypologyTerms = Array.isArray(rawTypologyTerms) ? rawTypologyTerms : [rawTypologyTerms];
+  }
+  // --- fim dos novos campos ---
+
   if (route.query.title) {
     f.title = route.query.title;
   }
@@ -204,6 +229,19 @@ watch(
     const rawLicenses = route.query['license[]'];
     const licensesKey = rawLicenses ? (Array.isArray(rawLicenses) ? [...rawLicenses].sort().join(',') : rawLicenses) : null;
 
+    // --- Novos campos ---
+    const rawMaterialTerms = route.query['material_term[]'];
+    const materialTermsKey = rawMaterialTerms ? (Array.isArray(rawMaterialTerms) ? [...rawMaterialTerms].sort().join(',') : rawMaterialTerms) : null;
+    const rawTechniqueTerms = route.query['technique_term[]'];
+    const techniqueTermsKey = rawTechniqueTerms ? (Array.isArray(rawTechniqueTerms) ? [...rawTechniqueTerms].sort().join(',') : rawTechniqueTerms) : null;
+    const rawAestheticsTerms = route.query['aesthetics_term[]'];
+    const aestheticsTermsKey = rawAestheticsTerms ? (Array.isArray(rawAestheticsTerms) ? [...rawAestheticsTerms].sort().join(',') : rawAestheticsTerms) : null;
+    const rawCulturalContextTerms = route.query['cultural_context_term[]'];
+    const culturalContextTermsKey = rawCulturalContextTerms ? (Array.isArray(rawCulturalContextTerms) ? [...rawCulturalContextTerms].sort().join(',') : rawCulturalContextTerms) : null;
+    const rawTypologyTerms = route.query['typology_term[]'];
+    const typologyTermsKey = rawTypologyTerms ? (Array.isArray(rawTypologyTerms) ? [...rawTypologyTerms].sort().join(',') : rawTypologyTerms) : null;
+    // --- fim dos novos campos ---
+
     // Chave das características (binomial[chave]), na mesma lógica do filters computed
     const characteristicsKey = Object.keys(route.query)
       .filter((key) => /^binomial\[.+\]$/.test(key))
@@ -223,7 +261,12 @@ watch(
       subjectTerms: subjectTermsKey, 
       title: route.query.title || null, 
       contributor: route.query.contributor || null, 
-      licenses: licensesKey 
+      licenses: licensesKey,
+      materialTerms: materialTermsKey,
+      techniqueTerms: techniqueTermsKey,
+      aestheticsTerms: aestheticsTermsKey,
+      culturalContextTerms: culturalContextTermsKey,
+      typologyTerms: typologyTermsKey,
     });
     if (searchKey !== lastSearchKey) {
       // Reset when search params change (including going from search to browse)

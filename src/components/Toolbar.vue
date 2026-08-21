@@ -313,8 +313,20 @@ const hasActiveUrlFilter = computed(() => Boolean(
   route.query.title ||
   route.query.contributor ||
   route.query['license[]'] ||
+  route.query['material_term[]'] ||
+  route.query['technique_term[]'] ||
+  route.query['aesthetics_term[]'] ||
+  route.query['cultural_context_term[]'] ||
+  route.query['typology_term[]'] ||
   activeCharacteristicEntries.value.length > 0
 ));
+
+
+function checkAndAdd(raw, count) {
+  if (raw) {
+    count += Array.isArray(raw) ? raw.length : 1;
+  }
+}
 
 // Conta tipos de filtro distintos na URL (date_from + date_to = 1 tipo; arrays acumuláveis contam individualmente)
 const activeFilterTypeCount = computed(() => {
@@ -325,17 +337,29 @@ const activeFilterTypeCount = computed(() => {
   if (route.query.title) count++;
   if (route.query.contributor) count++;
   const rawSubjects = route.query['subject[]'];
-  if (rawSubjects) {
-    count += Array.isArray(rawSubjects) ? rawSubjects.length : 1;
-  }
+  checkAndAdd(rawSubjects, count);
+
   const rawSubjectTerms = route.query['subject_term[]'];
-  if (rawSubjectTerms) {
-    count += Array.isArray(rawSubjectTerms) ? rawSubjectTerms.length : 1;
-  }
+  checkAndAdd(rawSubjectTerms, count);
+
   const rawLicenses = route.query['license[]'];
-  if (rawLicenses) {
-    count += Array.isArray(rawLicenses) ? rawLicenses.length : 1;
-  }
+  checkAndAdd(rawLicenses, count);
+
+  const rawMaterialTerms = route.query['material_term[]'];
+  checkAndAdd(rawMaterialTerms, count);
+
+  const rawTechniqueTerms = route.query['technique_term[]'];
+  checkAndAdd(rawTechniqueTerms, count);
+
+  const rawAestheticsTerms = route.query['aesthetics_term[]'];
+  checkAndAdd(rawAestheticsTerms, count);
+
+  const rawCulturalContextTerms = route.query['cultural_context_term[]'];
+  checkAndAdd(rawCulturalContextTerms, count);
+
+  const rawTypologyTerms = route.query['typology_term[]'];
+  checkAndAdd(rawTypologyTerms, count);
+
   count += activeCharacteristicEntries.value.length;
   return count;
 });
@@ -469,10 +493,8 @@ const hasAdvancedFilters = computed(() => {
   const filters = props.advancedFilters || {};
   return (
     (filters.terms && filters.terms.length > 0) ||
-    (filters.locations && filters.locations.length > 0) ||
     (filters.tags && filters.tags.length > 0) ||
-    (filters.subjects && filters.subjects.length > 0) ||
-    Boolean(filters.use)
+    (filters.subjects && filters.subjects.length > 0)
   );
 });
 
@@ -572,6 +594,25 @@ const urlChips = computed(() => {
     });
   });
 
+  const pushTermChips = (queryKey, chipType, labelPrefix) => {
+    const raw = route.query[queryKey];
+    const values = raw ? (Array.isArray(raw) ? raw : [raw]) : [];
+    values.forEach((term) => {
+      chips.push({
+        uid: `${chipType}-${term}`,
+        type: chipType,
+        termValue: term,
+        label: `${labelPrefix}: ${term}`,
+      });
+    });
+  };
+
+  pushTermChips('material_term[]', 'material_term', 'Material');
+  pushTermChips('technique_term[]', 'technique_term', 'Técnica');
+  pushTermChips('aesthetics_term[]', 'aesthetics_term', 'Estética');
+  pushTermChips('cultural_context_term[]', 'cultural_context_term', 'Contexto cultural');
+  pushTermChips('typology_term[]', 'typology_term', 'Tipologia');
+
   return chips;
 });
 
@@ -585,15 +626,6 @@ const advancedChips = computed(() => {
       type: "term",
       index,
       label: term.label || term.value,
-    });
-  });
-
-  (filters.locations || []).forEach((location, index) => {
-    chips.push({
-      uid: `location-${index}-${location}`,
-      type: "location",
-      index,
-      label: `Localização: ${location}`,
     });
   });
 
@@ -614,17 +646,6 @@ const advancedChips = computed(() => {
       label: `Tag: ${getTermById(id)}`,
     });
   });
-
-  if (filters.use) {
-    chips.push({
-      uid: `use-${filters.use}`,
-      type: "use",
-      label:
-        filters.use === "commercial"
-          ? "Uso: Permite uso comercial"
-          : "Uso: Não permite uso comercial",
-    });
-  }
 
   return chips;
 });

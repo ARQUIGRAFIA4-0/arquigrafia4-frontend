@@ -77,7 +77,17 @@ const hasActiveTextFilter = computed(() => Boolean(
   route.query.contributor ||
   route.query['subject_term[]'] ||
   route.query['subject[]'] ||
-  route.query['license[]']
+  route.query['license[]'] ||
+  route.query.date_from ||
+  route.query.date_to ||
+  route.query.work_date_from ||
+  route.query.work_date_to ||
+  route.query['material_term[]'] ||
+  route.query['technique_term[]'] ||
+  route.query['aesthetics_term[]'] ||
+  route.query['cultural_context_term[]'] ||
+  route.query['typology_term[]'] ||
+  hasActiveCharacteristics.value
 ));
 
 const props = defineProps({
