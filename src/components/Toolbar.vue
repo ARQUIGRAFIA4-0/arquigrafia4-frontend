@@ -808,7 +808,8 @@ function onViewSubcontrol() {
 
 .toolbar-acervo__panel {
   display: flex;
-  height: 56px;
+  min-height: 56px;
+  height: auto;
   padding: var(--p, 12px) var(--m, 16px);
   align-items: center;
   gap: var(--m, 16px);
@@ -862,13 +863,24 @@ function onViewSubcontrol() {
 }
 
 #toolbar #confirm-search {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
+  width: var(--control-height-desk, 38px);
+  height: var(--control-height-desk, 38px);
+  min-width: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+}
+
+@media (max-width: 767.98px) {
+  #toolbar #confirm-search {
+    width: var(--control-height-mobile, 48px);
+    height: var(--control-height-mobile, 48px);
+    min-width: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+  }
 }
 
 #toolbar .dropdown-menu {
@@ -901,7 +913,7 @@ function onViewSubcontrol() {
 }
 
 .advanced-filters-container {
-  min-height: 36px;
+  min-height: var(--control-height-desk, 38px);
 }
 
 .toolbar-divider {
@@ -912,13 +924,24 @@ function onViewSubcontrol() {
 }
 
 #toolbar .btn-subcontrol {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
+  width: var(--control-height-desk, 38px);
+  height: var(--control-height-desk, 38px);
+  min-width: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+}
+
+@media (max-width: 767.98px) {
+  #toolbar .btn-subcontrol {
+    width: var(--control-height-mobile, 48px);
+    height: var(--control-height-mobile, 48px);
+    min-width: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+  }
 }
 
 #toolbar .btn-subcontrol.active {

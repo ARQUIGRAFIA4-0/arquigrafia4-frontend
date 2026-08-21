@@ -1726,7 +1726,9 @@ a.collection-detail__actor-name:hover {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 8px 14px;
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+    padding: 2px 14px;
     border: none;
     border-radius: 5px;
     background: var(--Laranja_E, #aa4f28);

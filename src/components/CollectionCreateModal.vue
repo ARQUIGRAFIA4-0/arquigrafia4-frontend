@@ -479,7 +479,8 @@
 }
 
 .collection-modal__input {
-  height: 30px;
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
 }
 
 .collection-modal__checkbox .form-check-label {
@@ -538,6 +539,8 @@
   min-width: 0;
   margin: 0;
   padding: 2px 14px;
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
   border-radius: 5px;
   border-style: solid;
   border-width: 1px;
@@ -635,7 +638,8 @@
   }
 
   .collection-modal__input {
-    height: 26px;
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
     padding: 4px 8px;
     font-size: 12px;
   }
@@ -677,8 +681,8 @@
   .collection-modal__btn {
     width: auto;
     flex: 1 0 0;
-    min-height: 30px;
-    height: 30px;
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
     padding: 2px 14px;
     line-height: 1.5;
   }

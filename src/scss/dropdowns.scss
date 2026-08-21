@@ -57,6 +57,19 @@
   mask-size: contain;
 }
 
+/* Gira o caret (mask) ao abrir — Bootstrap só gira o caret de border */
+.dropdown-toggle::before,
+.dropdown-toggle.caret-right::after {
+  transition: transform 0.15s ease;
+}
+
+.dropdown-toggle.show::before,
+.dropdown-toggle[aria-expanded="true"]::before,
+.dropdown-toggle.caret-right.show::after,
+.dropdown-toggle.caret-right[aria-expanded="true"]::after {
+  transform: rotate(180deg);
+}
+
 // Temas de Dropdown
 .dropdown-menu.menu-dark {
   --bs-dropdown-bg: var(--Preto);

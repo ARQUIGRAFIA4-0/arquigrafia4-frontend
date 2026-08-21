@@ -196,8 +196,17 @@ function onPrivateChange(event) {
 }
 
 .collection-edit-form__input {
-  height: 30px;
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
+  box-sizing: border-box;
   align-items: center;
+}
+
+@media (max-width: 767.98px) {
+  .collection-edit-form__input {
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+  }
 }
 
 .collection-edit-form__textarea {

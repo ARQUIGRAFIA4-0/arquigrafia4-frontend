@@ -466,7 +466,8 @@ function shareToX() {
 
 .share-modal__link-box {
   width: 100%;
-  height: 30px;
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
   background: var(--off_white, #faf9f9);
   border: 0.75px solid var(--preto, #1f1f1f);
   border-radius: 5px;
@@ -561,6 +562,8 @@ function shareToX() {
   min-width: 0;
   margin: 0;
   padding: 2px 14px;
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
   border-radius: 5px;
   border-style: solid;
   border-width: 1px;
@@ -660,7 +663,8 @@ function shareToX() {
   }
 
   .share-modal__link-box {
-    height: 34px;
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
   }
 
   .share-modal__social-icons {
@@ -686,10 +690,10 @@ function shareToX() {
 
   .share-modal__btn {
     width: 100%;
-    min-height: 34px;
-    height: 34px;
-    padding: 4px 12px;
-    line-height: 1.2;
+    min-height: var(--control-height-mobile, 48px);
+    height: var(--control-height-mobile, 48px);
+    padding: 2px 14px;
+    line-height: 1.5;
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;

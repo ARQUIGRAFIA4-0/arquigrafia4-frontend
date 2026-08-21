@@ -291,6 +291,8 @@ function confirmDownload() {
   min-width: 0;
   margin: 0;
   padding: 2px 14px;
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
   border-radius: 5px;
   border-style: solid;
   border-width: 1px;
@@ -305,6 +307,7 @@ function confirmDownload() {
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
+  box-sizing: border-box;
 }
 
 .download-modal__btn--secondary {
@@ -422,10 +425,10 @@ function confirmDownload() {
   .download-modal__btn {
     width: 100%;
     flex: 0 0 auto;
-    min-height: 32px;
-    height: 32px;
-    padding: 2px 12px;
-    line-height: 1.2;
+    min-height: var(--control-height-mobile, 48px);
+    height: var(--control-height-mobile, 48px);
+    padding: 2px 14px;
+    line-height: 1.5;
   }
 
   .download-modal__btn--secondary { order: 1; }
