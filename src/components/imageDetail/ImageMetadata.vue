@@ -75,10 +75,23 @@
 
     <div class="metadata-section" v-if="showMap">
       <h2 class="h5 metadata-title">Localização</h2>
+      <p v-if="props.image?.location" class="metadata-location-label">{{ props.image.location }}</p>
       <div class="metadata-map">
         <MapLibreMap :style-url="mapStyleUrl" :center="resolvedMapCenter" :zoom="mapZoom"
           :marker-position="markerPosition" marker-color="#2F2F2F" />
       </div>
+      <p class="metadata-map-note">
+        Encontrou alguma inconsistência ou tem mais informações sobre essa imagem/obra?
+        <button v-if="canSuggest" type="button" class="btn btn-link metadata-map-note-link" @click="openSuggestModal">
+          Faça uma sugestão
+        </button>
+        <template v-else-if="canEdit">
+          <button type="button" class="btn btn-link metadata-map-note-link" @click="enterEditMode">
+            Edite as informações
+          </button>
+        </template>
+        <template v-else>Entre na sua conta para sugerir uma correção</template>.
+      </p>
     </div>
 
     <LicenseInfoBlock v-if="props.licenseInfo" :license-info="props.licenseInfo" />
@@ -302,12 +315,34 @@ const markerPosition = computed(() => {
   cursor: pointer;
 }
 
+.metadata-location-label {
+  margin: -0.5rem 0 1rem;
+  color: #495057;
+  line-height: 1.6;
+}
+
 .metadata-map {
   position: relative;
   aspect-ratio: 1 / 1;
   overflow: hidden;
   background-color: #f1f3f5;
-  margin-bottom: 36px;
+}
+
+.metadata-map-note {
+  margin: 0.5rem 0 36px;
+  font-size: 0.875rem;
+  color: #6c757d;
+  line-height: 1.6;
+}
+
+.metadata-map-note-link {
+  padding: 0;
+  border: 0;
+  vertical-align: baseline;
+  font-size: inherit;
+  line-height: inherit;
+  color: var(--Laranja_E);
+  text-decoration: underline;
 }
 
 .edit-btn {
