@@ -98,12 +98,12 @@
       <!-- Estado avançado derivado da URL (2+ tipos de filtro) -->
       <template v-if="isAdvancedByUrl">
         <span class="toolbar__advanced-label text-preto text-nowrap small">Busca avançada ativa</span>
-        <button class="btn btn-sm btn-outline-secondary btn-icon" type="button" title="Limpar todos os filtros"
+        <button class="btn btn-sm btn-outline-secondary btn-icon btn-clear-search" type="button" title="Limpar todos os filtros"
           aria-label="Limpar todos os filtros" @click="emit('clear-all-filters')">
           <i class="bi bi-x-lg" style="font-size: 0.75rem;" />
           Limpar
         </button>
-        <button class="btn btn-sm btn-secondary btn-icon" type="button" title="Editar busca avançada"
+        <button class="btn btn-sm btn-secondary btn-icon btn-edit-search" type="button" title="Editar busca avançada"
           aria-label="Editar busca avançada" @click="emit('open-advanced-search')">
           <i class="bi bi-pencil-square" style="font-size: 0.75rem;" />
           Editar
@@ -841,6 +841,10 @@ function onViewSubcontrol() {
 
   .btn {
     border: none;
+  }
+  
+  .btn-clear-search, .btn-edit-search {
+    width: auto !important;
   }
 }
 
