@@ -281,12 +281,7 @@
           class="btn btn-outline-secondary btn-sm w-100"
           @click="hasActiveFilters ? handleClear() : close()"
         >
-        <!-- <button
-          type="button"
-          class="btn btn-outline-secondary btn-sm w-100"
-          @click="close"
-        > -->
-           {{ hasActiveFilters ? 'Limpar busca' : 'Cancelar' }}
+          {{ hasActiveFilters ? 'Limpar busca' : 'Cancelar' }}
         </button>
         <button
           type="button"

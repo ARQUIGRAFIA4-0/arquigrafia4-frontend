@@ -359,9 +359,14 @@ function syncFromSnapshot(mode) {
       advancedFilters.value = {
         ...createDefaultAdvancedFilters(),
         terms: snapshot.value?.terms || [],
-        locations: snapshot.value?.locations || [],
+        tags: snapshot.value?.tags || [],
         subjects: snapshot.value?.subjects || [],
-        use: snapshot.value?.use || null,
+        licenses: snapshot.value?.licenses || [],
+        imageStartYear: snapshot.value?.imageStartYear ?? null,
+        imageEndYear: snapshot.value?.imageEndYear ?? null,
+        workStartYear: snapshot.value?.workStartYear ?? null,
+        workEndYear: snapshot.value?.workEndYear ?? null,
+        characteristics: snapshot.value?.characteristics || {},
       };
       break;
     default:
@@ -387,10 +392,14 @@ syncFromSnapshot(searchMode.value);
           : snapshot.mode === "avancada"
             ? Boolean(
               snapshot.value?.terms?.length ||
-              snapshot.value?.locations?.length ||
               snapshot.value?.tags?.length ||
               snapshot.value?.subjects?.length ||
-              snapshot.value?.use
+              snapshot.value?.licenses?.length ||
+              snapshot.value?.imageStartYear ||
+              snapshot.value?.imageEndYear ||
+              snapshot.value?.workStartYear ||
+              snapshot.value?.workEndYear ||
+              Object.keys(snapshot.value?.characteristics || {}).length
             )
             : false;
 
@@ -448,10 +457,14 @@ watch(
             : snapshot.mode === "avancada"
               ? Boolean(
                 snapshot.value?.terms?.length ||
-                snapshot.value?.locations?.length ||
                 snapshot.value?.tags?.length ||
                 snapshot.value?.subjects?.length ||
-                snapshot.value?.use
+                snapshot.value?.licenses?.length ||
+                snapshot.value?.imageStartYear ||
+                snapshot.value?.imageEndYear ||
+                snapshot.value?.workStartYear ||
+                snapshot.value?.workEndYear ||
+                Object.keys(snapshot.value?.characteristics || {}).length
               )
               : false;
     if (hasValue) {
@@ -937,10 +950,8 @@ function handleAdvancedFiltersUpdate(filters) {
   advancedFilters.value = {
     ...createDefaultAdvancedFilters(),
     terms: filters?.terms || [],
-    // locations: filters?.locations || [],
     tags: filters?.tags || [],
     subjects: filters?.subjects || [],
-    // use: filters?.use || null,
     licenses: filters?.licenses || [],
     imageStartYear: filters?.imageStartYear ?? null,
     imageEndYear: filters?.imageEndYear ?? null,
@@ -1093,7 +1104,6 @@ function handleClearSearch() {
 }
 
 function handleNewSearch() {
-  hasNoResults.value = false;
   if (isMobile.value) {
     openSearchText();
   } else {

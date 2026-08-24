@@ -132,6 +132,23 @@ function handleSearchButton(mode, eventName) {
   emit(eventName);
 }
 
+// Detecta pares de características ativos na URL (binomial[chave]=left|right)
+const activeCharacteristicEntries = computed(() => {
+  return Object.keys(route.query)
+    .map((key) => {
+      const match = key.match(/^binomial\[(.+)\]$/);
+      if (!match) return null;
+      const side = route.query[key];
+      if (side !== 'left' && side !== 'right') return null;
+      return { key: match[1], side, queryKey: key };
+    })
+    .filter(Boolean);
+});
+
+const hasActiveCharacteristics = computed(() =>
+  activeCharacteristicEntries.value.length > 0
+);
+
 const searchButtonClasses = (mode) => [
   "btn",
   "btn-icon",
