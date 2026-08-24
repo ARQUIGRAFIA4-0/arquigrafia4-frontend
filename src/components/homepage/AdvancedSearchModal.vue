@@ -279,9 +279,14 @@
         <button
           type="button"
           class="btn btn-outline-secondary btn-sm w-100"
-          @click="close"
+          @click="hasActiveFilters ? handleClear() : close()"
         >
-          Cancelar
+        <!-- <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm w-100"
+          @click="close"
+        > -->
+           {{ hasActiveFilters ? 'Limpar busca' : 'Cancelar' }}
         </button>
         <button
           type="button"
@@ -316,9 +321,13 @@ const props = defineProps({
     type: Object,
     default: () => createDefaultAdvancedFilters(),
   },
+  hasActiveFilters: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(["update:modelValue", "confirm"]);
+const emit = defineEmits(["update:modelValue", "confirm", "clear"]);
 
 const { getTermById, isTermLoaded, loadSubjectTerms } = useSubjectTerms();
 
@@ -449,6 +458,11 @@ function setSelectedField(value) {
 
 function close() {
   emit("update:modelValue", false);
+}
+
+function handleClear() {
+  syncFromFilters(createDefaultAdvancedFilters());
+  emit("clear");
 }
 
 function addSearchTerm() {

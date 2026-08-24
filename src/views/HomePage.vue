@@ -94,8 +94,13 @@
         @update:value="handleDateRangeUpdate" @open="handleDrawerDateOpen" @confirm="confirmDate"
         @clear="handleClearDateFilter" />
 
-      <advanced-search-modal v-model="modalAdvancedSearch" :filters="advancedFilters"
-        @confirm="confirmAdvancedSearch" />
+      <advanced-search-modal 
+        v-model="modalAdvancedSearch" 
+        :filters="advancedFilters"
+        @confirm="confirmAdvancedSearch" 
+        :has-active-filters="hasActiveDrawerTextFilters"
+        @clear="handleClearTextFilters" 
+      />
 
       <Teleport to="body">
         <AlbumPickerModal
