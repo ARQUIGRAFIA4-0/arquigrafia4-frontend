@@ -46,15 +46,17 @@ function handleReorder(newImages) {
 function removeImageFromCollection(imageId) {
   if (!imageId) return;
 
-  if (!pendingRemovals.value.includes(imageId)) {
+  const normalizedId = String(imageId);
+
+  if (!pendingRemovals.value.some((id) => String(id) === normalizedId)) {
     pendingRemovals.value = [...pendingRemovals.value, imageId];
   }
 
   collectionImages.value = collectionImages.value.filter(
-    (img) => img.id !== imageId
+    (img) => String(img.id) !== normalizedId,
   );
 
-  if (selectedImageId.value === imageId) {
+  if (String(selectedImageId.value) === normalizedId) {
     selectedImageId.value = null;
   }
 }
@@ -215,11 +217,22 @@ async function handleSave() {
       payload
     );
 
-    if (pendingRemovals.value.length > 0 || hasReorder.value) {
+    const removals = [...pendingRemovals.value];
+
+    if (removals.length > 0) {
+      await albumsStore.removeImagesFromAlbum(
+        authStore.authHeader,
+        collectionId.value,
+        removals,
+      );
+    }
+
+    // Só reordena se ainda restarem imagens
+    if (collectionImages.value.length > 0 && (hasReorder.value || removals.length > 0)) {
       await albumsStore.syncImages(
         authStore.authHeader,
         collectionId.value,
-        collectionImages.value
+        collectionImages.value,
       );
     }
 
