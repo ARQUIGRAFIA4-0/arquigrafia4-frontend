@@ -29,8 +29,8 @@
 }
 
 /* LINA Botão P — altura padrão (desk 38 / mobile 48).
-   btn-tag / btn-link ficam de fora (chips e toggles de ícone). */
-.btn:not(.btn-tag):not(.btn-link) {
+   btn-tag / btn-link / btn-sm ficam de fora (chips, links e botões compactos). */
+.btn:not(.btn-tag):not(.btn-link):not(.btn-sm) {
   box-sizing: border-box;
   min-height: var(--control-height-desk, 38px);
   height: var(--control-height-desk, 38px);
@@ -44,22 +44,22 @@
 }
 
 @media (max-width: 767.98px) {
-  .btn:not(.btn-tag):not(.btn-link) {
+  .btn:not(.btn-tag):not(.btn-link):not(.btn-sm) {
     min-height: var(--control-height-mobile, 48px);
     height: var(--control-height-mobile, 48px);
   }
 }
 
 /* Ícone-only (Figma 2041:1263 → 38×38 desk / 48×48 mobile).
-   Dropdowns com caret (::before/::after) precisam de largura auto. */
-.btn.btn-icon:not(.btn-tag):not(.btn-link):not(.dropdown-toggle) {
+   Dropdowns com caret (::before/::after) e btn-sm precisam de largura auto. */
+.btn.btn-icon:not(.btn-tag):not(.btn-link):not(.dropdown-toggle):not(.btn-sm) {
   width: var(--control-height-desk, 38px);
   padding-left: 10px;
   padding-right: 10px;
 }
 
 @media (max-width: 767.98px) {
-  .btn.btn-icon:not(.btn-tag):not(.btn-link):not(.dropdown-toggle) {
+  .btn.btn-icon:not(.btn-tag):not(.btn-link):not(.dropdown-toggle):not(.btn-sm) {
     width: var(--control-height-mobile, 48px);
   }
 }

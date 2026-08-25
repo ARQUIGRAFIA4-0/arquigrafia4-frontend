@@ -200,11 +200,13 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
   }
 }
 
-// Largura igual; a altura vem do `.btn-sm .btn-icon` (mesmo padrão dos botões
-// das sidebars de perfil/coletivo), garantindo consistência com o resto do site.
+// Largura igual; btn-sm compacto (fora do padrão LINA 38×38 dos botões normais).
 .profile-grid-card__action-btn {
   flex: 1;
   min-width: 0;
+  width: auto;
+  height: auto;
+  min-height: 0;
   gap: 4px;
 
   i {

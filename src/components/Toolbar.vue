@@ -824,7 +824,7 @@ function onViewSubcontrol() {
 }
 
 .toolbar-acervo__panel--search {
-  padding: var(--ppp, 4px) var(--pp, 8px);
+  padding: var(--p, 12px) var(--pp, 8px);
   min-width: 0;
 }
 
