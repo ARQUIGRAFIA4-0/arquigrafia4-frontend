@@ -2,7 +2,7 @@ import axios from "@/axios";
 import {
   createEmptyFeatureCollection,
 } from "@/helpers/geojson";
-import { buildSearchParamsFromAdvancedFilters } from "@/helpers/buildSearchParams";
+import { filtersToApiParams } from "@/helpers/searchQueryMapping";
 
 const baseURL = () => axios.defaults.baseURL;
 
@@ -272,7 +272,7 @@ const getGeoJSON = async () => {
  * Busca imagens na API com filtros
  */
 const searchImages = async ({ mode, value, page = 1 } = {}) => {
-  const params = { page };
+  let params = { page };
 
   if (mode === "textual") {
     const q = typeof value === "string" ? value.trim() : "";
@@ -283,7 +283,7 @@ const searchImages = async ({ mode, value, page = 1 } = {}) => {
     if (value?.start) params.date_from = value.start;
     if (value?.end) params.date_to = value.end;
   } else if (mode === "avancada") {
-    Object.assign(params, buildSearchParamsFromAdvancedFilters(value));
+    params = filtersToApiParams(value, { page });
   }
 
   // Only page param means no actual search filters were added
