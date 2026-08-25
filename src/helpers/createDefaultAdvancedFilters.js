@@ -5,9 +5,14 @@
 export default function createDefaultAdvancedFilters() {
   return {
     terms: [],
-    locations: [],
+    // locations: [],
     tags: [],
-    use: null,
+    // use: null,
     licenses: [],
+    imageStartYear: null,
+    imageEndYear: null,
+    workStartYear: null,
+    workEndYear: null,
+    characteristics: {},
   };
 }

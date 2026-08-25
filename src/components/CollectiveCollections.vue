@@ -234,7 +234,7 @@ watch(
           @click="toggleCardExpanded(album.id)"
         >
           <UiCard
-            class="h-100 profile-grid-card"
+            class="profile-grid-card profile-grid-card--collection"
             :class="{
               'profile-grid-card--expanded': expandedAlbumId === album.id,
             }"
@@ -269,21 +269,23 @@ watch(
                 <div v-else class="profile-grid-card__actions">
                   <button
                     type="button"
-                    class="btn btn-outline-primary btn-sm btn-icon profile-grid-card__action-btn profile-grid-card__action-btn--delete"
+                    class="profile-grid-card__ds-btn profile-grid-card__ds-btn--ghost"
                     title="Excluir coleção"
+                    aria-label="Excluir coleção"
                     @click.stop="handleDeleteAlbum(album.id)"
                   >
-                    <i class="bi bi-trash"></i>
-                    <span class="d-none d-xl-inline">Excluir</span>
+                    <i class="bi bi-trash profile-grid-card__ds-btn-icon" aria-hidden="true"></i>
+                    <span class="profile-grid-card__ds-btn-label">Excluir</span>
                   </button>
                   <button
                     type="button"
-                    class="btn btn-primary btn-sm btn-icon profile-grid-card__action-btn"
-                    title="Abrir coleção"
+                    class="profile-grid-card__ds-btn profile-grid-card__ds-btn--solid"
+                    title="Ver coleção"
+                    aria-label="Ver coleção"
                     @click.stop="openCollection(album.id)"
                   >
-                    <i class="bi bi-arrow-right"></i>
-                    <span class="d-none d-xl-inline">Abrir</span>
+                    <i class="bi bi-eye profile-grid-card__ds-btn-icon" aria-hidden="true"></i>
+                    <span class="profile-grid-card__ds-btn-label">Ver</span>
                   </button>
                 </div>
               </div>
@@ -299,7 +301,7 @@ watch(
             params: { collectionId: album.id, viewMode: 'grid' },
           }"
         >
-          <UiCard class="h-100 profile-grid-card">
+          <UiCard class="profile-grid-card profile-grid-card--collection">
             <template #image>
               <div class="profile-grid-card__image-wrapper">
                 <AlbumCoverArt

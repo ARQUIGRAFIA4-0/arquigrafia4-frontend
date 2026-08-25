@@ -88,6 +88,11 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
   text-decoration: none;
   color: inherit;
   cursor: pointer;
+
+  &:has(.profile-grid-card--collection) {
+    height: auto;
+    align-self: flex-start;
+  }
 }
 
 .profile-grid-card__image-wrapper {
@@ -234,4 +239,268 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
   // gap 0: a distância título→data é controlada só pela margem do __meta (8px)
   gap: 0;
   box-sizing: border-box;
+}
+
+// Card de coleção — LINA DS (desk / default + selecionado)
+.profile-grid-card.profile-grid-card--collection {
+  border: 0;
+  border-radius: 4px;
+  box-shadow: none;
+  background: transparent;
+  overflow: hidden;
+  gap: 18px;
+  height: auto;
+  align-self: flex-start;
+
+  // Anula flex:1 global do .profile-grid-card — altura fixa no bloco de texto
+  &:deep(.ui-card__content) {
+    flex: 0 0 105px;
+    height: 105px;
+    min-height: 105px;
+    max-height: 105px;
+    padding: 0 0 8px;
+    background: transparent;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  &:deep(.ui-card__body) {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  &:deep(.ui-card__header) {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    box-sizing: border-box;
+  }
+
+  &:deep(.ui-card__title) {
+    flex: 0 0 72px;
+    height: 72px;
+    min-height: 72px;
+    max-height: 72px;
+    margin: 0;
+    white-space: normal;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    text-overflow: ellipsis;
+    font-family: "DM Sans", sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 18px;
+    color: #000;
+  }
+
+  // Slot fixo: cadeado (colapsado) ou botões (expandido)
+  .profile-grid-card__meta {
+    flex: 0 0 33px;
+    height: 33px;
+    min-height: 33px;
+    max-height: 33px;
+    margin-top: 0;
+  }
+
+  .profile-grid-card__collapsed {
+    height: 33px;
+    min-height: 33px;
+    max-height: 33px;
+    justify-content: flex-end;
+  }
+
+  // Evita regras genéricas de .profile-grid-card--expanded (laranja)
+  &.profile-grid-card--expanded {
+    background: var(--Off_white, #faf9f9);
+    border-color: transparent;
+    box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
+
+    &:deep(.ui-card__content) {
+      background-color: var(--Off_white, #faf9f9);
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+
+    &:deep(.ui-card__title) {
+      flex: 0 0 54px;
+      height: 54px;
+      min-height: 54px;
+      max-height: 54px;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      line-height: 18px;
+      text-overflow: ellipsis;
+    }
+
+    .profile-grid-card__meta {
+      margin-top: 18px;
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    &.profile-grid-card--expanded:hover {
+      box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+.profile-grid-card__ds-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 25px;
+  padding: 2px 14px;
+  border-radius: 5px;
+  border: 1px solid var(--Cinza_E, #2f2f2f);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 150%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &--ghost {
+    background: var(--Off_white, #faf9f9);
+    color: var(--Cinza_E, #2f2f2f);
+  }
+
+  &--solid {
+    background: var(--Cinza_E, #2f2f2f);
+    color: var(--Branco, #fff);
+  }
+}
+
+.profile-grid-card__ds-btn-icon {
+  display: none;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.profile-grid-card--collection .profile-grid-card__actions {
+  gap: 8px;
+  padding: 0 8px;
+  margin-top: 0;
+  height: 25px;
+  align-items: center;
+}
+
+// Mobile — coleção: título 16px; expandido = capa + botões com ícones
+@media (max-width: 767.98px) {
+  .profile-grid-card.profile-grid-card--collection {
+    gap: 12px;
+
+    &:deep(.ui-card__content) {
+      flex: 0 0 97px;
+      height: 97px;
+      min-height: 97px;
+      max-height: 97px;
+    }
+
+    &:deep(.ui-card__title) {
+      flex: 0 0 64px;
+      height: 64px;
+      min-height: 64px;
+      max-height: 64px;
+      font-size: 16px;
+      line-height: 16px;
+    }
+
+    &.profile-grid-card--expanded {
+      gap: 0;
+      border-radius: 8px;
+      background: var(--Branco, #fff);
+
+      // Capa cresce o equivalente ao gap (12px) + bloco de texto (97px) menos a área dos botões (~68px)
+      .profile-grid-card__image-wrapper {
+        padding-top: calc(100% + 41px);
+      }
+
+      &:deep(.ui-card__content) {
+        flex: 0 0 auto;
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        padding: 8px;
+        box-sizing: border-box;
+        background-color: var(--Branco, #fff);
+      }
+
+      &:deep(.ui-card__body),
+      &:deep(.ui-card__header) {
+        flex: 0 0 auto;
+        height: auto;
+      }
+
+      &:deep(.ui-card__title) {
+        display: none;
+      }
+
+      .profile-grid-card__meta {
+        flex: 0 0 auto;
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        margin-top: 0;
+      }
+
+      .profile-grid-card__actions {
+        flex-direction: column;
+        width: 100%;
+        height: auto;
+        padding: 0;
+        gap: 4px;
+      }
+
+      .profile-grid-card__ds-btn {
+        flex: none;
+        width: 100%;
+        height: 24px;
+        min-height: 24px;
+        padding: 0;
+
+        &--solid {
+          order: -1;
+        }
+
+        &--ghost {
+          background: var(--Branco, #fff);
+        }
+
+        &--ghost .profile-grid-card__ds-btn-icon {
+          color: var(--Cinza_E, #2f2f2f);
+        }
+
+        &--solid .profile-grid-card__ds-btn-icon {
+          color: var(--Branco, #fff);
+        }
+      }
+
+      .profile-grid-card__ds-btn-label {
+        display: none;
+      }
+
+      .profile-grid-card__ds-btn-icon {
+        display: inline-flex;
+        font-size: 14px;
+      }
+    }
+  }
 }

@@ -64,6 +64,20 @@ const mapSearchParams = computed(() => {
   if (route.query.date_from) params.date_from = route.query.date_from;
   if (route.query.date_to) params.date_to = route.query.date_to;
 
+  if (route.query.work_date_from) params.work_date_from = route.query.work_date_from;
+  if (route.query.work_date_to) params.work_date_to = route.query.work_date_to;
+
+  // Características binomiais
+  Object.keys(route.query).forEach((key) => {
+    const match = key.match(/^binomial\[(.+)\]$/);
+    if (match) {
+      const side = route.query[key];
+      if (side === "left" || side === "right") {
+        params[`binomial[${match[1]}]`] = side;
+      }
+    }
+  });
+
   // Assuntos
   const rawSubjects = route.query["subject[]"];
   if (rawSubjects) {

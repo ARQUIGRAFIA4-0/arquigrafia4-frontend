@@ -283,16 +283,37 @@ const emit = defineEmits([
   "update:addToCollectionMode",
 ]);
 
+// Detecta pares de características ativos na URL (binomial[chave]=left|right)
+const activeCharacteristicEntries = computed(() => {
+  return Object.keys(route.query)
+    .map((key) => {
+      const match = key.match(/^binomial\[(.+)\]$/);
+      if (!match) return null;
+      const side = route.query[key];
+      if (side !== 'left' && side !== 'right') return null;
+      return { key: match[1], side, queryKey: key };
+    })
+    .filter(Boolean);
+});
+
+const hasWorkOrCharacteristicsFilter = computed(() =>
+  Boolean(route.query.work_date_from || route.query.work_date_to) ||
+  activeCharacteristicEntries.value.length > 0
+);
+
 // Detecta se há filtro de URL ativo
 const hasActiveUrlFilter = computed(() => Boolean(
   route.query.q ||
   route.query.date_from ||
   route.query.date_to ||
+  route.query.work_date_from ||
+  route.query.work_date_to ||
   route.query['subject[]'] ||
   route.query['subject_term[]'] ||
   route.query.title ||
   route.query.contributor ||
-  route.query['license[]']
+  route.query['license[]'] ||
+  activeCharacteristicEntries.value.length > 0
 ));
 
 // Conta tipos de filtro distintos na URL (date_from + date_to = 1 tipo; arrays acumuláveis contam individualmente)
@@ -300,6 +321,7 @@ const activeFilterTypeCount = computed(() => {
   let count = 0;
   if (route.query.q) count++;
   if (route.query.date_from || route.query.date_to) count++;
+  if (route.query.work_date_from || route.query.work_date_to) count++;
   if (route.query.title) count++;
   if (route.query.contributor) count++;
   const rawSubjects = route.query['subject[]'];
@@ -314,11 +336,12 @@ const activeFilterTypeCount = computed(() => {
   if (rawLicenses) {
     count += Array.isArray(rawLicenses) ? rawLicenses.length : 1;
   }
+  count += activeCharacteristicEntries.value.length;
   return count;
 });
 
 // Se 2+ tipos distintos de filtro, considera busca avançada derivada da URL
-const isAdvancedByUrl = computed(() => activeFilterTypeCount.value >= 2);
+const isAdvancedByUrl = computed(() => activeFilterTypeCount.value >= 2 || hasWorkOrCharacteristicsFilter.value);
 
 // Modo visual efetivo: avançada se derivado da URL, senão usa o prop
 const effectiveSearchMode = computed(() => isAdvancedByUrl.value ? 'avancada' : currentSearchMode.value);
@@ -775,7 +798,7 @@ function onViewSubcontrol() {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .toolbar-acervo {
   display: flex;
   flex-direction: row;
@@ -785,7 +808,8 @@ function onViewSubcontrol() {
 
 .toolbar-acervo__panel {
   display: flex;
-  height: 56px;
+  min-height: 56px;
+  height: auto;
   padding: var(--p, 12px) var(--m, 16px);
   align-items: center;
   gap: var(--m, 16px);
@@ -793,6 +817,10 @@ function onViewSubcontrol() {
   background: var(--Off_white, #faf9f9);
   box-shadow: 4px 4px 20px 4px rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
+
+  .btn {
+    border: none;
+  }
 }
 
 .toolbar-acervo__panel--search {
@@ -835,13 +863,24 @@ function onViewSubcontrol() {
 }
 
 #toolbar #confirm-search {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
+  width: var(--control-height-desk, 38px);
+  height: var(--control-height-desk, 38px);
+  min-width: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+}
+
+@media (max-width: 767.98px) {
+  #toolbar #confirm-search {
+    width: var(--control-height-mobile, 48px);
+    height: var(--control-height-mobile, 48px);
+    min-width: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+  }
 }
 
 #toolbar .dropdown-menu {
@@ -874,7 +913,7 @@ function onViewSubcontrol() {
 }
 
 .advanced-filters-container {
-  min-height: 36px;
+  min-height: var(--control-height-desk, 38px);
 }
 
 .toolbar-divider {
@@ -885,13 +924,24 @@ function onViewSubcontrol() {
 }
 
 #toolbar .btn-subcontrol {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
+  width: var(--control-height-desk, 38px);
+  height: var(--control-height-desk, 38px);
+  min-width: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+}
+
+@media (max-width: 767.98px) {
+  #toolbar .btn-subcontrol {
+    width: var(--control-height-mobile, 48px);
+    height: var(--control-height-mobile, 48px);
+    min-width: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+  }
 }
 
 #toolbar .btn-subcontrol.active {

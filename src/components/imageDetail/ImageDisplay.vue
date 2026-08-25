@@ -11,6 +11,11 @@ import FavoriteAddedModal from "./FavoriteAddedModal.vue";
 import AlbumPickerModal from "./AlbumPickerModal.vue";
 import CollectionCreateModal from "../CollectionCreateModal.vue";
 import { downloadImageFile } from "@/helpers/downloadImage";
+import {
+  isFavoritesAlbum,
+  buildDefaultFavoritesAlbumPayload,
+  excludeFavoritesAlbums,
+} from "@/constants/favoritesCollection";
 
 const authStore = useAuthStore();
 const albumsStore = useAlbumsStore();
@@ -91,6 +96,7 @@ async function initViewer(image) {
       element: viewerContainer.value,
       tileSources: [`${serviceId}/info.json`],
       showNavigationControl: false,
+      visibilityRatio: 1.0,
       crossOriginPolicy: "Anonymous",
       gestureSettingsMouse: { clickToZoom: false },
     });
@@ -236,15 +242,10 @@ async function loadAlbumsForScope(scope) {
 /**
  * Start: Adicionar imagem a coleção de Favoritos
  */
-const FAVORITES_COLLECTION_TITLE = "Favoritos"; // Titulo da coleção de Favoritos
-const isFavorited = ref(false); // Indica se a imagem está favoritada
-const favoritesAlbumId = ref(null); // ID da coleção de Favoritos
-const favoriteLoading = ref(false); // Indica se o processo de favoritar está em andamento
+const isFavorited = ref(false);
+const favoritesAlbumId = ref(null);
+const favoriteLoading = ref(false);
 
-// Normaliza o título do álbum para comparação
-const normalizeAlbumTitle = (title) => String(title || "").trim().toLocaleLowerCase("pt-BR");
-
-// Verifica se o álbum contém a imagem
 const albumContainsImage = (album, imageId) => Array.isArray(album?.images) && album.images.some((img) => img?.id === imageId);
 
 // Mostra o toast de adicionar imagem a coleção
@@ -274,11 +275,7 @@ async function ensureUserScopeLoaded() {
 // Encontra o álbum de Favoritos
 async function findFavoritesAlbum() {
   await ensureUserScopeLoaded();
-  return (
-    loadedAlbums.value.find(
-      (album) => normalizeAlbumTitle(album.title) === normalizeAlbumTitle(FAVORITES_COLLECTION_TITLE)
-    ) ?? null
-  );
+  return loadedAlbums.value.find(isFavoritesAlbum) ?? null;
 }
 
 // Atualiza o estado de Favoritos
@@ -328,22 +325,15 @@ async function addImageToFavoritesCollection() {
     let created = false;
 
     if (!favoritesAlbum) {
-      favoritesAlbum = await albumsStore.createAlbum(authHeader.value, {
-        title: FAVORITES_COLLECTION_TITLE,
-        description: "",
-        is_private: false,
-      });
+      favoritesAlbum = await albumsStore.createAlbum(
+        authHeader.value,
+        buildDefaultFavoritesAlbumPayload(),
+      );
 
       created = true;
 
       await loadAlbumsForScope(selectedScope.value);
-      // Encontra o álbum de Favoritos
-      favoritesAlbum =
-        loadedAlbums.value.find(
-          (album) =>
-            normalizeAlbumTitle(album.title) ===
-            normalizeAlbumTitle(FAVORITES_COLLECTION_TITLE)
-        ) ?? favoritesAlbum;
+      favoritesAlbum = loadedAlbums.value.find(isFavoritesAlbum) ?? favoritesAlbum;
     }
 
     const albumId = favoritesAlbum?.id;
@@ -568,18 +558,14 @@ async function onAlbumPickerConfirmAdd({ albumIds }) {
 
 // Pre-selecionar os álbuns que já contêm a imagem
 const preselectedAlbumIds = computed(() => {
-
   if (!props.image?.id) return [];
 
-  // álbuns que já contêm esta imagem
-  return loadedAlbums.value
+  return excludeFavoritesAlbums(loadedAlbums.value)
     .filter((album) =>
-      album.images.some( // filtra os álbuns que contêm a imagem
-        (img) => img.id === props.image?.id
-      )
+      Array.isArray(album.images) &&
+      album.images.some((img) => img.id === props.image?.id),
     )
     .map((album) => album.id);
-
 });
 
 /**

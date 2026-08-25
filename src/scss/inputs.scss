@@ -63,3 +63,28 @@ textarea::placeholder {
   padding-right: inherit;
   box-shadow: none;
 }
+
+/* LINA — campos de 1 linha (desk 38 / mobile 48) */
+.form-control:not(textarea),
+.form-select {
+  box-sizing: border-box;
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
+  padding: 2px 14px;
+  border-radius: 5px;
+  font-size: 14px;
+  line-height: 150%;
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 120px;
+}
+
+@media (max-width: 767.98px) {
+  .form-control:not(textarea),
+  .form-select {
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+  }
+}

@@ -9,6 +9,7 @@ const props = defineProps({
   description: { type: String, default: "" },
   isPrivate: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
+  titleDisabled: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(["update:title", "update:description", "update:isPrivate"]);
@@ -52,7 +53,7 @@ function onPrivateChange(event) {
             class="collection-edit-form__input"
             type="text"
             :value="title"
-            :disabled="disabled"
+            :disabled="disabled || titleDisabled"
             placeholder="Arquitetura no percurso da fonte à fábrica"
             @input="onTitleInput"
           />
@@ -195,8 +196,17 @@ function onPrivateChange(event) {
 }
 
 .collection-edit-form__input {
-  height: 30px;
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
+  box-sizing: border-box;
   align-items: center;
+}
+
+@media (max-width: 767.98px) {
+  .collection-edit-form__input {
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+  }
 }
 
 .collection-edit-form__textarea {

@@ -25,8 +25,27 @@
     </div>
 
     <div ref="gridRef" class="user-grid">
-      <div v-if="isLoading && results.length === 0" class="user-grid__skeletons">
-        <div v-for="n in 6" :key="`skeleton-${n}`" class="user-grid__skeleton" />
+      <div v-if="isLoading && results.length === 0" class="user-masonry" aria-hidden="true">
+        <div
+          v-for="(column, colIndex) in skeletonColumns"
+          :key="`skeleton-col-${colIndex}`"
+          class="user-masonry__column"
+        >
+          <div
+            v-for="(slot, slotIndex) in column"
+            :key="`skeleton-${colIndex}-${slotIndex}`"
+            class="user-masonry__item"
+          >
+            <div
+              class="user-grid__skeleton"
+              :class="
+                slot === 'collective'
+                  ? 'user-grid__skeleton--collective'
+                  : 'user-grid__skeleton--user'
+              "
+            />
+          </div>
+        </div>
       </div>
 
       <div v-else-if="hasResults" class="user-masonry">
@@ -161,6 +180,19 @@ const masonryColumns = computed(() => {
   return buildRoundRobinColumns(items, cols);
 });
 
+/** Placeholder no mesmo xadrez do masonry (C curto / P alto). */
+const SKELETON_ROWS = 3;
+
+const skeletonColumns = computed(() => {
+  const cols = columnCount.value;
+  return Array.from({ length: cols }, (_, col) =>
+    Array.from({ length: SKELETON_ROWS }, (_, row) => {
+      const wantCollective = (col % 2 === 0) === (row % 2 === 0);
+      return wantCollective ? "collective" : "user";
+    })
+  );
+});
+
 /**
  * End: Modo de exibição do grid
  */
@@ -217,21 +249,46 @@ function updateColumnCount() {
   columnCount.value = Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, cols || MIN_COLUMNS));
 }
 
+const LOAD_MORE_MARGIN = 400;
+
+function shouldLoadMore() {
+  if (isLoading.value || hasReachedEnd.value) return false;
+  const el = sentinel.value;
+  if (!el) return false;
+  return el.getBoundingClientRect().top <= window.innerHeight + LOAD_MORE_MARGIN;
+}
+
 async function fetchPage(page) {
   if (isLoading.value || hasReachedEnd.value) return;
 
   isLoading.value = true;
+  let succeeded = false;
   try {
     const { data, meta } = await store.searchNetworks(buildQueryParams(page));
+    const items = Array.isArray(data) ? data : [];
+    results.value = [...results.value, ...items];
 
-    results.value = [...results.value, ...data];
-    currentPage.value = meta.current_page;
+    const current = meta?.current_page ?? page;
+    const last = meta?.last_page;
+    currentPage.value = current;
 
-    if (meta.current_page >= meta.last_page) {
+    if ((last != null && current >= last) || items.length === 0) {
       hasReachedEnd.value = true;
     }
+    succeeded = true;
+  } catch (error) {
+    console.error(error);
   } finally {
     isLoading.value = false;
+  }
+
+  // O observer só dispara na mudança de interseção. Se o sentinel já está
+  // na tela (página curta após o masonry), precisa encadear a próxima página.
+  if (succeeded) {
+    await nextTick();
+    if (shouldLoadMore()) {
+      await fetchPage(currentPage.value + 1);
+    }
   }
 }
 
@@ -272,16 +329,24 @@ onMounted(async () => {
         fetchPage(currentPage.value + 1);
       }
     },
-    { rootMargin: "200px" }
+    { rootMargin: `${LOAD_MORE_MARGIN}px` }
   );
 
   if (sentinel.value) observer.observe(sentinel.value);
+  window.addEventListener("scroll", handleWindowScroll, { passive: true });
 });
+
+function handleWindowScroll() {
+  if (shouldLoadMore()) {
+    fetchPage(currentPage.value + 1);
+  }
+}
 
 onBeforeUnmount(() => {
   observer?.disconnect();
   resizeObserver?.disconnect();
   window.removeEventListener("resize", updateColumnCount);
+  window.removeEventListener("scroll", handleWindowScroll);
 });
 
 </script>
@@ -328,22 +393,22 @@ $breakpoint-sm: 425px;
   width: 100%;
 }
 
-.user-grid__skeletons {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
-  gap: 1rem;
-
-  @media (max-width: $breakpoint-sm) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 .user-grid__skeleton {
-  min-height: 211px;
+  width: 100%;
   border-radius: 0.25rem;
   background: linear-gradient(90deg, #e8e8e8 25%, #f5f5f5 50%, #e8e8e8 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
+}
+
+.user-grid__skeleton--collective {
+  height: 116px;
+  border-radius: 0.625rem;
+}
+
+.user-grid__skeleton--user {
+  height: 280px;
+  border-radius: 0.25rem;
 }
 
 @keyframes shimmer {

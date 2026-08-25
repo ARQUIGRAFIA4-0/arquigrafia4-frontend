@@ -41,4 +41,10 @@ const shouldShowFooter = computed(() => {
 .default-layout__main {
   flex: 1 0 auto;
 }
+
+@media (min-width: 768px) {
+  .default-layout__main {
+    padding-top: 1rem;
+  }
+}
 </style>
