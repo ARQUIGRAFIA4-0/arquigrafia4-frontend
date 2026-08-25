@@ -29,7 +29,7 @@
           >
             {{ selectedFieldLabel }}
           </button>
-          <ul class="dropdown-menu menu-light">
+          <ul class="dropdown-menu menu-light dropdown-menu-scroll">
             <li v-for="opt in fieldOptions" :key="opt.value">
               <button
                 class="dropdown-item"
@@ -535,6 +535,14 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 500;
   line-height: 150%;
+}
+
+.dropdown-menu-scroll {
+  max-height: 240px; /* ajuste o valor conforme o espaço do seu modal */
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #ccc;
 }
 
 .drawer-content .d-flex > .btn.flex-fill {
