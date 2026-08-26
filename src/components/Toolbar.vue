@@ -219,6 +219,7 @@ import {
 } from "@/constants/viewModes";
 import { getSearchIcon, searchOptions } from "@/constants/searchOptions";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
+import { queryToFilters, hasAnyAdvancedFilter } from "@/helpers/searchQueryMapping";
 
 defineOptions({ name: "AppToolbar" });
 
@@ -283,84 +284,39 @@ const emit = defineEmits([
   "update:addToCollectionMode",
 ]);
 
-// Detecta pares de características ativos na URL (binomial[chave]=left|right)
-const activeCharacteristicEntries = computed(() => {
-  return Object.keys(route.query)
-    .map((key) => {
-      const match = key.match(/^binomial\[(.+)\]$/);
-      if (!match) return null;
-      const side = route.query[key];
-      if (side !== 'left' && side !== 'right') return null;
-      return { key: match[1], side, queryKey: key };
-    })
-    .filter(Boolean);
+// Fase 2: fonte única de verdade para "quais filtros de URL estão ativos" —
+// antes cada um dos 3 computeds abaixo reparseava route.query campo a campo,
+// e activeFilterTypeCount tinha um bug real: checkAndAdd recebia `count` por
+// valor (não por referência) e o incremento era descartado — na prática,
+// subject[]/subject_term[]/license[]/material_term[]/technique_term[]/
+// aesthetics_term[]/cultural_context_term[]/typology_term[] nunca contavam
+// para isAdvancedByUrl, então filtrar só por esses campos nunca acionava o
+// banner "Busca avançada ativa".
+const activeUrlFilters = computed(() => queryToFilters(route.query));
+
+const hasWorkOrCharacteristicsFilter = computed(() => {
+  const f = activeUrlFilters.value;
+  return (
+    f.workStartYear != null ||
+    f.workEndYear != null ||
+    Object.keys(f.characteristics).length > 0
+  );
 });
 
-const hasWorkOrCharacteristicsFilter = computed(() =>
-  Boolean(route.query.work_date_from || route.query.work_date_to) ||
-  activeCharacteristicEntries.value.length > 0
-);
-
 // Detecta se há filtro de URL ativo
-const hasActiveUrlFilter = computed(() => Boolean(
-  route.query.q ||
-  route.query.date_from ||
-  route.query.date_to ||
-  route.query.work_date_from ||
-  route.query.work_date_to ||
-  route.query['subject[]'] ||
-  route.query['subject_term[]'] ||
-  route.query.title ||
-  route.query.contributor ||
-  route.query['license[]'] ||
-  route.query['material_term[]'] ||
-  route.query['technique_term[]'] ||
-  route.query['aesthetics_term[]'] ||
-  route.query['cultural_context_term[]'] ||
-  route.query['typology_term[]'] ||
-  activeCharacteristicEntries.value.length > 0
-));
-
-
-function checkAndAdd(raw, count) {
-  if (raw) {
-    count += Array.isArray(raw) ? raw.length : 1;
-  }
-}
+const hasActiveUrlFilter = computed(() => hasAnyAdvancedFilter(activeUrlFilters.value));
 
 // Conta tipos de filtro distintos na URL (date_from + date_to = 1 tipo; arrays acumuláveis contam individualmente)
 const activeFilterTypeCount = computed(() => {
-  let count = 0;
-  if (route.query.q) count++;
-  if (route.query.date_from || route.query.date_to) count++;
-  if (route.query.work_date_from || route.query.work_date_to) count++;
-  if (route.query.title) count++;
-  if (route.query.contributor) count++;
-  const rawSubjects = route.query['subject[]'];
-  checkAndAdd(rawSubjects, count);
-
-  const rawSubjectTerms = route.query['subject_term[]'];
-  checkAndAdd(rawSubjectTerms, count);
-
-  const rawLicenses = route.query['license[]'];
-  checkAndAdd(rawLicenses, count);
-
-  const rawMaterialTerms = route.query['material_term[]'];
-  checkAndAdd(rawMaterialTerms, count);
-
-  const rawTechniqueTerms = route.query['technique_term[]'];
-  checkAndAdd(rawTechniqueTerms, count);
-
-  const rawAestheticsTerms = route.query['aesthetics_term[]'];
-  checkAndAdd(rawAestheticsTerms, count);
-
-  const rawCulturalContextTerms = route.query['cultural_context_term[]'];
-  checkAndAdd(rawCulturalContextTerms, count);
-
-  const rawTypologyTerms = route.query['typology_term[]'];
-  checkAndAdd(rawTypologyTerms, count);
-
-  count += activeCharacteristicEntries.value.length;
+   const f = activeUrlFilters.value;
+  // terms já combina q/title/contributor/subject_term/material_term/technique_term/
+  // aesthetics_term/cultural_context_term/typology_term — cada um vira 1 item do
+  // array, então terms.length já soma "1 por campo escalar presente + N por campo
+  // que acumula múltiplos valores", igual à intenção original do checkAndAdd.
+  let count = f.terms.length + f.tags.length + f.licenses.length;
+  if (f.imageStartYear != null || f.imageEndYear != null) count++;
+  if (f.workStartYear != null || f.workEndYear != null) count++;
+  count += Object.keys(f.characteristics).length;
   return count;
 });
 

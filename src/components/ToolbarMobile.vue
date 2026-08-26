@@ -62,33 +62,21 @@
 <script setup>
 import { computed } from "vue";
 import { useRoute } from "vue-router";
+import { queryToFilters, hasAnyAdvancedFilter } from "@/helpers/searchQueryMapping";
 
 defineOptions({ name: "ToolbarMobile" });
 
 const route = useRoute();
 
+// Fase 2: fonte única de verdade via queryToFilters — antes esta lista de
+// campos era mantida separadamente aqui e em Toolbar.vue (desktop).
+const activeUrlFilters = computed(() => queryToFilters(route.query));
+
 const hasActiveDateFilter = computed(() => Boolean(
-  route.query.date_from || route.query.date_to
+  activeUrlFilters.value.imageStartYear != null || activeUrlFilters.value.imageEndYear != null
 ));
 
-const hasActiveTextFilter = computed(() => Boolean(
-  route.query.q ||
-  route.query.title ||
-  route.query.contributor ||
-  route.query['subject_term[]'] ||
-  route.query['subject[]'] ||
-  route.query['license[]'] ||
-  route.query.date_from ||
-  route.query.date_to ||
-  route.query.work_date_from ||
-  route.query.work_date_to ||
-  route.query['material_term[]'] ||
-  route.query['technique_term[]'] ||
-  route.query['aesthetics_term[]'] ||
-  route.query['cultural_context_term[]'] ||
-  route.query['typology_term[]'] ||
-  hasActiveCharacteristics.value
-));
+const hasActiveTextFilter = computed(() => hasAnyAdvancedFilter(activeUrlFilters.value));
 
 const props = defineProps({
   viewSelection: {
@@ -131,23 +119,6 @@ function handleSearchButton(mode, eventName) {
   }
   emit(eventName);
 }
-
-// Detecta pares de características ativos na URL (binomial[chave]=left|right)
-const activeCharacteristicEntries = computed(() => {
-  return Object.keys(route.query)
-    .map((key) => {
-      const match = key.match(/^binomial\[(.+)\]$/);
-      if (!match) return null;
-      const side = route.query[key];
-      if (side !== 'left' && side !== 'right') return null;
-      return { key: match[1], side, queryKey: key };
-    })
-    .filter(Boolean);
-});
-
-const hasActiveCharacteristics = computed(() =>
-  activeCharacteristicEntries.value.length > 0
-);
 
 const searchButtonClasses = (mode) => [
   "btn",

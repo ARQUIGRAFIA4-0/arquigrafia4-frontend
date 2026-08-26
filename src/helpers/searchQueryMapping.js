@@ -222,3 +222,16 @@ export function filtersToQuery(filters = {}) {
 export function filtersToApiParams(filters = {}, { page = 1 } = {}) {
   return { page, ...filtersToQuery(filters) };
 }
+
+export function hasAnyAdvancedFilter(filters = {}) {
+  return Boolean(
+    filters.terms?.length ||
+    filters.tags?.length ||
+    filters.licenses?.length ||
+    filters.imageStartYear != null ||
+    filters.imageEndYear != null ||
+    filters.workStartYear != null ||
+    filters.workEndYear != null ||
+    Object.keys(filters.characteristics || {}).length
+  );
+}
