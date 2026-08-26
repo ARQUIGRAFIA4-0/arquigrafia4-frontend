@@ -6,6 +6,7 @@ import MapControls from "@/components/map/MapControls.vue";
 import UiField from "@/components/ui/UiField.vue";
 import Fuse from "fuse.js";
 import axios from "@/axios";
+import { api } from "@/services/api";
 import { Marker } from "maplibre-gl";
 
 const props = defineProps({
@@ -338,7 +339,9 @@ const makeVocabField = () => ({
   selected: ref([]),   // [{ id, label }]
   suggestions: ref([]),
   showSuggestions: ref(false),
-  fuse: null,
+  loading: ref(false),
+  reqId: 0,             // sequência p/ descartar respostas fora de ordem
+  cache: new Map(),     // query → resultado (evita requisições repetidas)
   debounce: null,
 });
 
@@ -358,15 +361,38 @@ const VOCAB_FIELDS = [
   { field: subjects3,     label: "Assuntos",                explain: "Assuntos e temas relacionados à obra",                  endpoint: "vrac-subjects",          labelKey: "term" },
 ];
 
-const onVocabInput = (vf) => {
+// Campo de texto de cada vocabulário (`term` em Assuntos, `label` nos demais),
+// usado por addVocabItem ao resolver { id, label } do item selecionado.
+for (const { field, labelKey } of VOCAB_FIELDS) field._labelKey = labelKey;
+
+// A busca dos vocabulários é feita no backend (?search=), não mais baixando o
+// catálogo inteiro na abertura.
+const VOCAB_MIN_CHARS = 2;
+
+const onVocabInput = (vfMeta) => {
+  const vf = vfMeta.field;
   if (vf.debounce) clearTimeout(vf.debounce);
-  vf.debounce = setTimeout(() => {
+  vf.debounce = setTimeout(async () => {
     const q = vf.input.value.trim();
-    if (!q) { vf.suggestions.value = []; return; }
-    if (vf.fuse) {
-      vf.suggestions.value = vf.fuse.search(q).map((r) => r.item).slice(0, 8);
+    if (q.length < VOCAB_MIN_CHARS) { vf.suggestions.value = []; return; }
+
+    // Cache: query já buscada não gera nova requisição
+    if (vf.cache.has(q)) { vf.suggestions.value = vf.cache.get(q); return; }
+
+    // Guarda de sequência: respostas fora de ordem são descartadas.
+    const myReq = ++vf.reqId;
+    vf.loading.value = true;
+    try {
+      const items = await api.searchVocab(vfMeta.endpoint, q);
+      if (myReq !== vf.reqId) return; // resposta velha
+      vf.cache.set(q, items);
+      vf.suggestions.value = items;
+    } catch {
+      if (myReq === vf.reqId) vf.suggestions.value = [];
+    } finally {
+      if (myReq === vf.reqId) vf.loading.value = false;
     }
-  }, 200);
+  }, 300);
 };
 
 const addVocabItem = (vf, item) => {
@@ -382,7 +408,10 @@ const canCreateVocab = (vfMeta) => {
   const term = vfMeta.field.input.value.trim();
   if (!term) return false;
   const labelKey = vfMeta.labelKey;
-  const items = vfMeta.field._items ?? [];
+  // Resultado atual da busca no servidor (a busca é substring, então um
+  // termo idêntico aparece nos resultados quando existe). Se escapar ao limite
+  // da página e um duplicado for criado, o materializeWork deduplica no envio.
+  const items = vfMeta.field.suggestions.value ?? [];
   if (items.some((i) => (i[labelKey] || "").toLowerCase() === term.toLowerCase())) return false;
   if (vfMeta.field.selected.value.some((s) => s.label.toLowerCase() === term.toLowerCase())) return false;
   return true;
@@ -402,7 +431,7 @@ const findExactVocabMatch = (vfMeta) => {
   const term = vfMeta.field.input.value.trim().toLowerCase();
   if (!term) return null;
   const labelKey = vfMeta.labelKey;
-  const items = vfMeta.field._items ?? [];
+  const items = vfMeta.field.suggestions.value ?? [];
   return items.find((i) => (i[labelKey] || "").toLowerCase() === term) || null;
 };
 
@@ -530,10 +559,14 @@ const reset = () => {
   clearWorkMarkers();
   if (worksDebounce) clearTimeout(worksDebounce);
   for (const { field } of VOCAB_FIELDS) {
+    if (field.debounce) clearTimeout(field.debounce);
     field.input.value = "";
     field.selected.value = [];
     field.suggestions.value = [];
     field.showSuggestions.value = false;
+    field.loading.value = false;
+    field.reqId++;          // invalida qualquer resposta em voo
+    field.cache.clear();
   }
 };
 
@@ -565,21 +598,6 @@ watch(
       // non-fatal
     }
 
-    // Fetch step 3 vocabularies in parallel
-    await Promise.allSettled(
-      VOCAB_FIELDS.map(async ({ field, endpoint, labelKey }) => {
-        try {
-          const res = await axios.get(`/api/${endpoint}?per_page=-1`);
-          const items = res.data.data ?? [];
-          field.fuse = new Fuse(items, { keys: [labelKey], threshold: 0.35, includeScore: true });
-          // Store raw items so we can resolve { id, label } on selection
-          field._items = items;
-          field._labelKey = labelKey;
-        } catch {
-          // non-fatal
-        }
-      })
-    );
   }
 );
 
@@ -1006,16 +1024,22 @@ onUnmounted(() => {
                     class="form-control border-preto border-end-0"
                     :placeholder="`Adicione ${vf.label.toLowerCase()}`"
                     autocomplete="off"
-                    @input="onVocabInput(vf.field)"
+                    @input="onVocabInput(vf)"
                     @focus="vf.field.showSuggestions.value = true"
                     @blur="hideVocabSuggestions(vf.field)"
                     @keydown.enter.prevent="onVocabEnter(vf)"
                   />
                   <div
-                    v-if="vf.field.showSuggestions.value && (vf.field.suggestions.value.length > 0 || canCreateVocab(vf))"
+                    v-if="vf.field.showSuggestions.value && (vf.field.loading.value || vf.field.suggestions.value.length > 0 || canCreateVocab(vf))"
                     class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
                     style="z-index: 1500; max-height: 220px; overflow-y: auto"
                   >
+                    <span
+                      v-if="vf.field.loading.value"
+                      class="dropdown-item-text text-muted fst-italic small"
+                    >
+                      Buscando...
+                    </span>
                     <button
                       v-for="item in vf.field.suggestions.value"
                       :key="item.id"

@@ -237,6 +237,23 @@ const getWorkDetails = async (id) => {
 };
 
 /**
+ * Autocomplete de um vocabulário VRAC via backend — GET /api/{endpoint}?search=.
+ * Substitui o download do catálogo inteiro (per_page=-1) por busca sob demanda.
+ * O backend filtra com LIKE cru (insensível a acento/caixa por colação), então
+ * `%` e `_` são escapados para não virarem curingas. Devolve o array de itens
+ * crus (cada um com `id` e o campo de texto do vocabulário: `label` ou `term`).
+ */
+const searchVocab = async (endpoint, query, { limit = 15 } = {}) => {
+  const q = (query || "").trim();
+  if (!q) return [];
+  const search = q.replace(/[\\%_]/g, "\\$&");
+  const response = await axios.get(`/api/${endpoint}`, {
+    params: { search, per_page: limit },
+  });
+  return response.data?.data ?? [];
+};
+
+/**
  * Imagens associadas a uma obra — GET /api/images?work[]={id}.
  */
 const getWorkImages = async (workId, { page = 1, perPage = 24 } = {}) => {
@@ -810,6 +827,7 @@ export const api = {
   getRelatedImages,
   getWorkDetails,
   getWorkImages,
+  searchVocab,
   searchImages,
   getTotalImages,
   getSubjectById,
