@@ -200,11 +200,13 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
   }
 }
 
-// Largura igual; a altura vem do `.btn-sm .btn-icon` (mesmo padrão dos botões
-// das sidebars de perfil/coletivo), garantindo consistência com o resto do site.
+// Largura igual; btn-sm compacto (fora do padrão LINA 38×38 dos botões normais).
 .profile-grid-card__action-btn {
   flex: 1;
   min-width: 0;
+  width: auto;
+  height: auto;
+  min-height: 0;
   gap: 4px;
 
   i {
@@ -236,7 +238,7 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
   flex-direction: column;
   // Sem flex:1 / min-height: o header ocupa só o necessário (título + slot),
   // deixando o conteúdo enxuto — termina logo após o slot + padding inferior.
-  // gap 0: a distância título→data é controlada só pela margem do __meta (8px)
+  // gap 0: a distância título > data é controlada só pela margem do __meta (8px)
   gap: 0;
   box-sizing: border-box;
 }
@@ -253,12 +255,13 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
   align-self: flex-start;
 
   // Anula flex:1 global do .profile-grid-card — altura fixa no bloco de texto
+  // Padding horizontal 8px sempre (título e grupo de botões — LINA / Figma)
   &:deep(.ui-card__content) {
     flex: 0 0 105px;
     height: 105px;
     min-height: 105px;
     max-height: 105px;
-    padding: 0 0 8px;
+    padding: 0 8px 8px;
     background: transparent;
     box-sizing: border-box;
     display: flex;
@@ -328,8 +331,6 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
 
     &:deep(.ui-card__content) {
       background-color: var(--Off_white, #faf9f9);
-      padding-left: 8px;
-      padding-right: 8px;
     }
 
     &:deep(.ui-card__title) {
@@ -396,41 +397,58 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
 
 .profile-grid-card--collection .profile-grid-card__actions {
   gap: 8px;
-  padding: 0 8px;
+  padding: 0; /* 8px horizontal já vem do .ui-card__content */
   margin-top: 0;
   height: 25px;
   align-items: center;
 }
 
-// Mobile — coleção: título 16px; expandido = capa + botões com ícones
+// Mobile — coleção: ativo (4589:2007) + selecionado (4589:2031)
 @media (max-width: 767.98px) {
   .profile-grid-card.profile-grid-card--collection {
     gap: 12px;
+    border-radius: 4px;
 
     &:deep(.ui-card__content) {
-      flex: 0 0 97px;
-      height: 97px;
-      min-height: 97px;
-      max-height: 97px;
+      flex: 0 0 auto;
+      height: auto;
+      min-height: 0;
+      max-height: none;
+      padding: 0 8px 8px; /* título com 8px L/R (regra geral) */
     }
 
     &:deep(.ui-card__title) {
-      flex: 0 0 64px;
-      height: 64px;
-      min-height: 64px;
-      max-height: 64px;
+      flex: 0 0 auto;
+      height: auto;
+      min-height: 0;
+      max-height: none;
       font-size: 16px;
       line-height: 16px;
+      -webkit-line-clamp: 5;
+    }
+
+    .profile-grid-card__meta {
+      flex: 0 0 auto;
+      height: auto;
+      min-height: 0;
+      max-height: none;
+    }
+
+    .profile-grid-card__collapsed {
+      height: auto;
+      min-height: 0;
+      max-height: none;
     }
 
     &.profile-grid-card--expanded {
-      gap: 0;
-      border-radius: 8px;
-      background: var(--Branco, #fff);
+      gap: 12px; /* capa  >  botões — NÃO zerar / NÃO esticar a capa */
+      border-radius: 4px;
+      background: var(--Off_white, #faf9f9);
+      box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
+      padding-bottom: 4px;
 
-      // Capa cresce o equivalente ao gap (12px) + bloco de texto (97px) menos a área dos botões (~68px)
       .profile-grid-card__image-wrapper {
-        padding-top: calc(100% + 41px);
+        padding-top: 100%; /* capa continua quadrada */
       }
 
       &:deep(.ui-card__content) {
@@ -438,9 +456,9 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
         height: auto;
         min-height: 0;
         max-height: none;
-        padding: 8px;
+        padding: 4px 12px; /* Figma: py 4 / px 12 no grupo de botões */
         box-sizing: border-box;
-        background-color: var(--Branco, #fff);
+        background-color: var(--Off_white, #faf9f9);
       }
 
       &:deep(.ui-card__body),
@@ -466,22 +484,24 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
         width: 100%;
         height: auto;
         padding: 0;
-        gap: 4px;
+        gap: 10px; /* Figma: gap 10 entre botões */
       }
 
       .profile-grid-card__ds-btn {
         flex: none;
         width: 100%;
-        height: 24px;
-        min-height: 24px;
-        padding: 0;
+        height: 28px;
+        min-height: 28px;
+        padding: 2px 10px;
+        border-radius: 5px;
 
         &--solid {
-          order: -1;
+          order: -1; /* Ver (olho) em cima */
         }
 
         &--ghost {
-          background: var(--Branco, #fff);
+          background: var(--Off_white, #faf9f9);
+          border-color: var(--Preto, #1f1f1f);
         }
 
         &--ghost .profile-grid-card__ds-btn-icon {
