@@ -322,7 +322,15 @@ const normalizeYear = (raw) => {
   return String(n).padStart(4, "0");
 };
 
+// O backend não limita datas por tipo. A regra é imposta aqui:
+// Criação e Demolição são únicas por obra; Reforma pode repetir.
+const SINGULAR_DATE_TYPES = ["creation", "demolition"];
+const hasDateOfType = (type) => dates.value.some((d) => d.type === type);
+const isDateTypeDisabled = (type) =>
+  SINGULAR_DATE_TYPES.includes(type) && hasDateOfType(type);
+
 const addDate = () => {
+  if (isDateTypeDisabled(dateTypeInput.value)) return;
   const year = normalizeYear(dateYearInput.value);
   if (!year) return;
   const earliest = `${year}-01-01`;
@@ -342,6 +350,12 @@ const addDate = () => {
   dateYearInput.value = "";
   dateYearEndInput.value = "";
   dateCirca.value = false;
+  // Se o tipo recém-adicionado esgotou (único), pula o seletor para o primeiro
+  // tipo ainda disponível. Evita ficar parado em tipo bloqueado.
+  if (isDateTypeDisabled(dateTypeInput.value)) {
+    const next = DATE_TYPES.find((d) => !isDateTypeDisabled(d.value));
+    if (next) dateTypeInput.value = next.value;
+  }
 };
 
 const removeDate = (index) => dates.value.splice(index, 1);
@@ -930,8 +944,15 @@ onUnmounted(() => {
                     </button>
                     <ul class="dropdown-menu menu-light">
                       <li v-for="d in DATE_TYPES" :key="d.value">
-                        <button class="dropdown-item" @click.prevent="dateTypeInput = d.value">
+                        <button
+                          class="dropdown-item"
+                          :disabled="isDateTypeDisabled(d.value)"
+                          @click.prevent="dateTypeInput = d.value"
+                        >
                           {{ d.label }}
+                          <span v-if="isDateTypeDisabled(d.value)" class="text-muted small ms-1">
+                            (já adicionada)
+                          </span>
                         </button>
                       </li>
                     </ul>
