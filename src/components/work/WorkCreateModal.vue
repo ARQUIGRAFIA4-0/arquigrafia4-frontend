@@ -297,12 +297,40 @@ const dateIntervalMode = ref("single");  // "single" | "interval"
 const dateCirca = ref(false);
 const dates = ref([]);  // [{ type, earliest, latest, circa }]
 
+// Teto no ano corrente: a obra fotografada já existe, ano futuro não faz sentido.
+const MIN_YEAR = 1;
+const MAX_YEAR = new Date().getFullYear();
+
+// Mantém no input apenas dígitos e no máximo 4 (ano).
+const clampYearDigits = (v) => String(v ?? "").replace(/\D/g, "").slice(0, 4);
+watch(dateYearInput, (v) => {
+  const clean = clampYearDigits(v);
+  if (clean !== v) dateYearInput.value = clean;
+});
+watch(dateYearEndInput, (v) => {
+  const clean = clampYearDigits(v);
+  if (clean !== v) dateYearEndInput.value = clean;
+});
+
+// Converte o input em um ano ISO de 4 dígitos (com zero à esquerda)
+// ou null se inválido.
+const normalizeYear = (raw) => {
+  const digits = String(raw ?? "").replace(/\D/g, "");
+  if (!digits) return null;
+  const n = parseInt(digits, 10);
+  if (!Number.isInteger(n) || n < MIN_YEAR || n > MAX_YEAR) return null;
+  return String(n).padStart(4, "0");
+};
+
 const addDate = () => {
-  const year = String(dateYearInput.value ?? "").trim();
+  const year = normalizeYear(dateYearInput.value);
   if (!year) return;
   const earliest = `${year}-01-01`;
-  const yearEnd = String(dateYearEndInput.value ?? "").trim();
-  const latest = dateIntervalMode.value === "interval" && yearEnd
+  // No modo intervalo, só usa o ano final se for válido e não anterior ao inicial.
+  const yearEnd = dateIntervalMode.value === "interval"
+    ? normalizeYear(dateYearEndInput.value)
+    : null;
+  const latest = yearEnd && yearEnd >= year
     ? `${yearEnd}-12-31`
     : `${year}-12-31`;
   dates.value.push({
@@ -322,9 +350,10 @@ const dateTypeLabel = (type) =>
   DATE_TYPES.find((d) => d.value === type)?.label || type;
 
 const formatDateChip = (d) => {
-  const year = d.earliest?.slice(0, 4) || "";
-  const yearEnd = d.latest?.slice(0, 4) || "";
-  const label = year === yearEnd ? year : `${year}–${yearEnd}`;
+  // parseInt remove o zero à esquerda da normalização (ex.: "0222" → 222).
+  const year = parseInt(d.earliest?.slice(0, 4), 10) || "";
+  const yearEnd = parseInt(d.latest?.slice(0, 4), 10) || "";
+  const label = year === yearEnd ? `${year}` : `${year}–${yearEnd}`;
   return `${dateTypeLabel(d.type)}: ${d.circa ? "c. " : ""}${label}`;
 };
 
@@ -908,12 +937,12 @@ onUnmounted(() => {
                     </ul>
                     <input
                       v-model="dateYearInput"
-                      type="number"
+                      type="text"
+                      inputmode="numeric"
+                      maxlength="4"
                       class="form-control border-preto"
                       :class="{ 'border-end-0': dateIntervalMode === 'interval' }"
                       placeholder="Ano"
-                      min="1"
-                      max="2100"
                       style="max-width: 90px"
                       @keydown.enter.prevent="addDate"
                     />
@@ -921,11 +950,11 @@ onUnmounted(() => {
                       <span class="input-group-text border-preto bg-transparent">até</span>
                       <input
                         v-model="dateYearEndInput"
-                        type="number"
+                        type="text"
+                        inputmode="numeric"
+                        maxlength="4"
                         class="form-control border-preto border-end-0"
                         placeholder="Ano"
-                        min="1"
-                        max="2100"
                         style="max-width: 90px"
                         @keydown.enter.prevent="addDate"
                       />
