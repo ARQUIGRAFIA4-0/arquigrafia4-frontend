@@ -350,12 +350,12 @@ const materials      = makeVocabField();
 const subjects3      = makeVocabField(); // "subjects" already used in ImageMetadataUpload scope
 
 const VOCAB_FIELDS = [
-  { field: stylePeriods,  label: "Aspectos estéticos",      explain: "Estilos e períodos históricos relacionados à obra",     endpoint: "vrac-style-periods",     labelKey: "label", createPayload: (v) => ({ label: v }),                              responseKey: "period"    },
-  { field: culturalCtxs,  label: "Contexto cultural",       explain: "Contextos culturais relacionados à obra",               endpoint: "vrac-cultural-contexts", labelKey: "label", createPayload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "context"   },
-  { field: workTypes,     label: "Tipologia",               explain: "Tipo de obra arquitetônica",                            endpoint: "vrac-work-types",        labelKey: "label", createPayload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "work_type" },
-  { field: techniques,    label: "Técnicas de construção",  explain: "Técnicas construtivas utilizadas na obra",              endpoint: "vrac-techniques",        labelKey: "label", createPayload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "technique" },
-  { field: materials,     label: "Materiais",               explain: "Materiais utilizados na obra",                          endpoint: "vrac-materials",         labelKey: "label", createPayload: (v) => ({ label: v, type: "other", vocab: "ARQUIGRAFIA" }), responseKey: "material"  },
-  { field: subjects3,     label: "Assuntos",                explain: "Assuntos e temas relacionados à obra",                  endpoint: "vrac-subjects",          labelKey: "term",  createPayload: (v) => ({ term: v, type: "otherTopic", vocab: "ARQUIGRAFIA" }), responseKey: "data"     },
+  { field: stylePeriods,  label: "Aspectos estéticos",      explain: "Estilos e períodos históricos relacionados à obra",     endpoint: "vrac-style-periods",     labelKey: "label" },
+  { field: culturalCtxs,  label: "Contexto cultural",       explain: "Contextos culturais relacionados à obra",               endpoint: "vrac-cultural-contexts", labelKey: "label" },
+  { field: workTypes,     label: "Tipologia",               explain: "Tipo de obra arquitetônica",                            endpoint: "vrac-work-types",        labelKey: "label" },
+  { field: techniques,    label: "Técnicas de construção",  explain: "Técnicas construtivas utilizadas na obra",              endpoint: "vrac-techniques",        labelKey: "label" },
+  { field: materials,     label: "Materiais",               explain: "Materiais utilizados na obra",                          endpoint: "vrac-materials",         labelKey: "label" },
+  { field: subjects3,     label: "Assuntos",                explain: "Assuntos e temas relacionados à obra",                  endpoint: "vrac-subjects",          labelKey: "term" },
 ];
 
 const onVocabInput = (vf) => {
