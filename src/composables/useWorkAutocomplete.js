@@ -107,38 +107,69 @@ export const materializeWork = async (draft) => {
     dateIds.push(res.data.date.id);
   }
 
-  // Vocabulários: IDs existentes são usados diretamente; novos termos são criados via POST (em minúsculas).
+  // Vocabulários: IDs existentes são usados diretamente; novos termos são
+  // criados via POST (em minúsculas). Termos criados pelo usuário entram sempre
+  // como vocab "Arquigrafia" (grafia da base; VCAA é reservado ao importado).
+  // `displayKey` é a coluna de texto de cada vocabulário (`term` em subjects,
+  // `label` nos demais), usada na checagem de duplicata antes de criar.
   const VOCAB_CREATE = {
     stylePeriods: {
       endpoint: "vrac-style-periods",
+      displayKey: "label",
       payload: (v) => ({ label: v }),
       responseKey: "period",
     },
     culturalCtxs: {
       endpoint: "vrac-cultural-contexts",
-      payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),
+      displayKey: "label",
+      payload: (v) => ({ label: v, vocab: "Arquigrafia" }),
       responseKey: "context",
     },
     workTypes: {
       endpoint: "vrac-work-types",
-      payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),
+      displayKey: "label",
+      payload: (v) => ({ label: v, vocab: "Arquigrafia" }),
       responseKey: "work_type",
     },
     techniques: {
       endpoint: "vrac-techniques",
-      payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),
+      displayKey: "label",
+      payload: (v) => ({ label: v, vocab: "Arquigrafia" }),
       responseKey: "technique",
     },
     materials: {
+      // `type` é obrigatório na prática (a coluna é NOT NULL e o backend nunca
+      // usa o default); "medium" é o único valor presente na base.
       endpoint: "vrac-materials",
-      payload: (v) => ({ label: v, type: "other", vocab: "ARQUIGRAFIA" }),
+      displayKey: "label",
+      payload: (v) => ({ label: v, type: "medium", vocab: "Arquigrafia" }),
       responseKey: "material",
     },
     subjects: {
       endpoint: "vrac-subjects",
-      payload: (v) => ({ term: v, type: "otherTopic", vocab: "ARQUIGRAFIA" }),
+      displayKey: "term",
+      payload: (v) => ({ term: v, type: "otherTopic", vocab: "Arquigrafia" }),
       responseKey: "data",
     },
+  };
+
+  // Procura um termo já existente antes de criar: o backend não deduplica e a
+  // lista carregada no modal pode estar defasada. `%` e `_` são escapados
+  // porque a busca é um LIKE cru — curingas não são tratados do lado de lá.
+  const findExistingVocabId = async (cfg, term) => {
+    try {
+      const search = term.replace(/[\\%_]/g, "\\$&");
+      const res = await axios.get(`/api/${cfg.endpoint}`, {
+        params: { search, per_page: -1 },
+      });
+      const items = res.data?.data ?? [];
+      const match = items.find(
+        (i) => (i[cfg.displayKey] || "").toLowerCase() === term,
+      );
+      return match?.id || null;
+    } catch {
+      return null; // Não-fatal: se a busca falhar, seguimos para criar.
+    }
   };
 
   const resolvedVocab = {};
@@ -147,7 +178,15 @@ export const materializeWork = async (draft) => {
     const ids = [...bucket.existing];
     const cfg = VOCAB_CREATE[key];
     for (const term of bucket.newTerms) {
-      const lower = term.toLowerCase();
+      const lower = (term || "").trim().toLowerCase();
+      // Nunca envia termo vazio: sem validação no backend, viraria um 500.
+      if (!lower) continue;
+      // Reaproveita um termo já existente em vez de criar duplicata.
+      const existingId = await findExistingVocabId(cfg, lower);
+      if (existingId) {
+        ids.push(existingId);
+        continue;
+      }
       const res = await axios.post(`/api/${cfg.endpoint}`, cfg.payload(lower), {
         headers: authHeader,
       });
