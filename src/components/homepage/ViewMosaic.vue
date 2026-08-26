@@ -5,6 +5,7 @@ import MosaicCard from "@/components/MosaicCard.vue";
 import MosaicSkeleton from "@/components/MosaicSkeleton.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 import { sanitizeDateParam } from "@/helpers/dateUtils";
+import { queryToFilters, hasAnyAdvancedFilter } from "@/helpers/searchQueryMapping";
 
 const props = defineProps({
   search: {
@@ -194,7 +195,7 @@ const {
   isFetchingNextPage,
 } = useImagesInfiniteQuery({ search: toRef(props, "search"), filters });
 
-const hasActiveFilters = computed(() => Object.keys(filters.value).length > 0);
+const hasActiveFilters = computed(() => hasAnyAdvancedFilter(queryToFilters(route.query)));
 
 watch(rawItems, (val) => {
   if ((props.search || hasActiveFilters.value) && !isPending.value && val.length === 0) {

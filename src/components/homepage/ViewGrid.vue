@@ -118,6 +118,7 @@ import { RouterLink, useRouter, useRoute } from "vue-router";
 import UiCard from "@/components/ui/UiCard.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 import { sanitizeDateParam } from "@/helpers/dateUtils";
+import { queryToFilters, hasAnyAdvancedFilter } from "@/helpers/searchQueryMapping";
 
 const router = useRouter();
 const route = useRoute();
@@ -228,7 +229,7 @@ const {
   isFetchingNextPage,
 } = useImagesInfiniteQuery({ search: toRef(props, "search"), filters });
 
-const hasActiveFilters = computed(() => Object.keys(filters.value).length > 0);
+const hasActiveFilters = computed(() => hasAnyAdvancedFilter(queryToFilters(route.query)));
 
 watch(items, (val) => {
   if ((props.search || hasActiveFilters.value) && !isPending.value && val.length === 0) {

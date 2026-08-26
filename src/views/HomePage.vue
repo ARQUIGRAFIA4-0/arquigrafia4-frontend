@@ -868,21 +868,23 @@ function handleRemoveChip(chip) {
     filters.use = null;
   }
   handleAdvancedFiltersUpdate(filters);
-  submitSearch({ mode: "avancada", value: advancedFilters.value });
 
-  const isEmpty =
-    !advancedFilters.value.terms?.length &&
-    !advancedFilters.value.locations?.length &&
-    !advancedFilters.value.tags?.length &&
-    !advancedFilters.value.subjects?.length &&
-    !advancedFilters.value.use;
+  // Fase 3: escreve a URL diretamente (mesmo padrão de confirmAdvancedSearch/
+  // confirmAdvancedDrawer) e deixa só o watcher de route.query decidir se
+  // dispara ou limpa a busca. Antes disparava DUAS vezes por remoção de chip:
+  // uma vez aqui de forma síncrona (performSearch/activeSearch.value = null)
+  // e outra quando o watcher reagia à mudança de URL feita por submitSearch
+  // (vocabulário A) — a lógica de "isEmpty" já existia no watcher (Fase 1),
+  // então não precisa ser reimplementada aqui.
+  const legacyKeys = [
+    'searchMode', 'author', 'subject_term', 'subject', 'dateStart',
+    'dateEnd', 'color', 'location', 'use',
+  ];
+  const newQuery = clearAdvancedFilterKeys(route.query);
+  legacyKeys.forEach((k) => { delete newQuery[k]; });
+  Object.assign(newQuery, filtersToQuery(advancedFilters.value));
 
-  if (isEmpty) {
-    hasNoResults.value = false;
-    activeSearch.value = null;
-  } else {
-    performSearch({ mode: "avancada", value: advancedFilters.value });
-  }
+  router.push({ query: newQuery });
 }
 
 function handleRemoveUrlChip(chip) {

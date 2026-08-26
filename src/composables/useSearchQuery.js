@@ -48,40 +48,40 @@ function assignQueryValue(target, key, value) {
   target[key] = value;
 }
 
-function buildAdvancedFiltersFromQuery(query) {
-  const qValues = toArray(query.q);
-  const titleValues = toArray(query.title);
-  const authorValues = toArray(query.author);
-  const subjects = toArray(query.subject);
-  const locations = toArray(query.location);
-  const useValue = typeof query.use === "string" && query.use.length > 0 ? query.use : null;
-  const subjectTermRaw = typeof query.subject_term === "string" ? query.subject_term : null;
+// function buildAdvancedFiltersFromQuery(query) {
+//   const qValues = toArray(query.q);
+//   const titleValues = toArray(query.title);
+//   const authorValues = toArray(query.author);
+//   const subjects = toArray(query.subject);
+//   const locations = toArray(query.location);
+//   const useValue = typeof query.use === "string" && query.use.length > 0 ? query.use : null;
+//   const subjectTermRaw = typeof query.subject_term === "string" ? query.subject_term : null;
 
-  const terms = [];
+//   const terms = [];
 
-  qValues.forEach((value) => {
-    terms.push({ field: "all", value, label: `Todos os campos: ${value}` });
-  });
+//   qValues.forEach((value) => {
+//     terms.push({ field: "all", value, label: `Todos os campos: ${value}` });
+//   });
 
-  titleValues.forEach((value) => {
-    terms.push({ field: "title", value, label: `Título: ${value}` });
-  });
+//   titleValues.forEach((value) => {
+//     terms.push({ field: "title", value, label: `Título: ${value}` });
+//   });
 
-  authorValues.forEach((value) => {
-    terms.push({ field: "author", value, label: `Autoria: ${value}` });
-  });
+//   authorValues.forEach((value) => {
+//     terms.push({ field: "author", value, label: `Autoria: ${value}` });
+//   });
 
-  if (subjectTermRaw) {
-    terms.push({ field: "tag", value: subjectTermRaw, label: `Tag: ${subjectTermRaw}` });
-  }
+//   if (subjectTermRaw) {
+//     terms.push({ field: "tag", value: subjectTermRaw, label: `Tag: ${subjectTermRaw}` });
+//   }
 
-  return {
-    terms,
-    locations,
-    subjects,
-    use: useValue,
-  };
-}
+//   return {
+//     terms,
+//     locations,
+//     subjects,
+//     use: useValue,
+//   };
+// }
 
 function queryWithoutSearchKeys(query) {
   const clone = { ...query };
@@ -220,28 +220,6 @@ export function useSearchQuery() {
     setSearchMode,
     loadSnapshot,
     submitSearch,
-  };
-}
-
-export function getSearchQuerySnapshot(route) {
-  return buildAdvancedFiltersFromQuery(route.query);
-}
-
-/**
- * Extrai filtros ativos da URL independente do searchMode
- * @param {Object} query - Route query object
- * @returns {Object} Objeto com filtros ativos extraídos da URL
- */
-export function extractActiveFilters(query) {
-  const subjects = toArray(query.subject);
-  const subjectTerm = query.subject_term && typeof query.subject_term === 'string' 
-    ? query.subject_term 
-    : null;
-
-  return {
-    subjects: subjects.length > 0 ? subjects : [],
-    subjectTerm: subjectTerm,
-    hasAny: subjects.length > 0 || Boolean(subjectTerm)
   };
 }
 
