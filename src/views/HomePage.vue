@@ -182,7 +182,7 @@ import {
 } from "@/constants/viewModes";
 import { useSearchQuery } from "@/composables/useSearchQuery";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
-import { queryToFilters, filtersToQuery, clearAdvancedFilterKeys } from "@/helpers/searchQueryMapping";
+import { queryToFilters, filtersToQuery, clearAdvancedFilterKeys, hasAnyAdvancedFilter } from "@/helpers/searchQueryMapping";
 import { sanitizeDateParam } from "@/helpers/dateUtils";
 
 const route = useRoute();
@@ -253,27 +253,12 @@ const collectionScopes = computed(() => {
   return scopes;
 });
 
-const hasActiveDrawerTextFilters = computed(() => {
-  const hasCharacteristics = Object.keys(route.query).some((key) => /^binomial\[.+\]$/.test(key));
-  return Boolean(
-    route.query.q ||
-    route.query.title ||
-    route.query.contributor ||
-    route.query['subject_term[]'] ||
-    route.query['subject[]'] ||
-    route.query['license[]'] ||
-    route.query.date_from ||
-    route.query.date_to ||
-    route.query.work_date_from ||
-    route.query.work_date_to ||
-    route.query['material_term[]'] ||
-    route.query['technique_term[]'] ||
-    route.query['aesthetics_term[]'] ||
-    route.query['cultural_context_term[]'] ||
-    route.query['typology_term[]'] ||
-    hasCharacteristics
-  );
-});
+// Fase 3.1 (retroativa): era uma 4ª cópia manual da mesma checagem, com os
+// mesmos dois problemas das outras 3 (route.query['material_term[]']/etc.,
+// nomes mortos desde a correção do backend; sem 'location'). Ainda é passada
+// como prop pro modal/drawer mesmo eles não lendo mais o valor pra decidir
+// o texto do botão (isso mudou pro botão "Cancelar" fixo).
+const hasActiveDrawerTextFilters = computed(() => hasAnyAdvancedFilter(queryToFilters(route.query)));
 
 const selectedScopeId = ref(null);
 const selectedScope = computed(
@@ -377,6 +362,13 @@ syncFromSnapshot(searchMode.value);
   // Fase 1: para "avancada", a fonte de verdade é advancedFilters.value
   // (já preenchido acima por syncFromSnapshot -> buildAdvancedFiltersFromUrl),
   // não snapshot.value (vocabulário A).
+  // hasAnyAdvancedFilter vem do módulo consolidado — antes essa checagem era
+  // reimplementada na mão aqui e nunca foi atualizada quando os 5 campos de
+  // vocabulário (materials/techniques/stylePeriods/culturalContexts/
+  // workTypes) foram adicionados: selecionar só um deles fazia a URL mudar e
+  // o chip aparecer (ambos não dependem disso), mas hasValue continuava
+  // false, então performSearch nunca disparava — tela estática, nenhuma
+  // requisição.
   const hasValue =
     snapshot.mode === "textual"
       ? Boolean(snapshot.value)
@@ -385,17 +377,7 @@ syncFromSnapshot(searchMode.value);
         : snapshot.mode === "cor"
           ? Boolean(snapshot.value)
           : snapshot.mode === "avancada"
-            ? Boolean(
-              advancedFilters.value?.terms?.length ||
-              advancedFilters.value?.tags?.length ||
-              advancedFilters.value?.subjects?.length ||
-              advancedFilters.value?.licenses?.length ||
-              advancedFilters.value?.imageStartYear ||
-              advancedFilters.value?.imageEndYear ||
-              advancedFilters.value?.workStartYear ||
-              advancedFilters.value?.workEndYear ||
-              Object.keys(advancedFilters.value?.characteristics || {}).length
-            )
+            ? hasAnyAdvancedFilter(advancedFilters.value)
             : false;
 
   if (hasValue) {
@@ -447,6 +429,11 @@ watch(
     const snapshot = loadSnapshot(mode);
     // Fase 1: para "avancada", usa advancedFilters.value (buildAdvancedFiltersFromUrl),
     // não snapshot.value (vocabulário A) — mesma correção dos outros 2 pontos.
+    // hasAnyAdvancedFilter vem do módulo consolidado (ver nota no bloco de
+    // inicialização, logo acima) — este é o watcher que reage quando o
+    // usuário confirma um filtro novo, então era aqui que a tela ficava
+    // estática ao selecionar só location/material/technique/stylePeriod/
+    // culturalContext/workType.
     const hasValue =
       snapshot.mode === "textual"
         ? Boolean(snapshot.value)
@@ -455,17 +442,7 @@ watch(
           : snapshot.mode === "cor"
             ? Boolean(snapshot.value)
             : snapshot.mode === "avancada"
-              ? Boolean(
-                advancedFilters.value?.terms?.length ||
-                advancedFilters.value?.tags?.length ||
-                advancedFilters.value?.subjects?.length ||
-                advancedFilters.value?.licenses?.length ||
-                advancedFilters.value?.imageStartYear ||
-                advancedFilters.value?.imageEndYear ||
-                advancedFilters.value?.workStartYear ||
-                advancedFilters.value?.workEndYear ||
-                Object.keys(advancedFilters.value?.characteristics || {}).length
-              )
+              ? hasAnyAdvancedFilter(advancedFilters.value)
               : false;
     if (hasValue) {
       performSearch({
@@ -712,6 +689,20 @@ function confirmAdvancedSearch(payload) {
   const newQuery = clearAdvancedFilterKeys(route.query);
   legacyKeys.forEach((k) => { delete newQuery[k]; });
 
+  // Reescreve searchMode explicitamente — legacyKeys apaga a chave acima, e
+  // sem ela useRouteQuery('searchMode', 'textual') volta pro default assim
+  // que a navegação resolve. O watcher de route.query em HomePage.vue lê
+  // searchMode.value pra decidir qual branch de hasValue usar; se ele achar
+  // 'textual', só olha route.query.q — os filtros avançados (author, tags,
+  // materials, etc.) nunca disparam performSearch, mesmo estando corretos
+  // na URL e no shape canônico. Bug real, confirmado com Vue Router de
+  // verdade (não só teoria) antes de aplicar esta correção. Só reescreve se
+  // o payload confirmado tem algum filtro — confirmar um modal vazio não
+  // deve deixar "?searchMode=avancada" pendurado numa URL sem nada.
+  if (hasAnyAdvancedFilter(payload)) {
+    newQuery.searchMode = 'avancada';
+  }
+
   // Atribui novos params — mesma função usada em searchImages (api.js) e useSearchQuery.js
   Object.assign(newQuery, filtersToQuery(payload));
 
@@ -780,6 +771,12 @@ function confirmAdvancedDrawer({ value }) {
   ];
   const newQuery = clearAdvancedFilterKeys(route.query);
   legacyKeys.forEach((k) => { delete newQuery[k]; });
+  // Ver comentário em confirmAdvancedSearch — sem isso, mode volta pro
+  // default 'textual' e o watcher nunca dispara a busca avançada. Só
+  // reescreve se 'value' tem algum filtro.
+  if (hasAnyAdvancedFilter(value)) {
+    newQuery.searchMode = 'avancada';
+  }
 
   Object.assign(newQuery, filtersToQuery(value));
 
@@ -795,6 +792,7 @@ function handleClearTextFilters() {
   // única de verdade usada em confirmAdvancedSearch/confirmAdvancedDrawer/
   // handleRemoveChip/handleClearAllFilters.
   const query = clearAdvancedFilterKeys(route.query);
+  delete query.searchMode;
   advancedFilters.value = createDefaultAdvancedFilters();
   drawerSearchText.value = false;
   modalAdvancedSearch.value = false;
@@ -879,6 +877,15 @@ function handleRemoveChip(chip) {
   ];
   const newQuery = clearAdvancedFilterKeys(route.query);
   legacyKeys.forEach((k) => { delete newQuery[k]; });
+  // Ver comentário em confirmAdvancedSearch — sem isso, mode volta pro
+  // default 'textual' e o watcher para de reconhecer os filtros restantes
+  // como avançados (ex: sobrou 1 chip depois de remover outro, mas a busca
+  // não atualiza). Só reescreve se ainda sobrar filtro: legacyKeys já apagou
+  // a chave acima, então sem filtro nenhum o padrão certo é deixar apagado
+  // mesmo (senão fica "?searchMode=avancada" pendurado numa URL vazia).
+  if (hasAnyAdvancedFilter(advancedFilters.value)) {
+    newQuery.searchMode = 'avancada';
+  }
   Object.assign(newQuery, filtersToQuery(advancedFilters.value));
 
   router.push({ query: newQuery });
@@ -931,16 +938,16 @@ function handleRemoveUrlChip(chip) {
     } else {
       query['license[]'] = updated.length === 1 ? updated[0] : updated;
     }
-  } else if (['material_term', 'technique_term', 'aesthetics_term', 'cultural_context_term', 'typology_term'].includes(chip.type)) {
-    const queryKey = `${chip.type}[]`;
-    const raw = query[queryKey];
-    const existing = raw ? (Array.isArray(raw) ? raw : [raw]) : [];
-    const updated = existing.filter((t) => t !== chip.termValue);
-    if (updated.length === 0) {
-      delete query[queryKey];
-    } else {
-      query[queryKey] = updated.length === 1 ? updated[0] : updated;
-    }
+  }
+
+  // Mesma lógica de confirmAdvancedSearch/confirmAdvancedDrawer/
+  // handleRemoveChip: se não sobrar nenhum filtro depois da remoção, limpa
+  // searchMode também — sem isso, um chip "rápido" (urlChips, usado quando
+  // só 1 tipo de filtro está ativo — a busca avançada com 2+ tipos mostra o
+  // banner em vez do chip) deixava "?searchMode=avancada" pendurado numa URL
+  // já sem filtro nenhum, já que esta função nunca fazia essa checagem.
+  if (!hasAnyAdvancedFilter(queryToFilters(query))) {
+    delete query.searchMode;
   }
 
   router.push({ query });
@@ -950,7 +957,9 @@ function handleClearAllFilters() {
   // Fase 3.1: mesma lista de chaves do módulo consolidado, em vez de uma
   // 5ª cópia manual (essa era a única que faltava atualizar quando
   // adicionamos 'location' — motivo pelo qual agora ela lê do módulo).
-  router.push({ query: clearAdvancedFilterKeys(route.query) });
+  const query = clearAdvancedFilterKeys(route.query);
+  delete query.searchMode;
+  router.push({ query });
 }
 
 function performSearch({ mode, value }) {

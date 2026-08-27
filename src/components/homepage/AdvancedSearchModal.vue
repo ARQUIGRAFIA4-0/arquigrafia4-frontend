@@ -13,7 +13,7 @@
       <div class="modal-body">
 
         <!-- Termos -->
-        <div class="mb-3">
+        <div class="mb-5">
           <h3 class="h3 pt-2">Termos</h3>
           <div class="input-group">
             <button
@@ -787,10 +787,11 @@ watch(
   }
 
   .vocab-suggestions {
-    position: relative;
+    position: absolute;
     z-index: 5;
     max-height: 220px;
     overflow-y: auto;
+    width: 94%;
   }
 
   .input-group > .form-control:not(:last-child) {

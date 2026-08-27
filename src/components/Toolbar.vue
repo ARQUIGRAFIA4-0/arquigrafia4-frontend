@@ -609,24 +609,12 @@ const urlChips = computed(() => {
     });
   });
 
-  const pushTermChips = (queryKey, chipType, labelPrefix) => {
-    const raw = route.query[queryKey];
-    const values = raw ? (Array.isArray(raw) ? raw : [raw]) : [];
-    values.forEach((term) => {
-      chips.push({
-        uid: `${chipType}-${term}`,
-        type: chipType,
-        termValue: term,
-        label: `${labelPrefix}: ${term}`,
-      });
-    });
-  };
-
-  pushTermChips('material_term[]', 'material_term', 'Material');
-  pushTermChips('technique_term[]', 'technique_term', 'Técnica');
-  pushTermChips('aesthetics_term[]', 'aesthetics_term', 'Estética');
-  pushTermChips('cultural_context_term[]', 'cultural_context_term', 'Contexto cultural');
-  pushTermChips('typology_term[]', 'typology_term', 'Tipologia');
+  // Nota: materiais/técnicas/período de estilo/contexto cultural/tipo de obra
+  // não têm chip aqui — são arrays de UUID (precisam resolver label via
+  // composable, como advancedChips já faz) e, na prática, sempre forçam
+  // isAdvancedByUrl=true (ver hasWorkOrCharacteristicsFilter), então o
+  // template mostra o banner de busca avançada em vez de urlChips quando
+  // qualquer um deles está ativo — este bloco nunca seria alcançado.
 
   return chips;
 });
@@ -906,7 +894,7 @@ function onViewSubcontrol() {
 }
 
 .toolbar-acervo__panel--search {
-  padding: var(--p, 12px) var(--pp, 8px);
+  padding: var(--ppp, 4px) var(--pp, 8px);
   min-width: 0;
 }
 

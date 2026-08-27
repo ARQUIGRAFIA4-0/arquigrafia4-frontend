@@ -245,6 +245,7 @@ export function hasAnyAdvancedFilter(filters = {}) {
     filters.licenses?.length ||
     filters.materials?.length ||
     filters.techniques?.length ||
+    filters.location?.length ||
     filters.stylePeriods?.length ||
     filters.culturalContexts?.length ||
     filters.workTypes?.length ||
