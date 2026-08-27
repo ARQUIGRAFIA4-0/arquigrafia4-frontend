@@ -699,7 +699,7 @@ onUnmounted(() => {
   z-index: 5;
   max-height: 220px;
   overflow-y: auto;
-  width: 93%;
+  width: 93% !important;
 }
 
 .drawer-content {

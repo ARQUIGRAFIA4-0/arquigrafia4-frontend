@@ -791,7 +791,7 @@ watch(
     z-index: 5;
     max-height: 220px;
     overflow-y: auto;
-    width: 94%;
+    width: 94% !important;
   }
 
   .input-group > .form-control:not(:last-child) {
