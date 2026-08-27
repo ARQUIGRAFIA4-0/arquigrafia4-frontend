@@ -5,17 +5,20 @@ import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters
  * Módulo puro (sem useRoute/useRouter) de mapeamento entre o shape canônico de
  * filtros avançados (ver createDefaultAdvancedFilters) e o vocabulário B de
  * query-string/params que a API /api/images e a maioria dos componentes já
- * falam (contributor, subject[], subject_term[], license[], date_from/to,
- * work_date_from/to, binomial[chave]).
+ * falam (contributor, location, subject[], subject_term[], license[],
+ * material[], technique[], style_period[], cultural_context[], work_type[],
+ * date_from/to, work_date_from/to, binomial[chave]).
  *
  * Fonte única de verdade para essa conversão — extraído de
  * buildAdvancedFiltersFromUrl (HomePage.vue) e buildSearchParamsFromAdvancedFilters
  * (helpers/buildSearchParams.js), não reescrito do zero.
  *
- * Nota (ambiguidade tags vs subjects): createDefaultAdvancedFilters() só define
- * `tags` (IDs de subject vindos de subject[] na URL). Um campo `subjects`
- * aparece em alguns pontos de HomePage.vue mas não é lido nem escrito por este
- * módulo — resolver antes da Fase 3.1 (ver plano, seção "Shape canônico").
+ * material[]/technique[]/style_period[]/cultural_context[]/work_type[] são
+ * arrays de UUID (mesmo padrão de subject[]) — substituem os antigos
+ * material_term[]/technique_term[]/aesthetics_term[]/cultural_context_term[]/
+ * typology_term[], que nunca bateram com SearchImageRequest::rules() no
+ * backend e eram descartados silenciosamente (ver
+ * BUSCA-MAPA-DE-PARAMETROS.md, seção 7).
  */
 
 const readArrayParam = (query, key) => {
@@ -37,11 +40,11 @@ export const ADVANCED_QUERY_KEYS = [
   "date_to",
   "work_date_from",
   "work_date_to",
-  "material_term[]",
-  "technique_term[]",
-  "aesthetics_term[]",
-  "cultural_context_term[]",
-  "typology_term[]",
+  "material[]",
+  "technique[]",
+  "style_period[]",
+  "cultural_context[]",
+  "work_type[]",
 ];
 
 /**
@@ -71,22 +74,6 @@ export function clearAdvancedFilterKeys(query = {}) {
 export function queryToFilters(query = {}) {
   const terms = [];
 
-  readArrayParam(query, "material_term[]").forEach((term) => {
-    terms.push({ field: "materials", value: term, label: `Materiais: ${term}` });
-  });
-  readArrayParam(query, "technique_term[]").forEach((term) => {
-    terms.push({ field: "techniques", value: term, label: `Técnicas de construção: ${term}` });
-  });
-  readArrayParam(query, "aesthetics_term[]").forEach((term) => {
-    terms.push({ field: "aesthetics", value: term, label: `Aspectos estéticos: ${term}` });
-  });
-  readArrayParam(query, "cultural_context_term[]").forEach((term) => {
-    terms.push({ field: "cultural", value: term, label: `Contexto cultural: ${term}` });
-  });
-  readArrayParam(query, "typology_term[]").forEach((term) => {
-    terms.push({ field: "typology", value: term, label: `Tipologia: ${term}` });
-  });
-
   if (query.q) {
     terms.push({ field: "all", value: query.q, label: `Todos os campos: ${query.q}` });
   }
@@ -107,6 +94,16 @@ export function queryToFilters(query = {}) {
   const tags = readArrayParam(query, "subject[]");
 
   const licenses = readArrayParam(query, "license[]");
+
+  // Materiais/técnicas/períodos de estilo/contextos culturais/tipos de obra:
+  // arrays de UUID, mesmo padrão de tags/licenses (não são mais 'termo' de
+  // texto livre — os nomes *_term[] antigos nunca foram validados pelo
+  // backend, ver SearchImageRequest::rules()).
+  const materials = readArrayParam(query, "material[]");
+  const techniques = readArrayParam(query, "technique[]");
+  const stylePeriods = readArrayParam(query, "style_period[]");
+  const culturalContexts = readArrayParam(query, "cultural_context[]");
+  const workTypes = readArrayParam(query, "work_type[]");
 
   // Período da imagem — sanitiza antes de extrair o ano (correção da Fase 2:
   // ViewMap não fazia isso, ViewGrid/ViewMosaic já faziam via sanitizeDateParam
@@ -139,6 +136,11 @@ export function queryToFilters(query = {}) {
     terms,
     tags,
     licenses,
+    materials,
+    techniques,
+    stylePeriods,
+    culturalContexts,
+    workTypes,
     imageStartYear,
     imageEndYear,
     workStartYear,
@@ -156,17 +158,17 @@ export function filtersToQuery(filters = {}) {
   const terms = Array.isArray(filters.terms) ? filters.terms : [];
   const tags = Array.isArray(filters.tags) ? filters.tags : [];
   const licenses = Array.isArray(filters.licenses) ? filters.licenses : [];
+  const materials = Array.isArray(filters.materials) ? filters.materials : [];
+  const techniques = Array.isArray(filters.techniques) ? filters.techniques : [];
+  const stylePeriods = Array.isArray(filters.stylePeriods) ? filters.stylePeriods : [];
+  const culturalContexts = Array.isArray(filters.culturalContexts) ? filters.culturalContexts : [];
+  const workTypes = Array.isArray(filters.workTypes) ? filters.workTypes : [];
 
   const qValues = [];
   const titleValues = [];
   const contributorValues = [];
   const locationValues = [];
   const subjectTermValues = [];
-  const materialValues = [];
-  const techniqueValues = [];
-  const aestheticsValues = [];
-  const culturalContextValues = [];
-  const typologyValues = [];
 
   terms.forEach((term) => {
     if (!term?.value?.trim?.()) return;
@@ -176,11 +178,6 @@ export function filtersToQuery(filters = {}) {
       case "author": contributorValues.push(v); break;
       case "location": locationValues.push(v); break;
       case "tag": subjectTermValues.push(v); break;
-      case "materials": materialValues.push(v); break;
-      case "techniques": techniqueValues.push(v); break;
-      case "aesthetics": aestheticsValues.push(v); break;
-      case "cultural": culturalContextValues.push(v); break;
-      case "typology": typologyValues.push(v); break;
       case "all": default: qValues.push(v); break;
     }
   });
@@ -198,17 +195,22 @@ export function filtersToQuery(filters = {}) {
   };
 
   pushArrayParam("subject_term[]", subjectTermValues);
-  pushArrayParam("material_term[]", materialValues);
-  pushArrayParam("technique_term[]", techniqueValues);
-  pushArrayParam("aesthetics_term[]", aestheticsValues);
-  pushArrayParam("cultural_context_term[]", culturalContextValues);
-  pushArrayParam("typology_term[]", typologyValues);
 
   const subjectIds = tags.filter((id) => typeof id === "string" && id.length > 0);
   pushArrayParam("subject[]", subjectIds);
 
   const licenseValues = licenses.filter((l) => typeof l === "string" && l.length > 0);
   pushArrayParam("license[]", licenseValues);
+
+  // Materiais/técnicas/períodos de estilo/contextos culturais/tipos de obra:
+  // arrays de UUID, mesmo padrão de subject[]/license[] acima — bate com
+  // SearchImageRequest::rules() (material/technique/style_period/
+  // cultural_context/work_type, todos 'nullable|array' + '.*'=>'uuid').
+  pushArrayParam("material[]", materials.filter((id) => typeof id === "string" && id.length > 0));
+  pushArrayParam("technique[]", techniques.filter((id) => typeof id === "string" && id.length > 0));
+  pushArrayParam("style_period[]", stylePeriods.filter((id) => typeof id === "string" && id.length > 0));
+  pushArrayParam("cultural_context[]", culturalContexts.filter((id) => typeof id === "string" && id.length > 0));
+  pushArrayParam("work_type[]", workTypes.filter((id) => typeof id === "string" && id.length > 0));
 
   if (typeof filters.imageStartYear === "number") params.date_from = `${filters.imageStartYear}-01-01`;
   if (typeof filters.imageEndYear === "number") params.date_to = `${filters.imageEndYear}-12-31`;
@@ -241,6 +243,11 @@ export function hasAnyAdvancedFilter(filters = {}) {
     filters.terms?.length ||
     filters.tags?.length ||
     filters.licenses?.length ||
+    filters.materials?.length ||
+    filters.techniques?.length ||
+    filters.stylePeriods?.length ||
+    filters.culturalContexts?.length ||
+    filters.workTypes?.length ||
     filters.imageStartYear != null ||
     filters.imageEndYear != null ||
     filters.workStartYear != null ||

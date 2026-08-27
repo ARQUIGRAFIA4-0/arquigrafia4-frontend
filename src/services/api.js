@@ -484,6 +484,63 @@ const getSubjectById = async (id) => {
 };
 
 /**
+ * Fábrica de funções getById/getAll para os vocabulários VRAC que só têm
+ * rótulo simples ({id, label}) — materiais, técnicas, períodos de estilo,
+ * contextos culturais, tipos de obra. Todos batem em endpoints
+ * `->only(['index', 'show'])`, então só GET é necessário.
+ */
+const makeVocabApi = (resourcePath, labelField = 'label') => ({
+  getById: async (id) => {
+    if (!id || typeof id !== 'string') {
+      console.error(`${resourcePath}: ID inválido`, id);
+      return null;
+    }
+    try {
+      const response = await axios.get(`/api/${resourcePath}/${id}`);
+      const item = response.data?.data;
+      const label = item?.[labelField];
+      if (!label) {
+        console.warn(`${resourcePath} ${id} sem ${labelField} válido`);
+        return null;
+      }
+      return { id, [labelField]: label };
+    } catch (error) {
+      console.error(`Error fetching ${resourcePath} ${id}:`, error);
+      return null;
+    }
+  },
+  getAll: async () => {
+    try {
+      const response = await axios.get(`/api/${resourcePath}`, {
+        headers: { "Content-Type": "application/json" },
+        params: { per_page: -1 },
+      });
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`Error fetching all ${resourcePath}:`, error);
+      return [];
+    }
+  },
+});
+
+const materialsApi = makeVocabApi('vrac-materials');
+const techniquesApi = makeVocabApi('vrac-techniques');
+const stylePeriodsApi = makeVocabApi('vrac-style-periods');
+const culturalContextsApi = makeVocabApi('vrac-cultural-contexts');
+const workTypesApi = makeVocabApi('vrac-work-types');
+
+const getMaterialById = materialsApi.getById;
+const getAllMaterials = materialsApi.getAll;
+const getTechniqueById = techniquesApi.getById;
+const getAllTechniques = techniquesApi.getAll;
+const getStylePeriodById = stylePeriodsApi.getById;
+const getAllStylePeriods = stylePeriodsApi.getAll;
+const getCulturalContextById = culturalContextsApi.getById;
+const getAllCulturalContexts = culturalContextsApi.getAll;
+const getWorkTypeById = workTypesApi.getById;
+const getAllWorkTypes = workTypesApi.getAll;
+
+/**
  * Deleta uma imagem pelo ID
  * @param {string} authHeader - Header de autorização (Bearer token)
  * @param {string} imageId - UUID da imagem a ser deletada
@@ -803,6 +860,16 @@ export const api = {
   getTotalImages,
   getSubjectById,
   getAllSubjects,
+  getMaterialById,
+  getAllMaterials,
+  getTechniqueById,
+  getAllTechniques,
+  getStylePeriodById,
+  getAllStylePeriods,
+  getCulturalContextById,
+  getAllCulturalContexts,
+  getWorkTypeById,
+  getAllWorkTypes,
   deleteImage,
   createCollective,
   getCollective,
