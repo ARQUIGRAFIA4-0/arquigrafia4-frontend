@@ -33,7 +33,7 @@
             <li v-for="opt in fieldOptions" :key="opt.value">
               <button
                 class="dropdown-item"
-                @click.prevent="selectedField = opt.value"
+                @click.prevent="setSelectedField(opt.value)"
               >
                 {{ opt.label }}
               </button>
@@ -44,9 +44,11 @@
             type="text"
             class="form-control border-preto border-end-0"
             :placeholder="textQueryPlaceholder"
-            @keydown.enter="addSearchTerm"
+            @keydown.enter="onTermInputEnter"
+            @focus="ensureVocabLoaded"
           />
           <button
+            v-if="!activeVocabField"
             class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
             type="button"
             aria-label="Buscar"
@@ -55,11 +57,31 @@
             <i class="bi bi-plus-square-fill"></i>
           </button>
         </div>
+
+        <!-- Sugestões do vocabulário ativo (materiais/técnicas/período de estilo/
+             contexto cultural/tipo de obra) — mesmo padrão do autocomplete de
+             "Tags da imagem" na edição de metadados. -->
+        <ul v-if="activeVocabField && textQueryInput.trim()" class="list-group vocab-suggestions">
+          <li v-if="isVocabListLoading" class="list-group-item text-muted">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+            Carregando...
+          </li>
+          <li v-else-if="vocabSuggestions.length === 0" class="list-group-item text-muted">
+            Nenhum resultado para "{{ textQueryInput }}".
+          </li>
+          <li v-for="opt in vocabSuggestions" :key="opt.id" class="list-group-item p-0">
+            <button type="button" class="dropdown-item" @click="selectVocabItem(opt.id)">
+              {{ opt.label }}
+            </button>
+          </li>
+        </ul>
       </div>
 
       <div class="mb-4">
         <div class="d-flex flex-wrap gap-2">
-          <span v-if="searchTerms.length === 0 && extraSelectedTags.length === 0" class="text-muted"
+          <span
+            v-if="searchTerms.length === 0 && extraSelectedTags.length === 0 && vocabChips.length === 0"
+            class="text-muted"
             >Nenhum termo adicionado.</span
           >
           <button
@@ -91,45 +113,22 @@
               @click.stop="toggleTagId(id)"
             ></button>
           </button>
+          <button
+            v-for="chip in vocabChips"
+            :key="chip.key"
+            type="button"
+            class="btn btn-primary btn-sm btn-tag"
+          >
+            <span v-if="!chip.isLoaded" class="spinner-border spinner-border-sm" role="status" aria-label="Carregando..." />
+            <template v-else>{{ chip.label }}</template>
+            <button
+              type="button"
+              class="btn-close ms-1"
+              :aria-label="`Remover ${chip.label || 'filtro'}`"
+              @click.stop="removeVocabItem(chip.fieldKey, chip.id)"
+            ></button>
+          </button>
         </div>
-      </div>
-
-      <div class="mb-3">
-        <VocabTermPicker
-          :model-value="selectedMaterials"
-          title="Materiais"
-          placeholder="Ex: concreto"
-          :use-terms="useMaterialTerms"
-          @update:model-value="updateMaterials"
-        />
-        <VocabTermPicker
-          :model-value="selectedTechniques"
-          title="Técnicas de construção"
-          placeholder="Ex: alvenaria"
-          :use-terms="useTechniqueTerms"
-          @update:model-value="updateTechniques"
-        />
-        <VocabTermPicker
-          :model-value="selectedStylePeriods"
-          title="Período de estilo"
-          placeholder="Ex: moderno"
-          :use-terms="useStylePeriodTerms"
-          @update:model-value="updateStylePeriods"
-        />
-        <VocabTermPicker
-          :model-value="selectedCulturalContexts"
-          title="Contexto cultural"
-          placeholder="Ex: modernismo brasileiro"
-          :use-terms="useCulturalContextTerms"
-          @update:model-value="updateCulturalContexts"
-        />
-        <VocabTermPicker
-          :model-value="selectedWorkTypes"
-          title="Tipo de obra"
-          placeholder="Ex: residencial"
-          :use-terms="useWorkTypeTerms"
-          @update:model-value="updateWorkTypes"
-        />
       </div>
 
       <!-- <div class="mb-3">
@@ -310,8 +309,8 @@
         </div>
 
       <div class="drawer-actions d-grid gap-2 pt-3">
-        <button class="btn btn-outline-secondary" @click="hasActiveFilters ? emit('clear') : open = false">
-          {{ hasActiveFilters ? 'Limpar busca' : 'Cancelar' }}
+        <button class="btn btn-outline-secondary" @click="cancel">
+          Limpar
         </button>
         <button class="btn btn-dark" @click="confirm">Buscar</button>
       </div>
@@ -332,7 +331,6 @@ import {
   useCulturalContextTerms,
   useWorkTypeTerms,
 } from "@/composables/useVocabTerms";
-import VocabTermPicker from "@/components/VocabTermPicker.vue";
 import { CC_LICENSES } from "@/constants/creativeCommonsLicenses";
 import { CHARACTERISTIC_PAIRS } from "@/constants/characteristicPairs";
 
@@ -371,23 +369,17 @@ const extraSelectedTags = computed(() =>
   selectedTags.value.filter((id) => !knownTagIds.has(id))
 );
 
-// const fieldOptions = ref([
-//   { value: "all", label: "Todos os campos" },
-//   { value: "author", label: "Autoria" },
-//   { value: "tag", label: "Tag" },
-//   { value: "title", label: "Título" },
-// ]);
 const fieldOptions = ref([
   { value: "all", label: "Todos os campos", placeholder: "Texto exemplo" },
   { value: "author", label: "Autoria", placeholder: "Ex: Le Corbusier" },
   { value: "tag", label: "Tag", placeholder: "Ex: fachada" },
   { value: "title", label: "Título", placeholder: "Ex: Edifício Copan" },
   { value: "location", label: "Localização", placeholder: "Ex: São Paulo" },
-  { value: "aesthetics", label: "Aspectos estéticos", placeholder: "Ex: modernista" },
-  { value: "cultural", label: "Contexto cultural", placeholder: "Ex: movimento moderno brasileiro" },
-  { value: "typology", label: "Tipologia", placeholder: "Ex: residencial" },
-  { value: "techniques", label: "Técnicas de construção", placeholder: "Ex: concreto armado" },
-  { value: "materials", label: "Materiais", placeholder: "Ex: vidro" },
+  { value: "materials", label: "Materiais", placeholder: "Ex: concreto" },
+  { value: "techniques", label: "Técnicas de construção", placeholder: "Ex: alvenaria" },
+  { value: "stylePeriod", label: "Período de estilo", placeholder: "Ex: moderno" },
+  { value: "culturalContext", label: "Contexto cultural", placeholder: "Ex: modernismo brasileiro" },
+  { value: "workType", label: "Tipo de obra", placeholder: "Ex: residencial" },
 ]);
 const selectedField = ref("all");
 const textQueryInput = ref("");
@@ -410,6 +402,95 @@ const selectedCharacteristics = ref({});
 const textQueryPlaceholder = computed(
   () => fieldOptions.value.find((f) => f.value === selectedField.value)?.placeholder || "Texto exemplo"
 );
+
+// Integração dos 5 vocabulários VRAC dentro do MESMO input de "Termos" — ver
+// AdvancedSearchModal.vue (mesma lógica). Diferença aqui: select/remove
+// chamam emitFiltersUpdate() no final, porque o drawer emite ao vivo.
+const materialTermsApi = useMaterialTerms();
+const techniqueTermsApi = useTechniqueTerms();
+const stylePeriodTermsApi = useStylePeriodTerms();
+const culturalContextTermsApi = useCulturalContextTerms();
+const workTypeTermsApi = useWorkTypeTerms();
+
+const VOCAB_FIELD_CONFIG = {
+  materials: { selected: selectedMaterials, api: materialTermsApi, chipLabel: "Material" },
+  techniques: { selected: selectedTechniques, api: techniqueTermsApi, chipLabel: "Técnica" },
+  stylePeriod: { selected: selectedStylePeriods, api: stylePeriodTermsApi, chipLabel: "Período de estilo" },
+  culturalContext: { selected: selectedCulturalContexts, api: culturalContextTermsApi, chipLabel: "Contexto cultural" },
+  workType: { selected: selectedWorkTypes, api: workTypeTermsApi, chipLabel: "Tipo de obra" },
+};
+
+const activeVocabField = computed(() => VOCAB_FIELD_CONFIG[selectedField.value] || null);
+
+const isVocabListLoading = ref(false);
+
+async function ensureVocabLoaded() {
+  const field = activeVocabField.value;
+  if (!field || field.api.allItems.value.length > 0) return;
+  isVocabListLoading.value = true;
+  try {
+    await field.api.loadAll();
+  } finally {
+    isVocabListLoading.value = false;
+  }
+}
+
+watch(activeVocabField, (field) => {
+  if (field) ensureVocabLoaded();
+});
+
+const vocabSuggestions = computed(() => {
+  const field = activeVocabField.value;
+  const q = textQueryInput.value.trim().toLowerCase();
+  if (!field || !q) return [];
+  return field.api.allItems.value
+    .filter((item) => !field.selected.value.includes(item.id))
+    .filter((item) => item.label.toLowerCase().includes(q))
+    .slice(0, 20);
+});
+
+function selectVocabItem(id) {
+  const field = activeVocabField.value;
+  if (!field) return;
+  if (!field.selected.value.includes(id)) {
+    field.selected.value = [...field.selected.value, id];
+  }
+  textQueryInput.value = "";
+  emitFiltersUpdate();
+}
+
+function removeVocabItem(fieldKey, id) {
+  const field = VOCAB_FIELD_CONFIG[fieldKey];
+  if (!field) return;
+  field.selected.value = field.selected.value.filter((existingId) => existingId !== id);
+  emitFiltersUpdate();
+}
+
+const vocabChips = computed(() =>
+  Object.entries(VOCAB_FIELD_CONFIG).flatMap(([fieldKey, field]) =>
+    field.selected.value.map((id) => ({
+      key: `${fieldKey}-${id}`,
+      fieldKey,
+      id,
+      isLoaded: field.api.isTermLoaded(id),
+      label: field.api.isTermLoaded(id) ? `${field.chipLabel}: ${field.api.getTermById(id)}` : null,
+    }))
+  )
+);
+
+function onTermInputEnter() {
+  if (activeVocabField.value) {
+    const first = vocabSuggestions.value[0];
+    if (first) selectVocabItem(first.id);
+  } else {
+    addSearchTerm();
+  }
+}
+
+function setSelectedField(value) {
+  selectedField.value = value;
+  textQueryInput.value = "";
+}
 
 function toggleCharacteristic(pairKey, side) {
   if (selectedCharacteristics.value[pairKey] === side) {
@@ -467,6 +548,11 @@ watch(
     selectedStylePeriods.value = [...(filters?.stylePeriods || [])];
     selectedCulturalContexts.value = [...(filters?.culturalContexts || [])];
     selectedWorkTypes.value = [...(filters?.workTypes || [])];
+    materialTermsApi.loadTerms(selectedMaterials.value);
+    techniqueTermsApi.loadTerms(selectedTechniques.value);
+    stylePeriodTermsApi.loadTerms(selectedStylePeriods.value);
+    culturalContextTermsApi.loadTerms(selectedCulturalContexts.value);
+    workTypeTermsApi.loadTerms(selectedWorkTypes.value);
 
     imageStartYear.value = filters?.imageStartYear ?? null;
     imageEndYear.value = filters?.imageEndYear ?? null;
@@ -500,29 +586,8 @@ const emitFiltersUpdate = () => {
 };
 
 // A diferença pro modal desktop: o drawer emite update:filters a cada
-// mudança (toggleTag/toggleLicense já fazem isso), não só em confirm(). O
-// VocabTermPicker usa v-model, então precisa desses wrappers pra também
-// disparar emitFiltersUpdate a cada seleção/remoção.
-function updateMaterials(ids) {
-  selectedMaterials.value = ids;
-  emitFiltersUpdate();
-}
-function updateTechniques(ids) {
-  selectedTechniques.value = ids;
-  emitFiltersUpdate();
-}
-function updateStylePeriods(ids) {
-  selectedStylePeriods.value = ids;
-  emitFiltersUpdate();
-}
-function updateCulturalContexts(ids) {
-  selectedCulturalContexts.value = ids;
-  emitFiltersUpdate();
-}
-function updateWorkTypes(ids) {
-  selectedWorkTypes.value = ids;
-  emitFiltersUpdate();
-}
+// mudança — selectVocabItem/removeVocabItem já chamam emitFiltersUpdate()
+// internamente (ver acima), então não precisa de wrappers extras aqui.
 
 const selectedFieldLabel = computed(() => {
   const found = fieldOptions.value.find((f) => f.value === selectedField.value);
@@ -595,6 +660,14 @@ function confirm() {
     characteristics: { ...selectedCharacteristics.value },
   };
   emit("confirm", { mode: "avancada", value: payload });
+  open.value = false;
+}
+
+// Cancelar: limpa os campos (emite pro pai limpar a URL/busca ativa) e fecha
+// o drawer — antes, só limpava quando havia filtro ativo e nunca fechava
+// sozinho nesse caso (só fechava quando não havia nada pra limpar).
+function cancel() {
+  emit("clear");
   open.value = false;
 }
 

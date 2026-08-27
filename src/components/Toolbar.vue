@@ -306,12 +306,24 @@ const emit = defineEmits([
 // banner "Busca avançada ativa".
 const activeUrlFilters = computed(() => queryToFilters(route.query));
 
+// Bug corrigido: materials/techniques/stylePeriods/culturalContexts/workTypes
+// não tinham chip de bypass (urlChips) nem entravam nessa contagem — sozinhos,
+// isAdvancedByUrl ficava false, urlChips ficava vazio, e nenhuma das áreas de
+// input batia (nenhuma delas cobre esse estado), deixando a toolbar "fechada"
+// (nem banner de avançada, nem chip, nem input nenhum visível). Mesmo
+// raciocínio de work_date/characteristics: força modo avançado porque não
+// existe representação simples de bypass pra esses campos.
 const hasWorkOrCharacteristicsFilter = computed(() => {
   const f = activeUrlFilters.value;
   return (
     f.workStartYear != null ||
     f.workEndYear != null ||
-    Object.keys(f.characteristics).length > 0
+    Object.keys(f.characteristics).length > 0 ||
+    f.materials.length > 0 ||
+    f.techniques.length > 0 ||
+    f.stylePeriods.length > 0 ||
+    f.culturalContexts.length > 0 ||
+    f.workTypes.length > 0
   );
 });
 
@@ -321,11 +333,13 @@ const hasActiveUrlFilter = computed(() => hasAnyAdvancedFilter(activeUrlFilters.
 // Conta tipos de filtro distintos na URL (date_from + date_to = 1 tipo; arrays acumuláveis contam individualmente)
 const activeFilterTypeCount = computed(() => {
   const f = activeUrlFilters.value;
-  // terms já combina q/title/contributor/subject_term/material_term/technique_term/
-  // aesthetics_term/cultural_context_term/typology_term — cada um vira 1 item do
-  // array, então terms.length já soma "1 por campo escalar presente + N por campo
-  // que acumula múltiplos valores", igual à intenção original do checkAndAdd.
-  let count = f.terms.length + f.tags.length + f.licenses.length;
+  // terms já combina q/title/contributor/subject_term/location — cada um vira
+  // 1 item do array, então terms.length já soma "1 por campo escalar presente
+  // + N por campo que acumula múltiplos valores", igual à intenção original
+  // do checkAndAdd.
+  let count = f.terms.length + f.tags.length + f.licenses.length
+    + f.materials.length + f.techniques.length + f.stylePeriods.length
+    + f.culturalContexts.length + f.workTypes.length;
   if (f.imageStartYear != null || f.imageEndYear != null) count++;
   if (f.workStartYear != null || f.workEndYear != null) count++;
   count += Object.keys(f.characteristics).length;

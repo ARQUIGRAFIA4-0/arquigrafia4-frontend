@@ -788,29 +788,16 @@ function confirmAdvancedDrawer({ value }) {
 }
 
 function handleClearTextFilters() {
-  const query = { ...route.query };
-  delete query.q;
-  delete query.title;
-  delete query.contributor;
-  delete query['subject_term[]'];
-  delete query['subject[]'];
-  delete query['material_term[]'];
-  delete query['technique_term[]'];
-  delete query['cultural_context_term[]'];
-  delete query['aesthetics_term[]'];
-  delete query['typology_term[]'];
-  delete query['license[]'];
-  delete query.date_from;
-  delete query.date_to;
-  delete query.work_date_from;
-  delete query.work_date_to;
-  Object.keys(query).forEach((key) => {
-    if (/^binomial\[.+\]$/.test(key)) {
-      delete query[key];
-    }
-  });
+  // Fase 3.1 (retroativa): esta função tinha sua própria lista de chaves,
+  // desatualizada desde a correção dos 5 campos de vocabulário (ainda usava
+  // material_term[]/technique_term[]/etc., que não existem mais, e nunca
+  // teve 'location'). Trocada por clearAdvancedFilterKeys — mesma fonte
+  // única de verdade usada em confirmAdvancedSearch/confirmAdvancedDrawer/
+  // handleRemoveChip/handleClearAllFilters.
+  const query = clearAdvancedFilterKeys(route.query);
   advancedFilters.value = createDefaultAdvancedFilters();
   drawerSearchText.value = false;
+  modalAdvancedSearch.value = false;
   router.push({ query });
 }
 

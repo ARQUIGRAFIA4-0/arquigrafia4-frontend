@@ -39,9 +39,11 @@
               type="text"
               class="form-control border-preto border-end-0"
               :placeholder="textQueryPlaceholder"
-              @keydown.enter="addSearchTerm"
+              @keydown.enter="onTermInputEnter"
+              @focus="ensureVocabLoaded"
             />
             <button
+              v-if="!activeVocabField"
               class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
               type="button"
               aria-label="Adicionar termo"
@@ -51,10 +53,30 @@
             </button>
           </div>
 
+          <!-- Sugestões do vocabulário ativo (materiais/técnicas/período de estilo/
+               contexto cultural/tipo de obra) — mesmo padrão do autocomplete de
+               "Tags da imagem" na edição de metadados: digitar filtra, clicar seleciona. -->
+          <ul v-if="activeVocabField && textQueryInput.trim()" class="list-group vocab-suggestions">
+            <li v-if="isVocabListLoading" class="list-group-item text-muted">
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+              Carregando...
+            </li>
+            <li v-else-if="vocabSuggestions.length === 0" class="list-group-item text-muted">
+              Nenhum resultado para "{{ textQueryInput }}".
+            </li>
+            <li v-for="opt in vocabSuggestions" :key="opt.id" class="list-group-item p-0">
+              <button type="button" class="dropdown-item" @click="selectVocabItem(opt.id)">
+                {{ opt.label }}
+              </button>
+            </li>
+          </ul>
 
-          <!-- Listagem de termos adicionados e tags selecionadas (vindas do ViewGrid, etc.) -->
+
+          <!-- Listagem de termos adicionados e tags/vocabulários selecionados (vindas do ViewGrid, etc.) -->
           <div class="list-group-item">
-            <span v-if="searchTerms.length === 0 && extraSelectedTags.length === 0" class="text-muted"
+            <span
+              v-if="searchTerms.length === 0 && extraSelectedTags.length === 0 && vocabChips.length === 0"
+              class="text-muted"
               >Nenhum termo adicionado.</span
             >
             <button
@@ -86,41 +108,22 @@
                 @click.stop="toggleTag(id)"
               ></button>
             </button>
+            <button
+              v-for="chip in vocabChips"
+              :key="chip.key"
+              type="button"
+              class="btn btn-primary btn-sm btn-tag"
+            >
+              <span v-if="!chip.isLoaded" class="spinner-border spinner-border-sm" role="status" aria-label="Carregando..." />
+              <template v-else>{{ chip.label }}</template>
+              <button
+                type="button"
+                class="btn-close ms-1"
+                :aria-label="`Remover ${chip.label || 'filtro'}`"
+                @click.stop="removeVocabItem(chip.fieldKey, chip.id)"
+              ></button>
+            </button>
           </div>
-        </div>
-
-        <!-- Vocabulários VRAC (materiais, técnicas, período de estilo, contexto cultural, tipo de obra) -->
-        <div class="mb-3">
-          <VocabTermPicker
-            v-model="selectedMaterials"
-            title="Materiais"
-            placeholder="Ex: concreto"
-            :use-terms="useMaterialTerms"
-          />
-          <VocabTermPicker
-            v-model="selectedTechniques"
-            title="Técnicas de construção"
-            placeholder="Ex: alvenaria"
-            :use-terms="useTechniqueTerms"
-          />
-          <VocabTermPicker
-            v-model="selectedStylePeriods"
-            title="Período de estilo"
-            placeholder="Ex: moderno"
-            :use-terms="useStylePeriodTerms"
-          />
-          <VocabTermPicker
-            v-model="selectedCulturalContexts"
-            title="Contexto cultural"
-            placeholder="Ex: modernismo brasileiro"
-            :use-terms="useCulturalContextTerms"
-          />
-          <VocabTermPicker
-            v-model="selectedWorkTypes"
-            title="Tipo de obra"
-            placeholder="Ex: residencial"
-            :use-terms="useWorkTypeTerms"
-          />
         </div>
 
         <!-- Período e Características -->
@@ -313,9 +316,9 @@
         <button
           type="button"
           class="btn btn-outline-secondary btn-sm w-100"
-          @click="hasActiveFilters ? handleClear() : close()"
+          @click="cancel"
         >
-          {{ hasActiveFilters ? 'Limpar busca' : 'Cancelar' }}
+          Limpar
         </button>
         <button
           type="button"
@@ -341,7 +344,6 @@ import {
   useCulturalContextTerms,
   useWorkTypeTerms,
 } from "@/composables/useVocabTerms";
-import VocabTermPicker from "@/components/VocabTermPicker.vue";
 import { CC_LICENSES } from "@/constants/creativeCommonsLicenses";
 import { CHARACTERISTIC_PAIRS } from "@/constants/characteristicPairs";
 
@@ -374,6 +376,11 @@ const fieldOptions = [
   { value: "tag", label: "Tag", placeholder: "Ex: fachada" },
   { value: "title", label: "Título", placeholder: "Ex: Edifício Copan" },
   { value: "location", label: "Localização", placeholder: "Ex: São Paulo" },
+  { value: "materials", label: "Materiais", placeholder: "Ex: concreto" },
+  { value: "techniques", label: "Técnicas de construção", placeholder: "Ex: alvenaria" },
+  { value: "stylePeriod", label: "Período de estilo", placeholder: "Ex: moderno" },
+  { value: "culturalContext", label: "Contexto cultural", placeholder: "Ex: modernismo brasileiro" },
+  { value: "workType", label: "Tipo de obra", placeholder: "Ex: residencial" },
 ];
 // const fieldOptions = [
 //   { value: "all", label: "Todos os campos" },
@@ -413,6 +420,100 @@ const selectedCharacteristics = ref({});
 const textQueryPlaceholder = computed(
   () => fieldOptions.find((f) => f.value === selectedField.value)?.placeholder || "Texto exemplo"
 );
+
+// Integração dos 5 vocabulários VRAC (materiais, técnicas, período de estilo,
+// contexto cultural, tipo de obra) dentro do MESMO input de "Termos" — em vez
+// de seções separadas, ao selecionar um desses campos no dropdown, o input
+// vira um autocomplete (mesmo padrão de "Tags da imagem" na edição de
+// metadados): digitar filtra allItems (carregado uma vez), clicar seleciona.
+const materialTermsApi = useMaterialTerms();
+const techniqueTermsApi = useTechniqueTerms();
+const stylePeriodTermsApi = useStylePeriodTerms();
+const culturalContextTermsApi = useCulturalContextTerms();
+const workTypeTermsApi = useWorkTypeTerms();
+
+const VOCAB_FIELD_CONFIG = {
+  materials: { selected: selectedMaterials, api: materialTermsApi, chipLabel: "Material" },
+  techniques: { selected: selectedTechniques, api: techniqueTermsApi, chipLabel: "Técnica" },
+  stylePeriod: { selected: selectedStylePeriods, api: stylePeriodTermsApi, chipLabel: "Período de estilo" },
+  culturalContext: { selected: selectedCulturalContexts, api: culturalContextTermsApi, chipLabel: "Contexto cultural" },
+  workType: { selected: selectedWorkTypes, api: workTypeTermsApi, chipLabel: "Tipo de obra" },
+};
+
+// Campo de vocabulário atualmente selecionado no dropdown (null se for um
+// campo de texto livre comum, como "all"/"title"/"author"/"tag"/"location").
+const activeVocabField = computed(() => VOCAB_FIELD_CONFIG[selectedField.value] || null);
+
+const isVocabListLoading = ref(false);
+
+async function ensureVocabLoaded() {
+  const field = activeVocabField.value;
+  if (!field || field.api.allItems.value.length > 0) return;
+  isVocabListLoading.value = true;
+  try {
+    await field.api.loadAll();
+  } finally {
+    isVocabListLoading.value = false;
+  }
+}
+
+// Carrega a lista assim que o campo muda pra um vocabulário — não espera o
+// foco no input, pra já ter as sugestões prontas na primeira letra digitada.
+watch(activeVocabField, (field) => {
+  if (field) ensureVocabLoaded();
+});
+
+const vocabSuggestions = computed(() => {
+  const field = activeVocabField.value;
+  const q = textQueryInput.value.trim().toLowerCase();
+  if (!field || !q) return [];
+  return field.api.allItems.value
+    .filter((item) => !field.selected.value.includes(item.id))
+    .filter((item) => item.label.toLowerCase().includes(q))
+    .slice(0, 20);
+});
+
+function selectVocabItem(id) {
+  const field = activeVocabField.value;
+  if (!field) return;
+  if (!field.selected.value.includes(id)) {
+    field.selected.value = [...field.selected.value, id];
+  }
+  textQueryInput.value = "";
+}
+
+function removeVocabItem(fieldKey, id) {
+  const field = VOCAB_FIELD_CONFIG[fieldKey];
+  if (!field) return;
+  field.selected.value = field.selected.value.filter((existingId) => existingId !== id);
+}
+
+// Chips únicos pros 5 vocabulários (em vez de 5 blocos de template quase
+// idênticos) — cada item sabe se já resolveu o label (getTermById) ou ainda
+// está carregando.
+const vocabChips = computed(() =>
+  Object.entries(VOCAB_FIELD_CONFIG).flatMap(([fieldKey, field]) =>
+    field.selected.value.map((id) => ({
+      key: `${fieldKey}-${id}`,
+      fieldKey,
+      id,
+      isLoaded: field.api.isTermLoaded(id),
+      label: field.api.isTermLoaded(id) ? `${field.chipLabel}: ${field.api.getTermById(id)}` : null,
+    }))
+  )
+);
+
+// Enter no input: se o campo ativo é um vocabulário, seleciona a 1ª sugestão
+// (não existe "adicionar texto livre" pra esses campos); senão, comportamento
+// de sempre (addSearchTerm).
+function onTermInputEnter() {
+  if (activeVocabField.value) {
+    const first = vocabSuggestions.value[0];
+    if (first) selectVocabItem(first.id);
+  } else {
+    addSearchTerm();
+  }
+}
 
 function toggleCharacteristic(pairKey, side) {
   // Clicar no lado já selecionado desmarca (volta ao neutro, nenhum lado
@@ -492,6 +593,7 @@ const selectedFieldLabel = computed(() => {
 
 function setSelectedField(value) {
   selectedField.value = value;
+  textQueryInput.value = "";
 }
 
 function close() {
@@ -501,6 +603,14 @@ function close() {
 function handleClear() {
   syncFromFilters(createDefaultAdvancedFilters());
   emit("clear");
+}
+
+// Cancelar: limpa os campos (local + emite pro pai limpar a URL/busca ativa)
+// e fecha o modal — antes, o botão só fechava quando não havia filtro ativo,
+// e quando havia, limpava mas deixava o modal aberto.
+function cancel() {
+  handleClear();
+  close();
 }
 
 function addSearchTerm() {
@@ -565,6 +675,11 @@ function syncFromFilters(filters) {
   selectedStylePeriods.value = [...(safeFilters.stylePeriods || [])];
   selectedCulturalContexts.value = [...(safeFilters.culturalContexts || [])];
   selectedWorkTypes.value = [...(safeFilters.workTypes || [])];
+  materialTermsApi.loadTerms(selectedMaterials.value);
+  techniqueTermsApi.loadTerms(selectedTechniques.value);
+  stylePeriodTermsApi.loadTerms(selectedStylePeriods.value);
+  culturalContextTermsApi.loadTerms(selectedCulturalContexts.value);
+  workTypeTermsApi.loadTerms(selectedWorkTypes.value);
   imageStartYear.value = safeFilters.imageStartYear || null;
   imageEndYear.value = safeFilters.imageEndYear || null;
   workStartYear.value = safeFilters.workStartYear || null;
@@ -670,6 +785,16 @@ watch(
     scrollbar-width: thin;
     scrollbar-color: #ccc;
   }
+
+  .vocab-suggestions {
+  position: relative;
+  z-index: 5;
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: 2px;
+  border: 1px solid var(--Cinza_C, #a6a6a6);
+  border-radius: 4px;
+}
 
   .list-group-item {
     display: flex;
