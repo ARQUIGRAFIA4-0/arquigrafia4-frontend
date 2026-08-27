@@ -219,6 +219,13 @@ import {
 } from "@/constants/viewModes";
 import { getSearchIcon, searchOptions } from "@/constants/searchOptions";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
+import {
+  useMaterialTerms,
+  useTechniqueTerms,
+  useStylePeriodTerms,
+  useCulturalContextTerms,
+  useWorkTypeTerms,
+} from "@/composables/useVocabTerms";
 import { queryToFilters, hasAnyAdvancedFilter } from "@/helpers/searchQueryMapping";
 
 defineOptions({ name: "AppToolbar" });
@@ -228,6 +235,11 @@ const router = useRouter();
 const authStore = useAuthStore();
 const { isLoggedIn } = storeToRefs(authStore);
 const { getTermById, loadSubjectTerms, isTermLoaded } = useSubjectTerms();
+const { getTermById: getMaterialTerm, isTermLoaded: isMaterialTermLoaded, loadTerms: loadMaterialTerms } = useMaterialTerms();
+const { getTermById: getTechniqueTerm, isTermLoaded: isTechniqueTermLoaded, loadTerms: loadTechniqueTerms } = useTechniqueTerms();
+const { getTermById: getStylePeriodTerm, isTermLoaded: isStylePeriodTermLoaded, loadTerms: loadStylePeriodTerms } = useStylePeriodTerms();
+const { getTermById: getCulturalContextTerm, isTermLoaded: isCulturalContextTermLoaded, loadTerms: loadCulturalContextTerms } = useCulturalContextTerms();
+const { getTermById: getWorkTypeTerm, isTermLoaded: isWorkTypeTermLoaded, loadTerms: loadWorkTypeTerms } = useWorkTypeTerms();
 
 const props = defineProps({
   searchMode: {
@@ -435,11 +447,45 @@ watch(
   { immediate: true }
 );
 
+// Carrega os labels dos 5 vocabulários novos (materiais, técnicas, período de
+// estilo, contexto cultural, tipo de obra) sempre que os filtros ativos
+// mudarem, pra advancedChips já ter o texto pronto ao invés do UUID cru.
+watch(
+  () => props.advancedFilters?.materials,
+  (ids) => { if (Array.isArray(ids) && ids.length > 0) loadMaterialTerms(ids); },
+  { immediate: true }
+);
+watch(
+  () => props.advancedFilters?.techniques,
+  (ids) => { if (Array.isArray(ids) && ids.length > 0) loadTechniqueTerms(ids); },
+  { immediate: true }
+);
+watch(
+  () => props.advancedFilters?.stylePeriods,
+  (ids) => { if (Array.isArray(ids) && ids.length > 0) loadStylePeriodTerms(ids); },
+  { immediate: true }
+);
+watch(
+  () => props.advancedFilters?.culturalContexts,
+  (ids) => { if (Array.isArray(ids) && ids.length > 0) loadCulturalContextTerms(ids); },
+  { immediate: true }
+);
+watch(
+  () => props.advancedFilters?.workTypes,
+  (ids) => { if (Array.isArray(ids) && ids.length > 0) loadWorkTypeTerms(ids); },
+  { immediate: true }
+);
+
 const hasAdvancedFilters = computed(() => {
   const filters = props.advancedFilters || {};
   return (
     (filters.terms && filters.terms.length > 0) ||
-    (filters.tags && filters.tags.length > 0)
+    (filters.tags && filters.tags.length > 0) ||
+    (filters.materials && filters.materials.length > 0) ||
+    (filters.techniques && filters.techniques.length > 0) ||
+    (filters.stylePeriods && filters.stylePeriods.length > 0) ||
+    (filters.culturalContexts && filters.culturalContexts.length > 0) ||
+    (filters.workTypes && filters.workTypes.length > 0)
   );
 });
 
@@ -596,6 +642,51 @@ const advancedChips = computed(() => {
       type: "tag",
       index,
       label: isTermLoaded(id) ? `Tag: ${getTermById(id)}` : null,
+    });
+  });
+
+  (filters.materials || []).forEach((id, index) => {
+    chips.push({
+      uid: `material-${index}-${id}`,
+      type: "material",
+      index,
+      label: isMaterialTermLoaded(id) ? `Material: ${getMaterialTerm(id)}` : null,
+    });
+  });
+
+  (filters.techniques || []).forEach((id, index) => {
+    chips.push({
+      uid: `technique-${index}-${id}`,
+      type: "technique",
+      index,
+      label: isTechniqueTermLoaded(id) ? `Técnica: ${getTechniqueTerm(id)}` : null,
+    });
+  });
+
+  (filters.stylePeriods || []).forEach((id, index) => {
+    chips.push({
+      uid: `style-period-${index}-${id}`,
+      type: "stylePeriod",
+      index,
+      label: isStylePeriodTermLoaded(id) ? `Período de estilo: ${getStylePeriodTerm(id)}` : null,
+    });
+  });
+
+  (filters.culturalContexts || []).forEach((id, index) => {
+    chips.push({
+      uid: `cultural-context-${index}-${id}`,
+      type: "culturalContext",
+      index,
+      label: isCulturalContextTermLoaded(id) ? `Contexto cultural: ${getCulturalContextTerm(id)}` : null,
+    });
+  });
+
+  (filters.workTypes || []).forEach((id, index) => {
+    chips.push({
+      uid: `work-type-${index}-${id}`,
+      type: "workType",
+      index,
+      label: isWorkTypeTermLoaded(id) ? `Tipo de obra: ${getWorkTypeTerm(id)}` : null,
     });
   });
 

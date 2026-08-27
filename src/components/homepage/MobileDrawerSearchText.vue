@@ -29,7 +29,7 @@
           >
             {{ selectedFieldLabel }}
           </button>
-          <ul class="dropdown-menu menu-light dropdown-menu-scroll">
+          <ul class="dropdown-menu menu-light">
             <li v-for="opt in fieldOptions" :key="opt.value">
               <button
                 class="dropdown-item"

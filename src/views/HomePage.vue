@@ -845,6 +845,11 @@ function handleAdvancedFiltersUpdate(filters) {
     terms: filters?.terms || [],
     tags: filters?.tags || [],
     licenses: filters?.licenses || [],
+    materials: filters?.materials || [],
+    techniques: filters?.techniques || [],
+    stylePeriods: filters?.stylePeriods || [],
+    culturalContexts: filters?.culturalContexts || [],
+    workTypes: filters?.workTypes || [],
     imageStartYear: filters?.imageStartYear ?? null,
     imageEndYear: filters?.imageEndYear ?? null,
     workStartYear: filters?.workStartYear ?? null,
@@ -861,6 +866,16 @@ function handleRemoveChip(chip) {
     filters.locations = filters.locations.filter((_, i) => i !== chip.index);
   } else if (chip.type === "tag") {
     filters.tags = filters.tags.filter((_, i) => i !== chip.index);
+  } else if (chip.type === "material") {
+    filters.materials = filters.materials.filter((_, i) => i !== chip.index);
+  } else if (chip.type === "technique") {
+    filters.techniques = filters.techniques.filter((_, i) => i !== chip.index);
+  } else if (chip.type === "stylePeriod") {
+    filters.stylePeriods = filters.stylePeriods.filter((_, i) => i !== chip.index);
+  } else if (chip.type === "culturalContext") {
+    filters.culturalContexts = filters.culturalContexts.filter((_, i) => i !== chip.index);
+  } else if (chip.type === "workType") {
+    filters.workTypes = filters.workTypes.filter((_, i) => i !== chip.index);
   }
   handleAdvancedFiltersUpdate(filters);
 
