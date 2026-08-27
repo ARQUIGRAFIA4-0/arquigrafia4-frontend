@@ -118,6 +118,7 @@ import { RouterLink, useRouter, useRoute } from "vue-router";
 import UiCard from "@/components/ui/UiCard.vue";
 import { useImagesInfiniteQuery } from "@/composables/useImagesInfiniteQuery";
 import { sanitizeDateParam } from "@/helpers/dateUtils";
+import { queryToFilters, hasAnyAdvancedFilter } from "@/helpers/searchQueryMapping";
 
 const router = useRouter();
 const route = useRoute();
@@ -182,6 +183,31 @@ const filters = computed(() => {
   if (rawSubjectTerms) {
     f.subjectTerms = Array.isArray(rawSubjectTerms) ? rawSubjectTerms : [rawSubjectTerms];
   }
+
+  //--- Novos campos adicionados para material, técnica, período de estilo, contexto cultural e tipo de obra
+
+  const rawMaterialTerms = route.query['material_term[]'];
+  if (rawMaterialTerms) {
+    f.materialTerms = Array.isArray(rawMaterialTerms) ? rawMaterialTerms : [rawMaterialTerms];
+  }
+  const rawTechniqueTerms = route.query['technique_term[]'];
+  if (rawTechniqueTerms) {
+    f.techniqueTerms = Array.isArray(rawTechniqueTerms) ? rawTechniqueTerms : [rawTechniqueTerms];
+  }
+  const rawAestheticsTerms = route.query['aesthetics_term[]'];
+  if (rawAestheticsTerms) {
+    f.AestheticsTerms = Array.isArray(rawAestheticsTerms) ? rawAestheticsTerms : [rawAestheticsTerms];
+  }
+  const rawCulturalContextTerms = route.query['cultural_context_term[]'];
+  if (rawCulturalContextTerms) {
+    f.culturalContextTerms = Array.isArray(rawCulturalContextTerms) ? rawCulturalContextTerms : [rawCulturalContextTerms];
+  }
+  const rawTypologyTerms = route.query['typology_term[]'];
+  if (rawTypologyTerms) {
+    f.TypologyTerms = Array.isArray(rawTypologyTerms) ? rawTypologyTerms : [rawTypologyTerms];
+  }
+  // --- fim dos novos campos ---
+
   if (route.query.title) {
     f.title = route.query.title;
   }
@@ -203,7 +229,7 @@ const {
   isFetchingNextPage,
 } = useImagesInfiniteQuery({ search: toRef(props, "search"), filters });
 
-const hasActiveFilters = computed(() => Object.keys(filters.value).length > 0);
+const hasActiveFilters = computed(() => hasAnyAdvancedFilter(queryToFilters(route.query)));
 
 watch(items, (val) => {
   if ((props.search || hasActiveFilters.value) && !isPending.value && val.length === 0) {

@@ -1,6 +1,7 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useRouteQuery } from "@vueuse/router";
+import { queryToFilters, filtersToQuery, clearAdvancedFilterKeys } from "@/helpers/searchQueryMapping";
 
 const SEARCH_MODE_KEY = "searchMode";
 
@@ -28,10 +29,6 @@ function toArray(value) {
   return [];
 }
 
-function dedupe(values) {
-  return [...new Set(values.filter((item) => typeof item === "string" && item.length > 0))];
-}
-
 function assignQueryValue(target, key, value) {
   if (value == null || value === "") {
     delete target[key];
@@ -51,101 +48,40 @@ function assignQueryValue(target, key, value) {
   target[key] = value;
 }
 
-function buildAdvancedFiltersFromQuery(query) {
-  const qValues = toArray(query.q);
-  const titleValues = toArray(query.title);
-  const authorValues = toArray(query.author);
-  const subjects = toArray(query.subject);
-  const locations = toArray(query.location);
-  const useValue = typeof query.use === "string" && query.use.length > 0 ? query.use : null;
-  const subjectTermRaw = typeof query.subject_term === "string" ? query.subject_term : null;
+// function buildAdvancedFiltersFromQuery(query) {
+//   const qValues = toArray(query.q);
+//   const titleValues = toArray(query.title);
+//   const authorValues = toArray(query.author);
+//   const subjects = toArray(query.subject);
+//   const locations = toArray(query.location);
+//   const useValue = typeof query.use === "string" && query.use.length > 0 ? query.use : null;
+//   const subjectTermRaw = typeof query.subject_term === "string" ? query.subject_term : null;
 
-  const terms = [];
+//   const terms = [];
 
-  qValues.forEach((value) => {
-    terms.push({ field: "all", value, label: `Todos os campos: ${value}` });
-  });
+//   qValues.forEach((value) => {
+//     terms.push({ field: "all", value, label: `Todos os campos: ${value}` });
+//   });
 
-  titleValues.forEach((value) => {
-    terms.push({ field: "title", value, label: `Título: ${value}` });
-  });
+//   titleValues.forEach((value) => {
+//     terms.push({ field: "title", value, label: `Título: ${value}` });
+//   });
 
-  authorValues.forEach((value) => {
-    terms.push({ field: "author", value, label: `Autoria: ${value}` });
-  });
+//   authorValues.forEach((value) => {
+//     terms.push({ field: "author", value, label: `Autoria: ${value}` });
+//   });
 
-  if (subjectTermRaw) {
-    terms.push({ field: "tag", value: subjectTermRaw, label: `Tag: ${subjectTermRaw}` });
-  }
+//   if (subjectTermRaw) {
+//     terms.push({ field: "tag", value: subjectTermRaw, label: `Tag: ${subjectTermRaw}` });
+//   }
 
-  return {
-    terms,
-    locations,
-    subjects,
-    use: useValue,
-  };
-}
-
-function normalizeAdvancedFilters(filters) {
-  const safe = filters || {};
-  const terms = Array.isArray(safe.terms) ? safe.terms : [];
-  const locations = Array.isArray(safe.locations) ? safe.locations : [];
-  const subjects = Array.isArray(safe.subjects) ? safe.subjects : [];
-  const tags = Array.isArray(safe.tags) ? safe.tags : [];
-  const use = typeof safe.use === "string" && safe.use.length > 0 ? safe.use : null;
-
-  const qValues = [];
-  const titleValues = [];
-  const authorValues = [];
-  const subjectTermValues = [];
-  const subjectValues = [...subjects];
-  const locationValues = [...locations];
-
-  terms.forEach((term) => {
-    if (!term || typeof term.value !== "string" || term.value.length === 0) {
-      return;
-    }
-
-    const value = term.value;
-    switch (term.field) {
-      case "author":
-        authorValues.push(value);
-        break;
-      case "subject":
-        subjectValues.push(value);
-        break;
-      case "location":
-        locationValues.push(value);
-        break;
-      case "title":
-        titleValues.push(value);
-        break;
-      case "tag":
-        subjectTermValues.push(value);
-        break;
-      case "all":
-      default:
-        qValues.push(value);
-        break;
-    }
-  });
-
-  tags.forEach((tag) => {
-    if (typeof tag === "string" && tag.length > 0) {
-      subjectTermValues.push(tag);
-    }
-  });
-
-  return {
-    qValues: dedupe(qValues),
-    titleValues: dedupe(titleValues),
-    authorValues: dedupe(authorValues),
-    subjectTermValues: dedupe(subjectTermValues),
-    subjectValues: dedupe(subjectValues),
-    locationValues: dedupe(locationValues),
-    use,
-  };
-}
+//   return {
+//     terms,
+//     locations,
+//     subjects,
+//     use: useValue,
+//   };
+// }
 
 function queryWithoutSearchKeys(query) {
   const clone = { ...query };
@@ -216,7 +152,9 @@ export function useSearchQuery() {
           },
         };
       case "avancada":
-        return { mode: resolvedMode, value: buildAdvancedFiltersFromQuery(route.query) };
+        // Fase 2: delega ao módulo consolidado (vocabulário B), em vez de
+        // buildAdvancedFiltersFromQuery (vocabulário A, legado/com o bug de autoria).
+        return { mode: resolvedMode, value: queryToFilters(route.query) };
       case "textual":
       default: {
         const values = toArray(route.query.q);
@@ -227,7 +165,7 @@ export function useSearchQuery() {
 
   function buildQueryPayload(mode, value) {
     const resolvedMode = normalizeMode(mode);
-    const base = queryWithoutSearchKeys(route.query);
+    let base = queryWithoutSearchKeys(route.query);
     base[SEARCH_MODE_KEY] = resolvedMode;
 
     switch (resolvedMode) {
@@ -250,28 +188,11 @@ export function useSearchQuery() {
         break;
       }
       case "avancada": {
-        const normalized = normalizeAdvancedFilters(value);
-        if (normalized.qValues.length > 0) {
-          assignQueryValue(base, "q", normalized.qValues);
-        }
-        if (normalized.titleValues.length > 0) {
-          assignQueryValue(base, "title", normalized.titleValues);
-        }
-        if (normalized.authorValues.length > 0) {
-          assignQueryValue(base, "author", normalized.authorValues);
-        }
-        if (normalized.subjectTermValues.length > 0) {
-          assignQueryValue(base, "subject_term", normalized.subjectTermValues[0]);
-        }
-        if (normalized.subjectValues.length > 0) {
-          assignQueryValue(base, "subject", normalized.subjectValues);
-        }
-        if (normalized.locationValues.length > 0) {
-          assignQueryValue(base, "location", normalized.locationValues);
-        }
-        if (normalized.use) {
-          assignQueryValue(base, "use", normalized.use);
-        }
+        // Fase 2: limpa as chaves do vocabulário B que já estavam na URL (senão
+        // um campo removido do payload ficaria "grudado" na query) e reaplica
+        // via filtersToQuery — mesma função usada por HomePage.vue/api.js.
+        // clearAdvancedFilterKeys devolve um clone (não muta), por isso reatribuímos base.
+        base = { ...clearAdvancedFilterKeys(base), ...filtersToQuery(value) };
         break;
       }
       case "textual":
@@ -299,28 +220,6 @@ export function useSearchQuery() {
     setSearchMode,
     loadSnapshot,
     submitSearch,
-  };
-}
-
-export function getSearchQuerySnapshot(route) {
-  return buildAdvancedFiltersFromQuery(route.query);
-}
-
-/**
- * Extrai filtros ativos da URL independente do searchMode
- * @param {Object} query - Route query object
- * @returns {Object} Objeto com filtros ativos extraídos da URL
- */
-export function extractActiveFilters(query) {
-  const subjects = toArray(query.subject);
-  const subjectTerm = query.subject_term && typeof query.subject_term === 'string' 
-    ? query.subject_term 
-    : null;
-
-  return {
-    subjects: subjects.length > 0 ? subjects : [],
-    subjectTerm: subjectTerm,
-    hasAny: subjects.length > 0 || Boolean(subjectTerm)
   };
 }
 

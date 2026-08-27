@@ -94,8 +94,13 @@
         @update:value="handleDateRangeUpdate" @open="handleDrawerDateOpen" @confirm="confirmDate"
         @clear="handleClearDateFilter" />
 
-      <advanced-search-modal v-model="modalAdvancedSearch" :filters="advancedFilters"
-        @confirm="confirmAdvancedSearch" />
+      <advanced-search-modal 
+        v-model="modalAdvancedSearch" 
+        :filters="advancedFilters"
+        @confirm="confirmAdvancedSearch" 
+        :has-active-filters="hasActiveDrawerTextFilters"
+        @clear="handleClearTextFilters" 
+      />
 
       <Teleport to="body">
         <AlbumPickerModal
@@ -177,6 +182,7 @@ import {
 } from "@/constants/viewModes";
 import { useSearchQuery } from "@/composables/useSearchQuery";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
+import { queryToFilters, filtersToQuery, clearAdvancedFilterKeys, hasAnyAdvancedFilter } from "@/helpers/searchQueryMapping";
 import { sanitizeDateParam } from "@/helpers/dateUtils";
 
 const route = useRoute();
@@ -247,22 +253,12 @@ const collectionScopes = computed(() => {
   return scopes;
 });
 
-const hasActiveDrawerTextFilters = computed(() => {
-  const hasCharacteristics = Object.keys(route.query).some((key) => /^binomial\[.+\]$/.test(key));
-  return Boolean(
-    route.query.q ||
-    route.query.title ||
-    route.query.contributor ||
-    route.query['subject_term[]'] ||
-    route.query['subject[]'] ||
-    route.query['license[]'] ||
-    route.query.date_from ||
-    route.query.date_to ||
-    route.query.work_date_from ||
-    route.query.work_date_to ||
-    hasCharacteristics
-  );
-});
+// Fase 3.1 (retroativa): era uma 4ª cópia manual da mesma checagem, com os
+// mesmos dois problemas das outras 3 (route.query['material_term[]']/etc.,
+// nomes mortos desde a correção do backend; sem 'location'). Ainda é passada
+// como prop pro modal/drawer mesmo eles não lendo mais o valor pra decidir
+// o texto do botão (isso mudou pro botão "Cancelar" fixo).
+const hasActiveDrawerTextFilters = computed(() => hasAnyAdvancedFilter(queryToFilters(route.query)));
 
 const selectedScopeId = ref(null);
 const selectedScope = computed(
@@ -345,13 +341,10 @@ function syncFromSnapshot(mode) {
       selectedColor.value = snapshot.value || null;
       break;
     case "avancada":
-      advancedFilters.value = {
-        ...createDefaultAdvancedFilters(),
-        terms: snapshot.value?.terms || [],
-        locations: snapshot.value?.locations || [],
-        subjects: snapshot.value?.subjects || [],
-        use: snapshot.value?.use || null,
-      };
+      // Fase 2: queryToFilters vem do módulo consolidado (vocabulário B),
+      // fonte única de verdade — antes era a função local buildAdvancedFiltersFromUrl,
+      // e antes disso, snapshot.value (useSearchQuery/vocabulário A, com o bug de autoria).
+      advancedFilters.value = queryToFilters(route.query);
       break;
     default:
       break;
@@ -366,6 +359,16 @@ syncFromSnapshot(searchMode.value);
 // If the URL already contains search parameters, trigger the search on load
 {
   const snapshot = loadSnapshot(searchMode.value);
+  // Fase 1: para "avancada", a fonte de verdade é advancedFilters.value
+  // (já preenchido acima por syncFromSnapshot -> buildAdvancedFiltersFromUrl),
+  // não snapshot.value (vocabulário A).
+  // hasAnyAdvancedFilter vem do módulo consolidado — antes essa checagem era
+  // reimplementada na mão aqui e nunca foi atualizada quando os 5 campos de
+  // vocabulário (materials/techniques/stylePeriods/culturalContexts/
+  // workTypes) foram adicionados: selecionar só um deles fazia a URL mudar e
+  // o chip aparecer (ambos não dependem disso), mas hasValue continuava
+  // false, então performSearch nunca disparava — tela estática, nenhuma
+  // requisição.
   const hasValue =
     snapshot.mode === "textual"
       ? Boolean(snapshot.value)
@@ -374,17 +377,14 @@ syncFromSnapshot(searchMode.value);
         : snapshot.mode === "cor"
           ? Boolean(snapshot.value)
           : snapshot.mode === "avancada"
-            ? Boolean(
-              snapshot.value?.terms?.length ||
-              snapshot.value?.locations?.length ||
-              snapshot.value?.tags?.length ||
-              snapshot.value?.subjects?.length ||
-              snapshot.value?.use
-            )
+            ? hasAnyAdvancedFilter(advancedFilters.value)
             : false;
 
   if (hasValue) {
-    performSearch({ mode: snapshot.mode, value: snapshot.value });
+    performSearch({
+      mode: snapshot.mode,
+      value: snapshot.mode === "avancada" ? advancedFilters.value : snapshot.value,
+    });
   }
 }
 
@@ -427,6 +427,13 @@ watch(
     const mode = searchMode.value;
     syncFromSnapshot(mode);
     const snapshot = loadSnapshot(mode);
+    // Fase 1: para "avancada", usa advancedFilters.value (buildAdvancedFiltersFromUrl),
+    // não snapshot.value (vocabulário A) — mesma correção dos outros 2 pontos.
+    // hasAnyAdvancedFilter vem do módulo consolidado (ver nota no bloco de
+    // inicialização, logo acima) — este é o watcher que reage quando o
+    // usuário confirma um filtro novo, então era aqui que a tela ficava
+    // estática ao selecionar só location/material/technique/stylePeriod/
+    // culturalContext/workType.
     const hasValue =
       snapshot.mode === "textual"
         ? Boolean(snapshot.value)
@@ -435,16 +442,13 @@ watch(
           : snapshot.mode === "cor"
             ? Boolean(snapshot.value)
             : snapshot.mode === "avancada"
-              ? Boolean(
-                snapshot.value?.terms?.length ||
-                snapshot.value?.locations?.length ||
-                snapshot.value?.tags?.length ||
-                snapshot.value?.subjects?.length ||
-                snapshot.value?.use
-              )
+              ? hasAnyAdvancedFilter(advancedFilters.value)
               : false;
     if (hasValue) {
-      performSearch({ mode: snapshot.mode, value: snapshot.value });
+      performSearch({
+        mode: snapshot.mode,
+        value: snapshot.mode === "avancada" ? advancedFilters.value : snapshot.value,
+      });
     } else {
       // Limpa busca ativa quando não há mais filtros (ex: chip 'q' removido)
       hasNoResults.value = false;
@@ -661,166 +665,47 @@ function handleMapSettingsUpdate(value) {
   updateMapSettings(value);
 }
 
-function buildAdvancedFiltersFromUrl() {
-  const query = route.query;
-  const terms = [];
-
-  if (query.q) {
-    terms.push({ field: 'all', value: query.q, label: `Todos os campos: ${query.q}` });
-  }
-  if (query.title) {
-    terms.push({ field: 'title', value: query.title, label: `Título: ${query.title}` });
-  }
-  if (query.contributor) {
-    terms.push({ field: 'author', value: query.contributor, label: `Autoria: ${query.contributor}` });
-  }
-  const rawSubjectTerms = query['subject_term[]'];
-  const subjectTerms = rawSubjectTerms
-    ? (Array.isArray(rawSubjectTerms) ? rawSubjectTerms : [rawSubjectTerms])
-    : [];
-  subjectTerms.forEach((term) => {
-    terms.push({ field: 'tag', value: term, label: `Tag [termo]: ${term}` });
-  });
-
-  // Tags/subjects selecionados (IDs) vindos de subject[] na URL
-  const rawSubjects = query['subject[]'];
-  const tags = rawSubjects
-    ? (Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects])
-    : [];
-
-  // Licenças CC vindas de license[] na URL
-  const rawLicenses = query['license[]'];
-  const licenses = rawLicenses
-    ? (Array.isArray(rawLicenses) ? rawLicenses : [rawLicenses])
-    : [];
-
-  // Período da imagem: extrai o ano do início do date_from/date_to (formato YYYY-MM-DD)
-  const imageStartYear = query.date_from ? parseInt(String(query.date_from).substring(0, 4), 10) : null;
-  const imageEndYear = query.date_to ? parseInt(String(query.date_to).substring(0, 4), 10) : null;
-
-  // Período da obra
-  const workStartYear = query.work_date_from ? parseInt(String(query.work_date_from).substring(0, 4), 10) : null;
-  const workEndYear = query.work_date_to ? parseInt(String(query.work_date_to).substring(0, 4), 10) : null;
-
-  // Características (binomial[chave] = left|right)
-  const characteristics = {};
-  Object.keys(query).forEach((key) => {
-    const match = key.match(/^binomial\[(.+)\]$/);
-    if (match) {
-      const side = query[key];
-      if (side === 'left' || side === 'right') {
-        characteristics[match[1]] = side;
-      }
-    }
-  });
-
-  return {
-    ...createDefaultAdvancedFilters(),
-    terms,
-    tags,
-    licenses,
-    imageStartYear,
-    imageEndYear,
-    workStartYear,
-    workEndYear,
-    characteristics,
-  };
-}
-
 //Abre o modal de busca avançada, sincronizando os filtros com a URL atual
 function openAdvancedSearch() {
-  advancedFilters.value = buildAdvancedFiltersFromUrl();
+  // Fase 2: queryToFilters vem do módulo consolidado (antes: buildAdvancedFiltersFromUrl local).
+  advancedFilters.value = queryToFilters(route.query);
   modalAdvancedSearch.value = true;
 }
 
 function confirmAdvancedSearch(payload) {
-  
   // Mantém advancedFilters sincronizado (necessário para "Editar" reabrir com dados)
   handleAdvancedFiltersUpdate(payload);
 
   // --- Bypass: monta URL diretamente a partir do payload ---
-  const terms = Array.isArray(payload.terms) ? payload.terms : [];
 
-  // Agrupa termos por campo
-  const qValues = [];
-  const titleValues = [];
-  const contributorValues = [];
-  const subjectTermValues = [];
-
-  terms.forEach((term) => {
-    if (!term || typeof term.value !== 'string' || !term.value.trim()) return;
-    const v = term.value.trim();
-    switch (term.field) {
-      case 'title': titleValues.push(v); break;
-      case 'author': contributorValues.push(v); break;
-      case 'tag': subjectTermValues.push(v); break;
-      case 'all':
-      default: qValues.push(v); break;
-    }
-  });
-
-  // Clona query atual e remove chaves do pipeline legado + bypass anteriores
+  // legacyKeys: chaves do pipeline antigo (useSearchQuery/vocabulário A) + searchMode.
+  // A URL pode ter herdado essas chaves de um estado anterior (ex: link salvo antes
+  // desta migração); não fazem parte do vocabulário B, então clearAdvancedFilterKeys
+  // não as cobre — seguem removidas manualmente aqui.
   const legacyKeys = [
     'searchMode', 'author', 'subject_term', 'subject', 'dateStart',
     'dateEnd', 'color', 'location', 'use',
   ];
-  const bypassKeys = ['q', 'title', 'contributor', 'subject_term[]', 'date_from', 'date_to', 'subject[]', 'license[]', 'work_date_from', 'work_date_to'];
-  const newQuery = { ...route.query };
-  [...legacyKeys, ...bypassKeys].forEach((k) => { delete newQuery[k]; });
+  const newQuery = clearAdvancedFilterKeys(route.query);
+  legacyKeys.forEach((k) => { delete newQuery[k]; });
 
-   // Remove características antigas antes de reaplicar as atuais (chaves dinâmicas)
-  Object.keys(newQuery).forEach((key) => {
-    if (/^binomial\[.+\]$/.test(key)) {
-      delete newQuery[key];
-    }
-  });
-
-  // Atribui novos params de bypass
-  if (qValues.length > 0) newQuery.q = qValues.join(' ');
-  if (titleValues.length > 0) newQuery.title = titleValues.join(' ');
-  if (contributorValues.length > 0) newQuery.contributor = contributorValues.join(' ');
-  if (subjectTermValues.length === 1) {
-    newQuery['subject_term[]'] = subjectTermValues[0];
-  } else if (subjectTermValues.length > 1) {
-    newQuery['subject_term[]'] = subjectTermValues;
+  // Reescreve searchMode explicitamente — legacyKeys apaga a chave acima, e
+  // sem ela useRouteQuery('searchMode', 'textual') volta pro default assim
+  // que a navegação resolve. O watcher de route.query em HomePage.vue lê
+  // searchMode.value pra decidir qual branch de hasValue usar; se ele achar
+  // 'textual', só olha route.query.q — os filtros avançados (author, tags,
+  // materials, etc.) nunca disparam performSearch, mesmo estando corretos
+  // na URL e no shape canônico. Bug real, confirmado com Vue Router de
+  // verdade (não só teoria) antes de aplicar esta correção. Só reescreve se
+  // o payload confirmado tem algum filtro — confirmar um modal vazio não
+  // deve deixar "?searchMode=avancada" pendurado numa URL sem nada.
+  if (hasAnyAdvancedFilter(payload)) {
+    newQuery.searchMode = 'avancada';
   }
 
-  // Tags sugeridas (IDs de subjects)
-  const subjectIds = Array.isArray(payload.tags) ? payload.tags.filter((id) => typeof id === 'string' && id.length > 0) : [];
-  if (subjectIds.length === 1) {
-    newQuery['subject[]'] = subjectIds[0];
-  } else if (subjectIds.length > 1) {
-    newQuery['subject[]'] = subjectIds;
-  }
+  // Atribui novos params — mesma função usada em searchImages (api.js) e useSearchQuery.js
+  Object.assign(newQuery, filtersToQuery(payload));
 
-  // Licenças CC
-  const licenseValues = Array.isArray(payload.licenses) ? payload.licenses.filter((l) => typeof l === 'string' && l.length > 0) : [];
-  if (licenseValues.length === 1) {
-    newQuery['license[]'] = licenseValues[0];
-  } else if (licenseValues.length > 1) {
-    newQuery['license[]'] = licenseValues;
-  }
-
-  if (typeof payload.imageStartYear === 'number') {
-    newQuery.date_from = `${payload.imageStartYear}-01-01`;
-  }
-  if (typeof payload.imageEndYear === 'number') {
-    newQuery.date_to = `${payload.imageEndYear}-12-31`;
-  }
-
-  // --- Período da obra → work_date_from / work_date_to ---
-  if (typeof payload.workStartYear === 'number') {
-    newQuery.work_date_from = `${payload.workStartYear}-01-01`;
-  }
-  if (typeof payload.workEndYear === 'number') {
-    newQuery.work_date_to = `${payload.workEndYear}-12-31`;
-  }
-
-   // --- Características → binomial[id] = left|right ---
-  Object.entries(payload.characteristics || {}).forEach(([pairKey, side]) => {
-    newQuery[`binomial[${pairKey}]`] = side;
-  });
-  
   router.push({ query: newQuery });
   modalAdvancedSearch.value = false;
 }
@@ -830,7 +715,8 @@ function handleToolbarViewSubcontrol(payload) {
 }
 
 function handleDrawerTextOpen() {
-  advancedFilters.value = buildAdvancedFiltersFromUrl();
+  // Fase 2: queryToFilters vem do módulo consolidado (antes: buildAdvancedFiltersFromUrl local).
+  advancedFilters.value = queryToFilters(route.query);
 }
 
 function handleDrawerColorOpen() {
@@ -878,111 +764,38 @@ function confirmDate(range) {
 function confirmAdvancedDrawer({ value }) {
   handleAdvancedFiltersUpdate(value);
 
-  // Bypass: build URL directly from payload (same logic as confirmAdvancedSearch)
-  const terms = Array.isArray(value.terms) ? value.terms : [];
-  const qValues = [];
-  const titleValues = [];
-  const contributorValues = [];
-  const subjectTermValues = [];
-
-  terms.forEach((term) => {
-    if (!term || typeof term.value !== 'string' || !term.value.trim()) return;
-    const v = term.value.trim();
-    switch (term.field) {
-      case 'title': titleValues.push(v); break;
-      case 'author': contributorValues.push(v); break;
-      case 'tag': subjectTermValues.push(v); break;
-      case 'all':
-      default: qValues.push(v); break;
-    }
-  });
-
+  // Bypass: mesma lógica de confirmAdvancedSearch, agora via módulo consolidado.
   const legacyKeys = [
     'searchMode', 'author', 'subject_term', 'subject', 'dateStart',
     'dateEnd', 'color', 'location', 'use',
   ];
-  const bypassKeys = [
-    'q', 'title', 'contributor', 'subject_term[]', 'subject[]', 'license[]',
-    'date_from', 'date_to', 'work_date_from', 'work_date_to',
-  ];
-  const newQuery = { ...route.query };
-  [...legacyKeys, ...bypassKeys].forEach((k) => { delete newQuery[k]; });
-
-  // Remove características antigas antes de reaplicar (chaves dinâmicas)
-  Object.keys(newQuery).forEach((key) => {
-    if (/^binomial\[.+\]$/.test(key)) {
-      delete newQuery[key];
-    }
-  });
-
-  if (qValues.length > 0) newQuery.q = qValues.join(' ');
-  if (titleValues.length > 0) newQuery.title = titleValues.join(' ');
-  if (contributorValues.length > 0) newQuery.contributor = contributorValues.join(' ');
-  if (subjectTermValues.length === 1) {
-    newQuery['subject_term[]'] = subjectTermValues[0];
-  } else if (subjectTermValues.length > 1) {
-    newQuery['subject_term[]'] = subjectTermValues;
+  const newQuery = clearAdvancedFilterKeys(route.query);
+  legacyKeys.forEach((k) => { delete newQuery[k]; });
+  // Ver comentário em confirmAdvancedSearch — sem isso, mode volta pro
+  // default 'textual' e o watcher nunca dispara a busca avançada. Só
+  // reescreve se 'value' tem algum filtro.
+  if (hasAnyAdvancedFilter(value)) {
+    newQuery.searchMode = 'avancada';
   }
 
-  const subjectIds = Array.isArray(value.tags)
-    ? value.tags.filter((id) => typeof id === 'string' && id.length > 0)
-    : [];
-  if (subjectIds.length === 1) newQuery['subject[]'] = subjectIds[0];
-  else if (subjectIds.length > 1) newQuery['subject[]'] = subjectIds;
-
-  // Licenças CC
-  const licenseValues = Array.isArray(value.licenses) ? value.licenses.filter((l) => typeof l === 'string' && l.length > 0) : [];
-  if (licenseValues.length === 1) newQuery['license[]'] = licenseValues[0];
-  else if (licenseValues.length > 1) newQuery['license[]'] = licenseValues;
-
-  // Período da imagem
-  if (typeof value.imageStartYear === 'number') {
-    newQuery.date_from = `${value.imageStartYear}-01-01`;
-  }
-  if (typeof value.imageEndYear === 'number') {
-    newQuery.date_to = `${value.imageEndYear}-12-31`;
-  }
-
-  // Período da obra
-  if (typeof value.workStartYear === 'number') {
-    newQuery.work_date_from = `${value.workStartYear}-01-01`;
-  }
-  if (typeof value.workEndYear === 'number') {
-    newQuery.work_date_to = `${value.workEndYear}-12-31`;
-  }
-
-  // Características (binômios)
-  if (value.characteristics && typeof value.characteristics === 'object') {
-    Object.entries(value.characteristics).forEach(([key, side]) => {
-      if (side === 'left' || side === 'right') {
-        newQuery[`binomial[${key}]`] = side;
-      }
-    });
-  }
+  Object.assign(newQuery, filtersToQuery(value));
 
   drawerSearchText.value = false;
   router.push({ query: newQuery });
 }
 
 function handleClearTextFilters() {
-  const query = { ...route.query };
-  delete query.q;
-  delete query.title;
-  delete query.contributor;
-  delete query['subject_term[]'];
-  delete query['subject[]'];
-  delete query['license[]'];
-  delete query.date_from;
-  delete query.date_to;
-  delete query.work_date_from;
-  delete query.work_date_to;
-  Object.keys(query).forEach((key) => {
-    if (/^binomial\[.+\]$/.test(key)) {
-      delete query[key];
-    }
-  });
+  // Fase 3.1 (retroativa): esta função tinha sua própria lista de chaves,
+  // desatualizada desde a correção dos 5 campos de vocabulário (ainda usava
+  // material_term[]/technique_term[]/etc., que não existem mais, e nunca
+  // teve 'location'). Trocada por clearAdvancedFilterKeys — mesma fonte
+  // única de verdade usada em confirmAdvancedSearch/confirmAdvancedDrawer/
+  // handleRemoveChip/handleClearAllFilters.
+  const query = clearAdvancedFilterKeys(route.query);
+  delete query.searchMode;
   advancedFilters.value = createDefaultAdvancedFilters();
   drawerSearchText.value = false;
+  modalAdvancedSearch.value = false;
   router.push({ query });
 }
 
@@ -1015,11 +828,13 @@ function handleAdvancedFiltersUpdate(filters) {
   advancedFilters.value = {
     ...createDefaultAdvancedFilters(),
     terms: filters?.terms || [],
-    // locations: filters?.locations || [],
     tags: filters?.tags || [],
-    subjects: filters?.subjects || [],
-    // use: filters?.use || null,
     licenses: filters?.licenses || [],
+    materials: filters?.materials || [],
+    techniques: filters?.techniques || [],
+    stylePeriods: filters?.stylePeriods || [],
+    culturalContexts: filters?.culturalContexts || [],
+    workTypes: filters?.workTypes || [],
     imageStartYear: filters?.imageStartYear ?? null,
     imageEndYear: filters?.imageEndYear ?? null,
     workStartYear: filters?.workStartYear ?? null,
@@ -1036,27 +851,44 @@ function handleRemoveChip(chip) {
     filters.locations = filters.locations.filter((_, i) => i !== chip.index);
   } else if (chip.type === "tag") {
     filters.tags = filters.tags.filter((_, i) => i !== chip.index);
-  } else if (chip.type === "subject") {
-    filters.subjects = filters.subjects.filter((_, i) => i !== chip.index);
-  } else if (chip.type === "use") {
-    filters.use = null;
+  } else if (chip.type === "material") {
+    filters.materials = filters.materials.filter((_, i) => i !== chip.index);
+  } else if (chip.type === "technique") {
+    filters.techniques = filters.techniques.filter((_, i) => i !== chip.index);
+  } else if (chip.type === "stylePeriod") {
+    filters.stylePeriods = filters.stylePeriods.filter((_, i) => i !== chip.index);
+  } else if (chip.type === "culturalContext") {
+    filters.culturalContexts = filters.culturalContexts.filter((_, i) => i !== chip.index);
+  } else if (chip.type === "workType") {
+    filters.workTypes = filters.workTypes.filter((_, i) => i !== chip.index);
   }
   handleAdvancedFiltersUpdate(filters);
-  submitSearch({ mode: "avancada", value: advancedFilters.value });
 
-  const isEmpty =
-    !advancedFilters.value.terms?.length &&
-    !advancedFilters.value.locations?.length &&
-    !advancedFilters.value.tags?.length &&
-    !advancedFilters.value.subjects?.length &&
-    !advancedFilters.value.use;
-
-  if (isEmpty) {
-    hasNoResults.value = false;
-    activeSearch.value = null;
-  } else {
-    performSearch({ mode: "avancada", value: advancedFilters.value });
+  // Fase 3: escreve a URL diretamente (mesmo padrão de confirmAdvancedSearch/
+  // confirmAdvancedDrawer) e deixa só o watcher de route.query decidir se
+  // dispara ou limpa a busca. Antes disparava DUAS vezes por remoção de chip:
+  // uma vez aqui de forma síncrona (performSearch/activeSearch.value = null)
+  // e outra quando o watcher reagia à mudança de URL feita por submitSearch
+  // (vocabulário A) — a lógica de "isEmpty" já existia no watcher (Fase 1),
+  // então não precisa ser reimplementada aqui.
+  const legacyKeys = [
+    'searchMode', 'author', 'subject_term', 'subject', 'dateStart',
+    'dateEnd', 'color', 'location', 'use',
+  ];
+  const newQuery = clearAdvancedFilterKeys(route.query);
+  legacyKeys.forEach((k) => { delete newQuery[k]; });
+  // Ver comentário em confirmAdvancedSearch — sem isso, mode volta pro
+  // default 'textual' e o watcher para de reconhecer os filtros restantes
+  // como avançados (ex: sobrou 1 chip depois de remover outro, mas a busca
+  // não atualiza). Só reescreve se ainda sobrar filtro: legacyKeys já apagou
+  // a chave acima, então sem filtro nenhum o padrão certo é deixar apagado
+  // mesmo (senão fica "?searchMode=avancada" pendurado numa URL vazia).
+  if (hasAnyAdvancedFilter(advancedFilters.value)) {
+    newQuery.searchMode = 'avancada';
   }
+  Object.assign(newQuery, filtersToQuery(advancedFilters.value));
+
+  router.push({ query: newQuery });
 }
 
 function handleRemoveUrlChip(chip) {
@@ -1093,6 +925,8 @@ function handleRemoveUrlChip(chip) {
     delete query.title;
   } else if (chip.type === "contributor") {
     delete query.contributor;
+  } else if (chip.type === "location_url") {
+    delete query.location;
   } else if (chip.type === "license") {
     const rawLicenses = query['license[]'];
     const existing = rawLicenses
@@ -1106,29 +940,25 @@ function handleRemoveUrlChip(chip) {
     }
   }
 
+  // Mesma lógica de confirmAdvancedSearch/confirmAdvancedDrawer/
+  // handleRemoveChip: se não sobrar nenhum filtro depois da remoção, limpa
+  // searchMode também — sem isso, um chip "rápido" (urlChips, usado quando
+  // só 1 tipo de filtro está ativo — a busca avançada com 2+ tipos mostra o
+  // banner em vez do chip) deixava "?searchMode=avancada" pendurado numa URL
+  // já sem filtro nenhum, já que esta função nunca fazia essa checagem.
+  if (!hasAnyAdvancedFilter(queryToFilters(query))) {
+    delete query.searchMode;
+  }
+
   router.push({ query });
 }
 
 function handleClearAllFilters() {
-  const query = { ...route.query };
-  delete query.q;
-  delete query.date_from;
-  delete query.date_to;
-  delete query.work_date_from;
-  delete query.work_date_to;
-  delete query['subject[]'];
-  delete query['subject_term[]'];
-  delete query.title;
-  delete query.contributor;
-  delete query['license[]'];
-
-  // binomial[chave] tem nome dinâmico, precisa varrer as chaves
-  Object.keys(query).forEach((key) => {
-    if (/^binomial\[.+\]$/.test(key)) {
-      delete query[key];
-    }
-  });
-
+  // Fase 3.1: mesma lista de chaves do módulo consolidado, em vez de uma
+  // 5ª cópia manual (essa era a única que faltava atualizar quando
+  // adicionamos 'location' — motivo pelo qual agora ela lê do módulo).
+  const query = clearAdvancedFilterKeys(route.query);
+  delete query.searchMode;
   router.push({ query });
 }
 
@@ -1156,7 +986,6 @@ function handleClearSearch() {
 }
 
 function handleNewSearch() {
-  hasNoResults.value = false;
   if (isMobile.value) {
     openSearchText();
   } else {
