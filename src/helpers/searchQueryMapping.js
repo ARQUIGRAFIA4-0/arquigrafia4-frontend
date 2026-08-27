@@ -29,6 +29,7 @@ export const ADVANCED_QUERY_KEYS = [
   "q",
   "title",
   "contributor",
+  "location",
   "subject_term[]",
   "subject[]",
   "license[]",
@@ -95,6 +96,9 @@ export function queryToFilters(query = {}) {
   if (query.contributor) {
     terms.push({ field: "author", value: query.contributor, label: `Autoria: ${query.contributor}` });
   }
+  if (query.location) {
+    terms.push({ field: "location", value: query.location, label: `Localização: ${query.location}` });
+  }
   readArrayParam(query, "subject_term[]").forEach((term) => {
     terms.push({ field: "tag", value: term, label: `Tag: ${term}` });
   });
@@ -156,6 +160,7 @@ export function filtersToQuery(filters = {}) {
   const qValues = [];
   const titleValues = [];
   const contributorValues = [];
+  const locationValues = [];
   const subjectTermValues = [];
   const materialValues = [];
   const techniqueValues = [];
@@ -169,6 +174,7 @@ export function filtersToQuery(filters = {}) {
     switch (term.field) {
       case "title": titleValues.push(v); break;
       case "author": contributorValues.push(v); break;
+      case "location": locationValues.push(v); break;
       case "tag": subjectTermValues.push(v); break;
       case "materials": materialValues.push(v); break;
       case "techniques": techniqueValues.push(v); break;
@@ -184,6 +190,7 @@ export function filtersToQuery(filters = {}) {
   if (qValues.length) params.q = qValues.join(" ");
   if (titleValues.length) params.title = titleValues.join(" ");
   if (contributorValues.length) params.contributor = contributorValues.join(" ");
+  if (locationValues.length) params.location = locationValues.join(" ");
 
   const pushArrayParam = (key, values) => {
     if (values.length === 1) params[key] = values[0];
@@ -223,6 +230,12 @@ export function filtersToApiParams(filters = {}, { page = 1 } = {}) {
   return { page, ...filtersToQuery(filters) };
 }
 
+/**
+ * true se o shape canônico (já resolvido por queryToFilters) tem pelo menos
+ * um filtro ativo. Usado por Toolbar.vue/ToolbarMobile.vue para o indicador
+ * de "há filtro de busca ativo" (antes cada arquivo reparseava route.query
+ * campo a campo, numa lista que precisava ser mantida em 2-3 lugares).
+ */
 export function hasAnyAdvancedFilter(filters = {}) {
   return Boolean(
     filters.terms?.length ||

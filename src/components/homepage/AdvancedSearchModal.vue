@@ -331,6 +331,7 @@ const fieldOptions = [
   { value: "author", label: "Autoria", placeholder: "Ex: Le Corbusier" },
   { value: "tag", label: "Tag", placeholder: "Ex: fachada" },
   { value: "title", label: "Título", placeholder: "Ex: Edifício Copan" },
+  { value: "location", label: "Localização", placeholder: "Ex: São Paulo" },
   { value: "aesthetics", label: "Aspectos estéticos", placeholder: "Ex: modernista" },
   { value: "cultural", label: "Contexto cultural", placeholder: "Ex: movimento moderno brasileiro" },
   { value: "typology", label: "Tipologia", placeholder: "Ex: residencial" },

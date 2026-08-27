@@ -308,7 +308,7 @@ const hasActiveUrlFilter = computed(() => hasAnyAdvancedFilter(activeUrlFilters.
 
 // Conta tipos de filtro distintos na URL (date_from + date_to = 1 tipo; arrays acumuláveis contam individualmente)
 const activeFilterTypeCount = computed(() => {
-   const f = activeUrlFilters.value;
+  const f = activeUrlFilters.value;
   // terms já combina q/title/contributor/subject_term/material_term/technique_term/
   // aesthetics_term/cultural_context_term/typology_term — cada um vira 1 item do
   // array, então terms.length já soma "1 por campo escalar presente + N por campo
@@ -423,16 +423,6 @@ const viewIconClass = computed(() =>
 const searchIconClass = computed(() => getSearchIcon(effectiveSearchMode.value));
 
 watch(
-  () => props.advancedFilters?.subjects,
-  (subjects) => {
-    if (Array.isArray(subjects) && subjects.length > 0) {
-      loadSubjectTerms(subjects);
-    }
-  },
-  { immediate: true }
-);
-
-watch(
   () => route.query['subject[]'],
   (rawSubjects) => {
     if (rawSubjects) {
@@ -449,8 +439,7 @@ const hasAdvancedFilters = computed(() => {
   const filters = props.advancedFilters || {};
   return (
     (filters.terms && filters.terms.length > 0) ||
-    (filters.tags && filters.tags.length > 0) ||
-    (filters.subjects && filters.subjects.length > 0)
+    (filters.tags && filters.tags.length > 0)
   );
 });
 
@@ -536,6 +525,16 @@ const urlChips = computed(() => {
     });
   }
 
+  // Chip para ?location=
+  if (route.query.location) {
+    chips.push({
+      uid: `location-url-${route.query.location}`,
+      type: 'location_url',
+      value: route.query.location,
+      label: `Localização: ${route.query.location}`,
+    });
+  }
+
   // Chips para ?license[]= (licenças CC, label direta)
   const rawLicenses = route.query['license[]'];
   const activeLicenses = rawLicenses
@@ -585,21 +584,18 @@ const advancedChips = computed(() => {
     });
   });
 
-  (filters.tags || []).forEach((tag, index) => {
+  // Fase 3.1: tags é o campo canônico (mapeia para subject[]/subject no
+  // backend) — antes havia dois geradores redundantes aqui: um lendo
+  // filters.tags mas mostrando o UUID cru (sem resolver label), e outro lendo
+  // filters.subjects (campo morto, sempre []) que resolvia o label certo via
+  // getTermById mas nunca disparava. Consolidado no único que funciona de
+  // ponta a ponta.
+  (filters.tags || []).forEach((id, index) => {
     chips.push({
-      uid: `tag-${index}-${tag}`,
+      uid: `tag-${index}-${id}`,
       type: "tag",
       index,
-      label: `Tag: ${tag}`,
-    });
-  });
-
-  (filters.subjects || []).forEach((id, index) => {
-    chips.push({
-      uid: `subject-${index}-${id}`,
-      type: "subject",
-      index,
-      label: `Tag: ${getTermById(id)}`,
+      label: isTermLoaded(id) ? `Tag: ${getTermById(id)}` : null,
     });
   });
 

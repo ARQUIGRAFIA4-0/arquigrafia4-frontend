@@ -712,9 +712,9 @@ function confirmAdvancedSearch(payload) {
   const newQuery = clearAdvancedFilterKeys(route.query);
   legacyKeys.forEach((k) => { delete newQuery[k]; });
 
-  // Atribui novos params de bypass — mesma lógica usada em searchImages (api.js)
+  // Atribui novos params — mesma função usada em searchImages (api.js) e useSearchQuery.js
   Object.assign(newQuery, filtersToQuery(payload));
-  
+
   router.push({ query: newQuery });
   modalAdvancedSearch.value = false;
 }
@@ -773,7 +773,7 @@ function confirmDate(range) {
 function confirmAdvancedDrawer({ value }) {
   handleAdvancedFiltersUpdate(value);
 
-  // Bypass: build URL directly from payload (same logic as confirmAdvancedSearch)
+  // Bypass: mesma lógica de confirmAdvancedSearch, agora via módulo consolidado.
   const legacyKeys = [
     'searchMode', 'author', 'subject_term', 'subject', 'dateStart',
     'dateEnd', 'color', 'location', 'use',
@@ -844,7 +844,6 @@ function handleAdvancedFiltersUpdate(filters) {
     ...createDefaultAdvancedFilters(),
     terms: filters?.terms || [],
     tags: filters?.tags || [],
-    subjects: filters?.subjects || [],
     licenses: filters?.licenses || [],
     imageStartYear: filters?.imageStartYear ?? null,
     imageEndYear: filters?.imageEndYear ?? null,
@@ -862,10 +861,6 @@ function handleRemoveChip(chip) {
     filters.locations = filters.locations.filter((_, i) => i !== chip.index);
   } else if (chip.type === "tag") {
     filters.tags = filters.tags.filter((_, i) => i !== chip.index);
-  } else if (chip.type === "subject") {
-    filters.subjects = filters.subjects.filter((_, i) => i !== chip.index);
-  } else if (chip.type === "use") {
-    filters.use = null;
   }
   handleAdvancedFiltersUpdate(filters);
 
@@ -921,6 +916,8 @@ function handleRemoveUrlChip(chip) {
     delete query.title;
   } else if (chip.type === "contributor") {
     delete query.contributor;
+  } else if (chip.type === "location_url") {
+    delete query.location;
   } else if (chip.type === "license") {
     const rawLicenses = query['license[]'];
     const existing = rawLicenses
@@ -948,31 +945,10 @@ function handleRemoveUrlChip(chip) {
 }
 
 function handleClearAllFilters() {
-  const query = { ...route.query };
-  delete query.q;
-  delete query.date_from;
-  delete query.date_to;
-  delete query.work_date_from;
-  delete query.work_date_to;
-  delete query['subject[]'];
-  delete query['subject_term[]'];
-  delete query.title;
-  delete query.contributor;
-  delete query['license[]'];
-  delete query['material_term[]'];
-  delete query['technique_term[]'];
-  delete query['aesthetics_term[]'];
-  delete query['cultural_context_term[]'];
-  delete query['typology_term[]'];
-
-  // binomial[chave] tem nome dinâmico, precisa varrer as chaves
-  Object.keys(query).forEach((key) => {
-    if (/^binomial\[.+\]$/.test(key)) {
-      delete query[key];
-    }
-  });
-
-  router.push({ query });
+  // Fase 3.1: mesma lista de chaves do módulo consolidado, em vez de uma
+  // 5ª cópia manual (essa era a única que faltava atualizar quando
+  // adicionamos 'location' — motivo pelo qual agora ela lê do módulo).
+  router.push({ query: clearAdvancedFilterKeys(route.query) });
 }
 
 function performSearch({ mode, value }) {
