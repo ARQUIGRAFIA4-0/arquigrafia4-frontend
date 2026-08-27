@@ -17,7 +17,7 @@
           <h3 class="h3 pt-2">Termos</h3>
           <div class="input-group">
             <button
-              class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal"
+              class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
               type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"
@@ -37,14 +37,14 @@
             <input
               v-model="textQueryInput"
               type="text"
-              class="form-control border-preto border-end-0"
+              class="form-control border-preto"
               :placeholder="textQueryPlaceholder"
               @keydown.enter="onTermInputEnter"
               @focus="ensureVocabLoaded"
             />
             <button
               v-if="!activeVocabField"
-              class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
+              class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40 d-flex align-items-baseline"
               type="button"
               aria-label="Adicionar termo"
               @click="addSearchTerm"
@@ -56,15 +56,15 @@
           <!-- Sugestões do vocabulário ativo (materiais/técnicas/período de estilo/
                contexto cultural/tipo de obra) — mesmo padrão do autocomplete de
                "Tags da imagem" na edição de metadados: digitar filtra, clicar seleciona. -->
-          <ul v-if="activeVocabField && textQueryInput.trim()" class="list-group vocab-suggestions">
-            <li v-if="isVocabListLoading" class="list-group-item text-muted">
+          <ul v-if="activeVocabField && textQueryInput.trim()" class="list-group dropdown-menu w-100 show vocab-suggestions">
+            <li v-if="isVocabListLoading" class="dropdown-item text-muted">
               <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
               Carregando...
             </li>
-            <li v-else-if="vocabSuggestions.length === 0" class="list-group-item text-muted">
+            <li v-else-if="vocabSuggestions.length === 0" class="dropdown-item text-muted">
               Nenhum resultado para "{{ textQueryInput }}".
             </li>
-            <li v-for="opt in vocabSuggestions" :key="opt.id" class="list-group-item p-0">
+            <li v-for="opt in vocabSuggestions" :key="opt.id" class="dropdown-item p-0">
               <button type="button" class="dropdown-item" @click="selectVocabItem(opt.id)">
                 {{ opt.label }}
               </button>
@@ -787,14 +787,17 @@ watch(
   }
 
   .vocab-suggestions {
-  position: relative;
-  z-index: 5;
-  max-height: 220px;
-  overflow-y: auto;
-  margin-top: 2px;
-  border: 1px solid var(--Cinza_C, #a6a6a6);
-  border-radius: 4px;
-}
+    position: relative;
+    z-index: 5;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .input-group > .form-control:not(:last-child) {
+    border-right: none !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
 
   .list-group-item {
     display: flex;
