@@ -2,6 +2,7 @@ import axios from "@/axios";
 import {
   createEmptyFeatureCollection,
 } from "@/helpers/geojson";
+import { filtersToApiParams } from "@/helpers/searchQueryMapping";
 
 const baseURL = () => axios.defaults.baseURL;
 
@@ -271,7 +272,7 @@ const getGeoJSON = async () => {
  * Busca imagens na API com filtros
  */
 const searchImages = async ({ mode, value, page = 1 } = {}) => {
-  const params = { page };
+  let params = { page };
 
   if (mode === "textual") {
     const q = typeof value === "string" ? value.trim() : "";
@@ -282,36 +283,7 @@ const searchImages = async ({ mode, value, page = 1 } = {}) => {
     if (value?.start) params.date_from = value.start;
     if (value?.end) params.date_to = value.end;
   } else if (mode === "avancada") {
-    const filters = value || {};
-    const terms = Array.isArray(filters.terms) ? filters.terms : [];
-    const tags = Array.isArray(filters.tags) ? filters.tags : [];
-    const subjects = Array.isArray(filters.subjects) ? filters.subjects : [];
-
-    for (const term of terms) {
-      if (!term?.value) continue;
-      switch (term.field) {
-        case "all":
-          params.q = term.value;
-          break;
-        case "author":
-          params.contributor = term.value;
-          break;
-        case "tag":
-          params.subject_term = term.value;
-          break;
-        case "title":
-          params.title = term.value;
-          break;
-      }
-    }
-
-    for (const tag of tags) {
-      if (tag) params.subject_term = tag;
-    }
-
-    if (subjects.length > 0) {
-      params["subject[]"] = subjects.length === 1 ? subjects[0] : subjects;
-    }
+    params = filtersToApiParams(value, { page });
   }
 
   // Only page param means no actual search filters were added
@@ -388,6 +360,23 @@ const fetchImages = async (page = 1, filters = {}) => {
     // Filtro por termos de assunto (partial match)
     if (filters.subjectTerms?.length) {
       params['subject_term[]'] = filters.subjectTerms.length === 1 ? filters.subjectTerms[0] : filters.subjectTerms;
+    }
+
+    // --- Novos campos ---
+    if (filters.materialTerms?.length) {
+      params['material_term[]'] = filters.materialTerms.length === 1 ? filters.materialTerms[0] : filters.materialTerms;
+    }
+    if (filters.techniqueTerms?.length) {
+      params['technique_term[]'] = filters.techniqueTerms.length === 1 ? filters.techniqueTerms[0] : filters.techniqueTerms;
+    }
+    if (filters.aestheticsTerms?.length) {
+      params['aesthetics_term[]'] = filters.aestheticsTerms.length === 1 ? filters.aestheticsTerms[0] : filters.aestheticsTerms;
+    }
+    if (filters.culturalContextTerms?.length) {
+      params['cultural_context_term[]'] = filters.culturalContextTerms.length === 1 ? filters.culturalContextTerms[0] : filters.culturalContextTerms;
+    }
+    if (filters.typologyTerms?.length) {
+      params['typology_term[]'] = filters.typologyTerms.length === 1 ? filters.typologyTerms[0] : filters.typologyTerms;
     }
 
     // Filtro por título (partial match)
@@ -493,6 +482,63 @@ const getSubjectById = async (id) => {
     return null;
   }
 };
+
+/**
+ * Fábrica de funções getById/getAll para os vocabulários VRAC que só têm
+ * rótulo simples ({id, label}) — materiais, técnicas, períodos de estilo,
+ * contextos culturais, tipos de obra. Todos batem em endpoints
+ * `->only(['index', 'show'])`, então só GET é necessário.
+ */
+const makeVocabApi = (resourcePath, labelField = 'label') => ({
+  getById: async (id) => {
+    if (!id || typeof id !== 'string') {
+      console.error(`${resourcePath}: ID inválido`, id);
+      return null;
+    }
+    try {
+      const response = await axios.get(`/api/${resourcePath}/${id}`);
+      const item = response.data?.data;
+      const label = item?.[labelField];
+      if (!label) {
+        console.warn(`${resourcePath} ${id} sem ${labelField} válido`);
+        return null;
+      }
+      return { id, [labelField]: label };
+    } catch (error) {
+      console.error(`Error fetching ${resourcePath} ${id}:`, error);
+      return null;
+    }
+  },
+  getAll: async () => {
+    try {
+      const response = await axios.get(`/api/${resourcePath}`, {
+        headers: { "Content-Type": "application/json" },
+        params: { per_page: -1 },
+      });
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`Error fetching all ${resourcePath}:`, error);
+      return [];
+    }
+  },
+});
+
+const materialsApi = makeVocabApi('vrac-materials');
+const techniquesApi = makeVocabApi('vrac-techniques');
+const stylePeriodsApi = makeVocabApi('vrac-style-periods');
+const culturalContextsApi = makeVocabApi('vrac-cultural-contexts');
+const workTypesApi = makeVocabApi('vrac-work-types');
+
+const getMaterialById = materialsApi.getById;
+const getAllMaterials = materialsApi.getAll;
+const getTechniqueById = techniquesApi.getById;
+const getAllTechniques = techniquesApi.getAll;
+const getStylePeriodById = stylePeriodsApi.getById;
+const getAllStylePeriods = stylePeriodsApi.getAll;
+const getCulturalContextById = culturalContextsApi.getById;
+const getAllCulturalContexts = culturalContextsApi.getAll;
+const getWorkTypeById = workTypesApi.getById;
+const getAllWorkTypes = workTypesApi.getAll;
 
 /**
  * Deleta uma imagem pelo ID
@@ -814,6 +860,16 @@ export const api = {
   getTotalImages,
   getSubjectById,
   getAllSubjects,
+  getMaterialById,
+  getAllMaterials,
+  getTechniqueById,
+  getAllTechniques,
+  getStylePeriodById,
+  getAllStylePeriods,
+  getCulturalContextById,
+  getAllCulturalContexts,
+  getWorkTypeById,
+  getAllWorkTypes,
   deleteImage,
   createCollective,
   getCollective,

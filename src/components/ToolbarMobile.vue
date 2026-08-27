@@ -62,23 +62,21 @@
 <script setup>
 import { computed } from "vue";
 import { useRoute } from "vue-router";
+import { queryToFilters, hasAnyAdvancedFilter } from "@/helpers/searchQueryMapping";
 
 defineOptions({ name: "ToolbarMobile" });
 
 const route = useRoute();
 
+// Fase 2: fonte única de verdade via queryToFilters — antes esta lista de
+// campos era mantida separadamente aqui e em Toolbar.vue (desktop).
+const activeUrlFilters = computed(() => queryToFilters(route.query));
+
 const hasActiveDateFilter = computed(() => Boolean(
-  route.query.date_from || route.query.date_to
+  activeUrlFilters.value.imageStartYear != null || activeUrlFilters.value.imageEndYear != null
 ));
 
-const hasActiveTextFilter = computed(() => Boolean(
-  route.query.q ||
-  route.query.title ||
-  route.query.contributor ||
-  route.query['subject_term[]'] ||
-  route.query['subject[]'] ||
-  route.query['license[]']
-));
+const hasActiveTextFilter = computed(() => hasAnyAdvancedFilter(activeUrlFilters.value));
 
 const props = defineProps({
   viewSelection: {

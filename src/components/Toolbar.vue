@@ -98,12 +98,12 @@
       <!-- Estado avançado derivado da URL (2+ tipos de filtro) -->
       <template v-if="isAdvancedByUrl">
         <span class="toolbar__advanced-label text-preto text-nowrap small">Busca avançada ativa</span>
-        <button class="btn btn-sm btn-outline-secondary btn-icon" type="button" title="Limpar todos os filtros"
+        <button class="btn btn-sm btn-outline-secondary btn-icon btn-clear-search" type="button" title="Limpar todos os filtros"
           aria-label="Limpar todos os filtros" @click="emit('clear-all-filters')">
           <i class="bi bi-x-lg" style="font-size: 0.75rem;" />
           Limpar
         </button>
-        <button class="btn btn-sm btn-secondary btn-icon" type="button" title="Editar busca avançada"
+        <button class="btn btn-sm btn-secondary btn-icon btn-edit-search" type="button" title="Editar busca avançada"
           aria-label="Editar busca avançada" @click="emit('open-advanced-search')">
           <i class="bi bi-pencil-square" style="font-size: 0.75rem;" />
           Editar
@@ -219,6 +219,14 @@ import {
 } from "@/constants/viewModes";
 import { getSearchIcon, searchOptions } from "@/constants/searchOptions";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
+import {
+  useMaterialTerms,
+  useTechniqueTerms,
+  useStylePeriodTerms,
+  useCulturalContextTerms,
+  useWorkTypeTerms,
+} from "@/composables/useVocabTerms";
+import { queryToFilters, hasAnyAdvancedFilter } from "@/helpers/searchQueryMapping";
 
 defineOptions({ name: "AppToolbar" });
 
@@ -227,6 +235,11 @@ const router = useRouter();
 const authStore = useAuthStore();
 const { isLoggedIn } = storeToRefs(authStore);
 const { getTermById, loadSubjectTerms, isTermLoaded } = useSubjectTerms();
+const { getTermById: getMaterialTerm, isTermLoaded: isMaterialTermLoaded, loadTerms: loadMaterialTerms } = useMaterialTerms();
+const { getTermById: getTechniqueTerm, isTermLoaded: isTechniqueTermLoaded, loadTerms: loadTechniqueTerms } = useTechniqueTerms();
+const { getTermById: getStylePeriodTerm, isTermLoaded: isStylePeriodTermLoaded, loadTerms: loadStylePeriodTerms } = useStylePeriodTerms();
+const { getTermById: getCulturalContextTerm, isTermLoaded: isCulturalContextTermLoaded, loadTerms: loadCulturalContextTerms } = useCulturalContextTerms();
+const { getTermById: getWorkTypeTerm, isTermLoaded: isWorkTypeTermLoaded, loadTerms: loadWorkTypeTerms } = useWorkTypeTerms();
 
 const props = defineProps({
   searchMode: {
@@ -283,60 +296,53 @@ const emit = defineEmits([
   "update:addToCollectionMode",
 ]);
 
-// Detecta pares de características ativos na URL (binomial[chave]=left|right)
-const activeCharacteristicEntries = computed(() => {
-  return Object.keys(route.query)
-    .map((key) => {
-      const match = key.match(/^binomial\[(.+)\]$/);
-      if (!match) return null;
-      const side = route.query[key];
-      if (side !== 'left' && side !== 'right') return null;
-      return { key: match[1], side, queryKey: key };
-    })
-    .filter(Boolean);
+// Fase 2: fonte única de verdade para "quais filtros de URL estão ativos" —
+// antes cada um dos 3 computeds abaixo reparseava route.query campo a campo,
+// e activeFilterTypeCount tinha um bug real: checkAndAdd recebia `count` por
+// valor (não por referência) e o incremento era descartado — na prática,
+// subject[]/subject_term[]/license[]/material_term[]/technique_term[]/
+// aesthetics_term[]/cultural_context_term[]/typology_term[] nunca contavam
+// para isAdvancedByUrl, então filtrar só por esses campos nunca acionava o
+// banner "Busca avançada ativa".
+const activeUrlFilters = computed(() => queryToFilters(route.query));
+
+// Bug corrigido: materials/techniques/stylePeriods/culturalContexts/workTypes
+// não tinham chip de bypass (urlChips) nem entravam nessa contagem — sozinhos,
+// isAdvancedByUrl ficava false, urlChips ficava vazio, e nenhuma das áreas de
+// input batia (nenhuma delas cobre esse estado), deixando a toolbar "fechada"
+// (nem banner de avançada, nem chip, nem input nenhum visível). Mesmo
+// raciocínio de work_date/characteristics: força modo avançado porque não
+// existe representação simples de bypass pra esses campos.
+const hasWorkOrCharacteristicsFilter = computed(() => {
+  const f = activeUrlFilters.value;
+  return (
+    f.workStartYear != null ||
+    f.workEndYear != null ||
+    Object.keys(f.characteristics).length > 0 ||
+    f.materials.length > 0 ||
+    f.techniques.length > 0 ||
+    f.stylePeriods.length > 0 ||
+    f.culturalContexts.length > 0 ||
+    f.workTypes.length > 0
+  );
 });
 
-const hasWorkOrCharacteristicsFilter = computed(() =>
-  Boolean(route.query.work_date_from || route.query.work_date_to) ||
-  activeCharacteristicEntries.value.length > 0
-);
-
 // Detecta se há filtro de URL ativo
-const hasActiveUrlFilter = computed(() => Boolean(
-  route.query.q ||
-  route.query.date_from ||
-  route.query.date_to ||
-  route.query.work_date_from ||
-  route.query.work_date_to ||
-  route.query['subject[]'] ||
-  route.query['subject_term[]'] ||
-  route.query.title ||
-  route.query.contributor ||
-  route.query['license[]'] ||
-  activeCharacteristicEntries.value.length > 0
-));
+const hasActiveUrlFilter = computed(() => hasAnyAdvancedFilter(activeUrlFilters.value));
 
 // Conta tipos de filtro distintos na URL (date_from + date_to = 1 tipo; arrays acumuláveis contam individualmente)
 const activeFilterTypeCount = computed(() => {
-  let count = 0;
-  if (route.query.q) count++;
-  if (route.query.date_from || route.query.date_to) count++;
-  if (route.query.work_date_from || route.query.work_date_to) count++;
-  if (route.query.title) count++;
-  if (route.query.contributor) count++;
-  const rawSubjects = route.query['subject[]'];
-  if (rawSubjects) {
-    count += Array.isArray(rawSubjects) ? rawSubjects.length : 1;
-  }
-  const rawSubjectTerms = route.query['subject_term[]'];
-  if (rawSubjectTerms) {
-    count += Array.isArray(rawSubjectTerms) ? rawSubjectTerms.length : 1;
-  }
-  const rawLicenses = route.query['license[]'];
-  if (rawLicenses) {
-    count += Array.isArray(rawLicenses) ? rawLicenses.length : 1;
-  }
-  count += activeCharacteristicEntries.value.length;
+  const f = activeUrlFilters.value;
+  // terms já combina q/title/contributor/subject_term/location — cada um vira
+  // 1 item do array, então terms.length já soma "1 por campo escalar presente
+  // + N por campo que acumula múltiplos valores", igual à intenção original
+  // do checkAndAdd.
+  let count = f.terms.length + f.tags.length + f.licenses.length
+    + f.materials.length + f.techniques.length + f.stylePeriods.length
+    + f.culturalContexts.length + f.workTypes.length;
+  if (f.imageStartYear != null || f.imageEndYear != null) count++;
+  if (f.workStartYear != null || f.workEndYear != null) count++;
+  count += Object.keys(f.characteristics).length;
   return count;
 });
 
@@ -443,16 +449,6 @@ const viewIconClass = computed(() =>
 const searchIconClass = computed(() => getSearchIcon(effectiveSearchMode.value));
 
 watch(
-  () => props.advancedFilters?.subjects,
-  (subjects) => {
-    if (Array.isArray(subjects) && subjects.length > 0) {
-      loadSubjectTerms(subjects);
-    }
-  },
-  { immediate: true }
-);
-
-watch(
   () => route.query['subject[]'],
   (rawSubjects) => {
     if (rawSubjects) {
@@ -465,14 +461,45 @@ watch(
   { immediate: true }
 );
 
+// Carrega os labels dos 5 vocabulários novos (materiais, técnicas, período de
+// estilo, contexto cultural, tipo de obra) sempre que os filtros ativos
+// mudarem, pra advancedChips já ter o texto pronto ao invés do UUID cru.
+watch(
+  () => props.advancedFilters?.materials,
+  (ids) => { if (Array.isArray(ids) && ids.length > 0) loadMaterialTerms(ids); },
+  { immediate: true }
+);
+watch(
+  () => props.advancedFilters?.techniques,
+  (ids) => { if (Array.isArray(ids) && ids.length > 0) loadTechniqueTerms(ids); },
+  { immediate: true }
+);
+watch(
+  () => props.advancedFilters?.stylePeriods,
+  (ids) => { if (Array.isArray(ids) && ids.length > 0) loadStylePeriodTerms(ids); },
+  { immediate: true }
+);
+watch(
+  () => props.advancedFilters?.culturalContexts,
+  (ids) => { if (Array.isArray(ids) && ids.length > 0) loadCulturalContextTerms(ids); },
+  { immediate: true }
+);
+watch(
+  () => props.advancedFilters?.workTypes,
+  (ids) => { if (Array.isArray(ids) && ids.length > 0) loadWorkTypeTerms(ids); },
+  { immediate: true }
+);
+
 const hasAdvancedFilters = computed(() => {
   const filters = props.advancedFilters || {};
   return (
     (filters.terms && filters.terms.length > 0) ||
-    (filters.locations && filters.locations.length > 0) ||
     (filters.tags && filters.tags.length > 0) ||
-    (filters.subjects && filters.subjects.length > 0) ||
-    Boolean(filters.use)
+    (filters.materials && filters.materials.length > 0) ||
+    (filters.techniques && filters.techniques.length > 0) ||
+    (filters.stylePeriods && filters.stylePeriods.length > 0) ||
+    (filters.culturalContexts && filters.culturalContexts.length > 0) ||
+    (filters.workTypes && filters.workTypes.length > 0)
   );
 });
 
@@ -558,6 +585,16 @@ const urlChips = computed(() => {
     });
   }
 
+  // Chip para ?location=
+  if (route.query.location) {
+    chips.push({
+      uid: `location-url-${route.query.location}`,
+      type: 'location_url',
+      value: route.query.location,
+      label: `Localização: ${route.query.location}`,
+    });
+  }
+
   // Chips para ?license[]= (licenças CC, label direta)
   const rawLicenses = route.query['license[]'];
   const activeLicenses = rawLicenses
@@ -571,6 +608,13 @@ const urlChips = computed(() => {
       label: `Licença: ${licenseValue}`,
     });
   });
+
+  // Nota: materiais/técnicas/período de estilo/contexto cultural/tipo de obra
+  // não têm chip aqui — são arrays de UUID (precisam resolver label via
+  // composable, como advancedChips já faz) e, na prática, sempre forçam
+  // isAdvancedByUrl=true (ver hasWorkOrCharacteristicsFilter), então o
+  // template mostra o banner de busca avançada em vez de urlChips quando
+  // qualquer um deles está ativo — este bloco nunca seria alcançado.
 
   return chips;
 });
@@ -588,43 +632,65 @@ const advancedChips = computed(() => {
     });
   });
 
-  (filters.locations || []).forEach((location, index) => {
+  // Fase 3.1: tags é o campo canônico (mapeia para subject[]/subject no
+  // backend) — antes havia dois geradores redundantes aqui: um lendo
+  // filters.tags mas mostrando o UUID cru (sem resolver label), e outro lendo
+  // filters.subjects (campo morto, sempre []) que resolvia o label certo via
+  // getTermById mas nunca disparava. Consolidado no único que funciona de
+  // ponta a ponta.
+  (filters.tags || []).forEach((id, index) => {
     chips.push({
-      uid: `location-${index}-${location}`,
-      type: "location",
-      index,
-      label: `Localização: ${location}`,
-    });
-  });
-
-  (filters.tags || []).forEach((tag, index) => {
-    chips.push({
-      uid: `tag-${index}-${tag}`,
+      uid: `tag-${index}-${id}`,
       type: "tag",
       index,
-      label: `Tag: ${tag}`,
+      label: isTermLoaded(id) ? `Tag: ${getTermById(id)}` : null,
     });
   });
 
-  (filters.subjects || []).forEach((id, index) => {
+  (filters.materials || []).forEach((id, index) => {
     chips.push({
-      uid: `subject-${index}-${id}`,
-      type: "subject",
+      uid: `material-${index}-${id}`,
+      type: "material",
       index,
-      label: `Tag: ${getTermById(id)}`,
+      label: isMaterialTermLoaded(id) ? `Material: ${getMaterialTerm(id)}` : null,
     });
   });
 
-  if (filters.use) {
+  (filters.techniques || []).forEach((id, index) => {
     chips.push({
-      uid: `use-${filters.use}`,
-      type: "use",
-      label:
-        filters.use === "commercial"
-          ? "Uso: Permite uso comercial"
-          : "Uso: Não permite uso comercial",
+      uid: `technique-${index}-${id}`,
+      type: "technique",
+      index,
+      label: isTechniqueTermLoaded(id) ? `Técnica: ${getTechniqueTerm(id)}` : null,
     });
-  }
+  });
+
+  (filters.stylePeriods || []).forEach((id, index) => {
+    chips.push({
+      uid: `style-period-${index}-${id}`,
+      type: "stylePeriod",
+      index,
+      label: isStylePeriodTermLoaded(id) ? `Período de estilo: ${getStylePeriodTerm(id)}` : null,
+    });
+  });
+
+  (filters.culturalContexts || []).forEach((id, index) => {
+    chips.push({
+      uid: `cultural-context-${index}-${id}`,
+      type: "culturalContext",
+      index,
+      label: isCulturalContextTermLoaded(id) ? `Contexto cultural: ${getCulturalContextTerm(id)}` : null,
+    });
+  });
+
+  (filters.workTypes || []).forEach((id, index) => {
+    chips.push({
+      uid: `work-type-${index}-${id}`,
+      type: "workType",
+      index,
+      label: isWorkTypeTermLoaded(id) ? `Tipo de obra: ${getWorkTypeTerm(id)}` : null,
+    });
+  });
 
   return chips;
 });
@@ -821,10 +887,14 @@ function onViewSubcontrol() {
   .btn {
     border: none;
   }
+  
+  .btn-clear-search, .btn-edit-search {
+    width: auto !important;
+  }
 }
 
 .toolbar-acervo__panel--search {
-  padding: var(--p, 12px) var(--pp, 8px);
+  padding: var(--ppp, 4px) var(--pp, 8px);
   min-width: 0;
 }
 

@@ -13,18 +13,18 @@
       <div class="modal-body">
 
         <!-- Termos -->
-        <div class="mb-3">
+        <div class="mb-5">
           <h3 class="h3 pt-2">Termos</h3>
           <div class="input-group">
             <button
-              class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal"
+              class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
               type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"
             >
               {{ selectedFieldLabel }}
             </button>
-            <ul class="dropdown-menu menu-light">
+            <ul class="dropdown-menu menu-light dropdown-menu-scroll">
               <li v-for="opt in fieldOptions" :key="opt.value">
                 <button
                   class="dropdown-item"
@@ -37,12 +37,14 @@
             <input
               v-model="textQueryInput"
               type="text"
-              class="form-control border-preto border-end-0"
-              placeholder="Texto exemplo"
-              @keydown.enter="addSearchTerm"
+              class="form-control border-preto"
+              :placeholder="textQueryPlaceholder"
+              @keydown.enter="onTermInputEnter"
+              @focus="ensureVocabLoaded"
             />
             <button
-              class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
+              v-if="!activeVocabField"
+              class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40 d-flex align-items-baseline"
               type="button"
               aria-label="Adicionar termo"
               @click="addSearchTerm"
@@ -51,10 +53,30 @@
             </button>
           </div>
 
+          <!-- Sugestões do vocabulário ativo (materiais/técnicas/período de estilo/
+               contexto cultural/tipo de obra) — mesmo padrão do autocomplete de
+               "Tags da imagem" na edição de metadados: digitar filtra, clicar seleciona. -->
+          <ul v-if="activeVocabField && textQueryInput.trim()" class="list-group dropdown-menu w-100 show vocab-suggestions">
+            <li v-if="isVocabListLoading" class="dropdown-item text-muted">
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+              Carregando...
+            </li>
+            <li v-else-if="vocabSuggestions.length === 0" class="dropdown-item text-muted">
+              Nenhum resultado para "{{ textQueryInput }}".
+            </li>
+            <li v-for="opt in vocabSuggestions" :key="opt.id" class="dropdown-item p-0">
+              <button type="button" class="dropdown-item" @click="selectVocabItem(opt.id)">
+                {{ opt.label }}
+              </button>
+            </li>
+          </ul>
 
-          <!-- Listagem de termos adicionados e tags selecionadas (vindas do ViewGrid, etc.) -->
+
+          <!-- Listagem de termos adicionados e tags/vocabulários selecionados (vindas do ViewGrid, etc.) -->
           <div class="list-group-item">
-            <span v-if="searchTerms.length === 0 && extraSelectedTags.length === 0" class="text-muted"
+            <span
+              v-if="searchTerms.length === 0 && extraSelectedTags.length === 0 && vocabChips.length === 0"
+              class="text-muted"
               >Nenhum termo adicionado.</span
             >
             <button
@@ -78,12 +100,27 @@
               class="btn btn-primary btn-sm btn-tag"
             >
               <span v-if="!isTermLoaded(id)" class="spinner-border spinner-border-sm" role="status" aria-label="Carregando..." />
-              <template v-else>Tag [id]: {{ getTermById(id) }}</template>
+              <template v-else>{{ getTermById(id) }}</template>
               <button
                 type="button"
                 class="btn-close ms-1"
                 aria-label="Remover tag"
                 @click.stop="toggleTag(id)"
+              ></button>
+            </button>
+            <button
+              v-for="chip in vocabChips"
+              :key="chip.key"
+              type="button"
+              class="btn btn-primary btn-sm btn-tag"
+            >
+              <span v-if="!chip.isLoaded" class="spinner-border spinner-border-sm" role="status" aria-label="Carregando..." />
+              <template v-else>{{ chip.label }}</template>
+              <button
+                type="button"
+                class="btn-close ms-1"
+                :aria-label="`Remover ${chip.label || 'filtro'}`"
+                @click.stop="removeVocabItem(chip.fieldKey, chip.id)"
               ></button>
             </button>
           </div>
@@ -279,9 +316,9 @@
         <button
           type="button"
           class="btn btn-outline-secondary btn-sm w-100"
-          @click="close"
+          @click="cancel"
         >
-          Cancelar
+          Limpar
         </button>
         <button
           type="button"
@@ -300,6 +337,13 @@ import { computed, onUnmounted, ref, watch } from "vue";
 import toggleArrayItem from "@/helpers/toggleArrayItem";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
+import {
+  useMaterialTerms,
+  useTechniqueTerms,
+  useStylePeriodTerms,
+  useCulturalContextTerms,
+  useWorkTypeTerms,
+} from "@/composables/useVocabTerms";
 import { CC_LICENSES } from "@/constants/creativeCommonsLicenses";
 import { CHARACTERISTIC_PAIRS } from "@/constants/characteristicPairs";
 
@@ -316,36 +360,37 @@ const props = defineProps({
     type: Object,
     default: () => createDefaultAdvancedFilters(),
   },
+  hasActiveFilters: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-
-const emit = defineEmits(["update:modelValue", "confirm"]);
+const emit = defineEmits(["update:modelValue", "confirm", "clear"]);
 
 const { getTermById, isTermLoaded, loadSubjectTerms } = useSubjectTerms();
 
 const fieldOptions = [
-  { value: "all", label: "Todos os campos" },
-  { value: "author", label: "Autoria" },
-  { value: "tag", label: "Tag" },
-  { value: "title", label: "Título" },
+  { value: "all", label: "Todos os campos", placeholder: "Texto exemplo" },
+  { value: "author", label: "Autoria", placeholder: "Ex: Le Corbusier" },
+  { value: "tag", label: "Tag", placeholder: "Ex: fachada" },
+  { value: "title", label: "Título", placeholder: "Ex: Edifício Copan" },
+  { value: "location", label: "Localização", placeholder: "Ex: São Paulo" },
+  { value: "materials", label: "Materiais", placeholder: "Ex: concreto" },
+  { value: "techniques", label: "Técnicas de construção", placeholder: "Ex: alvenaria" },
+  { value: "stylePeriod", label: "Período de estilo", placeholder: "Ex: moderno" },
+  { value: "culturalContext", label: "Contexto cultural", placeholder: "Ex: modernismo brasileiro" },
+  { value: "workType", label: "Tipo de obra", placeholder: "Ex: residencial" },
 ];
-
+// const fieldOptions = [
+//   { value: "all", label: "Todos os campos" },
+//   { value: "author", label: "Autoria" },
+//   { value: "tag", label: "Tag" },
+//   { value: "title", label: "Título" },
+// ];
 const selectedField = ref("all");
 const textQueryInput = ref("");
 const searchTerms = ref([]);
-// const locationSuggestions = [
-//   "São Paulo",
-//   "Rio de Janeiro",
-//   "Brasilia",
-//   "Jaú",
-//   "Ribeirão Preto",
-//   "Londrina",
-//   "Mauá",
-//   "Itu",
-//   "Ouro Preto",
-//   "Praia Grande",
-// ];
-// const selectedLocations = ref([]);
 const tagSuggestions = [
   { id: "f5c68f66-549f-43db-96b2-ac34ebbd9f9b", label: "alvenaria" },
   { id: "019adaf3-b4f0-7139-be65-66b693091ff5", label: "concreto" },
@@ -360,20 +405,115 @@ const tagSuggestions = [
 ];
 const knownTagIds = new Set(tagSuggestions.map((t) => t.id));
 const selectedTags = ref([]);
-// const selectedUse = ref(null);
 const selectedLicenses = ref([]);
-
-//----------------
+const selectedMaterials = ref([]);
+const selectedTechniques = ref([]);
+const selectedStylePeriods = ref([]);
+const selectedCulturalContexts = ref([]);
+const selectedWorkTypes = ref([]);
 const currentYear = new Date().getFullYear();
-
 const imageStartYear = ref(null);
 const imageEndYear = ref(null);
-
 const workStartYear = ref(null);
 const workEndYear = ref(null);
-
 const selectedCharacteristics = ref({});
+const textQueryPlaceholder = computed(
+  () => fieldOptions.find((f) => f.value === selectedField.value)?.placeholder || "Texto exemplo"
+);
 
+// Integração dos 5 vocabulários VRAC (materiais, técnicas, período de estilo,
+// contexto cultural, tipo de obra) dentro do MESMO input de "Termos" — em vez
+// de seções separadas, ao selecionar um desses campos no dropdown, o input
+// vira um autocomplete (mesmo padrão de "Tags da imagem" na edição de
+// metadados): digitar filtra allItems (carregado uma vez), clicar seleciona.
+const materialTermsApi = useMaterialTerms();
+const techniqueTermsApi = useTechniqueTerms();
+const stylePeriodTermsApi = useStylePeriodTerms();
+const culturalContextTermsApi = useCulturalContextTerms();
+const workTypeTermsApi = useWorkTypeTerms();
+
+const VOCAB_FIELD_CONFIG = {
+  materials: { selected: selectedMaterials, api: materialTermsApi, chipLabel: "Material" },
+  techniques: { selected: selectedTechniques, api: techniqueTermsApi, chipLabel: "Técnica" },
+  stylePeriod: { selected: selectedStylePeriods, api: stylePeriodTermsApi, chipLabel: "Período de estilo" },
+  culturalContext: { selected: selectedCulturalContexts, api: culturalContextTermsApi, chipLabel: "Contexto cultural" },
+  workType: { selected: selectedWorkTypes, api: workTypeTermsApi, chipLabel: "Tipo de obra" },
+};
+
+// Campo de vocabulário atualmente selecionado no dropdown (null se for um
+// campo de texto livre comum, como "all"/"title"/"author"/"tag"/"location").
+const activeVocabField = computed(() => VOCAB_FIELD_CONFIG[selectedField.value] || null);
+
+const isVocabListLoading = ref(false);
+
+async function ensureVocabLoaded() {
+  const field = activeVocabField.value;
+  if (!field || field.api.allItems.value.length > 0) return;
+  isVocabListLoading.value = true;
+  try {
+    await field.api.loadAll();
+  } finally {
+    isVocabListLoading.value = false;
+  }
+}
+
+// Carrega a lista assim que o campo muda pra um vocabulário — não espera o
+// foco no input, pra já ter as sugestões prontas na primeira letra digitada.
+watch(activeVocabField, (field) => {
+  if (field) ensureVocabLoaded();
+});
+
+const vocabSuggestions = computed(() => {
+  const field = activeVocabField.value;
+  const q = textQueryInput.value.trim().toLowerCase();
+  if (!field || !q) return [];
+  return field.api.allItems.value
+    .filter((item) => !field.selected.value.includes(item.id))
+    .filter((item) => item.label.toLowerCase().includes(q))
+    .slice(0, 20);
+});
+
+function selectVocabItem(id) {
+  const field = activeVocabField.value;
+  if (!field) return;
+  if (!field.selected.value.includes(id)) {
+    field.selected.value = [...field.selected.value, id];
+  }
+  textQueryInput.value = "";
+}
+
+function removeVocabItem(fieldKey, id) {
+  const field = VOCAB_FIELD_CONFIG[fieldKey];
+  if (!field) return;
+  field.selected.value = field.selected.value.filter((existingId) => existingId !== id);
+}
+
+// Chips únicos pros 5 vocabulários (em vez de 5 blocos de template quase
+// idênticos) — cada item sabe se já resolveu o label (getTermById) ou ainda
+// está carregando.
+const vocabChips = computed(() =>
+  Object.entries(VOCAB_FIELD_CONFIG).flatMap(([fieldKey, field]) =>
+    field.selected.value.map((id) => ({
+      key: `${fieldKey}-${id}`,
+      fieldKey,
+      id,
+      isLoaded: field.api.isTermLoaded(id),
+      label: field.api.isTermLoaded(id) ? `${field.chipLabel}: ${field.api.getTermById(id)}` : null,
+    }))
+  )
+);
+
+// Enter no input: se o campo ativo é um vocabulário, seleciona a 1ª sugestão
+// (não existe "adicionar texto livre" pra esses campos); senão, comportamento
+// de sempre (addSearchTerm).
+function onTermInputEnter() {
+  if (activeVocabField.value) {
+    const first = vocabSuggestions.value[0];
+    if (first) selectVocabItem(first.id);
+  } else {
+    addSearchTerm();
+  }
+}
 
 function toggleCharacteristic(pairKey, side) {
   // Clicar no lado já selecionado desmarca (volta ao neutro, nenhum lado
@@ -441,8 +581,6 @@ function validateYearRange(start, end, changedField, setStart, setEnd) {
   setEnd(normalizedEnd);
 }
 
-//----------------
-
 // Tags selecionadas que não estão nas sugestões hardcoded (vindas do ViewGrid, etc.)
 const extraSelectedTags = computed(() =>
   selectedTags.value.filter((id) => !knownTagIds.has(id))
@@ -455,6 +593,72 @@ const selectedFieldLabel = computed(() => {
 
 function setSelectedField(value) {
   selectedField.value = value;
+  textQueryInput.value = "";
+}
+
+function close() {
+  emit("update:modelValue", false);
+}
+
+function handleClear() {
+  syncFromFilters(createDefaultAdvancedFilters());
+  emit("clear");
+}
+
+// Cancelar: limpa os campos (local + emite pro pai limpar a URL/busca ativa)
+// e fecha o modal — antes, o botão só fechava quando não havia filtro ativo,
+// e quando havia, limpava mas deixava o modal aberto.
+function cancel() {
+  handleClear();
+  close();
+}
+
+function addSearchTerm() {
+  const value = textQueryInput.value.trim();
+  if (!value) return;
+  const fieldLabel =
+    fieldOptions.find((f) => f.value === selectedField.value)?.label || "Termo";
+  searchTerms.value.push({
+    field: selectedField.value,
+    value,
+    label: `${fieldLabel}: ${value}`,
+  });
+  textQueryInput.value = "";
+}
+
+function removeSearchTerm(index) {
+  searchTerms.value.splice(index, 1);
+}
+
+function toggleTag(tag) {
+  toggleArrayItem(selectedTags.value, tag);
+}
+
+function toggleLicense(label) {
+  toggleArrayItem(selectedLicenses.value, label);
+}
+
+function confirm() {
+  const payload = {
+    terms: searchTerms.value,
+    tags: selectedTags.value,
+    licenses: selectedLicenses.value,
+    materials: selectedMaterials.value,
+    techniques: selectedTechniques.value,
+    stylePeriods: selectedStylePeriods.value,
+    culturalContexts: selectedCulturalContexts.value,
+    workTypes: selectedWorkTypes.value,
+
+    imageStartYear: imageStartYear.value,
+    imageEndYear: imageEndYear.value,
+
+    workStartYear: workStartYear.value,
+    workEndYear: workEndYear.value,
+
+    characteristics: { ...selectedCharacteristics.value },
+  };
+  emit("confirm", payload);
+  emit("update:modelValue", false);
 }
 
 function syncFromFilters(filters) {
@@ -464,10 +668,18 @@ function syncFromFilters(filters) {
     value: term.value,
     label: term.label,
   }));
-  // selectedLocations.value = [...(safeFilters.locations || [])];
   selectedTags.value = [...(safeFilters.tags || [])];
-  // selectedUse.value = safeFilters.use || null;
   selectedLicenses.value = [...(safeFilters.licenses || [])];
+  selectedMaterials.value = [...(safeFilters.materials || [])];
+  selectedTechniques.value = [...(safeFilters.techniques || [])];
+  selectedStylePeriods.value = [...(safeFilters.stylePeriods || [])];
+  selectedCulturalContexts.value = [...(safeFilters.culturalContexts || [])];
+  selectedWorkTypes.value = [...(safeFilters.workTypes || [])];
+  materialTermsApi.loadTerms(selectedMaterials.value);
+  techniqueTermsApi.loadTerms(selectedTechniques.value);
+  stylePeriodTermsApi.loadTerms(selectedStylePeriods.value);
+  culturalContextTermsApi.loadTerms(selectedCulturalContexts.value);
+  workTypeTermsApi.loadTerms(selectedWorkTypes.value);
   imageStartYear.value = safeFilters.imageStartYear || null;
   imageEndYear.value = safeFilters.imageEndYear || null;
   workStartYear.value = safeFilters.workStartYear || null;
@@ -507,67 +719,6 @@ watch(
   },
   { deep: true }
 );
-
-function close() {
-  emit("update:modelValue", false);
-}
-
-function addSearchTerm() {
-  const value = textQueryInput.value.trim();
-  if (!value) return;
-  const fieldLabel =
-    fieldOptions.find((f) => f.value === selectedField.value)?.label || "Termo";
-  searchTerms.value.push({
-    field: selectedField.value,
-    value,
-    label: `${fieldLabel}: ${value}`,
-  });
-  textQueryInput.value = "";
-}
-
-function removeSearchTerm(index) {
-  searchTerms.value.splice(index, 1);
-}
-
-// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
-// eslint-disable-next-line no-unused-vars
-// function toggleLocation(city) {
-//   toggleArrayItem(selectedLocations.value, city);
-// }
-
-function toggleTag(tag) {
-  toggleArrayItem(selectedTags.value, tag);
-}
-
-function toggleLicense(label) {
-  toggleArrayItem(selectedLicenses.value, label);
-}
-
-// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
-// eslint-disable-next-line no-unused-vars
-// function setUse(use) {
-//   selectedUse.value = selectedUse.value === use ? null : use;
-// }
-
-function confirm() {
-  const payload = {
-    terms: searchTerms.value,
-    // locations: selectedLocations.value,
-    tags: selectedTags.value,
-    // use: selectedUse.value,
-    licenses: selectedLicenses.value,
-
-    imageStartYear: imageStartYear.value,
-    imageEndYear: imageEndYear.value,
-
-    workStartYear: workStartYear.value,
-    workEndYear: workEndYear.value,
-
-    characteristics: { ...selectedCharacteristics.value },
-  };
-  emit("confirm", payload);
-  emit("update:modelValue", false);
-}
 </script>
 
 <style lang="scss" scoped>
@@ -608,7 +759,7 @@ function confirm() {
   flex: 1;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #ccc transparent;
+  scrollbar-color: var(--Branco);
 
   &::-webkit-scrollbar {
     width: 4px; /* Largura bem fina */
@@ -625,6 +776,28 @@ function confirm() {
 
   &::-webkit-scrollbar-thumb:hover {
     background-color: #999; /* Cor ao passar o mouse */
+  }
+
+  .dropdown-menu-scroll {
+    max-height: 240px; /* ajuste o valor conforme o espaço do seu modal */
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #ccc;
+  }
+
+  .vocab-suggestions {
+    position: absolute;
+    z-index: 5;
+    max-height: 220px;
+    overflow-y: auto;
+    width: 94%;
+  }
+
+  .input-group > .form-control:not(:last-child) {
+    border-right: none !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
   }
 
   .list-group-item {

@@ -33,6 +33,13 @@ export const useImagesInfiniteQuery = (options = {}) => {
       if (filtersVal.collectiveId) filterKey.collectiveId = filtersVal.collectiveId;
       if (filtersVal.subjects?.length) filterKey.subjects = [...filtersVal.subjects].sort().join(',');
       if (filtersVal.subjectTerms?.length) filterKey.subjectTerms = [...filtersVal.subjectTerms].sort().join(',');
+      // --- Novos campos ---
+      if (filtersVal.materialTerms?.length) filterKey.materialTerms = [...filtersVal.materialTerms].sort().join(',');
+      if (filtersVal.techniqueTerms?.length) filterKey.techniqueTerms = [...filtersVal.techniqueTerms].sort().join(',');
+      if (filtersVal.aestheticsTerms?.length) filterKey.aestheticsTerms = [...filtersVal.aestheticsTerms].sort().join(',');
+      if (filtersVal.culturalContextTerms?.length) filterKey.culturalContextTerms = [...filtersVal.culturalContextTerms].sort().join(',');
+      if (filtersVal.TypologyTerms?.length) filterKey.TypologyTerms = [...filtersVal.TypologyTerms].sort().join(',');
+      // --- fim dos novos campos ---
       if (filtersVal.title) filterKey.title = filtersVal.title;
       if (filtersVal.contributor) filterKey.contributor = filtersVal.contributor;
       if (filtersVal.sortBy) filterKey.sortBy = filtersVal.sortBy;
