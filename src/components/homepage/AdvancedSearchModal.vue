@@ -89,6 +89,40 @@
           </div>
         </div>
 
+        <!-- Vocabulários VRAC (materiais, técnicas, período de estilo, contexto cultural, tipo de obra) -->
+        <div class="mb-3">
+          <VocabTermPicker
+            v-model="selectedMaterials"
+            title="Materiais"
+            placeholder="Ex: concreto"
+            :use-terms="useMaterialTerms"
+          />
+          <VocabTermPicker
+            v-model="selectedTechniques"
+            title="Técnicas de construção"
+            placeholder="Ex: alvenaria"
+            :use-terms="useTechniqueTerms"
+          />
+          <VocabTermPicker
+            v-model="selectedStylePeriods"
+            title="Período de estilo"
+            placeholder="Ex: moderno"
+            :use-terms="useStylePeriodTerms"
+          />
+          <VocabTermPicker
+            v-model="selectedCulturalContexts"
+            title="Contexto cultural"
+            placeholder="Ex: modernismo brasileiro"
+            :use-terms="useCulturalContextTerms"
+          />
+          <VocabTermPicker
+            v-model="selectedWorkTypes"
+            title="Tipo de obra"
+            placeholder="Ex: residencial"
+            :use-terms="useWorkTypeTerms"
+          />
+        </div>
+
         <!-- Período e Características -->
         <div class="filter-panel">
           <div class="filter-panel__column">
@@ -300,6 +334,14 @@ import { computed, onUnmounted, ref, watch } from "vue";
 import toggleArrayItem from "@/helpers/toggleArrayItem";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
+import {
+  useMaterialTerms,
+  useTechniqueTerms,
+  useStylePeriodTerms,
+  useCulturalContextTerms,
+  useWorkTypeTerms,
+} from "@/composables/useVocabTerms";
+import VocabTermPicker from "@/components/VocabTermPicker.vue";
 import { CC_LICENSES } from "@/constants/creativeCommonsLicenses";
 import { CHARACTERISTIC_PAIRS } from "@/constants/characteristicPairs";
 
@@ -332,11 +374,6 @@ const fieldOptions = [
   { value: "tag", label: "Tag", placeholder: "Ex: fachada" },
   { value: "title", label: "Título", placeholder: "Ex: Edifício Copan" },
   { value: "location", label: "Localização", placeholder: "Ex: São Paulo" },
-  { value: "aesthetics", label: "Aspectos estéticos", placeholder: "Ex: modernista" },
-  { value: "cultural", label: "Contexto cultural", placeholder: "Ex: movimento moderno brasileiro" },
-  { value: "typology", label: "Tipologia", placeholder: "Ex: residencial" },
-  { value: "techniques", label: "Técnicas de construção", placeholder: "Ex: concreto armado" },
-  { value: "materials", label: "Materiais", placeholder: "Ex: vidro" },
 ];
 // const fieldOptions = [
 //   { value: "all", label: "Todos os campos" },
@@ -362,6 +399,11 @@ const tagSuggestions = [
 const knownTagIds = new Set(tagSuggestions.map((t) => t.id));
 const selectedTags = ref([]);
 const selectedLicenses = ref([]);
+const selectedMaterials = ref([]);
+const selectedTechniques = ref([]);
+const selectedStylePeriods = ref([]);
+const selectedCulturalContexts = ref([]);
+const selectedWorkTypes = ref([]);
 const currentYear = new Date().getFullYear();
 const imageStartYear = ref(null);
 const imageEndYear = ref(null);
@@ -491,6 +533,11 @@ function confirm() {
     terms: searchTerms.value,
     tags: selectedTags.value,
     licenses: selectedLicenses.value,
+    materials: selectedMaterials.value,
+    techniques: selectedTechniques.value,
+    stylePeriods: selectedStylePeriods.value,
+    culturalContexts: selectedCulturalContexts.value,
+    workTypes: selectedWorkTypes.value,
 
     imageStartYear: imageStartYear.value,
     imageEndYear: imageEndYear.value,
@@ -513,6 +560,11 @@ function syncFromFilters(filters) {
   }));
   selectedTags.value = [...(safeFilters.tags || [])];
   selectedLicenses.value = [...(safeFilters.licenses || [])];
+  selectedMaterials.value = [...(safeFilters.materials || [])];
+  selectedTechniques.value = [...(safeFilters.techniques || [])];
+  selectedStylePeriods.value = [...(safeFilters.stylePeriods || [])];
+  selectedCulturalContexts.value = [...(safeFilters.culturalContexts || [])];
+  selectedWorkTypes.value = [...(safeFilters.workTypes || [])];
   imageStartYear.value = safeFilters.imageStartYear || null;
   imageEndYear.value = safeFilters.imageEndYear || null;
   workStartYear.value = safeFilters.workStartYear || null;

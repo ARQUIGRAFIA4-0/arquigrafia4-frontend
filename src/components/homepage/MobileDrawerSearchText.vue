@@ -94,6 +94,44 @@
         </div>
       </div>
 
+      <div class="mb-3">
+        <VocabTermPicker
+          :model-value="selectedMaterials"
+          title="Materiais"
+          placeholder="Ex: concreto"
+          :use-terms="useMaterialTerms"
+          @update:model-value="updateMaterials"
+        />
+        <VocabTermPicker
+          :model-value="selectedTechniques"
+          title="Técnicas de construção"
+          placeholder="Ex: alvenaria"
+          :use-terms="useTechniqueTerms"
+          @update:model-value="updateTechniques"
+        />
+        <VocabTermPicker
+          :model-value="selectedStylePeriods"
+          title="Período de estilo"
+          placeholder="Ex: moderno"
+          :use-terms="useStylePeriodTerms"
+          @update:model-value="updateStylePeriods"
+        />
+        <VocabTermPicker
+          :model-value="selectedCulturalContexts"
+          title="Contexto cultural"
+          placeholder="Ex: modernismo brasileiro"
+          :use-terms="useCulturalContextTerms"
+          @update:model-value="updateCulturalContexts"
+        />
+        <VocabTermPicker
+          :model-value="selectedWorkTypes"
+          title="Tipo de obra"
+          placeholder="Ex: residencial"
+          :use-terms="useWorkTypeTerms"
+          @update:model-value="updateWorkTypes"
+        />
+      </div>
+
       <!-- <div class="mb-3">
         <div class="p">Localização</div>
         <div class="text-muted small mb-2">
@@ -287,6 +325,14 @@ import UiMobileDrawer from "@/components/ui/UiMobileDrawer.vue";
 import toggleArrayItem from "@/helpers/toggleArrayItem";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
+import {
+  useMaterialTerms,
+  useTechniqueTerms,
+  useStylePeriodTerms,
+  useCulturalContextTerms,
+  useWorkTypeTerms,
+} from "@/composables/useVocabTerms";
+import VocabTermPicker from "@/components/VocabTermPicker.vue";
 import { CC_LICENSES } from "@/constants/creativeCommonsLicenses";
 import { CHARACTERISTIC_PAIRS } from "@/constants/characteristicPairs";
 
@@ -348,6 +394,11 @@ const textQueryInput = ref("");
 const searchTerms = ref([]); // { field, value, label }
 const selectedTags = ref([]);
 const selectedLicenses = ref([]);
+const selectedMaterials = ref([]);
+const selectedTechniques = ref([]);
+const selectedStylePeriods = ref([]);
+const selectedCulturalContexts = ref([]);
+const selectedWorkTypes = ref([]);
 //--------
 const currentYear = new Date().getFullYear();
 const imageStartYear = ref(null);
@@ -411,6 +462,11 @@ watch(
     }));
     selectedTags.value = [...(filters?.tags || [])];
     selectedLicenses.value = [...(filters?.licenses || [])];
+    selectedMaterials.value = [...(filters?.materials || [])];
+    selectedTechniques.value = [...(filters?.techniques || [])];
+    selectedStylePeriods.value = [...(filters?.stylePeriods || [])];
+    selectedCulturalContexts.value = [...(filters?.culturalContexts || [])];
+    selectedWorkTypes.value = [...(filters?.workTypes || [])];
 
     imageStartYear.value = filters?.imageStartYear ?? null;
     imageEndYear.value = filters?.imageEndYear ?? null;
@@ -430,6 +486,11 @@ const emitFiltersUpdate = () => {
     terms: searchTerms.value,
     tags: selectedTags.value,
     licenses: selectedLicenses.value,
+    materials: selectedMaterials.value,
+    techniques: selectedTechniques.value,
+    stylePeriods: selectedStylePeriods.value,
+    culturalContexts: selectedCulturalContexts.value,
+    workTypes: selectedWorkTypes.value,
     imageStartYear: imageStartYear.value,
     imageEndYear: imageEndYear.value,
     workStartYear: workStartYear.value,
@@ -437,6 +498,31 @@ const emitFiltersUpdate = () => {
     characteristics: { ...selectedCharacteristics.value },
   });
 };
+
+// A diferença pro modal desktop: o drawer emite update:filters a cada
+// mudança (toggleTag/toggleLicense já fazem isso), não só em confirm(). O
+// VocabTermPicker usa v-model, então precisa desses wrappers pra também
+// disparar emitFiltersUpdate a cada seleção/remoção.
+function updateMaterials(ids) {
+  selectedMaterials.value = ids;
+  emitFiltersUpdate();
+}
+function updateTechniques(ids) {
+  selectedTechniques.value = ids;
+  emitFiltersUpdate();
+}
+function updateStylePeriods(ids) {
+  selectedStylePeriods.value = ids;
+  emitFiltersUpdate();
+}
+function updateCulturalContexts(ids) {
+  selectedCulturalContexts.value = ids;
+  emitFiltersUpdate();
+}
+function updateWorkTypes(ids) {
+  selectedWorkTypes.value = ids;
+  emitFiltersUpdate();
+}
 
 const selectedFieldLabel = computed(() => {
   const found = fieldOptions.value.find((f) => f.value === selectedField.value);
@@ -497,6 +583,11 @@ function confirm() {
     terms: searchTerms.value,
     tags: selectedTags.value,
     licenses: selectedLicenses.value,
+    materials: selectedMaterials.value,
+    techniques: selectedTechniques.value,
+    stylePeriods: selectedStylePeriods.value,
+    culturalContexts: selectedCulturalContexts.value,
+    workTypes: selectedWorkTypes.value,
     imageStartYear: imageStartYear.value,
     imageEndYear: imageEndYear.value,
     workStartYear: workStartYear.value,
