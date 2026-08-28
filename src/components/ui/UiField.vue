@@ -2,13 +2,19 @@
   <div class="ui-field">
     <div
       v-if="label"
-      class="d-flex flex-row justify-content-between w-100 mb-1"
+      class="ui-field__label-row d-flex flex-row justify-content-between align-items-center w-100"
     >
-      <component :is="labelTag" class="form-label text-cinza-e h3" :for="labelTag === 'label' ? inputId : null">{{ label }}</component>
-      <div v-if="explain" class="flex-grow-0" style="margin-right: 12px">
+      <component
+        :is="labelTag"
+        class="form-label text-cinza-e h3 ui-field__label mb-0"
+        :for="labelTag === 'label' ? inputId : null"
+      >
+        {{ label }}
+      </component>
+      <div v-if="explain" class="ui-field__explain">
         <button
           type="button"
-          class="btn p-0 border-0 bg-transparent"
+          class="btn p-0 border-0 bg-transparent ui-field__explain-btn"
           data-bs-toggle="popover"
           data-bs-placement="top"
           data-bs-trigger="hover focus"
@@ -125,6 +131,39 @@ export default {
 <style scoped>
 .ui-field {
   width: 100%;
+}
+
+.ui-field__label-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  align-self: stretch;
+}
+
+.ui-field__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+  color: var(--Gray-900, #212529);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 150%;
+}
+
+.ui-field__explain {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.ui-field__explain-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .invalid-feedback {
