@@ -21,7 +21,13 @@ const props = defineProps({
     type: Number,
     default: 6,
   },
+  clickable: {
+    type: Boolean,
+    default: false,
+  },
 });
+
+const emit = defineEmits(["tag-click"]);
 
 const containerRef = ref(null);
 const visibleCount = ref(0);
@@ -36,7 +42,7 @@ function estimateTagWidth(label) {
   ctx.font = '400 12px "DM Sans", sans-serif';
   const textWidth = Math.ceil(ctx.measureText(text).width);
 
-  return textWidth + 18;
+  return textWidth + 16;
 }
 
 function estimateOverflowTagWidth(count) {
@@ -131,6 +137,13 @@ function closeTooltip() {
   showTooltip.value = false;
 }
 
+function onTagClick(subject, event) {
+  if (!props.clickable) return;
+  event.preventDefault();
+  event.stopPropagation();
+  emit("tag-click", subject);
+}
+
 function onViewportChange() {
   if (showTooltip.value) {
     updateTooltipPosition();
@@ -189,6 +202,7 @@ watch(
     ref="containerRef"
     class="fit-tags"
     :class="{ 'fit-tags--has-tooltip': overflowCount > 0 }"
+    :style="{ gap: `${gap}px` }"
     tabindex="0"
     :aria-label="overflowCount > 0 ? `Todas as tags: ${allTagsAriaLabel}` : undefined"
     @mouseenter="openTooltip"
@@ -217,14 +231,17 @@ watch(
       </div>
     </Teleport>
 
-    <span
+    <component
+      :is="clickable ? 'button' : 'span'"
       v-for="(subject, index) in visibleSubjects"
       :key="subject.id || `${subject.term}-${index}`"
       class="fit-tags__tag"
+      :type="clickable ? 'button' : undefined"
+      @click="clickable ? onTagClick(subject, $event) : undefined"
     >
       <i v-if="subject.icon" :class="['fit-tags__tag-icon', subject.icon]" aria-hidden="true"></i>
       {{ subject.term }}
-    </span>
+    </component>
 
     <span v-if="overflowCount > 0" class="fit-tags__tag fit-tags__tag--overflow">
       +{{ overflowCount }}
@@ -237,9 +254,12 @@ watch(
   position: relative;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  align-content: center;
+  align-self: stretch;
+  width: 100%;
   margin-top: auto;
-  padding-top: 8px;
+  box-sizing: border-box;
 }
 
 .fit-tags__tooltip {
@@ -294,14 +314,40 @@ watch(
 }
 
 .fit-tags__tag {
+  display: inline-flex;
+  height: 25px;
+  padding: 4px 8px;
+  align-items: center;
+  gap: 9px;
   border-radius: 2px;
-  border: 1px solid var(--Cinza_C, #a6a6a6);
-  padding: 6px 8px;
-  font-size: 12px;
-  line-height: 115%;
-  color: var(--Cinza_E, #2f2f2f);
+  border: 1px solid var(--Cinza_M, #636262);
   background: var(--Off_white, #faf9f9);
+  color: var(--Cinza_M, #636262);
+  text-align: center;
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 115%;
   box-sizing: border-box;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+button.fit-tags__tag {
+  cursor: pointer;
+  appearance: none;
+}
+
+button.fit-tags__tag:hover,
+button.fit-tags__tag:focus,
+button.fit-tags__tag:active {
+  background: var(--Off_white, #faf9f9);
+  color: var(--Cinza_M, #636262);
+  border-color: var(--Cinza_M, #636262);
+  box-shadow: none;
 }
 
 .fit-tags__tag--mini {
