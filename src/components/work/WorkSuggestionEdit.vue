@@ -207,7 +207,7 @@ const handleSubmit = async () => {
 
     <!-- Autoria -->
     <div class="mb-3">
-      <UiField label="Autor da obra" explain="Informe os responsáveis pela obra e seus papéis">
+      <UiField label="Autoria da obra" explain="Informe os responsáveis pela obra e seus papéis">
         <div class="input-group position-relative">
           <button class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal" type="button"
             data-bs-toggle="dropdown" aria-expanded="false">
@@ -219,7 +219,7 @@ const handleSubmit = async () => {
             </li>
           </ul>
           <input v-model="agentNameInput" type="text" class="form-control border-preto border-end-0"
-            placeholder="Nome do autor" autocomplete="off" @input="onAgentNameInput"
+            placeholder="Nome" autocomplete="off" @input="onAgentNameInput"
             @focus="showNameSuggestions = true" @blur="hideNameSuggestions" @keydown.enter.prevent="addAgent()" />
           <div v-if="showNameSuggestions && filteredNameSuggestions.length > 0"
             class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
@@ -230,7 +230,7 @@ const handleSubmit = async () => {
             </button>
           </div>
           <button type="button" class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
-            aria-label="Adicionar autor" @click="addAgent()">
+            aria-label="Adicionar autoria" @click="addAgent()">
             <i class="bi bi-plus-square-fill" />
           </button>
         </div>

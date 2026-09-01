@@ -486,7 +486,7 @@ onUnmounted(() => {
 
             <!-- Agents -->
             <div class="mb-3">
-              <UiField label="Autor da obra" explain="Informe os responsáveis pela obra e seus papéis">
+              <UiField label="Autoria da obra" explain="Informe os responsáveis pela obra e seus papéis">
                 <div class="input-group position-relative">
                   <button
                     class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal"
@@ -507,7 +507,7 @@ onUnmounted(() => {
                     v-model="agentNameInput"
                     type="text"
                     class="form-control border-preto border-end-0"
-                    placeholder="Nome do autor"
+                    placeholder="Nome"
                     autocomplete="off"
                     @input="onAgentNameInput"
                     @focus="showNameSuggestions = true"
@@ -532,7 +532,7 @@ onUnmounted(() => {
                   <button
                     type="button"
                     class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
-                    aria-label="Adicionar autor"
+                    aria-label="Adicionar autoria"
                     @click="addAgent()"
                   >
                     <i class="bi bi-plus-square-fill" />
