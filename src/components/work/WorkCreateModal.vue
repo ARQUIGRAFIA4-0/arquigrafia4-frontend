@@ -440,7 +440,7 @@ onUnmounted(() => {
               <UiField label="Título da obra" explain="Adicione ao menos um título principal">
                 <div class="input-group">
                   <button
-                    class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal"
+                    class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
                     type="button"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
@@ -500,7 +500,7 @@ onUnmounted(() => {
               <UiField label="Autoria da obra" explain="Informe os responsáveis pela obra e seus papéis">
                 <div class="input-group position-relative">
                   <button
-                    class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal"
+                    class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
                     type="button"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
@@ -569,7 +569,7 @@ onUnmounted(() => {
                 <div class="d-flex flex-column gap-2">
                   <div class="input-group">
                     <button
-                      class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal"
+                      class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
                       type="button"
                       data-bs-toggle="dropdown"
                       aria-expanded="false"

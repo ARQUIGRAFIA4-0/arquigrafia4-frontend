@@ -476,7 +476,7 @@ function handleCancel() {
       <UiField label="Redes do coletivo" labelTag="span"
         explain="Escolha uma rede social, digite o link do perfil do coletivo nessa rede e clique no botão (+) para adicionar à lista.">
         <div class="input-group input-group-sm">
-          <button class="btn btn-primary dropdown-toggle bg-azul-e border-azul-e fw-normal" type="button"
+          <button class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0" type="button"
             data-bs-toggle="dropdown" aria-expanded="false">
             {{ socialOptions[selectedSocialOption]?.label || "Selecione" }}
           </button>
@@ -488,9 +488,9 @@ function handleCancel() {
             </li>
           </ul>
           <input v-model="selectedSocialValue" id="collective-social-value-input" name="collective-social-value-input"
-            class="form-control border-azul-e border-end-0"
+            class="form-control border-preto border-end-0"
             :placeholder="socialOptions[selectedSocialOption]?.placeholder || 'Selecione uma rede social'" />
-          <button class="btn btn-light btn-sm border-azul-e border-start-0" type="button" aria-label="Adicionar"
+          <button class="btn btn-light btn-sm border-preto border-start-0" type="button" aria-label="Adicionar"
             @click="addSocial" :disabled="!selectedSocialOption || !selectedSocialValue">
             <i class="bi bi-plus-square-fill fs-8"></i>
           </button>
@@ -503,8 +503,8 @@ function handleCancel() {
               {{ socialOptions[key]?.label }}
             </button>
             <input :id="'collective-social-' + key" :name="'collective-social-' + key" :value="value" disabled="true"
-              class="form-control border-azul-e border-end-0" placeholder="" />
-            <button class="btn btn-light btn-sm border-azul-e border-start-0" type="button" aria-label="Remover"
+              class="form-control border-preto border-end-0" placeholder="" />
+            <button class="btn btn-light btn-sm border-preto border-start-0" type="button" aria-label="Remover"
               @click="removeSocial(key)">
               <i class="bi bi-x-lg"></i>
             </button>
