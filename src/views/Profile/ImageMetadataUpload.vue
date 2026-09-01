@@ -169,7 +169,7 @@
                 <label
                   class="form-check-label text-muted fst-italic small"
                   for="isAuthor"
-                  >Sou o autor da imagem</label
+                  >A imagem é de minha autoria</label
                 >
                 <div class="form-check form-switch p-0 m-0">
                   <input
@@ -208,8 +208,8 @@
                     class="form-check-label text-muted fst-italic small"
                     :class="{ 'text-negativo-e': isRightsInvalid }"
                     for="hasAuthorization"
-                    >Tenho permissão expressa do autor para disponibilizar a
-                    imagem no ARQUIGRAFIA</label
+                    >Tenho permissão expressa de quem detém a autoria para
+                    disponibilizar a imagem no ARQUIGRAFIA</label
                   >
                   <div class="form-check form-switch p-0 m-0">
                     <input
@@ -225,9 +225,9 @@
                 <div class="mb-2" v-if="!isRightsInvalid">
                   <UiField
                     label="Autoria da imagem"
-                    explain="Informe o nome do autor da imagem"
+                    explain="Informe o nome de quem detém a autoria da imagem"
                     :invalid="isAuthorNameInvalid"
-                    invalidMessage="O nome do autor é obrigatório"
+                    invalidMessage="Informe quem detém a autoria da imagem"
                   >
                     <template #default="{ id, ariaInvalid, ariaDescribedby }">
                       <input
@@ -235,7 +235,7 @@
                         type="text"
                         class="form-control"
                         :class="{ 'is-invalid': isAuthorNameInvalid }"
-                        placeholder="Nome do autor"
+                        placeholder="Nome"
                         v-model="form.authorName"
                         :disabled="form.unknownAuthor"
                         :aria-invalid="ariaInvalid"
@@ -250,7 +250,7 @@
                   <label
                     class="form-check-label text-muted fst-italic small"
                     for="unknownAuthor"
-                    >Não sei quem é o autor da imagem</label
+                    >Não sei de quem é a autoria da imagem</label
                   >
                   <div class="form-check form-switch p-0 m-0">
                     <input

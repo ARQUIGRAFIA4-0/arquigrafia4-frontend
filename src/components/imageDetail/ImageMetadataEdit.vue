@@ -109,7 +109,7 @@
             </div>
 
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <label class="form-check-label text-muted fst-italic small" for="isAuthor">Sou o autor da imagem</label>
+              <label class="form-check-label text-muted fst-italic small" for="isAuthor">A imagem é de minha autoria</label>
               <div class="form-check form-switch p-0 m-0">
                 <input class="form-check-input m-0" type="checkbox" role="switch" id="isAuthor"
                   v-model="form.isAuthor" />
@@ -127,14 +127,14 @@
               </div>
               <div v-if="form.isPublicDomain" class="alert alert-info py-2 px-3 small mt-2 h-auto">
                 <i class="bi bi-info-circle me-1" />
-                Mesmo em domínio público, informe o nome do autor original se souber.
+                Mesmo em domínio público, informe a autoria original se souber.
               </div>
 
               <div v-if="!form.isPublicDomain && !form.unknownAuthor"
                 class="d-flex justify-content-between align-items-center mb-4">
                 <label class="form-check-label text-muted fst-italic small"
-                  :class="{ 'text-negativo-e': isRightsInvalid }" for="hasAuthorization">Tenho permissão expressa do
-                  autor para disponibilizar a
+                  :class="{ 'text-negativo-e': isRightsInvalid }" for="hasAuthorization">Tenho permissão expressa de quem detém a
+                  autoria para disponibilizar a
                   imagem no ARQUIGRAFIA</label>
                 <div class="form-check form-switch p-0 m-0">
                   <input class="form-check-input m-0" type="checkbox" role="switch" id="hasAuthorization"
@@ -143,11 +143,11 @@
               </div>
 
               <div class="mb-2" v-if="!isRightsInvalid">
-                <UiField label="Autoria da imagem" explain="Informe o nome do autor da imagem"
-                  :invalid="isAuthorNameInvalid" invalidMessage="O nome do autor é obrigatório">
+                <UiField label="Autoria da imagem" explain="Informe o nome de quem detém a autoria da imagem"
+                  :invalid="isAuthorNameInvalid" invalidMessage="Informe quem detém a autoria da imagem">
                   <template #default="{ id, ariaInvalid, ariaDescribedby }">
                     <input :id="id" type="text" class="form-control" :class="{ 'is-invalid': isAuthorNameInvalid }"
-                      placeholder="Nome do autor" v-model="form.authorName" :disabled="form.unknownAuthor"
+                      placeholder="Nome" v-model="form.authorName" :disabled="form.unknownAuthor"
                       :aria-invalid="ariaInvalid" :aria-describedby="ariaDescribedby"
                       @blur="isAuthorNameTouched = true" />
                   </template>
@@ -155,7 +155,7 @@
               </div>
 
               <div class="d-flex justify-content-between align-items-center mb-4">
-                <label class="form-check-label text-muted fst-italic small" for="unknownAuthor">Não sei quem é o autor
+                <label class="form-check-label text-muted fst-italic small" for="unknownAuthor">Não sei de quem é a autoria
                   da
                   imagem</label>
                 <div class="form-check form-switch p-0 m-0">

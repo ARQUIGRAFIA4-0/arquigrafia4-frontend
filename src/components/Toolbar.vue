@@ -581,7 +581,7 @@ const urlChips = computed(() => {
       uid: `contributor-${route.query.contributor}`,
       type: 'contributor',
       value: route.query.contributor,
-      label: `Autor: ${route.query.contributor}`,
+      label: `Autoria: ${route.query.contributor}`,
     });
   }
 
