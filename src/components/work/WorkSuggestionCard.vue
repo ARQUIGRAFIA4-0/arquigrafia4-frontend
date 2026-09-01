@@ -16,7 +16,9 @@ const emit = defineEmits(["applied", "rejected", "error"]);
 
 const authStore = useAuthStore();
 
-const expanded = ref(true);
+// Fechado por padrão, como na aba de sugestões da imagem: a lista precisa ser
+// varrida de relance antes de abrir uma para analisar.
+const expanded = ref(false);
 const isSubmitting = ref(false);
 const avatarFailed = ref(false);
 
@@ -208,22 +210,27 @@ const maybeSubmit = async () => {
   try {
     if (accepted.length === 0) {
       // Lista vazia em accepted_fields aceitaria TUDO no backend — recusar é /reject.
-      await api.rejectWorkSuggestion(authStore.authHeader, props.suggestion.id);
-      emit("rejected", props.suggestion.id);
+      const suggestion = await api.rejectWorkSuggestion(authStore.authHeader, props.suggestion.id);
+      emit("rejected", { suggestionId: props.suggestion.id, suggestion });
       return;
     }
 
     // `reason` conta na comparação que decide entre `accepted` e
     // `partially_accepted`, então precisa ir junto quando tudo foi aceito.
-    const fields =
-      accepted.length === fieldStates.length ? [...accepted, "reason"] : accepted;
+    const isFullAccept = accepted.length === fieldStates.length;
+    const fields = isFullAccept ? [...accepted, "reason"] : accepted;
 
-    const { work } = await api.acceptWorkSuggestion(
+    const { work, suggestion } = await api.acceptWorkSuggestion(
       authStore.authHeader,
       props.suggestion.id,
       fields
     );
-    emit("applied", { suggestionId: props.suggestion.id, work });
+    emit("applied", {
+      suggestionId: props.suggestion.id,
+      suggestion,
+      work,
+      fallbackStatus: isFullAccept ? "accepted" : "partially_accepted",
+    });
   } catch (e) {
     const data = e.response?.data;
     // Duplicata a menos de 100m volta com a obra conflitante no corpo.
@@ -246,7 +253,8 @@ const maybeSubmit = async () => {
 
 <template>
   <div class="suggestion-card" data-cy="work-suggestion-card">
-    <button type="button" class="suggestion-card__header" @click="expanded = !expanded">
+    <button type="button" class="suggestion-card__header" :aria-expanded="expanded"
+      @click="expanded = !expanded">
       <!-- Se a imagem falhar em carregar, cai nas iniciais em vez de deixar o
            espaço quebrado. -->
       <img v-if="userAvatar && !avatarFailed" :src="userAvatar" class="suggestion-card__avatar" alt=""

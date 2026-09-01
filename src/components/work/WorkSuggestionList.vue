@@ -63,15 +63,29 @@ const goToSuggest = () => {
   });
 };
 
-const handleApplied = ({ suggestionId, work }) => {
-  suggestions.value = suggestions.value.filter((s) => s.id !== suggestionId);
+/**
+ * Depois de decidir, a sugestão **permanece na lista** — só troca de status, e o
+ * card passa a exibir o badge ("Sugestão aceita", "parcial", "recusada") no lugar
+ * dos botões. Antes ela era removida, e quem revisava via o item sumir da tela
+ * sem confirmação de que a decisão tinha valido; só um refresh a trazia de volta.
+ *
+ * Quando o backend não devolve a sugestão atualizada, o status é ajustado
+ * localmente para o card não continuar parecendo pendente.
+ */
+const replaceSuggestion = (suggestionId, updated, fallbackStatus) => {
+  suggestions.value = suggestions.value.map((s) =>
+    s.id === suggestionId ? { ...s, ...(updated || {}), status: updated?.status || fallbackStatus } : s
+  );
   actionAlert.value = null;
+};
+
+const handleApplied = ({ suggestionId, suggestion, work, fallbackStatus }) => {
+  replaceSuggestion(suggestionId, suggestion, fallbackStatus || "accepted");
   emit("applied", work);
 };
 
-const handleRejected = (suggestionId) => {
-  suggestions.value = suggestions.value.filter((s) => s.id !== suggestionId);
-  actionAlert.value = null;
+const handleRejected = ({ suggestionId, suggestion }) => {
+  replaceSuggestion(suggestionId, suggestion, "rejected");
 };
 
 const handleError = (payload) => {
