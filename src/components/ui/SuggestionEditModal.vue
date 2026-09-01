@@ -1,35 +1,55 @@
 <template>
-  <Teleport to="body">
-    <Transition name="suggest-modal-fade">
-      <div v-if="modelValue" class="suggest-modal-overlay" @click.self="close">
-        <div class="suggest-modal" role="dialog" aria-modal="true" aria-labelledby="suggest-modal-title">
-          <div class="suggest-modal-header">
-            <h2 id="suggest-modal-title" class="suggest-modal-title">
+  <transition name="fade-modal">
+    <div v-if="modelValue" class="suggestion-modal__backdrop" @click.self="close">
+      <div
+        class="suggestion-modal__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="suggestion-modal-title"
+      >
+        <div class="suggestion-modal__column">
+          <div class="suggestion-modal__header">
+            <p id="suggestion-modal-title" class="suggestion-modal__title">
               Edição colaborativa
-            </h2>
-            <button type="button" class="suggest-modal-close" aria-label="Fechar" @click="close">
-              <i class="bi bi-x-lg" aria-hidden="true"></i>
-            </button>
+            </p>
           </div>
 
-          <p class="suggest-modal-text">{{ text }}</p>
-
-          <div class="suggest-modal-actions">
-            <button type="button" class="btn suggest-modal-btn suggest-modal-btn--cancel" @click="close">
-              Cancelar
-            </button>
-            <button type="button" class="btn suggest-modal-btn suggest-modal-btn--confirm" @click="confirm">
-              Sugerir edições
-            </button>
+          <div class="suggestion-modal__content">
+            <p class="suggestion-modal__text">{{ text }}</p>
           </div>
         </div>
+
+        <div class="suggestion-modal__footer">
+          <button
+            type="button"
+            class="suggestion-modal__btn suggestion-modal__btn--secondary"
+            data-cy="suggestion-modal-cancel"
+            @click="close"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="suggestion-modal__btn suggestion-modal__btn--primary"
+            data-cy="suggestion-modal-confirm"
+            @click="confirm"
+          >
+            Sugerir edições
+          </button>
+        </div>
       </div>
-    </Transition>
-  </Teleport>
+    </div>
+  </transition>
 </template>
 
 <script setup>
-defineProps({
+import { watch } from "vue";
+
+defineOptions({
+  name: "SuggestionEditModal",
+});
+
+const props = defineProps({
   modelValue: {
     type: Boolean,
     default: false,
@@ -53,125 +73,246 @@ function confirm() {
   emit("update:modelValue", false);
   emit("confirm");
 }
+
+function handleEsc(event) {
+  if (event.key === "Escape") {
+    close();
+  }
+}
+
+watch(
+  () => props.modelValue,
+  (value) => {
+    if (value) {
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleEsc);
+    } else {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleEsc);
+    }
+  }
+);
 </script>
 
-<style lang="scss" scoped>
-@use "@/scss/variables" as *;
+<style scoped>
+/* Transição de entrada/saída: backdrop primeiro, painel em seguida. */
+.fade-modal-enter-active {
+  transition: opacity 0.2s ease;
+}
 
-.suggest-modal-overlay {
+.fade-modal-enter-active .suggestion-modal__panel {
+  transition: opacity 0.3s ease 0.2s;
+}
+
+.fade-modal-leave-active {
+  transition: opacity 0.2s ease 0.2s;
+}
+
+.fade-modal-leave-active .suggestion-modal__panel {
+  transition: opacity 0.2s ease;
+}
+
+.fade-modal-enter-from,
+.fade-modal-leave-to {
+  opacity: 0;
+}
+
+.fade-modal-enter-from .suggestion-modal__panel,
+.fade-modal-leave-to .suggestion-modal__panel {
+  opacity: 0;
+}
+
+.suggestion-modal__backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.45);
+  z-index: 1100;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  z-index: 1050;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
-.suggest-modal {
-  width: 100%;
-  max-width: 577px;
-  background-color: var(--Branco);
+.suggestion-modal__panel {
+  display: flex;
+  width: 600px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  padding: 0 16px;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  overflow: clip;
   border-radius: 16px;
-  padding: 1rem 1rem 0 1rem;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  background: var(--off_white, #faf9f9);
+  box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.1);
 }
 
-.suggest-modal-header {
+.suggestion-modal__column {
+  width: 100%;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 1rem 3.125rem 1rem 3.125rem;
-
-  @media (max-width: 425px) {
-    margin: 0 1.125rem 1.5rem 1.125rem;
-  }
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0 32px;
+  box-sizing: border-box;
 }
 
-.suggest-modal-title {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 500;
-  line-height: 150%;
-  color: var(--Preto);
-}
-
-.suggest-modal-close {
-  flex-shrink: 0;
-  display: inline-flex;
+.suggestion-modal__header {
+  width: 100%;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: transparent;
-  color: var(--Cinza_M);
-  cursor: pointer;
-
-  .bi {
-    font-size: .6563rem;
-  }
+  padding-top: 32px;
+  padding-bottom: 16px;
 }
 
-.suggest-modal-text {
-  margin: 0 3.125rem 1.5rem 3.125rem;
-  color: var(--Preto);
+.suggestion-modal__title {
+  flex: 1 0 0;
+  margin: 0;
+  font-family: "DM Sans", sans-serif;
+  font-size: 20px;
   font-weight: 500;
-  font-size: 1rem;
-  line-height: 150%;
-
-  @media (max-width: 425px) {
-    margin: 0 1.125rem 1.5rem 1.125rem;
-  }
+  line-height: 1.5;
+  color: #2f2f2f;
 }
 
-.suggest-modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin: 1rem 0;
-}
-
-.suggest-modal-btn {
+.suggestion-modal__content {
   width: 100%;
-  max-width: 264px;
-  min-width: 110px;
-  height: 25px;
-  border-radius: 5px;
-  padding: .125rem .875rem;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.suggestion-modal__text {
+  margin: 0;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
   font-weight: 400;
-  font-size: 0.875rem;
-  line-height: 150%;
+  line-height: 1.5;
+  color: #212529;
 }
 
-.suggest-modal-btn--cancel {
-  background-color: var(--Off_white);
-  border: 1px solid var(--Cinza_E);
-  color: var(--Preto);
+.suggestion-modal__footer {
+  width: 100%;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  align-self: stretch;
+  padding: 16px 0;
+  box-sizing: border-box;
+}
 
-  &:hover {
-    background-color: var(--Branco);
+.suggestion-modal__btn {
+  flex: 1 0 0;
+  min-width: 0;
+  margin: 0;
+  padding: 2px 14px;
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
+  border-radius: 5px;
+  border-style: solid;
+  border-width: 1px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.suggestion-modal__btn--secondary {
+  background: var(--off_white, #faf9f9);
+  border-color: var(--cinza_e, #2f2f2f);
+  color: var(--cinza_e, #2f2f2f);
+}
+
+.suggestion-modal__btn--primary {
+  background: var(--cinza_e, #2f2f2f);
+  border-color: var(--cinza_e, #2f2f2f);
+  color: var(--branco, #ffffff);
+}
+
+/* regras mobile */
+@media (max-width: 767px) {
+  .suggestion-modal__backdrop {
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
   }
-}
 
-.suggest-modal-btn--confirm {
-  background-color: var(--Cinza_E);
-  color: var(--Branco);
-
-  &:hover {
-    background-color: var(--Preto);
+  .suggestion-modal__panel {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    padding: 0;
+    gap: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    overflow: hidden;
   }
-}
 
-/* Transição de entrada/saída do modal */
-.suggest-modal-fade-enter-active,
-.suggest-modal-fade-leave-active {
-  transition: opacity 0.18s ease;
-}
+  .suggestion-modal__column {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0 16px;
+  }
 
-.suggest-modal-fade-enter-from,
-.suggest-modal-fade-leave-to {
-  opacity: 0;
+  .suggestion-modal__header {
+    padding-top: 20px;
+    padding-bottom: 12px;
+  }
+
+  .suggestion-modal__title {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.35;
+  }
+
+  .suggestion-modal__content {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 14px;
+  }
+
+  .suggestion-modal__footer {
+    grid-row: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    align-self: stretch;
+  }
+
+  .suggestion-modal__btn {
+    width: 100%;
+    flex: 0 0 auto;
+    min-height: var(--control-height-mobile, 48px);
+    height: var(--control-height-mobile, 48px);
+    padding: 2px 14px;
+    line-height: 1.5;
+  }
+
+  .suggestion-modal__btn--secondary {
+    order: 1;
+  }
+
+  .suggestion-modal__btn--primary {
+    order: 2;
+  }
 }
 </style>
