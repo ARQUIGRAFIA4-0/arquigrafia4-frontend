@@ -3,6 +3,7 @@ import Fuse from "fuse.js";
 import axios from "@/axios";
 import { useAuthStore } from "@/store/auth";
 import { useVracStore } from "@/store/vrac";
+import { api } from "@/services/api";
 
 /**
  * Autocomplete de obras (VRACWork) compartilhado entre o envio de imagem e a
@@ -38,23 +39,23 @@ export const workMatchedAlternate = (work, query) => {
 };
 
 /**
- * Materializa um rascunho do WorkCreateModal em uma VRACWork real. Chamado
- * apenas quando o usuário confirma o envio/salvamento, para que cancelamentos
- * não deixem registros órfãos.
+ * Cria no backend as partes de um rascunho de obra — títulos, agentes, datas e
+ * termos de vocabulário — devolvendo as listas de IDs prontas para o `sync`.
+ *
+ * Itens que já trazem `id` são reaproveitados sem POST: é o que permite o
+ * formulário de sugestão de edição materializar só o que o usuário acrescentou.
+ * No fluxo de criação nenhum item tem `id`, então tudo é criado, como antes.
  */
-export const materializeWork = async (draft) => {
-  const authStore = useAuthStore();
+export const materializeWorkParts = async (authHeader, draft) => {
   const vracStore = useVracStore();
-  const authHeader = { Authorization: authStore.authHeader };
 
   const titleIds = [];
-  for (const t of draft.titles) {
-    const res = await axios.post(
-      "/api/vrac-titles",
-      { label: t.label, type: t.type, pref: t.pref },
-      { headers: authHeader },
-    );
-    titleIds.push(res.data.title.id);
+  for (const t of draft.titles || []) {
+    if (t.id) {
+      titleIds.push(t.id);
+      continue;
+    }
+    titleIds.push(await api.createVracTitle(authHeader, t));
   }
 
   // Resolve labels de papel do agente → IDs (busca existente ou cria com label em minúsculas)
@@ -63,138 +64,67 @@ export const materializeWork = async (draft) => {
   const resolveRoleId = async (label) => {
     if (roleIdCache[label]) return roleIdCache[label];
     if (!roles) roles = (await vracStore.getVRACAgentRoles()) || [];
-    const match = roles.find(
-      (r) => r.label?.toLowerCase() === label.toLowerCase(),
-    );
+    const match = roles.find((r) => r.label?.toLowerCase() === label.toLowerCase());
     if (match) {
       roleIdCache[label] = match.id;
       return match.id;
     }
-    const res = await axios.post(
-      "/api/vrac-agent-roles",
-      { label: label.toLowerCase() },
-      { headers: authHeader },
-    );
-    const id = res.data.role.id;
-    roles.push(res.data.role);
-    roleIdCache[label] = id;
-    return id;
+    const created = await api.createVracAgentRole(authHeader, label);
+    roles.push(created);
+    roleIdCache[label] = created.id;
+    return created.id;
   };
 
   const agentIds = [];
-  for (const a of draft.agents) {
-    let contribId = a.contributorNameId;
-    if (!contribId) {
-      const res = await axios.post(
-        "/api/vrac-contributor-names",
-        { name: a.contributorName, type: "personal" },
-        { headers: authHeader },
-      );
-      contribId = res.data.name.id;
+  for (const a of draft.agents || []) {
+    if (a.id) {
+      agentIds.push(a.id);
+      continue;
     }
+    const contributorNameId =
+      a.contributorNameId || (await api.createVracContributorName(authHeader, a.contributorName));
     const roleId = await resolveRoleId(a.roleLabel);
-    const res = await axios.post(
-      "/api/vrac-agents",
-      { contributor_name_id: contribId, role_id: roleId },
-      { headers: authHeader },
-    );
-    agentIds.push(res.data.agent.id);
+    agentIds.push(await api.createVracAgent(authHeader, { contributorNameId, roleId }));
   }
 
   const dateIds = [];
-  for (const d of draft.dates) {
-    const res = await axios.post("/api/vrac-dates", d, { headers: authHeader });
-    dateIds.push(res.data.date.id);
+  for (const d of draft.dates || []) {
+    if (d.id) {
+      dateIds.push(d.id);
+      continue;
+    }
+    // `id` é campo só do cliente; o backend recebe apenas as colunas da data.
+    const date = { ...d };
+    delete date.id;
+    dateIds.push(await api.createVracDate(authHeader, date));
   }
 
-  // Vocabulários: IDs existentes são usados diretamente; novos termos são
-  // criados via POST (em minúsculas). Termos criados pelo usuário entram sempre
-  // como vocab "Arquigrafia" (grafia da base; VCAA é reservado ao importado).
-  // `displayKey` é a coluna de texto de cada vocabulário (`term` em subjects,
-  // `label` nos demais), usada na checagem de duplicata antes de criar.
-  const VOCAB_CREATE = {
-    stylePeriods: {
-      endpoint: "vrac-style-periods",
-      displayKey: "label",
-      payload: (v) => ({ label: v }),
-      responseKey: "period",
-    },
-    culturalCtxs: {
-      endpoint: "vrac-cultural-contexts",
-      displayKey: "label",
-      payload: (v) => ({ label: v, vocab: "Arquigrafia" }),
-      responseKey: "context",
-    },
-    workTypes: {
-      endpoint: "vrac-work-types",
-      displayKey: "label",
-      payload: (v) => ({ label: v, vocab: "Arquigrafia" }),
-      responseKey: "work_type",
-    },
-    techniques: {
-      endpoint: "vrac-techniques",
-      displayKey: "label",
-      payload: (v) => ({ label: v, vocab: "Arquigrafia" }),
-      responseKey: "technique",
-    },
-    materials: {
-      // `type` é obrigatório na prática (a coluna é NOT NULL e o backend nunca
-      // usa o default); "medium" é o único valor presente na base.
-      endpoint: "vrac-materials",
-      displayKey: "label",
-      payload: (v) => ({ label: v, type: "medium", vocab: "Arquigrafia" }),
-      responseKey: "material",
-    },
-    subjects: {
-      endpoint: "vrac-subjects",
-      displayKey: "term",
-      payload: (v) => ({ term: v, type: "otherTopic", vocab: "Arquigrafia" }),
-      responseKey: "data",
-    },
-  };
-
-  // Procura um termo já existente antes de criar: o backend não deduplica e a
-  // lista carregada no modal pode estar defasada. `%` e `_` são escapados
-  // porque a busca é um LIKE cru — curingas não são tratados do lado de lá.
-  const findExistingVocabId = async (cfg, term) => {
-    try {
-      const search = term.replace(/[\\%_]/g, "\\$&");
-      const res = await axios.get(`/api/${cfg.endpoint}`, {
-        params: { search, per_page: -1 },
-      });
-      const items = res.data?.data ?? [];
-      const match = items.find(
-        (i) => (i[cfg.displayKey] || "").toLowerCase() === term,
-      );
-      return match?.id || null;
-    } catch {
-      return null; // Não-fatal: se a busca falhar, seguimos para criar.
-    }
-  };
-
-  const resolvedVocab = {};
-  for (const key of Object.keys(VOCAB_CREATE)) {
-    const bucket = draft[key] || { existing: [], newTerms: [] };
-    const ids = [...bucket.existing];
-    const cfg = VOCAB_CREATE[key];
-    for (const term of bucket.newTerms) {
-      const lower = (term || "").trim().toLowerCase();
-      // Nunca envia termo vazio: sem validação no backend, viraria um 500.
-      if (!lower) continue;
-      // Reaproveita um termo já existente em vez de criar duplicata.
-      const existingId = await findExistingVocabId(cfg, lower);
-      if (existingId) {
-        ids.push(existingId);
-        continue;
-      }
-      const res = await axios.post(`/api/${cfg.endpoint}`, cfg.payload(lower), {
-        headers: authHeader,
-      });
-      const created = res.data[cfg.responseKey];
-      if (created?.id) ids.push(created.id);
-    }
-    resolvedVocab[key] = ids;
+  // Vocabulários: IDs existentes são usados diretamente; termos novos são criados
+  // em minúsculas, sempre no vocab "Arquigrafia" (VCAA é reservado ao importado).
+  // O mapa de endpoints e envelopes vive em api.js, compartilhado com a resolução
+  // de labels do diff de sugestões.
+  const vocabIds = {};
+  for (const payloadKey of api.VRAC_VOCAB_KEYS) {
+    const draftKey = api.VRAC_ENTITIES[payloadKey].draftKey;
+    vocabIds[draftKey] = await api.resolveVocabIds(authHeader, payloadKey, draft[draftKey]);
   }
+
+  return { titleIds, agentIds, dateIds, vocabIds };
+};
+
+/**
+ * Materializa um rascunho do WorkCreateModal em uma VRACWork real. Chamado
+ * apenas quando o usuário confirma o envio/salvamento, para que cancelamentos
+ * não deixem registros órfãos.
+ */
+export const materializeWork = async (draft) => {
+  const authStore = useAuthStore();
+  const authHeader = authStore.authHeader;
+
+  const { titleIds, agentIds, dateIds, vocabIds: resolvedVocab } = await materializeWorkParts(
+    authHeader,
+    draft,
+  );
 
   const workPayload = {
     latitude: draft.coords.lat,
@@ -219,7 +149,7 @@ export const materializeWork = async (draft) => {
     workPayload.subjects = resolvedVocab.subjects;
 
   const workRes = await axios.post("/api/vrac-works", workPayload, {
-    headers: authHeader,
+    headers: { Authorization: authHeader },
   });
   return workRes.data.data;
 };

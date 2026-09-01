@@ -196,11 +196,13 @@ const getRelatedImages = async (imageId, page = 1) => {
 const vocabTerms = (list, key = "label") => (list || []).map((item) => ({ id: item.id, label: item[key] || null })).filter((item) => item.label);
 
 /**
- * Detalhe de uma obra (VRACWork) pelo ID — GET /api/vrac-works/{id}.
+ * Normaliza uma VRACWork crua da API para o formato usado nas telas.
+ *
+ * Exportada porque o aceite de uma sugestão devolve a obra já atualizada — no
+ * formato cru — e a tela precisa do mesmo shape que `getWorkDetails` entrega.
  */
-const getWorkDetails = async (id) => {
-  const response = await axios.get(`/api/vrac-works/${id}`);
-  const work = response.data.data;
+const normalizeWork = (work) => {
+  if (!work) return null;
 
   return {
     id: work.id,
@@ -235,6 +237,14 @@ const getWorkDetails = async (id) => {
     workTypes: vocabTerms(work.work_types),
     subjects: vocabTerms(work.subjects, "term"),
   };
+};
+
+/**
+ * Detalhe de uma obra (VRACWork) pelo ID — GET /api/vrac-works/{id}.
+ */
+const getWorkDetails = async (id) => {
+  const response = await axios.get(`/api/vrac-works/${id}`);
+  return normalizeWork(response.data.data);
 };
 
 /**
@@ -863,6 +873,265 @@ const handleJoinRequest = async (authHeader, collectiveId, userId, action) => {
   }
 };
 
+/* ────────────────────────────────────────────────────────────────────────────
+ * Entidades VRAC — criação e resolução
+ *
+ * Um mapa único, chaveado pela chave usada no payload de sugestão de obra. Cada
+ * endpoint devolve o registro sob um envelope próprio, e três deles não derivam
+ * do nome do recurso: `vrac-style-periods` → `period`, `vrac-cultural-contexts`
+ * → `context` e `vrac-subjects` → `data`. Criar e resolver leem o mesmo mapa,
+ * justamente para que os dois caminhos não divirjam.
+ *
+ * `draftKey` liga a chave do backend à do rascunho do formulário de obra
+ * (`useWorkForm`), que usa nomes camelCase próprios.
+ * ──────────────────────────────────────────────────────────────────────────── */
+const VRAC_ENTITIES = {
+  titles:  { endpoint: "vrac-titles", envelope: "title", displayKey: "label" },
+  agents:  { endpoint: "vrac-agents", envelope: "agent" },
+  dates:   { endpoint: "vrac-dates",  envelope: "date"  },
+  style_periods: {
+    endpoint: "vrac-style-periods", envelope: "period", displayKey: "label",
+    draftKey: "stylePeriods", createPayload: (v) => ({ label: v }),
+  },
+  cultural_contexts: {
+    endpoint: "vrac-cultural-contexts", envelope: "context", displayKey: "label",
+    draftKey: "culturalCtxs", createPayload: (v) => ({ label: v, vocab: "Arquigrafia" }),
+  },
+  work_types: {
+    endpoint: "vrac-work-types", envelope: "work_type", displayKey: "label",
+    draftKey: "workTypes", createPayload: (v) => ({ label: v, vocab: "Arquigrafia" }),
+  },
+  techniques: {
+    endpoint: "vrac-techniques", envelope: "technique", displayKey: "label",
+    draftKey: "techniques", createPayload: (v) => ({ label: v, vocab: "Arquigrafia" }),
+  },
+  materials: {
+    // `type` é obrigatório na prática (a coluna é NOT NULL e o backend nunca usa
+    // o default); "medium" é o único valor presente na base.
+    endpoint: "vrac-materials", envelope: "material", displayKey: "label",
+    draftKey: "materials", createPayload: (v) => ({ label: v, type: "medium", vocab: "Arquigrafia" }),
+  },
+  subjects: {
+    endpoint: "vrac-subjects", envelope: "data", displayKey: "term",
+    draftKey: "subjects", createPayload: (v) => ({ term: v, type: "otherTopic", vocab: "Arquigrafia" }),
+  },
+};
+
+// Só os vocabulários têm termo criável pelo usuário; títulos, agentes e datas
+// são sempre registros novos, nunca reaproveitados por texto.
+const VRAC_VOCAB_KEYS = Object.keys(VRAC_ENTITIES).filter((k) => VRAC_ENTITIES[k].createPayload);
+
+const createVracTitle = async (authHeader, { label, type, pref }) => {
+  const res = await axios.post("/api/vrac-titles", { label, type, pref }, { headers: { Authorization: authHeader } });
+  return res.data.title.id;
+};
+
+const createVracAgentRole = async (authHeader, label) => {
+  const res = await axios.post("/api/vrac-agent-roles", { label: label.toLowerCase() }, { headers: { Authorization: authHeader } });
+  return res.data.role;
+};
+
+const createVracContributorName = async (authHeader, name) => {
+  const res = await axios.post("/api/vrac-contributor-names", { name, type: "personal" }, { headers: { Authorization: authHeader } });
+  return res.data.name.id;
+};
+
+const createVracAgent = async (authHeader, { contributorNameId, roleId }) => {
+  const res = await axios.post(
+    "/api/vrac-agents",
+    { contributor_name_id: contributorNameId, role_id: roleId },
+    { headers: { Authorization: authHeader } },
+  );
+  return res.data.agent.id;
+};
+
+const createVracDate = async (authHeader, date) => {
+  const res = await axios.post("/api/vrac-dates", date, { headers: { Authorization: authHeader } });
+  return res.data.date.id;
+};
+
+/**
+ * Procura um termo de vocabulário já existente antes de criar: o backend não
+ * deduplica. `%` e `_` são escapados porque a busca é um LIKE cru — curingas não
+ * são tratados do lado de lá.
+ */
+const findExistingVocabId = async (payloadKey, term) => {
+  const cfg = VRAC_ENTITIES[payloadKey];
+  try {
+    const search = term.replace(/[\\%_]/g, "\\$&");
+    const res = await axios.get(`/api/${cfg.endpoint}`, { params: { search, per_page: -1 } });
+    const items = res.data?.data ?? [];
+    const match = items.find((i) => (i[cfg.displayKey] || "").toLowerCase() === term);
+    return match?.id || null;
+  } catch {
+    return null; // Não-fatal: se a busca falhar, seguimos para criar.
+  }
+};
+
+const createVocabTerm = async (authHeader, payloadKey, term) => {
+  const cfg = VRAC_ENTITIES[payloadKey];
+  const res = await axios.post(`/api/${cfg.endpoint}`, cfg.createPayload(term), {
+    headers: { Authorization: authHeader },
+  });
+  return res.data[cfg.envelope]?.id || null;
+};
+
+/**
+ * Resolve um balde `{ existing: [ids], newTerms: [labels] }` do formulário em uma
+ * lista final de IDs, reaproveitando termos existentes em vez de duplicar.
+ */
+const resolveVocabIds = async (authHeader, payloadKey, bucket) => {
+  const ids = [...(bucket?.existing || [])];
+  for (const term of bucket?.newTerms || []) {
+    const lower = (term || "").trim().toLowerCase();
+    // Nunca envia termo vazio: sem validação no backend, viraria um 500.
+    if (!lower) continue;
+    const existingId = await findExistingVocabId(payloadKey, lower);
+    if (existingId) {
+      ids.push(existingId);
+      continue;
+    }
+    const createdId = await createVocabTerm(authHeader, payloadKey, lower);
+    if (createdId) ids.push(createdId);
+  }
+  return ids;
+};
+
+/**
+ * Cache global de entidades VRAC resolvidas por ID, compartilhado por todos os
+ * componentes — o diff de sugestões repete muito os mesmos termos entre cards, e
+ * o backend não tem resolução em lote (uma requisição por UUID).
+ *
+ * A promessa é cacheada, não só o resultado, para que N pedidos simultâneos do
+ * mesmo UUID gerem uma única requisição.
+ */
+const _vracEntityCache = new Map(); // `${payloadKey}:${id}` → Promise<entidade|null>
+
+const resolveVracEntity = (payloadKey, id) => {
+  const cfg = VRAC_ENTITIES[payloadKey];
+  if (!cfg || !id) return Promise.resolve(null);
+
+  const cacheKey = `${payloadKey}:${id}`;
+  if (_vracEntityCache.has(cacheKey)) return _vracEntityCache.get(cacheKey);
+
+  const promise = axios
+    .get(`/api/${cfg.endpoint}/${id}`)
+    .then((res) => {
+      // Um ID inexistente devolve 200 com o envelope nulo (o backend usa find(),
+      // não findOrFail()). Cachear esse null como registro válido envenenaria a
+      // entrada, então o miss é descartado do cache.
+      const entity = res.data?.[cfg.envelope] ?? null;
+      if (!entity) _vracEntityCache.delete(cacheKey);
+      return entity;
+    })
+    .catch(() => {
+      _vracEntityCache.delete(cacheKey);
+      return null;
+    });
+
+  _vracEntityCache.set(cacheKey, promise);
+  return promise;
+};
+
+/**
+ * Texto de exibição de uma entidade VRAC já resolvida. Agentes vêm com
+ * `contributorName`/`role` carregados; os demais usam a coluna de texto do
+ * próprio vocabulário.
+ */
+const vracEntityLabel = (payloadKey, entity) => {
+  if (!entity) return null;
+  if (payloadKey === "agents") {
+    return entity.contributorName?.name || entity.contributor_name?.name || null;
+  }
+  const cfg = VRAC_ENTITIES[payloadKey];
+  return cfg?.displayKey ? entity[cfg.displayKey] || null : null;
+};
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Sugestões colaborativas de obra
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Sugestões de uma obra — GET /api/work-suggestions. Público; 20 por página.
+ */
+const getWorkSuggestions = async (workId, { status, page = 1 } = {}) => {
+  const params = { work_id: workId, page };
+  if (status) params.status = status;
+  const response = await axios.get("/api/work-suggestions", { params });
+  return {
+    items: response.data?.data ?? [],
+    meta: response.data?.meta ?? null,
+  };
+};
+
+const createWorkSuggestion = async (authHeader, workId, payload) => {
+  const response = await axios.post(
+    `/api/vrac-works/${workId}/suggestions`,
+    { payload },
+    { headers: { Authorization: authHeader } },
+  );
+  return response.data?.suggestion ?? null;
+};
+
+/**
+ * Aceita uma sugestão. `acceptedFields` **nunca** pode ser uma lista vazia: o
+ * backend testa `! empty()`, então `[]` cai no mesmo caminho de "ausente" e
+ * aceita a sugestão inteira. Para não aceitar nada, use `rejectWorkSuggestion`.
+ *
+ * Devolve também a obra já atualizada, evitando um GET extra.
+ */
+const acceptWorkSuggestion = async (authHeader, suggestionId, acceptedFields, reviewNote) => {
+  if (Array.isArray(acceptedFields) && acceptedFields.length === 0) {
+    throw new Error("acceptWorkSuggestion: lista vazia aceitaria tudo — use rejectWorkSuggestion.");
+  }
+  const body = {};
+  if (acceptedFields) body.accepted_fields = acceptedFields;
+  if (reviewNote) body.review_note = reviewNote;
+
+  const response = await axios.post(`/api/work-suggestions/${suggestionId}/accept`, body, {
+    headers: { Authorization: authHeader },
+  });
+  return {
+    suggestion: response.data?.suggestion ?? null,
+    // Normalizada aqui: a tela espera o mesmo shape de `getWorkDetails`, e o
+    // backend devolve o model cru.
+    work: normalizeWork(response.data?.work),
+  };
+};
+
+const rejectWorkSuggestion = async (authHeader, suggestionId, reviewNote) => {
+  const body = reviewNote ? { review_note: reviewNote } : {};
+  const response = await axios.post(`/api/work-suggestions/${suggestionId}/reject`, body, {
+    headers: { Authorization: authHeader },
+  });
+  return response.data?.suggestion ?? null;
+};
+
+/**
+ * O usuário enviou alguma imagem desta obra? É o critério para julgar sugestões,
+ * calculado no cliente porque `GET /api/vrac-works/{id}` ainda não expõe
+ * `can_review`.
+ *
+ * Pergunta direta ao backend com `user_id` em vez de baixar a lista de
+ * contribuidores: basta saber se existe ao menos uma, então `per_page=1` resolve.
+ * (`per_page=-1` **não** vale aqui — diferente de `vrac-works`, a listagem de
+ * imagens valida `per_page >= 1` e devolve 422.)
+ */
+const isWorkContributor = async (workId, userId) => {
+  if (!workId || !userId) return false;
+  try {
+    const response = await axios.get("/api/images", {
+      params: { "work[]": workId, user_id: userId, per_page: 1 },
+    });
+    const total = response.data?.meta?.total;
+    if (typeof total === "number") return total > 0;
+    return (response.data?.data ?? []).length > 0;
+  } catch {
+    // Não-fatal: sem essa resposta a pessoa apenas não vê os botões de decisão.
+    return false;
+  }
+};
+
 export const api = {
   getImages: fetchImages,
   getGeoJSON,
@@ -872,6 +1141,7 @@ export const api = {
   getImageComments,
   getRelatedImages,
   getWorkDetails,
+  normalizeWork,
   getWorkImages,
   searchVocab,
   searchImages,
@@ -899,4 +1169,23 @@ export const api = {
   updateMemberRole,
   getJoinRequests,
   handleJoinRequest,
+  // entidades VRAC
+  VRAC_ENTITIES,
+  VRAC_VOCAB_KEYS,
+  createVracTitle,
+  createVracAgentRole,
+  createVracContributorName,
+  createVracAgent,
+  createVracDate,
+  findExistingVocabId,
+  createVocabTerm,
+  resolveVocabIds,
+  resolveVracEntity,
+  vracEntityLabel,
+  // sugestões de obra
+  getWorkSuggestions,
+  createWorkSuggestion,
+  acceptWorkSuggestion,
+  rejectWorkSuggestion,
+  isWorkContributor,
 };
