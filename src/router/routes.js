@@ -196,10 +196,18 @@ export default [
       return true;
     },
   },
+  // Mesma view para as duas abas, como em ImageDetail: o que muda é meta.section.
   {
     path: "/obras/:id",
     name: "work-detail",
     component: () => import("../views/WorkDetail.vue"),
+    meta: { section: "dados" },
+  },
+  {
+    path: "/obras/:id/sugestoes",
+    name: "work-detail-sugestoes",
+    component: () => import("../views/WorkDetail.vue"),
+    meta: { section: "sugestoes" },
   },
   {
     path: "/eu",
