@@ -1,6 +1,19 @@
 <template>
   <div>
-    <h1 class="h1 work-metadata__title">{{ props.work?.title || "Carregando..." }}</h1>
+    <div class="work-metadata__header">
+      <h1 class="h1 work-metadata__title">{{ props.work?.title || "Carregando..." }}</h1>
+
+      <!-- Obra não tem dono: toda edição é sugestão, inclusive de quem contribuiu
+           com imagens. Deslogado não vê o botão (o backend exige autenticação). -->
+      <button v-if="canSuggest" type="button" class="btn edit-btn" title="Sugerir alterações"
+        aria-label="Sugerir alterações nesta obra" data-cy="work-suggest-edit" @click="openSuggestModal">
+        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <SuggestionEditModal v-model="isSuggestModalOpen"
+      text="Você gostaria de complementar as informações sobre essa obra ou sugerir alterações nos dados existentes?"
+      @confirm="enterSuggestMode" />
 
     <!-- Títulos alternativos logo abaixo do título, separados por um quadrado laranja.
          O separador é interposto, então nunca aparece antes do primeiro título. -->
@@ -68,17 +81,30 @@
           marker-color="#2F2F2F" marker-variant="building" />
       </div>
     </div>
+
+    <p class="metadata-map-note">
+      Encontrou alguma inconsistência ou tem mais informações sobre essa obra?
+      <button v-if="canSuggest" type="button" class="metadata-map-note__link" @click="openSuggestModal">
+        Faça uma sugestão
+      </button>
+      <template v-else>Entre na sua conta para sugerir uma correção</template>.
+    </p>
   </div>
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
+import SuggestionEditModal from "@/components/ui/SuggestionEditModal.vue";
+import { useAuthStore } from "@/store/auth";
 import { DEFAULT_VIEW_ROUTE } from "@/constants/viewModes";
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
+const { loggedUser } = storeToRefs(authStore);
 
 const props = defineProps({
   work: {
@@ -86,6 +112,22 @@ const props = defineProps({
     default: null,
   },
 });
+
+const isSuggestModalOpen = ref(false);
+const isSuggesting = computed(() => route.query.suggest === "true");
+const canSuggest = computed(() => !!loggedUser.value && !isSuggesting.value);
+
+const openSuggestModal = () => {
+  isSuggestModalOpen.value = true;
+};
+
+const enterSuggestMode = () => {
+  router.push({
+    name: "work-detail-sugestoes",
+    params: { id: props.work?.id ?? route.params.id },
+    query: { suggest: "true" },
+  });
+};
 
 const otherTitles = computed(() =>
   (props.work?.titles || [])
@@ -108,8 +150,12 @@ const agents = computed(() =>
     })
 );
 
+// `renovation` e `demolition` são os tipos que o formulário de obra grava; os
+// demais vêm do acervo importado. Sem os dois, apareciam crus em inglês na tela.
 const DATE_TYPE_LABELS = {
   creation: "Criação",
+  renovation: "Reforma",
+  demolition: "Demolição",
   design: "Projeto",
   alteration: "Alteração",
   destruction: "Destruição",
@@ -183,8 +229,52 @@ const markerPosition = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+.work-metadata__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .work-metadata__title {
   margin-bottom: 8px;
+}
+
+/* Mesmo botão da página da imagem — 40x40, laranja, ícone de lápis. */
+.edit-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 8px;
+  background-color: var(--Laranja_E, #aa4f28);
+  color: #fff;
+  border: none;
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--Laranja_M, #e05f2f) 85%, #000);
+    color: #fff;
+  }
+}
+
+.metadata-map-note {
+  margin: 0 0 36px;
+  color: #495057;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.metadata-map-note__link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--Laranja_E, #aa4f28);
+  text-decoration: underline;
+  font: inherit;
+  cursor: pointer;
 }
 
 .work-metadata__alt-titles {

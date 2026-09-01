@@ -169,7 +169,7 @@
                 <label
                   class="form-check-label text-muted fst-italic small"
                   for="isAuthor"
-                  >Sou o autor da imagem</label
+                  >A imagem é de minha autoria</label
                 >
                 <div class="form-check form-switch p-0 m-0">
                   <input
@@ -208,8 +208,8 @@
                     class="form-check-label text-muted fst-italic small"
                     :class="{ 'text-negativo-e': isRightsInvalid }"
                     for="hasAuthorization"
-                    >Tenho permissão expressa do autor para disponibilizar a
-                    imagem no ARQUIGRAFIA</label
+                    >Tenho permissão expressa de quem detém a autoria para
+                    disponibilizar a imagem no ARQUIGRAFIA</label
                   >
                   <div class="form-check form-switch p-0 m-0">
                     <input
@@ -225,9 +225,9 @@
                 <div class="mb-2" v-if="!isRightsInvalid">
                   <UiField
                     label="Autoria da imagem"
-                    explain="Informe o nome do autor da imagem"
+                    explain="Informe o nome de quem detém a autoria da imagem"
                     :invalid="isAuthorNameInvalid"
-                    invalidMessage="O nome do autor é obrigatório"
+                    invalidMessage="Informe quem detém a autoria da imagem"
                   >
                     <template #default="{ id, ariaInvalid, ariaDescribedby }">
                       <input
@@ -235,7 +235,7 @@
                         type="text"
                         class="form-control"
                         :class="{ 'is-invalid': isAuthorNameInvalid }"
-                        placeholder="Nome do autor"
+                        placeholder="Nome"
                         v-model="form.authorName"
                         :disabled="form.unknownAuthor"
                         :aria-invalid="ariaInvalid"
@@ -250,7 +250,7 @@
                   <label
                     class="form-check-label text-muted fst-italic small"
                     for="unknownAuthor"
-                    >Não sei quem é o autor da imagem</label
+                    >Não sei de quem é a autoria da imagem</label
                   >
                   <div class="form-check form-switch p-0 m-0">
                     <input
@@ -324,208 +324,114 @@
             <h2 class="metadata-geral__title mb-4">Dados gerais</h2>
 
             <div class="metadata-geral__fields">
-            <div class="metadata-geral__field-group">
-            <div class="metadata-geral__field">
-              <UiField label="Obra" explain="Informe a obra relacionada">
-                <!-- Selected state -->
-                <div
-                  v-if="form.work"
-                  class="form-control metadata-geral__work-selected d-flex align-items-center justify-content-between gap-2"
-                >
-                  <div class="d-flex flex-column lh-sm">
-                    <span class="fw-semibold">{{ form.work.label }}</span>
-                    <small v-if="form.work.address" class="text-muted">{{
-                      form.work.address
-                    }}</small>
-                  </div>
-                  <button
-                    type="button"
-                    class="btn-close flex-shrink-0"
-                    aria-label="Remover obra"
-                    @click="
-                      form.work = null;
-                      workInput = '';
-                    "
+              <div class="metadata-geral__field-group">
+                <div class="metadata-geral__field">
+                  <WorkAutocompleteField
+                    ref="workFieldRef"
+                    v-model="form.work"
                   />
                 </div>
-                <!-- Search state -->
-                <div v-else class="position-relative">
-                  <input
-                    type="text"
-                    class="form-control"
-                    placeholder="Busque por nome ou endereço"
-                    v-model="workInput"
-                    @input="onWorkInputChange"
-                    @focus="showWorkSuggestions = true"
-                    @blur="hideWorkSuggestions"
-                    autocomplete="off"
-                  />
-                  <div
-                    v-if="
-                      showWorkSuggestions &&
-                      (filteredWorkSuggestions.length > 0 || canShowCreateWork)
-                    "
-                    class="dropdown-menu menu-light w-100 show position-absolute top-100 start-0 mt-1"
-                    style="z-index: 1000; max-height: 320px; overflow-y: auto"
+
+                <div class="metadata-geral__field">
+                  <UiField
+                    label="Tags da imagem"
+                    explain="Adicione tags para classificar a imagem"
                   >
-                    <button
-                      v-for="work in filteredWorkSuggestions"
-                      :key="work.id"
-                      type="button"
-                      class="dropdown-item d-flex flex-column align-items-start py-2"
-                      @click="selectWork(work)"
-                    >
-                      <span class="fw-semibold">{{
-                        workPrimaryTitle(work)
-                      }}</span>
-                      <small
-                        v-if="workMatchedAlternate(work, workInput)"
-                        class="text-muted fst-italic"
-                      >
-                        também conhecido como:
-                        {{ workMatchedAlternate(work, workInput) }}
-                      </small>
-                      <small
-                        v-else-if="work.location?.label"
-                        class="text-muted"
-                        >{{ work.location.label }}</small
-                      >
-                      <small
+                    <div class="position-relative">
+                      <input
+                        type="text"
+                        class="form-control"
+                        placeholder="Adicione novas tags aqui"
+                        v-model="tagInput"
+                        @keydown.enter.prevent="addTag"
+                        @input="onTagInputChange"
+                        @focus="showTagSuggestions = true"
+                        @blur="hideTagSuggestions"
+                        autocomplete="off"
+                      />
+                      <div
                         v-if="
-                          workMatchedAlternate(work, workInput) &&
-                          work.location?.label
+                          showTagSuggestions &&
+                          (filteredTagSuggestions.length > 0 ||
+                            canCreateSubject)
                         "
-                        class="text-muted"
-                        >{{ work.location.label }}</small
+                        class="dropdown-menu menu-light w-100 show position-absolute top-100 start-0 mt-1"
+                        style="
+                          z-index: 1000;
+                          max-height: 300px;
+                          overflow-y: auto;
+                        "
                       >
-                    </button>
-                    <button
-                      v-if="canShowCreateWork"
-                      type="button"
-                      class="dropdown-item text-primary d-flex align-items-center gap-1"
-                      @click="
-                        showWorkCreateModal = true;
-                        showWorkSuggestions = false;
-                      "
+                        <button
+                          v-for="(suggestion, index) in filteredTagSuggestions"
+                          :key="index"
+                          type="button"
+                          class="dropdown-item"
+                          @click="selectTagSuggestion(suggestion.term)"
+                        >
+                          {{ suggestion.term }}
+                        </button>
+                        <button
+                          v-if="canCreateSubject"
+                          type="button"
+                          class="dropdown-item text-primary d-flex align-items-center gap-1"
+                          :disabled="isCreatingSubject"
+                          @click="createAndAddSubject(tagInput.trim())"
+                        >
+                          <i class="bi bi-plus-circle" />
+                          <span>{{
+                            isCreatingSubject
+                              ? "Criando..."
+                              : `Criar tag "${tagInput.trim()}"`
+                          }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </UiField>
+                  <div class="metadata-geral__tags d-flex flex-wrap">
+                    <div
+                      v-for="(tag, index) in form.tags"
+                      :key="tag"
+                      class="btn btn-outline-primary btn-sm btn-tag metadata-geral__tag d-inline-flex align-items-center"
                     >
-                      <i class="bi bi-plus-circle" />
-                      <span>Criar obra "{{ workInput.trim() }}"</span>
-                    </button>
+                      {{ tag }}
+                      <button
+                        type="button"
+                        class="btn-close ms-2"
+                        aria-label="Remover"
+                        @click="removeTag(index)"
+                      />
+                    </div>
                   </div>
                 </div>
-              </UiField>
-            </div>
 
-            <div class="metadata-geral__field">
-              <UiField
-                label="Tags da imagem"
-                explain="Adicione tags para classificar a imagem"
-              >
-                <div class="position-relative">
-                  <input
-                    type="text"
-                    class="form-control"
-                    placeholder="Adicione novas tags aqui"
-                    v-model="tagInput"
-                    @keydown.enter.prevent="addTag"
-                    @input="onTagInputChange"
-                    @focus="showTagSuggestions = true"
-                    @blur="hideTagSuggestions"
-                    autocomplete="off"
-                  />
-                  <div
-                    v-if="
-                      showTagSuggestions &&
-                      (filteredTagSuggestions.length > 0 || canCreateSubject)
-                    "
-                    class="dropdown-menu menu-light w-100 show position-absolute top-100 start-0 mt-1"
-                    style="z-index: 1000; max-height: 300px; overflow-y: auto"
+                <div class="metadata-geral__field">
+                  <UiField
+                    label="Descrição da imagem"
+                    explain="Adicione uma descrição detalhada da imagem"
                   >
-                    <button
-                      v-for="(suggestion, index) in filteredTagSuggestions"
-                      :key="index"
-                      type="button"
-                      class="dropdown-item"
-                      @click="selectTagSuggestion(suggestion.term)"
-                    >
-                      {{ suggestion.term }}
-                    </button>
-                    <button
-                      v-if="canCreateSubject"
-                      type="button"
-                      class="dropdown-item text-primary d-flex align-items-center gap-1"
-                      :disabled="isCreatingSubject"
-                      @click="createAndAddSubject(tagInput.trim())"
-                    >
-                      <i class="bi bi-plus-circle" />
-                      <span>{{
-                        isCreatingSubject
-                          ? "Criando..."
-                          : `Criar tag "${tagInput.trim()}"`
-                      }}</span>
-                    </button>
-                  </div>
-                </div>
-              </UiField>
-              <div class="metadata-geral__tags d-flex flex-wrap">
-                <div
-                  v-for="(tag, index) in form.tags"
-                  :key="tag"
-                  class="btn btn-outline-primary btn-sm btn-tag metadata-geral__tag d-inline-flex align-items-center"
-                >
-                  {{ tag }}
-                  <button
-                    type="button"
-                    class="btn-close ms-2"
-                    aria-label="Remover"
-                    @click="removeTag(index)"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div class="metadata-geral__field">
-              <UiField
-                label="Descrição da imagem"
-                explain="Adicione uma descrição detalhada da imagem"
-              >
-                <textarea
-                  class="form-control"
-                  rows="5"
-                  placeholder="Texto exemplo"
-                  v-model="form.description"
-                  maxlength="500"
-                ></textarea>
-              </UiField>
-              <div class="metadata-geral__hint">
-                Máximo 500 caracteres.
-              </div>
-            </div>
-            </div>
-
-            <div class="metadata-geral__field">
-              <UiField
-                label="Data da imagem"
-                explain="Informe a data de criação da imagem"
-              >
-                <div class="metadata-geral__date">
-                  <div
-                    v-if="form.dateType === 'year'"
-                    class="metadata-geral__date-input"
-                  >
-                    <input
-                      type="number"
+                    <textarea
                       class="form-control"
-                      v-model="dateYearInput"
-                      placeholder="Ano"
-                    />
-                  </div>
-                  <div
-                    v-else
-                    class="metadata-geral__date-interval d-flex align-items-center flex-wrap"
-                  >
-                    <span>Entre</span>
-                    <div class="metadata-geral__date-input">
+                      rows="5"
+                      placeholder="Texto exemplo"
+                      v-model="form.description"
+                      maxlength="500"
+                    ></textarea>
+                  </UiField>
+                  <div class="metadata-geral__hint">Máximo 500 caracteres.</div>
+                </div>
+              </div>
+
+              <div class="metadata-geral__field">
+                <UiField
+                  label="Data da imagem"
+                  explain="Informe a data de criação da imagem"
+                >
+                  <div class="metadata-geral__date">
+                    <div
+                      v-if="form.dateType === 'year'"
+                      class="metadata-geral__date-input"
+                    >
                       <input
                         type="number"
                         class="form-control"
@@ -533,77 +439,90 @@
                         placeholder="Ano"
                       />
                     </div>
-                    <span>e</span>
-                    <div class="metadata-geral__date-input">
-                      <input
-                        type="number"
-                        class="form-control"
-                        v-model="dateEndYearInput"
-                        placeholder="Ano"
-                      />
+                    <div
+                      v-else
+                      class="metadata-geral__date-interval d-flex align-items-center flex-wrap"
+                    >
+                      <span>Entre</span>
+                      <div class="metadata-geral__date-input">
+                        <input
+                          type="number"
+                          class="form-control"
+                          v-model="dateYearInput"
+                          placeholder="Ano"
+                        />
+                      </div>
+                      <span>e</span>
+                      <div class="metadata-geral__date-input">
+                        <input
+                          type="number"
+                          class="form-control"
+                          v-model="dateEndYearInput"
+                          placeholder="Ano"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div class="metadata-geral__date-options">
-                    <div class="form-check metadata-geral__date-option">
-                      <input
-                        class="form-check-input"
-                        type="radio"
-                        name="dateType"
-                        id="dateTypeYear"
-                        value="year"
-                        v-model="form.dateType"
-                      />
-                      <label class="form-check-label" for="dateTypeYear"
-                        >Ano</label
-                      >
+                    <div class="metadata-geral__date-options">
+                      <div class="form-check metadata-geral__date-option">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          name="dateType"
+                          id="dateTypeYear"
+                          value="year"
+                          v-model="form.dateType"
+                        />
+                        <label class="form-check-label" for="dateTypeYear"
+                          >Ano</label
+                        >
+                      </div>
+                      <div class="form-check metadata-geral__date-option">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          name="dateType"
+                          id="dateTypeInterval"
+                          value="interval"
+                          v-model="form.dateType"
+                        />
+                        <label class="form-check-label" for="dateTypeInterval"
+                          >Intervalo</label
+                        >
+                      </div>
                     </div>
-                    <div class="form-check metadata-geral__date-option">
-                      <input
-                        class="form-check-input"
-                        type="radio"
-                        name="dateType"
-                        id="dateTypeInterval"
-                        value="interval"
-                        v-model="form.dateType"
-                      />
-                      <label class="form-check-label" for="dateTypeInterval"
-                        >Intervalo</label
-                      >
-                    </div>
-                  </div>
 
-                  <div class="metadata-geral__date-options">
-                    <div class="form-check metadata-geral__date-option">
-                      <input
-                        class="form-check-input"
-                        type="radio"
-                        name="dateAccuracy"
-                        id="dateAccExact"
-                        value="exact"
-                        v-model="form.dateAccuracy"
-                      />
-                      <label class="form-check-label" for="dateAccExact"
-                        >Data exata</label
-                      >
-                    </div>
-                    <div class="form-check metadata-geral__date-option">
-                      <input
-                        class="form-check-input"
-                        type="radio"
-                        name="dateAccuracy"
-                        id="dateAccApprox"
-                        value="approximate"
-                        v-model="form.dateAccuracy"
-                      />
-                      <label class="form-check-label" for="dateAccApprox"
-                        >Data aproximada</label
-                      >
+                    <div class="metadata-geral__date-options">
+                      <div class="form-check metadata-geral__date-option">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          name="dateAccuracy"
+                          id="dateAccExact"
+                          value="exact"
+                          v-model="form.dateAccuracy"
+                        />
+                        <label class="form-check-label" for="dateAccExact"
+                          >Data exata</label
+                        >
+                      </div>
+                      <div class="form-check metadata-geral__date-option">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          name="dateAccuracy"
+                          id="dateAccApprox"
+                          value="approximate"
+                          v-model="form.dateAccuracy"
+                        />
+                        <label class="form-check-label" for="dateAccApprox"
+                          >Data aproximada</label
+                        >
+                      </div>
                     </div>
                   </div>
-                </div>
-              </UiField>
-            </div>
+                </UiField>
+              </div>
             </div>
           </section>
 
@@ -828,13 +747,6 @@
     </div>
   </div>
 
-  <WorkCreateModal
-    v-model="showWorkCreateModal"
-    :initial-title="workInput"
-    @created="onWorkCreated"
-    @select-existing="selectWork"
-  />
-
   <transition name="fade">
     <div
       v-if="isSubmitting"
@@ -865,7 +777,8 @@ import { useToast } from "@/composables/useToast";
 import UiField from "@/components/ui/UiField.vue";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
-import WorkCreateModal from "@/components/work/WorkCreateModal.vue";
+import WorkAutocompleteField from "@/components/work/WorkAutocompleteField.vue";
+import { resolveWorkId } from "@/composables/useWorkAutocomplete";
 import { useImageUploadStore } from "@/store/imageUploads";
 import { useAuthStore } from "@/store/auth";
 import { useVracStore } from "@/store/vrac";
@@ -912,6 +825,10 @@ const { pendingImages, selectedIndex } = storeToRefs(imageUploadStore);
 const authStore = useAuthStore();
 const { loggedUser } = storeToRefs(authStore);
 const vracStore = useVracStore();
+
+// Referência ao campo de obra, usada para registrar uma obra recém-criada na
+// busca depois que o rascunho é materializado no envio.
+const workFieldRef = ref(null);
 
 const tabs = [
   { label: "Essenciais", section: "essenciais" },
@@ -1490,19 +1407,7 @@ onMounted(async () => {
       allContributorNames.value = contributors;
     }
 
-    // Busca obras
-    const works = await vracStore.getVRACWorks();
-    if (Array.isArray(works)) {
-      allWorks.value = works;
-      workFuse = new Fuse(allWorks.value, {
-        keys: [
-          { name: "titles.label", weight: 0.7 },
-          { name: "location.label", weight: 0.3 },
-        ],
-        threshold: 0.3,
-        includeScore: true,
-      });
-    }
+    // As obras são carregadas pelo próprio WorkAutocompleteField.
   } catch (error) {
     console.error("Error fetching data:", error);
   }
@@ -1593,237 +1498,6 @@ const removeTag = (index) => {
   form.value.tags.splice(index, 1);
 };
 
-// Estado do autocomplete de obras
-const showWorkCreateModal = ref(false);
-const allWorks = ref([]);
-const workInput = ref("");
-const filteredWorkSuggestions = ref([]);
-const showWorkSuggestions = ref(false);
-let workFuse = null;
-let workDebounceTimer = null;
-
-const workPrimaryTitle = (work) => {
-  const titles = work?.titles || [];
-  const preferred = titles.find((t) => t.pref);
-  return (preferred || titles[0])?.label || "(sem título)";
-};
-
-const workMatchedAlternate = (work, query) => {
-  if (!query?.trim()) return null;
-  const q = query.trim().toLowerCase();
-  const preferred = workPrimaryTitle(work).toLowerCase();
-  if (preferred.includes(q)) return null;
-  const alt = (work?.titles || []).find(
-    (t) => !t.pref && t.label.toLowerCase().includes(q),
-  );
-  return alt?.label || null;
-};
-
-const canShowCreateWork = computed(() => {
-  const term = workInput.value.trim();
-  return term.length > 0;
-});
-
-watch(
-  () => form.value.work,
-  (selected) => {
-    if (!selected) workInput.value = "";
-  },
-);
-
-const onWorkInputChange = () => {
-  if (form.value.work && workInput.value !== form.value.work.label) {
-    form.value.work = null;
-  }
-
-  if (workDebounceTimer) clearTimeout(workDebounceTimer);
-
-  workDebounceTimer = setTimeout(() => {
-    if (!workInput.value.trim()) {
-      filteredWorkSuggestions.value = [];
-      return;
-    }
-
-    if (workFuse) {
-      const results = workFuse.search(workInput.value);
-      filteredWorkSuggestions.value = results
-        .map((result) => result.item)
-        .slice(0, 10);
-    }
-  }, 300);
-};
-
-const hideWorkSuggestions = () => {
-  setTimeout(() => {
-    showWorkSuggestions.value = false;
-  }, 200);
-};
-
-const selectWork = (work) => {
-  form.value.work = {
-    id: work.id,
-    label: workPrimaryTitle(work),
-    address: work.location?.label || null,
-  };
-  filteredWorkSuggestions.value = [];
-  showWorkSuggestions.value = false;
-};
-
-// O modal emite um rascunho independente. Nenhum registro é criado no backend aqui —
-// veja `materializeWork` para os POSTs reais, adiados até o envio da imagem.
-const onWorkCreated = (draft) => {
-  form.value.work = {
-    draft,
-    label: draft.label || "(sem título)",
-    address: draft.address || null,
-  };
-  filteredWorkSuggestions.value = [];
-  showWorkSuggestions.value = false;
-};
-
-// Materializa um rascunho em uma VRACWork real. Chamado apenas quando o upload
-// da imagem é de fato enviado, para que cancelamentos não deixem registros órfãos.
-const materializeWork = async (draft) => {
-  const authHeader = { Authorization: authStore.authHeader };
-
-  const titleIds = [];
-  for (const t of draft.titles) {
-    const res = await axios.post(
-      "/api/vrac-titles",
-      { label: t.label, type: t.type, pref: t.pref },
-      { headers: authHeader },
-    );
-    titleIds.push(res.data.title.id);
-  }
-
-  // Resolve labels de papel do agente → IDs (busca existente ou cria com label em minúsculas)
-  let roles = null;
-  const roleIdCache = {};
-  const resolveRoleId = async (label) => {
-    if (roleIdCache[label]) return roleIdCache[label];
-    if (!roles) roles = (await vracStore.getVRACAgentRoles()) || [];
-    const match = roles.find(
-      (r) => r.label?.toLowerCase() === label.toLowerCase(),
-    );
-    if (match) {
-      roleIdCache[label] = match.id;
-      return match.id;
-    }
-    const res = await axios.post(
-      "/api/vrac-agent-roles",
-      { label: label.toLowerCase() },
-      { headers: authHeader },
-    );
-    const id = res.data.role.id;
-    roles.push(res.data.role);
-    roleIdCache[label] = id;
-    return id;
-  };
-
-  const agentIds = [];
-  for (const a of draft.agents) {
-    let contribId = a.contributorNameId;
-    if (!contribId) {
-      const res = await axios.post(
-        "/api/vrac-contributor-names",
-        { name: a.contributorName, type: "personal" },
-        { headers: authHeader },
-      );
-      contribId = res.data.name.id;
-    }
-    const roleId = await resolveRoleId(a.roleLabel);
-    const res = await axios.post(
-      "/api/vrac-agents",
-      { contributor_name_id: contribId, role_id: roleId },
-      { headers: authHeader },
-    );
-    agentIds.push(res.data.agent.id);
-  }
-
-  const dateIds = [];
-  for (const d of draft.dates) {
-    const res = await axios.post("/api/vrac-dates", d, { headers: authHeader });
-    dateIds.push(res.data.date.id);
-  }
-
-  // Vocabulários: IDs existentes são usados diretamente; novos termos são criados via POST (em minúsculas).
-  const VOCAB_CREATE = {
-    stylePeriods: {
-      endpoint: "vrac-style-periods",
-      payload: (v) => ({ label: v }),
-      responseKey: "period",
-    },
-    culturalCtxs: {
-      endpoint: "vrac-cultural-contexts",
-      payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),
-      responseKey: "context",
-    },
-    workTypes: {
-      endpoint: "vrac-work-types",
-      payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),
-      responseKey: "work_type",
-    },
-    techniques: {
-      endpoint: "vrac-techniques",
-      payload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),
-      responseKey: "technique",
-    },
-    materials: {
-      endpoint: "vrac-materials",
-      payload: (v) => ({ label: v, type: "other", vocab: "ARQUIGRAFIA" }),
-      responseKey: "material",
-    },
-    subjects: {
-      endpoint: "vrac-subjects",
-      payload: (v) => ({ term: v, type: "otherTopic", vocab: "ARQUIGRAFIA" }),
-      responseKey: "data",
-    },
-  };
-
-  const resolvedVocab = {};
-  for (const key of Object.keys(VOCAB_CREATE)) {
-    const bucket = draft[key] || { existing: [], newTerms: [] };
-    const ids = [...bucket.existing];
-    const cfg = VOCAB_CREATE[key];
-    for (const term of bucket.newTerms) {
-      const lower = term.toLowerCase();
-      const res = await axios.post(`/api/${cfg.endpoint}`, cfg.payload(lower), {
-        headers: authHeader,
-      });
-      const created = res.data[cfg.responseKey];
-      if (created?.id) ids.push(created.id);
-    }
-    resolvedVocab[key] = ids;
-  }
-
-  const workPayload = {
-    latitude: draft.coords.lat,
-    longitude: draft.coords.lng,
-    location_label: draft.locationLabel || undefined,
-    titles: titleIds,
-  };
-  if (agentIds.length) workPayload.agents = agentIds;
-  if (dateIds.length) workPayload.dates = dateIds;
-  if (draft.description) workPayload.description = draft.description;
-  if (resolvedVocab.stylePeriods.length)
-    workPayload.style_periods = resolvedVocab.stylePeriods;
-  if (resolvedVocab.culturalCtxs.length)
-    workPayload.cultural_contexts = resolvedVocab.culturalCtxs;
-  if (resolvedVocab.workTypes.length)
-    workPayload.work_types = resolvedVocab.workTypes;
-  if (resolvedVocab.techniques.length)
-    workPayload.techniques = resolvedVocab.techniques;
-  if (resolvedVocab.materials.length)
-    workPayload.materials = resolvedVocab.materials;
-  if (resolvedVocab.subjects.length)
-    workPayload.subjects = resolvedVocab.subjects;
-
-  const workRes = await axios.post("/api/vrac-works", workPayload, {
-    headers: authHeader,
-  });
-  return workRes.data.data;
-};
-
 const licenses = [
   { value: "CC-0", label: "CC-0", description: "" },
   {
@@ -1869,6 +1543,29 @@ const selectTab = (section) => {
 const handleUploadError = (message) => {
   toast.show(message, "error");
 };
+
+// Traduz a falha de um POST /api/images em frase.
+// A API responde 422 com `errors`/`message` legíveis na validação;
+// um 5xx não traz motivo aproveitável (o corpo é genérico).
+function describeUploadError(error) {
+  const status = error.response?.status;
+
+  if (status >= 500) {
+    return "o servidor não conseguiu processar o arquivo. Tente novamente ou avise a equipe.";
+  }
+
+  const apiErrors = error.response?.data?.errors;
+  if (apiErrors) {
+    const firstError = Object.values(apiErrors)[0]?.[0];
+    if (firstError) return firstError;
+  }
+
+  return (
+    error.response?.data?.message ||
+    error.message ||
+    "erro inesperado no envio."
+  );
+}
 
 const canSubmit = computed(() => {
   if (pendingImages.value.length === 0) {
@@ -2013,25 +1710,10 @@ const handleSubmit = async () => {
         // Adiciona a obra selecionada (seleção única, mas o backend espera array).
         // Se a obra ainda é um rascunho do WorkCreateModal, materializa agora —
         // este é o primeiro momento em que o usuário confirmou o envio.
-        let workId = metadata.work?.id || null;
-        if (!workId && metadata.work?.draft) {
-          const newWork = await materializeWork(metadata.work.draft);
-          workId = newWork?.id || null;
-          if (workId) {
-            // Persiste o ID resolvido para que uma nova tentativa não recrie a obra.
-            metadata.work.id = workId;
-            metadata.work.draft = null;
-            allWorks.value.push(newWork);
-            workFuse = new Fuse(allWorks.value, {
-              keys: [
-                { name: "titles.label", weight: 0.7 },
-                { name: "location.label", weight: 0.3 },
-              ],
-              threshold: 0.3,
-              includeScore: true,
-            });
-          }
-        }
+        const { id: workId, work: newWork } = await resolveWorkId(
+          metadata.work,
+        );
+        if (newWork) workFieldRef.value?.registerWork(newWork);
         if (workId) {
           formData.append("works[]", workId);
         }
@@ -2062,7 +1744,7 @@ const handleSubmit = async () => {
         console.error(`Erro ao enviar imagem ${index + 1}:`, error);
         failedUploads.push({
           title: metadata.title || `Imagem ${index + 1}`,
-          error: error.response?.data?.message || error.message,
+          error: describeUploadError(error),
         });
       }
     }
@@ -2084,7 +1766,7 @@ const handleSubmit = async () => {
     } else if (failedUploads.length > 0) {
       // Reabilita a UI para permitir correção e reenvio
       isSubmitting.value = false;
-      const message =
+      const intro =
         successfulUploads.length > 0
           ? `${successfulUploads.length} ${
               successfulUploads.length === 1
@@ -2097,7 +1779,16 @@ const handleSubmit = async () => {
               failedUploads.length === 1 ? "imagem" : "imagens"
             }.`;
 
-      toast.show(message, "error");
+      // O motivo de cada falha (uma só, ou uma linha por imagem) — sem ele a
+      // contagem não diz ao usuário o que houve nem o que tentar em seguida.
+      const reasons =
+        failedUploads.length === 1
+          ? ` ${failedUploads[0].error}`
+          : ` ${failedUploads
+              .map((failure) => `${failure.title}: ${failure.error}`)
+              .join("; ")}`;
+
+      toast.show(`${intro}${reasons}`, "error");
 
       // Se alguns enviaram com sucesso, remove-os da lista
       if (successfulUploads.length > 0) {

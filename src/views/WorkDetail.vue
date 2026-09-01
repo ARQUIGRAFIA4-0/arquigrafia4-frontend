@@ -1,8 +1,8 @@
 <template>
   <div class="container-fluid work-detail__container">
-    <div class="row align-items-start gy-4 work-detail__layout">
-      <!-- Lado esquerdo (7 colunas): voltar + mosaico das imagens da obra -->
-      <div class="col-12 col-md-7">
+    <div class="work-detail__wrapper-content">
+      <!-- Lado esquerdo: voltar + mosaico das imagens da obra -->
+      <div class="work-detail__image-box">
         <header class="work-detail__header">
           <button type="button" class="work-detail__back-btn" aria-label="Voltar" @click="goBack">
             <span class="work-detail__back-content">
@@ -51,31 +51,76 @@
         </div>
       </div>
 
-      <!-- Lado direito (5 colunas): metadados da obra -->
-      <div class="col-12 col-md-5">
-        <div class="col-12 work-detail__navbar">
+      <!-- Lado direito: metadados, formulário de sugestão ou aba de sugestões.
+           O mosaico à esquerda não muda em nenhum dos modos. -->
+      <div class="work-detail__metadata-box">
+        <div class="work-detail__navbar">
           <ul class="nav nav-underline work-detail__navbar-links">
-            <li class="nav-item">
-              <span class="nav-link active" aria-current="page">Dados</span>
+            <li v-for="tab in tabs" :key="tab.section" class="nav-item">
+              <!-- Durante a sugestão as demais abas ficam inertes, como em ImageDetail. -->
+              <span v-if="lockedTabSection && lockedTabSection !== tab.section"
+                class="nav-link work-detail__nav-link--inactive" aria-disabled="true">
+                {{ tab.label }}
+              </span>
+              <RouterLink v-else :to="{ name: tab.routeName, params: { id: route.params.id } }" class="nav-link"
+                :class="{ active: currentSection === tab.section }">
+                {{ tab.label }}
+              </RouterLink>
             </li>
           </ul>
         </div>
 
-        <work-metadata v-if="work" :work="work" />
+        <template v-if="work">
+          <work-metadata v-if="currentSection === 'dados'" :work="work" />
+
+          <work-suggestion-edit v-else-if="isSuggesting" :work="work" @submitted="handleSuggestionSubmitted" />
+
+          <work-suggestion-list v-else :work="work" @applied="handleSuggestionApplied" />
+        </template>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import { useRoute, useRouter, RouterLink } from "vue-router";
+import { storeToRefs } from "pinia";
 import MosaicCard from "@/components/MosaicCard.vue";
 import WorkMetadata from "@/components/work/WorkMetadata.vue";
+import WorkSuggestionEdit from "@/components/work/WorkSuggestionEdit.vue";
+import WorkSuggestionList from "@/components/work/WorkSuggestionList.vue";
+import { useAuthStore } from "@/store/auth";
 import { api } from "@/services/api";
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
+const { loggedUser } = storeToRefs(authStore);
+
+const TABS = [
+  { section: "dados", label: "Dados", routeName: "work-detail" },
+  { section: "sugestoes", label: "Sugestões", routeName: "work-detail-sugestoes" },
+];
+const tabs = TABS;
+
+const currentSection = computed(() => route.meta?.section ?? "dados");
+// Sugerir exige login: o POST da sugestão é autenticado.
+const isSuggesting = computed(
+  () => route.query.suggest === "true" && !!loggedUser.value && currentSection.value === "sugestoes"
+);
+const lockedTabSection = computed(() => (isSuggesting.value ? "sugestoes" : null));
+
+// Entrar por URL direta num modo inválido volta para a aba permitida.
+watch(
+  [currentSection, isSuggesting],
+  () => {
+    if (route.query.suggest === "true" && !loggedUser.value) {
+      router.replace({ name: "work-detail", params: { id: route.params.id } });
+    }
+  },
+  { immediate: true }
+);
 
 const loading = ref(true);
 const error = ref(null);
@@ -179,6 +224,16 @@ const fetchWork = async () => {
   }
 };
 
+// Enviada a sugestão, o formulário sai e a aba mostra a fila/histórico.
+const handleSuggestionSubmitted = () => {
+  router.replace({ name: "work-detail-sugestoes", params: { id: route.params.id } });
+};
+
+// O aceite devolve a obra já atualizada, então não há novo GET aqui.
+const handleSuggestionApplied = (updatedWork) => {
+  if (updatedWork) work.value = updatedWork;
+};
+
 // Scroll infinito: mesma dinâmica do mosaico da home e dos grids de perfil.
 const fetchNextPage = async () => {
   if (!hasNextPage.value || isFetchingNextPage.value || loading.value) return;
@@ -222,7 +277,16 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
-$breakpoint-md: 768px;
+// Mesmos breakpoints da página de detalhe da imagem — o layout de duas colunas
+// entra a 1024px nas duas telas, não a 768px só aqui.
+$breakpoint-sm: 768px;
+$breakpoint-md: 1024px;
+
+@mixin sm {
+  @media (min-width: #{$breakpoint-sm}) {
+    @content;
+  }
+}
 
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
@@ -232,23 +296,52 @@ $breakpoint-md: 768px;
 
 // Mesmo alinhamento da página de detalhe da imagem (navbar).
 .work-detail__container {
+  width: 100%;
   padding-top: 1rem;
   padding-bottom: 1rem;
 
-  @include md {
+  @include sm {
     padding: 24px 50px;
   }
 }
 
-.work-detail__layout {
-  --bs-gutter-x: 1.5rem;
+/* Mesmas proporções da página de detalhe da imagem: larguras máximas fixas
+   (807/576) num flex centralizado, em vez de colunas percentuais do Bootstrap —
+   que escalavam com a janela e não batiam com a página de imagem em nenhuma
+   largura. */
+.work-detail__wrapper-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.875rem;
+
+  @include md {
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+  }
+}
+
+.work-detail__image-box {
+  width: 100%;
+
+  @include md {
+    max-width: 807px;
+  }
+}
+
+.work-detail__metadata-box {
+  width: 100%;
+
+  @include md {
+    max-width: 576px;
+  }
 }
 
 // Espelha .image-detail__navbar
 .work-detail__navbar {
   margin-bottom: 16px;
 
-  @include md {
+  @include sm {
     margin-bottom: 28px;
   }
 }
@@ -262,7 +355,14 @@ $breakpoint-md: 768px;
 }
 
 .work-detail__navbar-links .nav-link {
+  cursor: pointer;
+}
+
+/* Aba inerte enquanto o formulário de sugestão está aberto. */
+.work-detail__navbar-links .work-detail__nav-link--inactive {
+  color: var(--Cinza_M, #636262);
   cursor: default;
+  pointer-events: none;
 }
 
 .work-detail__header {

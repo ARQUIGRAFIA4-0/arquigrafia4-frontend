@@ -106,7 +106,7 @@ import LicenseInfoBlock from "@/components/imageDetail/LicenseInfoBlock.vue";
 import { DEFAULT_VIEW_ROUTE } from "@/constants/viewModes";
 import { useAuthStore } from "@/store/auth";
 import { storeToRefs } from "pinia";
-import SuggestionEditModal from "./suggestions/SuggestionEditModal.vue";
+import SuggestionEditModal from "@/components/ui/SuggestionEditModal.vue";
 
 
 const authStore = useAuthStore();

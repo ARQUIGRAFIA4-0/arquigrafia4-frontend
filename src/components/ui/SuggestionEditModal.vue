@@ -12,10 +12,7 @@
             </button>
           </div>
 
-          <p class="suggest-modal-text">
-            Você gostaria de complementar as informações sobre essa imagem ou
-            sugerir alterações nos dados existentes?
-          </p>
+          <p class="suggest-modal-text">{{ text }}</p>
 
           <div class="suggest-modal-actions">
             <button type="button" class="btn suggest-modal-btn suggest-modal-btn--cancel" @click="close">
@@ -36,6 +33,12 @@ defineProps({
   modelValue: {
     type: Boolean,
     default: false,
+  },
+  // A linha fina muda conforme o que está sendo editado (imagem ou obra).
+  text: {
+    type: String,
+    default:
+      "Você gostaria de complementar as informações sobre essa imagem ou sugerir alterações nos dados existentes?",
   },
 });
 

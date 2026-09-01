@@ -72,6 +72,9 @@ const route = useRoute();
 // campos era mantida separadamente aqui e em Toolbar.vue (desktop).
 const activeUrlFilters = computed(() => queryToFilters(route.query));
 
+// Usado pelo botão de busca por data, hoje comentado no template (#search-date-button).
+// Mantido para quando o botão voltar.
+// eslint-disable-next-line no-unused-vars
 const hasActiveDateFilter = computed(() => Boolean(
   activeUrlFilters.value.imageStartYear != null || activeUrlFilters.value.imageEndYear != null
 ));

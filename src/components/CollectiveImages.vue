@@ -13,7 +13,11 @@ import { useImageUploadStore } from "@/store/imageUploads";
 import { useAuthStore } from "@/store/auth";
 import { useQueryClient } from "@tanstack/vue-query";
 import { api } from "@/services/api";
-import { convertFilesIfHeic, isHeicFile } from "@/helpers/convertHeic";
+import {
+  buildHeicFallbackMessage,
+  convertFilesIfHeic,
+  isHeicFile,
+} from "@/helpers/convertHeic";
 
 const props = defineProps({
   collectiveId: { type: String, default: null },
@@ -88,7 +92,9 @@ async function handleFileSelect(event) {
   const filtered = files.filter((f) => f.type.startsWith("image/") || isHeicFile(f));
   if (!filtered.length) return;
 
-  const converted = await convertFilesIfHeic(filtered);
+  const { files: converted, failed } = await convertFilesIfHeic(filtered);
+  if (failed.length) displayAlert(buildHeicFallbackMessage(failed), "neutral");
+
   const result = await uploadStore.setImages(converted);
   event.target.value = null;
 

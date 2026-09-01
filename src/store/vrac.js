@@ -33,7 +33,7 @@ export const useVracStore = defineStore("vrac", () => {
     try {
       const response = await axios.post(
         "/api/vrac-subjects",
-        { term, type: "otherTopic", vocab: "ARQUIGRAFIA" },
+        { term, type: "otherTopic", vocab: "Arquigrafia" },
         {
           headers: {
             "Content-Type": "application/json"

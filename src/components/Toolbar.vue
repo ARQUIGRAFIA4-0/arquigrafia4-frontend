@@ -581,7 +581,7 @@ const urlChips = computed(() => {
       uid: `contributor-${route.query.contributor}`,
       type: 'contributor',
       value: route.query.contributor,
-      label: `Autor: ${route.query.contributor}`,
+      label: `Autoria: ${route.query.contributor}`,
     });
   }
 
@@ -874,7 +874,7 @@ function onViewSubcontrol() {
 
 .toolbar-acervo__panel {
   display: flex;
-  min-height: 56px;
+  min-height: 62px;
   height: auto;
   padding: var(--p, 12px) var(--m, 16px);
   align-items: center;

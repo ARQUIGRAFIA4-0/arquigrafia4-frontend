@@ -1,11 +1,10 @@
 <script setup>
 import { ref, computed, watch, onUnmounted, markRaw } from "vue";
-import { useVracStore } from "@/store/vrac";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
 import UiField from "@/components/ui/UiField.vue";
-import Fuse from "fuse.js";
 import axios from "@/axios";
+import { useWorkForm } from "@/composables/useWorkForm";
 import { Marker } from "maplibre-gl";
 
 const props = defineProps({
@@ -17,7 +16,23 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue", "created", "select-existing"]);
 
-const vracStore = useVracStore();
+// Campos de metadados (passos 2 e 3) — compartilhados com o formulário de sugestão
+// de edição da obra. Aqui ficam só o passo 1 (mapa) e a orquestração do wizard.
+const {
+  locationLabel,
+  TITLE_TYPES, titleTypeInput, titleLabelInput, titles, hasPreferredTitle,
+  addTitle, removeTitle, titleTypeLabel,
+  AGENT_ROLE_LABELS, agentRoleInput, agentNameInput, agents,
+  filteredNameSuggestions, showNameSuggestions, loadContributorNames,
+  onAgentNameInput, hideNameSuggestions, addAgent, removeAgent,
+  DATE_TYPES, dateTypeInput, dateYearInput, dateYearEndInput, dateIntervalMode,
+  dateCirca, dates, dateError, isDateTypeDisabled, addDate, removeDate, dateTypeLabel,
+  formatDateChip,
+  descriptionInput,
+  VOCAB_FIELDS, onVocabInput, addVocabItem, canCreateVocab, createAndAddVocabItem,
+  onVocabEnter, onVocabPlusClick, removeVocabItem, hideVocabSuggestions,
+  canSubmit, commitPendingInputs, buildDraft, reset: resetForm,
+} = useWorkForm();
 
 // ── Step management ─────────────────────────────────────────────────────────
 const step = ref(1);
@@ -205,300 +220,15 @@ const goToStep2 = () => {
   step.value = 2;
 };
 
-// ── Step 2: metadata ─────────────────────────────────────────────────────────
-
-// --- Location label (editable) ---
-const locationLabel = ref("");
-
-// --- Titles ---
-const TITLE_TYPES = [
-  { value: "other", label: "Principal" },
-  { value: "alternate", label: "Alternativo" },
-];
-const titleTypeInput = ref("other");
-const titleLabelInput = ref("");
-const titles = ref([]);  // [{ type, label, pref }]
-
-const addTitle = () => {
-  const label = titleLabelInput.value.trim();
-  if (!label) return;
-  const isPrincipal = titleTypeInput.value === "other";
-  // Só pode existir UM título principal; um segundo é bloqueado (o dropdown já
-  // impede selecioná-lo quando um existe — isto é a rede de segurança).
-  if (isPrincipal && hasPreferredTitle.value) return;
-  titles.value.push({ type: titleTypeInput.value, label, pref: isPrincipal });
-  titleLabelInput.value = "";
-  // Definido o principal, o padrão passa a ser "Alternativo".
-  if (isPrincipal) titleTypeInput.value = "alternate";
-};
-
-const removeTitle = (index) => titles.value.splice(index, 1);
-
-const titleTypeLabel = (type) =>
-  TITLE_TYPES.find((t) => t.value === type)?.label || type;
-
-// --- Agents (authors) ---
-const AGENT_ROLE_LABELS = ["Engenharia", "Arquitetura", "Paisagismo", "Construção"];
-const agentRoleInput = ref(AGENT_ROLE_LABELS[0]);
-const agentNameInput = ref("");
-const agents = ref([]);  // [{ roleLabel, contributorNameId, contributorName }]
-
-const allContributorNames = ref([]);
-let nameFuse = null;
-const filteredNameSuggestions = ref([]);
-const showNameSuggestions = ref(false);
-let nameDebounce = null;
-
-const onAgentNameInput = () => {
-  if (nameDebounce) clearTimeout(nameDebounce);
-  nameDebounce = setTimeout(() => {
-    if (!agentNameInput.value.trim()) {
-      filteredNameSuggestions.value = [];
-      return;
-    }
-    if (nameFuse) {
-      filteredNameSuggestions.value = nameFuse
-        .search(agentNameInput.value)
-        .map((r) => r.item)
-        .slice(0, 8);
-    }
-  }, 250);
-};
-
-const hideNameSuggestions = () => {
-  setTimeout(() => { showNameSuggestions.value = false; }, 200);
-};
-
-const addAgent = (contributorName = null) => {
-  const name = contributorName?.name || agentNameInput.value.trim();
-  if (!name || !agentRoleInput.value) return;
-  agents.value.push({
-    roleLabel: agentRoleInput.value,
-    contributorNameId: contributorName?.id || null,
-    contributorName: name,
-  });
-  agentNameInput.value = "";
-  filteredNameSuggestions.value = [];
-};
-
-const removeAgent = (index) => agents.value.splice(index, 1);
-
-// --- Dates ---
-const DATE_TYPES = [
-  { value: "creation", label: "Criação" },
-  { value: "renovation", label: "Reforma" },
-  { value: "demolition", label: "Demolição" },
-];
-const dateTypeInput = ref("creation");
-const dateYearInput = ref("");
-const dateYearEndInput = ref("");
-const dateIntervalMode = ref("single");  // "single" | "interval"
-const dateCirca = ref(false);
-const dates = ref([]);  // [{ type, earliest, latest, circa }]
-
-const addDate = () => {
-  const year = String(dateYearInput.value ?? "").trim();
-  if (!year) return;
-  const earliest = `${year}-01-01`;
-  const yearEnd = String(dateYearEndInput.value ?? "").trim();
-  const latest = dateIntervalMode.value === "interval" && yearEnd
-    ? `${yearEnd}-12-31`
-    : `${year}-12-31`;
-  dates.value.push({
-    type: dateTypeInput.value,
-    earliest,
-    latest,
-    circa: dateCirca.value,
-  });
-  dateYearInput.value = "";
-  dateYearEndInput.value = "";
-  dateCirca.value = false;
-};
-
-const removeDate = (index) => dates.value.splice(index, 1);
-
-const dateTypeLabel = (type) =>
-  DATE_TYPES.find((d) => d.value === type)?.label || type;
-
-const formatDateChip = (d) => {
-  const year = d.earliest?.slice(0, 4) || "";
-  const yearEnd = d.latest?.slice(0, 4) || "";
-  const label = year === yearEnd ? year : `${year}–${yearEnd}`;
-  return `${dateTypeLabel(d.type)}: ${d.circa ? "c. " : ""}${label}`;
-};
-
-// --- Description ---
-const descriptionInput = ref("");
-
-// ── Step 3: complementary data ────────────────────────────────────────────────
-
-// Shared autocomplete helper factory
-const makeVocabField = () => ({
-  input: ref(""),
-  selected: ref([]),   // [{ id, label }]
-  suggestions: ref([]),
-  showSuggestions: ref(false),
-  fuse: null,
-  debounce: null,
-});
-
-const stylePeriods   = makeVocabField();
-const culturalCtxs   = makeVocabField();
-const workTypes      = makeVocabField();
-const techniques     = makeVocabField();
-const materials      = makeVocabField();
-const subjects3      = makeVocabField(); // "subjects" already used in ImageMetadataUpload scope
-
-const VOCAB_FIELDS = [
-  { field: stylePeriods,  label: "Aspectos estéticos",      explain: "Estilos e períodos históricos relacionados à obra",     endpoint: "vrac-style-periods",     labelKey: "label", createPayload: (v) => ({ label: v }),                              responseKey: "period"    },
-  { field: culturalCtxs,  label: "Contexto cultural",       explain: "Contextos culturais relacionados à obra",               endpoint: "vrac-cultural-contexts", labelKey: "label", createPayload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "context"   },
-  { field: workTypes,     label: "Tipologia",               explain: "Tipo de obra arquitetônica",                            endpoint: "vrac-work-types",        labelKey: "label", createPayload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "work_type" },
-  { field: techniques,    label: "Técnicas de construção",  explain: "Técnicas construtivas utilizadas na obra",              endpoint: "vrac-techniques",        labelKey: "label", createPayload: (v) => ({ label: v, vocab: "ARQUIGRAFIA" }),         responseKey: "technique" },
-  { field: materials,     label: "Materiais",               explain: "Materiais utilizados na obra",                          endpoint: "vrac-materials",         labelKey: "label", createPayload: (v) => ({ label: v, type: "other", vocab: "ARQUIGRAFIA" }), responseKey: "material"  },
-  { field: subjects3,     label: "Assuntos",                explain: "Assuntos e temas relacionados à obra",                  endpoint: "vrac-subjects",          labelKey: "term",  createPayload: (v) => ({ term: v, type: "otherTopic", vocab: "ARQUIGRAFIA" }), responseKey: "data"     },
-];
-
-const onVocabInput = (vf) => {
-  if (vf.debounce) clearTimeout(vf.debounce);
-  vf.debounce = setTimeout(() => {
-    const q = vf.input.value.trim();
-    if (!q) { vf.suggestions.value = []; return; }
-    if (vf.fuse) {
-      vf.suggestions.value = vf.fuse.search(q).map((r) => r.item).slice(0, 8);
-    }
-  }, 200);
-};
-
-const addVocabItem = (vf, item) => {
-  if (!item) return;
-  if (vf.selected.value.some((s) => s.id === item.id)) return;
-  const labelKey = vf._labelKey ?? "label";
-  vf.selected.value.push({ id: item.id, label: item[labelKey] });
-  vf.input.value = "";
-  vf.suggestions.value = [];
-};
-
-const canCreateVocab = (vfMeta) => {
-  const term = vfMeta.field.input.value.trim();
-  if (!term) return false;
-  const labelKey = vfMeta.labelKey;
-  const items = vfMeta.field._items ?? [];
-  if (items.some((i) => (i[labelKey] || "").toLowerCase() === term.toLowerCase())) return false;
-  if (vfMeta.field.selected.value.some((s) => s.label.toLowerCase() === term.toLowerCase())) return false;
-  return true;
-};
-
-// Stage a new term locally — it is only POSTed when the parent materializes the work draft.
-const createAndAddVocabItem = (vfMeta) => {
-  const term = vfMeta.field.input.value.trim().toLowerCase();
-  if (!term) return;
-  if (vfMeta.field.selected.value.some((s) => s.label.toLowerCase() === term)) return;
-  vfMeta.field.selected.value.push({ id: null, label: term, isNew: true });
-  vfMeta.field.input.value = "";
-  vfMeta.field.suggestions.value = [];
-};
-
-const findExactVocabMatch = (vfMeta) => {
-  const term = vfMeta.field.input.value.trim().toLowerCase();
-  if (!term) return null;
-  const labelKey = vfMeta.labelKey;
-  const items = vfMeta.field._items ?? [];
-  return items.find((i) => (i[labelKey] || "").toLowerCase() === term) || null;
-};
-
-const onVocabEnter = (vfMeta) => {
-  const exact = findExactVocabMatch(vfMeta);
-  if (exact) {
-    addVocabItem(vfMeta.field, exact);
-    return;
-  }
-  const first = vfMeta.field.suggestions.value[0];
-  if (first) {
-    addVocabItem(vfMeta.field, first);
-  } else if (canCreateVocab(vfMeta)) {
-    createAndAddVocabItem(vfMeta);
-  }
-};
-
-const onVocabPlusClick = (vfMeta) => {
-  const exact = findExactVocabMatch(vfMeta);
-  if (exact) {
-    addVocabItem(vfMeta.field, exact);
-    return;
-  }
-  const first = vfMeta.field.suggestions.value[0];
-  if (first) {
-    addVocabItem(vfMeta.field, first);
-  } else if (canCreateVocab(vfMeta)) {
-    createAndAddVocabItem(vfMeta);
-  }
-};
-
-const removeVocabItem = (vf, index) => vf.selected.value.splice(index, 1);
-
-const hideVocabSuggestions = (vf) => {
-  setTimeout(() => { vf.showSuggestions.value = false; }, 200);
-};
-
-// --- Validation ---
-const hasPreferredTitle = computed(() =>
-  titles.value.some((t) => t.type === "other")
-);
-
-const canSubmit = computed(() => hasPreferredTitle.value);
-
 // --- Submit ---
 const errorMessage = ref("");
 
-const vocabDraftBuckets = (vf) => {
-  const existing = [];
-  const newTerms = [];
-  for (const item of vf.selected.value) {
-    if (item.id) existing.push(item.id);
-    else newTerms.push(item.label);
-  }
-  return { existing, newTerms };
-};
-
-const buildDraft = () => {
-  const preferredTitle =
-    titles.value.find((t) => t.pref)?.label || titles.value[0]?.label || "";
-
-  return {
-    coords: {
-      lat: parseFloat(pickedCoords.value.lat.toFixed(8)),
-      lng: parseFloat(pickedCoords.value.lng.toFixed(8)),
-    },
-    locationLabel: locationLabel.value || "",
-    titles: titles.value.map((t) => ({ label: t.label, type: t.type, pref: t.pref })),
-    agents: agents.value.map((a) => ({
-      roleLabel: a.roleLabel,
-      contributorNameId: a.contributorNameId,
-      contributorName: a.contributorName,
-    })),
-    dates: dates.value.map((d) => ({
-      type: d.type,
-      earliest_date: d.earliest,
-      latest_date: d.latest,
-      circa_earliest_date: d.circa,
-      circa_latest_date: d.circa,
-    })),
-    description: descriptionInput.value.trim() || null,
-    stylePeriods:   vocabDraftBuckets(stylePeriods),
-    culturalCtxs:   vocabDraftBuckets(culturalCtxs),
-    workTypes:      vocabDraftBuckets(workTypes),
-    techniques:     vocabDraftBuckets(techniques),
-    materials:      vocabDraftBuckets(materials),
-    subjects:       vocabDraftBuckets(subjects3),
-    // Display hints for the parent's work chip
-    label: preferredTitle,
-    address: locationLabel.value || "",
-  };
-};
-
 const handleSubmit = () => {
+  // Aproveita o que ficou digitado sem virar chip, em vez de descartar em silêncio.
+  commitPendingInputs();
   if (!canSubmit.value) return;
-  const draft = buildDraft();
+  // As coordenadas vêm do passo 1, que é exclusivo deste modal.
+  const draft = buildDraft(pickedCoords.value);
   close();
   emit("created", draft);
 };
@@ -510,17 +240,6 @@ const reset = () => {
   mapZoom.value = INITIAL_MAP_ZOOM;
   pickedCoords.value = null;
   pickedAddress.value = "";
-  locationLabel.value = "";
-  titles.value = [];
-  titleLabelInput.value = "";
-  titleTypeInput.value = "other";
-  agents.value = [];
-  agentRoleInput.value = AGENT_ROLE_LABELS[0];
-  agentNameInput.value = "";
-  dates.value = [];
-  dateYearInput.value = "";
-  dateYearEndInput.value = "";
-  descriptionInput.value = "";
   errorMessage.value = "";
   showSearch.value = true;
   searchQuery.value = "";
@@ -529,12 +248,7 @@ const reset = () => {
   selectedExistingWork.value = null;
   clearWorkMarkers();
   if (worksDebounce) clearTimeout(worksDebounce);
-  for (const { field } of VOCAB_FIELDS) {
-    field.input.value = "";
-    field.selected.value = [];
-    field.suggestions.value = [];
-    field.showSuggestions.value = false;
-  }
+  resetForm();
 };
 
 const close = () => {
@@ -551,46 +265,16 @@ watch(
       titleLabelInput.value = props.initialTitle;
     }
 
-    try {
-      const contributors = await vracStore.getVRACContributorNames();
-      if (Array.isArray(contributors)) {
-        allContributorNames.value = contributors;
-        nameFuse = new Fuse(contributors, {
-          keys: ["name"],
-          threshold: 0.3,
-          includeScore: true,
-        });
-      }
-    } catch {
-      // non-fatal
-    }
-
-    // Fetch step 3 vocabularies in parallel
-    await Promise.allSettled(
-      VOCAB_FIELDS.map(async ({ field, endpoint, labelKey }) => {
-        try {
-          const res = await axios.get(`/api/${endpoint}?per_page=-1`);
-          const items = res.data.data ?? [];
-          field.fuse = new Fuse(items, { keys: [labelKey], threshold: 0.35, includeScore: true });
-          // Store raw items so we can resolve { id, label } on selection
-          field._items = items;
-          field._labelKey = labelKey;
-        } catch {
-          // non-fatal
-        }
-      })
-    );
+    await loadContributorNames();
   }
 );
 
+// Os timers do formulário (autoria e vocabulários) são limpos pelo próprio
+// composable; aqui ficam só os do passo 1.
 onUnmounted(() => {
-  if (nameDebounce) clearTimeout(nameDebounce);
   if (searchDebounce) clearTimeout(searchDebounce);
   if (worksDebounce) clearTimeout(worksDebounce);
   clearWorkMarkers();
-  for (const { field } of VOCAB_FIELDS) {
-    if (field.debounce) clearTimeout(field.debounce);
-  }
 });
 </script>
 
@@ -802,7 +486,7 @@ onUnmounted(() => {
 
             <!-- Agents -->
             <div class="mb-3">
-              <UiField label="Autor da obra" explain="Informe os responsáveis pela obra e seus papéis">
+              <UiField label="Autoria da obra" explain="Informe os responsáveis pela obra e seus papéis">
                 <div class="input-group position-relative">
                   <button
                     class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal"
@@ -823,7 +507,7 @@ onUnmounted(() => {
                     v-model="agentNameInput"
                     type="text"
                     class="form-control border-preto border-end-0"
-                    placeholder="Nome do autor"
+                    placeholder="Nome"
                     autocomplete="off"
                     @input="onAgentNameInput"
                     @focus="showNameSuggestions = true"
@@ -848,7 +532,7 @@ onUnmounted(() => {
                   <button
                     type="button"
                     class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
-                    aria-label="Adicionar autor"
+                    aria-label="Adicionar autoria"
                     @click="addAgent()"
                   >
                     <i class="bi bi-plus-square-fill" />
@@ -883,19 +567,26 @@ onUnmounted(() => {
                     </button>
                     <ul class="dropdown-menu menu-light">
                       <li v-for="d in DATE_TYPES" :key="d.value">
-                        <button class="dropdown-item" @click.prevent="dateTypeInput = d.value">
+                        <button
+                          class="dropdown-item"
+                          :disabled="isDateTypeDisabled(d.value)"
+                          @click.prevent="dateTypeInput = d.value"
+                        >
                           {{ d.label }}
+                          <span v-if="isDateTypeDisabled(d.value)" class="text-muted small ms-1">
+                            (já adicionada)
+                          </span>
                         </button>
                       </li>
                     </ul>
                     <input
                       v-model="dateYearInput"
-                      type="number"
+                      type="text"
+                      inputmode="numeric"
+                      maxlength="4"
                       class="form-control border-preto"
                       :class="{ 'border-end-0': dateIntervalMode === 'interval' }"
                       placeholder="Ano"
-                      min="1"
-                      max="2100"
                       style="max-width: 90px"
                       @keydown.enter.prevent="addDate"
                     />
@@ -903,11 +594,11 @@ onUnmounted(() => {
                       <span class="input-group-text border-preto bg-transparent">até</span>
                       <input
                         v-model="dateYearEndInput"
-                        type="number"
+                        type="text"
+                        inputmode="numeric"
+                        maxlength="4"
                         class="form-control border-preto border-end-0"
                         placeholder="Ano"
-                        min="1"
-                        max="2100"
                         style="max-width: 90px"
                         @keydown.enter.prevent="addDate"
                       />
@@ -938,6 +629,7 @@ onUnmounted(() => {
                     <label class="form-check-label" for="dateCirca">Data aproximada</label>
                   </div>
                 </div>
+                <p v-if="dateError" class="text-danger small mt-1 mb-0">{{ dateError }}</p>
                 <div class="d-flex flex-wrap gap-2 mt-2">
                   <button
                     v-for="(d, i) in dates"
@@ -982,7 +674,7 @@ onUnmounted(() => {
               type="button"
               class="work-modal__btn work-modal__btn--primary"
               :disabled="!hasPreferredTitle"
-              @click="step = 3"
+              @click="commitPendingInputs(); step = 3"
             >
               Próximo
             </button>
@@ -1006,16 +698,22 @@ onUnmounted(() => {
                     class="form-control border-preto border-end-0"
                     :placeholder="`Adicione ${vf.label.toLowerCase()}`"
                     autocomplete="off"
-                    @input="onVocabInput(vf.field)"
+                    @input="onVocabInput(vf)"
                     @focus="vf.field.showSuggestions.value = true"
                     @blur="hideVocabSuggestions(vf.field)"
                     @keydown.enter.prevent="onVocabEnter(vf)"
                   />
                   <div
-                    v-if="vf.field.showSuggestions.value && (vf.field.suggestions.value.length > 0 || canCreateVocab(vf))"
+                    v-if="vf.field.showSuggestions.value && (vf.field.loading.value || vf.field.suggestions.value.length > 0 || canCreateVocab(vf))"
                     class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
                     style="z-index: 1500; max-height: 220px; overflow-y: auto"
                   >
+                    <span
+                      v-if="vf.field.loading.value"
+                      class="dropdown-item-text text-muted fst-italic small"
+                    >
+                      Buscando...
+                    </span>
                     <button
                       v-for="item in vf.field.suggestions.value"
                       :key="item.id"

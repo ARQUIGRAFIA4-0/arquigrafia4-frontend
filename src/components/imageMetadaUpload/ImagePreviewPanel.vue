@@ -4,7 +4,13 @@
       <input ref="fileInput" type="file" multiple accept="image/*" class="visually-hidden" @change="handleFilesAdded" />
       <div class="preview-stage">
         <figure class="preview-stage__viewport mb-0">
-          <img :src="activePreviewUrl" :alt="activePreviewAlt" class="preview-stage__image" />
+          <div v-if="isUnrenderable(activePreview?.id)" class="preview-stage__image preview-fallback">
+            <i class="bi bi-file-earmark-image" aria-hidden="true"></i>
+            <span class="preview-fallback__name">{{ activePreviewAlt }}</span>
+            <span class="preview-fallback__hint">Pré-visualização indisponível neste formato.</span>
+          </div>
+          <img v-else :src="activePreviewUrl" :alt="activePreviewAlt" class="preview-stage__image"
+            @error="markUnrenderable(activePreview?.id)" />
 
           <button type="button" class="preview-stage__nav preview-stage__nav--prev" aria-label="Imagem anterior"
             :disabled="isFirstItem" @click="prevImage">
@@ -45,7 +51,10 @@
           <button v-for="(preview, index) in previewItems" :key="preview.id" type="button" class="preview-thumb"
             :class="{ 'is-active': index === selectedIndex }" :aria-label="`Pré-visualização ${index + 1}`"
             :aria-current="index === selectedIndex ? 'true' : undefined" @click="selectImage(index)">
-            <img :src="preview.url" :alt="preview.file?.name || `Imagem ${index + 1}`" />
+            <i v-if="isUnrenderable(preview.id)" class="bi bi-file-earmark-image preview-thumb__fallback"
+              aria-hidden="true"></i>
+            <img v-else :src="preview.url" :alt="preview.file?.name || `Imagem ${index + 1}`"
+              @error="markUnrenderable(preview.id)" />
             <span v-if="isImageComplete(index)" class="preview-thumb__check" aria-label="Metadados completos">
               <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
             </span>
@@ -113,6 +122,18 @@ const activePreview = computed(() =>
   hasPreviewItems.value ? previewItems.value[selectedIndex.value] : null
 );
 const activePreviewUrl = computed(() => activePreview.value?.url || "");
+// Arquivos que o browser não consegue desenhar (HEIC cuja conversão falhou e
+// segue no formato original, para o back-end converter). Em vez da imagem
+// quebrada, mostramos um placeholder com o nome do arquivo.
+const unrenderableIds = ref(new Set());
+
+function markUnrenderable(id) {
+  if (!id || unrenderableIds.value.has(id)) return;
+  unrenderableIds.value = new Set(unrenderableIds.value).add(id);
+}
+
+const isUnrenderable = (id) => unrenderableIds.value.has(id);
+
 const activePreviewAlt = computed(
   () =>
     activePreview.value?.file?.name || "Pré-visualização da imagem selecionada"
@@ -388,6 +409,36 @@ onUnmounted(() => {
   cursor: pointer;
   padding: 0;
   transition: outline-color 0.2s ease;
+}
+
+.preview-thumb__fallback {
+  font-size: 1.5rem;
+  color: #6c757d;
+}
+
+.preview-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+  background-color: #f6f6f6;
+  color: #6c757d;
+}
+
+.preview-fallback .bi {
+  font-size: 2.5rem;
+}
+
+.preview-fallback__name {
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.preview-fallback__hint {
+  font-size: 0.875rem;
 }
 
 .preview-thumb img {
