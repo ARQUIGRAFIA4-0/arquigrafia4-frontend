@@ -5,17 +5,16 @@
     <button class="field-card__header" :aria-expanded="isOpen" @click="isOpen = !isOpen">
       <div class="field-card__identity">
 
-        <div v-if="userAvatar" class="field-card__avatar field-card__avatar--image">
-          <img :src="`${API_BASE_URL}${userAvatar}`" :alt="`foto de perfil de ${userName}`" />
+        <div class="field-card__avatar field-card__avatar--image">
+          <img :src="avatarUrl || defaultImageUser" :alt="`foto de perfil de ${userName}`" />
         </div>
-
-        <div v-else class="field-card__avatar field-card__avatar--image">
-          <img :src="defaultImageUser" :alt="`foto de perfil de ${userName}`" />
-        </div>
-
 
         <span class="field-card__label">
-          {{ capitalizeWords(userName) }}
+          <RouterLink v-if="user?.id" :to="{ name: 'view-profile', params: { id: user.id } }"
+            class="field-card__user-link" @click.stop>
+            {{ capitalizeWords(userName) }}
+          </RouterLink>
+          <template v-else>{{ capitalizeWords(userName) }}</template>
           está sugerindo {{ fieldsLabel }}
         </span>
       </div>
@@ -118,8 +117,8 @@ import { useAuthStore } from "@/store/auth";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import defaultImageUser from "@/assets/profile_image.png";
 import { useImageForm } from "@/composables/useImageForm";
+import { resolveAvatarUrl } from "@/helpers/avatarUrl";
 
-const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 const { capitalizeWords } = useImageForm();
 
 const props = defineProps({
@@ -127,9 +126,13 @@ const props = defineProps({
   fields: { type: Array, required: true }, // [{ field, value, datePayload }]
   reason: { type: String, default: null },
   userName: { type: String, default: "Usuário" },
-  userAvatar: { type: String, default: null },
+  // Objeto do usuário que fez a sugestão: a URL do avatar depende de
+  // `avatar_url` OU `avatar_path`, e o `id` leva ao perfil.
+  user: { type: Object, default: null },
   createdAt: { type: String, default: null },
 });
+
+const avatarUrl = computed(() => resolveAvatarUrl(props.user));
 
 const emit = defineEmits(["accepted", "rejected", "error"]);
 
@@ -297,6 +300,15 @@ const maybeSubmit = async () => {
     gap: 1rem;
     min-width: 0;
     flex: 1;
+  }
+
+  &__user-link {
+    color: inherit;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   &__label {

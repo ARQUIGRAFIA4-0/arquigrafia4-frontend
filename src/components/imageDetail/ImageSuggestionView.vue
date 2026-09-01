@@ -33,25 +33,24 @@
             @click="toggle(suggestion.id)"
           >
             <div class="suggestion-view__card-identity">
-              <div
-                v-if="suggestion.user?.avatar"
-                class="suggestion-view__avatar suggestion-view__avatar--image"
-              >
+              <div class="suggestion-view__avatar suggestion-view__avatar--image">
                 <img
-                  :src="`${API_BASE_URL}${selectedIdentity.avatar}`"
+                  :src="resolveAvatarUrl(suggestion.user) || defaultImageUser"
                   :alt="suggestion.user?.name"
                 />
               </div>
 
-              <div
-                v-else
-                class="suggestion-view__avatar suggestion-view__avatar--image"
-              >
-                <img :src="defaultImageUser" :alt="suggestion.user?.name" />
-              </div>
-
               <span class="suggestion-view__card-label">
-                {{ capitalizeWords(suggestion.user?.name) ?? "Usuário" }} -
+                <RouterLink
+                  v-if="suggestion.user?.id"
+                  :to="{ name: 'view-profile', params: { id: suggestion.user.id } }"
+                  class="suggestion-view__user-link"
+                  @click.stop
+                >
+                  {{ capitalizeWords(suggestion.user?.name) ?? "Usuário" }}
+                </RouterLink>
+                <template v-else>{{ capitalizeWords(suggestion.user?.name) ?? "Usuário" }}</template>
+                -
                 {{ suggestionLabel(suggestion) }}
               </span>
             </div>
@@ -279,9 +278,9 @@ import { storeToRefs } from "pinia";
 import defaultImageUser from "@/assets/profile_image.png";
 import { useImageForm } from "@/composables/useImageForm";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
+import { resolveAvatarUrl } from "@/helpers/avatarUrl";
 
 const mapStyleUrl = "https://tiles.openfreemap.org/styles/positron";
-const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
 const { capitalizeWords, loadFormDependencies, allSubjects } = useImageForm();
 
 defineOptions({ name: "ImageSuggestionView" });
@@ -557,6 +556,15 @@ watch(
     min-width: 0;
     flex: 1;
     margin-right: 25px;
+  }
+
+  &__user-link {
+    color: inherit;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   &__card-label {

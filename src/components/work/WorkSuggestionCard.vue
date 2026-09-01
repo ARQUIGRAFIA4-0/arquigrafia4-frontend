@@ -264,7 +264,13 @@ const maybeSubmit = async () => {
       </span>
 
       <span class="suggestion-card__summary">
-        <strong>{{ userName }}</strong> está sugerindo {{ fieldsLabel }}
+        <RouterLink v-if="suggestion.user?.id"
+          :to="{ name: 'view-profile', params: { id: suggestion.user.id } }"
+          class="suggestion-card__user-link" @click.stop>
+          <strong>{{ userName }}</strong>
+        </RouterLink>
+        <strong v-else>{{ userName }}</strong>
+        está sugerindo {{ fieldsLabel }}
       </span>
 
       <span v-if="!isPending" class="suggestion-card__badge" :class="`suggestion-card__badge--${statusBadge.modifier}`">
@@ -371,6 +377,15 @@ const maybeSubmit = async () => {
   color: var(--Branco);
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+.suggestion-card__user-link {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .suggestion-card__summary {
