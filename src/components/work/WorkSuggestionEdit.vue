@@ -19,7 +19,7 @@ const authStore = useAuthStore();
 
 const {
   TITLE_TYPES, titleTypeInput, titleLabelInput, titles, hasPreferredTitle,
-  addTitle, removeTitle, titleTypeLabel,
+  addTitle, removeTitle, titleTypeLabel, titleError,
   AGENT_ROLE_LABELS, agentRoleInput, agentNameInput, agents,
   filteredNameSuggestions, showNameSuggestions, loadContributorNames,
   onAgentNameInput, hideNameSuggestions, addAgent, removeAgent,
@@ -182,7 +182,8 @@ const handleSubmit = async () => {
             <i class="bi bi-plus-square-fill" />
           </button>
         </div>
-        <p v-if="!hasPreferredTitle" class="text-muted small fst-italic mt-1 mb-0">
+        <p v-if="titleError" class="text-danger small mt-1 mb-0">{{ titleError }}</p>
+        <p v-else-if="!hasPreferredTitle" class="text-muted small fst-italic mt-1 mb-0">
           Para trocar o título principal, remova o atual e adicione o novo.
         </p>
         <div class="d-flex flex-wrap gap-2 mt-2">

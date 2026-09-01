@@ -33,13 +33,39 @@ export function useWorkForm() {
 
   const hasPreferredTitle = computed(() => titles.value.some((t) => t.type === "other"));
 
+  // Teto de títulos por obra: um principal e alguns nomes alternativos cobrem os
+  // casos reais (sigla, nome popular, nome antigo). Sem limite, nada impedia
+  // encher a obra de variações.
+  const MAX_TITLES = 6;
+  const titleError = ref("");
+  watch([titleLabelInput, titleTypeInput], () => {
+    titleError.value = "";
+  });
+
   const addTitle = () => {
     const label = titleLabelInput.value.trim();
-    if (!label) return;
+    if (!label) {
+      titleError.value = "Informe o título da obra.";
+      return;
+    }
+    if (titles.value.length >= MAX_TITLES) {
+      titleError.value = `Máximo de ${MAX_TITLES} títulos por obra.`;
+      return;
+    }
+    // O mesmo texto não se repete, nem trocando o tipo: "Pina" como principal e
+    // como alternativo seria o mesmo nome duas vezes.
+    if (titles.value.some((t) => t.label.trim().toLowerCase() === label.toLowerCase())) {
+      titleError.value = "Este título já foi adicionado.";
+      return;
+    }
     const isPrincipal = titleTypeInput.value === "other";
     // Só pode existir UM título principal; um segundo é bloqueado (o dropdown já
     // impede selecioná-lo quando um existe — isto é a rede de segurança).
-    if (isPrincipal && hasPreferredTitle.value) return;
+    if (isPrincipal && hasPreferredTitle.value) {
+      titleError.value = "A obra já tem um título principal.";
+      return;
+    }
+    titleError.value = "";
     titles.value.push({ type: titleTypeInput.value, label, pref: isPrincipal });
     titleLabelInput.value = "";
     // Definido o principal, o padrão passa a ser "Alternativo".
@@ -164,6 +190,34 @@ export function useWorkForm() {
     dateError.value = "";
   });
 
+  // Ano de uma data já adicionada, para as checagens de ordem cronológica.
+  const yearOf = (d) => parseInt(String(d.earliest).slice(0, 4), 10);
+  const creationYear = computed(() => {
+    const creation = dates.value.find((d) => d.type === "creation");
+    return creation ? yearOf(creation) : null;
+  });
+
+  /**
+   * A obra não pode ser reformada nem demolida antes de existir. A checagem vale
+   * nos dois sentidos, porque a ordem em que o usuário preenche é livre: ao
+   * adicionar a criação depois, ela não pode ser posterior ao que já está lá.
+   */
+  const dateOrderError = (type, year) => {
+    if (type === "creation") {
+      const anterior = dates.value.find((d) => d.type !== "creation" && yearOf(d) < year);
+      if (anterior) {
+        return `O ano de criação não pode ser posterior à data de ${dateTypeLabel(
+          anterior.type
+        ).toLowerCase()} (${yearOf(anterior)}).`;
+      }
+      return "";
+    }
+    if (creationYear.value !== null && year < creationYear.value) {
+      return `A data de ${dateTypeLabel(type).toLowerCase()} não pode ser anterior ao ano de criação (${creationYear.value}).`;
+    }
+    return "";
+  };
+
   const addDate = () => {
     if (isDateTypeDisabled(dateTypeInput.value)) {
       dateError.value = `Já existe uma data de ${dateTypeLabel(dateTypeInput.value).toLowerCase()} nesta obra.`;
@@ -174,6 +228,11 @@ export function useWorkForm() {
       dateError.value = dateYearInput.value.trim()
         ? `Ano inválido. Informe um ano entre ${MIN_YEAR} e ${MAX_YEAR}.`
         : "Informe o ano da data.";
+      return;
+    }
+    const ordem = dateOrderError(dateTypeInput.value, parseInt(year, 10));
+    if (ordem) {
+      dateError.value = ordem;
       return;
     }
     dateError.value = "";
@@ -530,6 +589,8 @@ export function useWorkForm() {
     titleLabelInput,
     titles,
     hasPreferredTitle,
+    titleError,
+    MAX_TITLES,
     addTitle,
     removeTitle,
     titleTypeLabel,
