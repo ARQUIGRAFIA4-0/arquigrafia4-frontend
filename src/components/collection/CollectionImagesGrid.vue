@@ -1,5 +1,6 @@
 <script setup>
-import FitTags from "@/views/Profile/FitTags.vue";
+import { RouterLink } from "vue-router";
+import ImageGridCard from "@/components/image/ImageGridCard.vue";
 
 defineOptions({ name: "CollectionImagesGrid" });
 
@@ -20,34 +21,6 @@ const emit = defineEmits(["activate", "remove"]);
 // Verifica se a imagem está selecionada
 function isCardSelected(item) {
   return props.selectedImageId === item.id;
-}
-
-// Formata a data da imagem
-function formatDate(dates) {
-  if (!dates || dates.length === 0) return null;
-
-  const dateInfo = dates.find((d) => d.type === "creation") || dates[0];
-  if (!dateInfo) return null;
-
-  const earliest = dateInfo.earliest_date
-    ? new Date(dateInfo.earliest_date).getFullYear()
-    : null;
-
-  const latest = dateInfo.latest_date
-    ? new Date(dateInfo.latest_date).getFullYear()
-    : null;
-
-  const circa = dateInfo.circa_earliest_date || dateInfo.circa_latest_date;
-
-  if (!earliest) return null;
-
-  const prefix = circa ? "c." : "";
-
-  if (!latest || earliest === latest) {
-    return `${prefix}${earliest}`;
-  }
-
-  return `${prefix}${earliest}-${latest}`;
 }
 
 </script>
@@ -88,49 +61,35 @@ function formatDate(dates) {
         'collection-grid--info-closed': !isInfoActive,
       }"
     >
-      <div
-        v-for="item in images"
-        :key="item.id"
-        class="collection-grid__link"
-        :role="allowRemove ? 'button' : undefined"
-        :tabindex="allowRemove ? 0 : undefined"
-        @click="allowRemove && emit('activate', item, $event)"
-        @keydown.enter.prevent="allowRemove && emit('activate', item, $event)"
-        @keydown.space.prevent="allowRemove && emit('activate', item, $event)"
-      >
-        <article
-          class="collection-grid__card"
-          :class="{ 'collection-grid__card--selected': allowRemove && isCardSelected(item) }"
+      <template v-for="item in images" :key="item.id">
+        <RouterLink
+          v-if="!allowRemove"
+          :to="`/explore/dados/image/${item.id}`"
+          class="collection-grid__link"
         >
-          <div class="collection-grid__image-wrapper">
-            <img :src="item.imageUrl" class="collection-grid__image" :alt="item.title" />
-          </div>
+          <ImageGridCard
+            :item="item"
+            class="collection-grid__card"
+          />
+        </RouterLink>
 
-          <div class="collection-grid__content">
-            <RouterLink
-              class="collection-grid__title-link"
-              :to="`/explore/dados/image/${item.id}`"
-              @click.stop
-            >
-              <h3 class="collection-grid__title">{{ item.title }}</h3>
-            </RouterLink>
-
-            <p v-if="formatDate(item.dates)" class="collection-grid__date">
-              {{ formatDate(item.dates) }}
-            </p>
-
-            <div class="collection-grid__footer">
-              <div
-                v-if="(!allowRemove || !isCardSelected(item)) && item.subjects?.length"
-                class="collection-grid__tags"
-              >
-                <FitTags :subjects="item.subjects" :gap="4" />
-              </div>
-
-              <div
-                v-else-if="allowRemove && isCardSelected(item)"
-                class="collection-grid__actions"
-              >
+        <div
+          v-else
+          class="collection-grid__link collection-grid__link--selectable"
+          role="button"
+          tabindex="0"
+          @click="emit('activate', item, $event)"
+          @keydown.enter.prevent="emit('activate', item, $event)"
+          @keydown.space.prevent="emit('activate', item, $event)"
+        >
+          <ImageGridCard
+            :item="item"
+            :selected="isCardSelected(item)"
+            :show-tags="!isCardSelected(item)"
+            class="collection-grid__card"
+          >
+            <template v-if="isCardSelected(item)" #footer>
+              <div class="collection-grid__actions">
                 <button
                   type="button"
                   class="collection-grid__remove-btn"
@@ -140,10 +99,10 @@ function formatDate(dates) {
                   <span>Remover da coleção</span>
                 </button>
               </div>
-            </div>
-          </div>
-        </article>
-      </div>
+            </template>
+          </ImageGridCard>
+        </div>
+      </template>
     </div>
   </template>
 
@@ -183,21 +142,15 @@ function formatDate(dates) {
   color: inherit;
 }
 
+.collection-grid__link:hover {
+  text-decoration: none;
+}
+
+.collection-grid__link--selectable {
+  cursor: pointer;
+}
+
 .collection-grid__card {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--pp, 8px);
-  padding-bottom: var(--pp, 8px);
-  border-radius: 5px;
-  border: 0.25px solid var(--Cinza_C, #a6a6a6);
-  background: var(--Off_white, #faf9f9);
-  box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
   min-height: 458px;
   transition:
     opacity 180ms ease,
@@ -207,73 +160,6 @@ function formatDate(dates) {
 .collection-grid--reflowing .collection-grid__card {
   opacity: 0;
   transform: translateY(6px);
-}
-
-.collection-grid__image-wrapper {
-  position: relative;
-  flex: 0 0 auto;
-  width: 100%;
-  max-width: none;
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-  background-color: #f8f9fa;
-}
-
-.collection-grid__image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.collection-grid__content {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  width: 100%;
-  padding: 14px 14px 4px;
-}
-
-.collection-grid__footer {
-  margin-top: auto;
-  min-height: 0;
-  width: 100%;
-}
-
-.collection-grid__tags {
-  width: 100%;
-}
-
-.collection-grid__title {
-  margin: 0;
-  font-weight: 700;
-  font-size: 14px;
-  line-height: 125%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.collection-grid__date {
-  margin: 2px 0 0;
-  font-size: 14px;
-  color: var(--Cinza_E, #2f2f2f);
-}
-
-.collection-grid__title-link {
-  color: inherit;
-  text-decoration: none;
-}
-
-.collection-grid__title-link:hover .collection-grid__title {
-  text-decoration: underline;
-}
-
-.collection-grid__card--selected {
-  background: var(--Laranja_C, #f3e7dc);
 }
 
 .collection-grid__actions {
@@ -415,10 +301,6 @@ function formatDate(dates) {
     min-width: 0;
     min-height: 0;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  .collection-grid__image-wrapper {
-    max-width: 100%;
   }
 }
 
