@@ -169,7 +169,6 @@ const handleMapClick = async ({ lng, lat }) => {
 
 const canAdvance = computed(() => pickedCoords.value !== null && !isReverseGeocoding.value);
 
-const showSearch = ref(true); // Começa visível;
 const searchQuery = ref("");
 const searchSuggestions = ref([]);
 const isForwardGeocoding = ref(false);
@@ -241,7 +240,6 @@ const reset = () => {
   pickedCoords.value = null;
   pickedAddress.value = "";
   errorMessage.value = "";
-  showSearch.value = true;
   searchQuery.value = "";
   searchSuggestions.value = [];
   existingWorks.value = [];
@@ -291,9 +289,49 @@ onUnmounted(() => {
         <template v-if="step === 1">
           <div class="work-modal__header">
             <p class="work-modal__title">Localização da obra</p>
+            <p class="work-modal__subtitle">
+              Busque o endereço ou clique no mapa para marcar onde a obra fica.
+            </p>
           </div>
 
           <div class="work-modal__map-wrapper">
+            <!-- Busca de endereço: fora do mapa, entre o título e ele. -->
+            <div class="work-modal__search-box">
+              <div class="input-group">
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  class="form-control form-control-sm"
+                  placeholder="Buscar endereço..."
+                  autocomplete="off"
+                  @input="onSearchInputDebounced"
+                  @keydown.escape="searchQuery = ''; searchSuggestions = []"
+                />
+                <button
+                  v-if="searchQuery"
+                  type="button"
+                  class="btn btn-sm btn-secondary"
+                  aria-label="Limpar busca"
+                  @click="searchQuery = ''; searchSuggestions = []"
+                >
+                  <i class="bi bi-x" />
+                </button>
+              </div>
+              <ul v-if="searchSuggestions.length || isForwardGeocoding" class="work-modal__search-results">
+                <li v-if="isForwardGeocoding" class="work-modal__search-result text-muted fst-italic">
+                  Buscando...
+                </li>
+                <li
+                  v-for="r in searchSuggestions"
+                  :key="r.place_id"
+                  class="work-modal__search-result"
+                  @click="selectSearchResult(r)"
+                >
+                  {{ r.display_name }}
+                </li>
+              </ul>
+            </div>
+
             <div class="work-modal__map-container">
               <MapLibreMap
                 :style-url="mapStyleUrl"
@@ -305,41 +343,23 @@ onUnmounted(() => {
                 @map-ready="handleMapReady"
                 @click="handleMapClick"
               />
+              <!-- O botão de busca some: o campo agora vive acima do mapa, sempre visível. -->
               <MapControls
                 class="work-modal__map-controls"
+                :show-search="false"
                 @zoom-in="mapInstance?.zoomIn()"
                 @zoom-out="mapInstance?.zoomOut()"
-                @search="showSearch = !showSearch"
               />
-              <div v-if="showSearch" class="work-modal__search-box">
-                <div class="input-group">
-                  <input
-                    v-model="searchQuery"
-                    type="text"
-                    class="form-control form-control-sm"
-                    placeholder="Buscar endereço..."
-                    autocomplete="off"
-                    @input="onSearchInputDebounced"
-                    @keydown.escape="showSearch = false"
-                  />
-                  <button type="button" class="btn btn-sm btn-secondary" @click="showSearch = false">
-                    <i class="bi bi-x" />
-                  </button>
-                </div>
-                <ul v-if="searchSuggestions.length" class="work-modal__search-results">
-                  <li v-if="isForwardGeocoding" class="work-modal__search-result text-muted fst-italic">
-                    Buscando...
-                  </li>
-                  <li
-                    v-for="r in searchSuggestions"
-                    :key="r.place_id"
-                    class="work-modal__search-result"
-                    @click="selectSearchResult(r)"
-                  >
-                    {{ r.display_name }}
-                  </li>
-                </ul>
-              </div>
+
+              <!-- Endereço do ponto escolhido, sobreposto ao mapa: aparecer e sumir
+                   não empurra mais o resto do modal. Mesmo tratamento do mapa da
+                   submissão de imagem. -->
+              <span v-if="isReverseGeocoding" class="work-modal__map-badge">
+                Buscando o endereço deste ponto…
+              </span>
+              <span v-else-if="pickedAddress" class="work-modal__map-badge">
+                {{ pickedAddress }}
+              </span>
 
               <div
                 v-if="selectedExistingWork"
@@ -375,15 +395,6 @@ onUnmounted(() => {
                 </div>
               </div>
             </div>
-            <p v-if="isReverseGeocoding" class="work-modal__geocode-hint text-muted">
-              Buscando endereço...
-            </p>
-            <p v-else-if="pickedAddress" class="work-modal__geocode-hint text-muted">
-              {{ pickedAddress }}
-            </p>
-            <p v-else class="work-modal__geocode-hint text-muted fst-italic">
-              Clique no mapa para selecionar a localização da obra
-            </p>
           </div>
 
           <div class="work-modal__footer">
@@ -825,21 +836,30 @@ onUnmounted(() => {
   color: #2f2f2f;
 }
 
+.work-modal__subtitle {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--Cinza_M, #636262);
+}
+
 .work-modal__map-wrapper {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 0 16px;
+  /* Mesma margem lateral do header e do footer (32px). */
+  padding: 0 32px;
   gap: 0;
 }
 
 .work-modal__map-container {
   position: relative;
   flex: 1 1 0;
-  min-height: 0;
-  border-radius: 8px;
+  /* Piso de altura: com o teclado aberto no celular a viewport encolhe e, sem
+     isso, o mapa era espremido a quase nada — restando um modal só de campos. */
+  min-height: 220px;
   overflow: hidden;
-  border: 2px solid #1f1f1f;
+  border: 1px solid #1f1f1f;
 }
 
 .work-modal__map-controls {
@@ -849,18 +869,70 @@ onUnmounted(() => {
   z-index: 10;
 }
 
+/* Fora do mapa, entre o título e ele. `relative` para a lista de sugestões
+   flutuar sobre o mapa sem alargar o modal. */
 .work-modal__search-box {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  right: 10px;
+  position: relative;
+  flex-shrink: 0;
+  /* Sem margem lateral: o padding do wrapper já alinha o campo à largura do mapa. */
+  margin: 0 0 10px;
   z-index: 20;
+
+  /* O input e o botão herdam paddings diferentes (form-control-sm vs btn-sm mais
+     o estilo de botão do projeto), o que deixava o botão visivelmente mais alto.
+     A altura é fixada nos dois para encostarem. */
+  .input-group > .form-control,
+  .input-group > .btn {
+    height: 34px;
+    min-height: 34px;
+    padding-block: 0;
+    font-size: 0.875rem;
+    line-height: 1.2;
+  }
+
+  .input-group > .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Endereço sobreposto ao mapa — mesmo tratamento do mapa de submissão de imagem:
+   informa sem empurrar o restante do modal ao aparecer e sumir. */
+.work-modal__map-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  /* A caixa acompanha o texto; o teto evita que um endereço longo do Nominatim
+     atravesse o mapa inteiro. */
+  max-width: calc(100% - 16px);
+  margin: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--Cinza_C, #dcdcdc);
+  border-radius: 4px;
+  background-color: #fff;
+  color: var(--Preto, #2f2f2f);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  /* No máximo duas linhas, para não cobrir o mapa. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .work-modal__search-results {
+  /* Flutua sobre o mapa em vez de empurrá-lo. */
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 30;
   list-style: none;
   margin: 2px 0 0;
   padding: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -875,12 +947,6 @@ onUnmounted(() => {
   line-height: 1.3;
 
   &:hover { background: #f5f5f5; }
-}
-
-.work-modal__geocode-hint {
-  flex-shrink: 0;
-  margin: 6px 16px 0;
-  font-size: 13px;
 }
 
 .work-modal__existing-confirm {
@@ -939,7 +1005,8 @@ onUnmounted(() => {
   flex-shrink: 0;
   display: flex;
   gap: 16px;
-  padding: 16px 32px;
+  /* O 24px final espelha o respiro do topo do modal (header). */
+  padding: 16px 32px 24px;
   background: var(--off_white, #faf9f9);
 }
 
@@ -994,11 +1061,40 @@ onUnmounted(() => {
   }
 
   .work-modal__map-wrapper {
-    padding: 0 8px;
+    padding: 0 16px;
   }
 
   .work-modal__footer {
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    padding: 12px 16px calc(20px + env(safe-area-inset-bottom));
+  }
+
+  /* No celular o mapa rola junto com o dedo; o modal inteiro não deve rolar
+     por baixo dele. */
+  .work-modal__map-wrapper {
+    overscroll-behavior: contain;
+  }
+
+  /* Alvos de toque: 44px é o mínimo confortável. O input tinha 34px e os botões
+     do rodapé ~31px, altos demais para o dedo errar. */
+  .work-modal__search-box {
+    .input-group > .form-control,
+    .input-group > .btn {
+      height: 44px;
+      min-height: 44px;
+      /* 16px evita o zoom automático que o Safari do iOS aplica ao focar um
+         campo com fonte menor — o modal inteiro saltava de escala. */
+      font-size: 16px;
+    }
+  }
+
+  .work-modal__btn {
+    min-height: 44px;
+  }
+
+  /* A lista não pode passar do mapa: o painel tem overflow hidden e cortaria
+     as últimas sugestões. */
+  .work-modal__search-results {
+    max-height: min(200px, 30vh);
   }
 }
 </style>
