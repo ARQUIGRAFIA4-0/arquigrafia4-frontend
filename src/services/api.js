@@ -1034,17 +1034,48 @@ const resolveVracEntity = (payloadKey, id) => {
 };
 
 /**
- * Texto de exibição de uma entidade VRAC já resolvida. Agentes vêm com
- * `contributorName`/`role` carregados; os demais usam a coluna de texto do
- * próprio vocabulário.
+ * Converte uma entidade VRAC crua (vinda dos endpoints `show`) para o mesmo
+ * formato que `normalizeWork` entrega às telas.
+ *
+ * Sem isso os dois lados do diff de sugestões falam línguas diferentes: a obra
+ * traz `earliestYear`/`name`/`role` já normalizados, enquanto o `show` devolve
+ * `earliest_date`/`contributorName`/`role.label` crus — e a tela, lendo só o
+ * primeiro formato, exibia "Reforma:" sem o ano.
  */
-const vracEntityLabel = (payloadKey, entity) => {
+const normalizeVracEntity = (payloadKey, entity) => {
   if (!entity) return null;
-  if (payloadKey === "agents") {
-    return entity.contributorName?.name || entity.contributor_name?.name || null;
+
+  if (payloadKey === "dates") {
+    return {
+      id: entity.id,
+      type: entity.type || null,
+      earliestYear: isoYear(entity.earliest_date),
+      latestYear: isoYear(entity.latest_date),
+      circa: Boolean(entity.circa_earliest_date || entity.circa_latest_date),
+    };
   }
+
+  if (payloadKey === "agents") {
+    return {
+      id: entity.id,
+      // `vrac-agents/{id}` devolve camelCase; a obra, snake_case.
+      name: entity.contributorName?.name || entity.contributor_name?.name || null,
+      role: entity.role?.label || null,
+      attribution: entity.attribution || null,
+    };
+  }
+
+  if (payloadKey === "titles") {
+    return {
+      id: entity.id,
+      label: entity.label || null,
+      type: entity.type || null,
+      pref: Boolean(entity.pref),
+    };
+  }
+
   const cfg = VRAC_ENTITIES[payloadKey];
-  return cfg?.displayKey ? entity[cfg.displayKey] || null : null;
+  return { id: entity.id, label: cfg?.displayKey ? entity[cfg.displayKey] || null : null };
 };
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -1181,7 +1212,7 @@ export const api = {
   createVocabTerm,
   resolveVocabIds,
   resolveVracEntity,
-  vracEntityLabel,
+  normalizeVracEntity,
   // sugestões de obra
   getWorkSuggestions,
   createWorkSuggestion,

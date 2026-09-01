@@ -104,6 +104,7 @@ const timeAgo = computed(() => {
 const itemId = (item) => (typeof item === "string" ? item : item?.id ?? null);
 
 const workItemLabel = (field, item) => {
+  if (!item) return null;
   if (field === "titles") return item.pref ? `${item.label} (principal)` : item.label;
   if (field === "agents") return [item.name, item.role].filter(Boolean).join(" — ");
   if (field === "dates") {
@@ -143,7 +144,9 @@ const buildListDiff = async (field) => {
     let label = typeof raw === "object" ? raw.term ?? raw.label ?? null : null;
     if (!label) {
       const entity = await api.resolveVracEntity(field, id);
-      label = api.vracEntityLabel(field, entity) || (entity ? workItemLabel(field, entity) : null);
+      // Normaliza antes de rotular: o `show` devolve o registro cru, e
+      // workItemLabel lê o mesmo formato que a obra usa.
+      label = workItemLabel(field, api.normalizeVracEntity(field, entity));
     }
     chips.push({ id, label: label || "(termo não encontrado)", status: "added" });
   }
