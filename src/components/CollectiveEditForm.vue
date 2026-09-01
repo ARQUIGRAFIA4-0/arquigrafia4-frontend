@@ -490,9 +490,9 @@ function handleCancel() {
           <input v-model="selectedSocialValue" id="collective-social-value-input" name="collective-social-value-input"
             class="form-control border-preto border-end-0"
             :placeholder="socialOptions[selectedSocialOption]?.placeholder || 'Selecione uma rede social'" />
-          <button class="btn btn-light btn-sm border-preto border-start-0" type="button" aria-label="Adicionar"
-            @click="addSocial" :disabled="!selectedSocialOption || !selectedSocialValue">
-            <i class="bi bi-plus-square-fill fs-8"></i>
+          <button class="btn btn-light btn-sm border-preto border-start-0 social-icon-btn" type="button"
+            aria-label="Adicionar" @click="addSocial" :disabled="!selectedSocialOption || !selectedSocialValue">
+            <i class="bi bi-plus-square-fill"></i>
           </button>
         </div>
       </UiField>
@@ -504,7 +504,7 @@ function handleCancel() {
             </button>
             <input :id="'collective-social-' + key" :name="'collective-social-' + key" :value="value" disabled="true"
               class="form-control border-preto border-end-0" placeholder="" />
-            <button class="btn btn-light btn-sm border-preto border-start-0" type="button" aria-label="Remover"
+            <button class="btn btn-light btn-sm border-preto border-start-0 social-icon-btn" type="button" aria-label="Remover"
               @click="removeSocial(key)">
               <i class="bi bi-x-lg"></i>
             </button>
@@ -733,5 +733,20 @@ $breakpoint-md: 768px;
     flex: 1;
     font-weight: 400;
   }
+}
+
+/* Botões de ícone do campo de redes ("+" e "×"). Sem tamanho definido, o ícone
+   crescia livre e deixava o botão mais alto que o campo ao lado — no caso do
+   "+", agravado por `fs-8`, classe que sequer existe (a escala vai até fs-6). */
+.social-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.social-icon-btn > .bi {
+  font-size: 1rem;
+  line-height: 1;
 }
 </style>
