@@ -1,5 +1,5 @@
 <template>
-  <div class="container py-4 position-relative">
+  <div class="container py-4 position-relative metadata-upload-page">
     <AppToast
       class="upload-box__alert"
       variant="soft"
@@ -124,13 +124,13 @@
 
           <section
             id="essenciais"
-            class="py-4 p-4 shadow-sm"
+            class="metadata-essenciais py-4 p-4 shadow-sm"
             :class="[isEssenciaisInvalid ? 'bg-negativo-c' : 'bg-off-white']"
             style="border-radius: 5px"
           >
             <h2 class="mb-4">Dados essenciais</h2>
 
-            <div class="mb-4 px-3">
+            <div class="metadata-essenciais__field">
               <UiField
                 label="Título da imagem"
                 explain="Adicione um título para a imagem"
@@ -153,23 +153,19 @@
               </UiField>
             </div>
 
-            <div class="mb-4 px-3">
-              <div
-                class="d-flex justify-content-between align-items-center mb-2"
-              >
+            <div class="metadata-essenciais__field">
+              <div class="term-text-wrapper mb-2">
                 <h3 class="form-label text-cinza-e h3 mb-0">
                   Autorizações para publicação
                 </h3>
                 <a
                   href="#"
-                  class="text-decoration-none d-flex align-items-center gap-1 text-muted small"
+                  class="term-text-link text-decoration-none d-flex align-items-center gap-1 text-muted"
                 >
                   <i class="bi bi-book" /> Revisar Termos e Condições
                 </a>
               </div>
-              <div
-                class="d-flex justify-content-between align-items-center mb-3"
-              >
+              <div class="metadata-essenciais__toggle mb-3">
                 <label
                   class="form-check-label text-muted fst-italic small"
                   for="isAuthor"
@@ -187,9 +183,7 @@
               </div>
 
               <template v-if="!form.isAuthor">
-                <div
-                  class="d-flex justify-content-between align-items-center mb-3"
-                >
+                <div class="metadata-essenciais__toggle mb-3">
                   <label
                     class="form-check-label text-muted fst-italic small"
                     for="isPublicDomain"
@@ -208,7 +202,7 @@
 
                 <div
                   v-if="!form.isPublicDomain && !form.unknownAuthor"
-                  class="d-flex justify-content-between align-items-center mb-4"
+                  class="metadata-essenciais__toggle mb-4"
                 >
                   <label
                     class="form-check-label text-muted fst-italic small"
@@ -252,9 +246,7 @@
                   </UiField>
                 </div>
 
-                <div
-                  class="d-flex justify-content-between align-items-center mb-4"
-                >
+                <div class="metadata-essenciais__toggle mb-4">
                   <label
                     class="form-check-label text-muted fst-italic small"
                     for="unknownAuthor"
@@ -278,26 +270,24 @@
               </template>
             </div>
 
-            <div class="mb-4 px-3" v-if="!isRightsInvalid">
-              <div
-                class="d-flex justify-content-between align-items-center mb-2"
-              >
+            <div class="metadata-essenciais__field" v-if="!isRightsInvalid">
+              <div class="term-text-wrapper mb-2">
                 <h3 class="form-label text-cinza-e h3 mb-0">
                   Direitos de uso da imagem
                 </h3>
                 <a
                   href="#"
-                  class="text-decoration-none d-flex align-items-center gap-1 text-muted small"
+                  class="term-text-link text-decoration-none d-flex align-items-center gap-1 text-muted"
                 >
                   <i class="bi bi-book" /> Sobre os Creative Commons
                 </a>
               </div>
 
-              <div class="d-flex flex-column gap-2">
+              <div class="metadata-essenciais__licenses">
                 <div
                   v-for="license in licenses"
                   :key="license.value"
-                  class="form-check"
+                  class="form-check metadata-essenciais__license"
                 >
                   <input
                     class="form-check-input"
@@ -308,11 +298,16 @@
                     v-model="form.license"
                   />
                   <label
-                    class="form-check-label text-muted fst-italic small"
+                    class="form-check-label metadata-essenciais__license-label"
                     :for="license.value"
                   >
-                    <span>{{ license.label }}</span>
-                    <span v-if="license.description" class="ms-1">
+                    <span class="metadata-essenciais__license-name">
+                      {{ license.label }}
+                    </span>
+                    <span
+                      v-if="license.description"
+                      class="metadata-essenciais__license-desc"
+                    >
                       {{ license.description }}
                     </span>
                   </label>
@@ -325,116 +320,118 @@
             </div>
           </section>
 
-          <section id="geral" class="py-4">
-            <h2 class="mb-4">Dados gerais</h2>
+          <section id="geral" class="metadata-geral py-4">
+            <h2 class="metadata-geral__title mb-4">Dados gerais</h2>
 
-            <div class="mb-4 px-3">
-              <WorkAutocompleteField ref="workFieldRef" v-model="form.work" />
-            </div>
-
-            <div class="mb-4 px-3">
-              <UiField
-                label="Tags da imagem"
-                explain="Adicione tags para classificar a imagem"
-              >
-                <div class="position-relative">
-                  <input
-                    type="text"
-                    class="form-control"
-                    placeholder="Digite uma tag e pressione Enter"
-                    v-model="tagInput"
-                    @keydown.enter.prevent="addTag"
-                    @input="onTagInputChange"
-                    @focus="showTagSuggestions = true"
-                    @blur="hideTagSuggestions"
-                    autocomplete="off"
+            <div class="metadata-geral__fields">
+              <div class="metadata-geral__field-group">
+                <div class="metadata-geral__field">
+                  <WorkAutocompleteField
+                    ref="workFieldRef"
+                    v-model="form.work"
                   />
-                  <div
-                    v-if="
-                      showTagSuggestions &&
-                      (filteredTagSuggestions.length > 0 || canCreateSubject)
-                    "
-                    class="dropdown-menu menu-light w-100 show position-absolute top-100 start-0 mt-1"
-                    style="z-index: 1000; max-height: 300px; overflow-y: auto"
+                </div>
+
+                <div class="metadata-geral__field">
+                  <UiField
+                    label="Tags da imagem"
+                    explain="Adicione tags para classificar a imagem"
                   >
-                    <button
-                      v-for="(suggestion, index) in filteredTagSuggestions"
-                      :key="index"
-                      type="button"
-                      class="dropdown-item"
-                      @click="selectTagSuggestion(suggestion.term)"
+                    <div class="position-relative">
+                      <input
+                        type="text"
+                        class="form-control"
+                        placeholder="Adicione novas tags aqui"
+                        v-model="tagInput"
+                        @keydown.enter.prevent="addTag"
+                        @input="onTagInputChange"
+                        @focus="showTagSuggestions = true"
+                        @blur="hideTagSuggestions"
+                        autocomplete="off"
+                      />
+                      <div
+                        v-if="
+                          showTagSuggestions &&
+                          (filteredTagSuggestions.length > 0 ||
+                            canCreateSubject)
+                        "
+                        class="dropdown-menu menu-light w-100 show position-absolute top-100 start-0 mt-1"
+                        style="
+                          z-index: 1000;
+                          max-height: 300px;
+                          overflow-y: auto;
+                        "
+                      >
+                        <button
+                          v-for="(suggestion, index) in filteredTagSuggestions"
+                          :key="index"
+                          type="button"
+                          class="dropdown-item"
+                          @click="selectTagSuggestion(suggestion.term)"
+                        >
+                          {{ suggestion.term }}
+                        </button>
+                        <button
+                          v-if="canCreateSubject"
+                          type="button"
+                          class="dropdown-item text-primary d-flex align-items-center gap-1"
+                          :disabled="isCreatingSubject"
+                          @click="createAndAddSubject(tagInput.trim())"
+                        >
+                          <i class="bi bi-plus-circle" />
+                          <span>{{
+                            isCreatingSubject
+                              ? "Criando..."
+                              : `Criar tag "${tagInput.trim()}"`
+                          }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </UiField>
+                  <div class="metadata-geral__tags d-flex flex-wrap">
+                    <div
+                      v-for="(tag, index) in form.tags"
+                      :key="tag"
+                      class="btn btn-outline-primary btn-sm btn-tag metadata-geral__tag d-inline-flex align-items-center"
                     >
-                      {{ suggestion.term }}
-                    </button>
-                    <button
-                      v-if="canCreateSubject"
-                      type="button"
-                      class="dropdown-item text-primary d-flex align-items-center gap-1"
-                      :disabled="isCreatingSubject"
-                      @click="createAndAddSubject(tagInput.trim())"
-                    >
-                      <i class="bi bi-plus-circle" />
-                      <span>{{
-                        isCreatingSubject
-                          ? "Criando..."
-                          : `Criar tag "${tagInput.trim()}"`
-                      }}</span>
-                    </button>
+                      {{ tag }}
+                      <button
+                        type="button"
+                        class="btn-close ms-2"
+                        aria-label="Remover"
+                        @click="removeTag(index)"
+                      />
+                    </div>
                   </div>
                 </div>
-              </UiField>
-              <div class="d-flex flex-wrap gap-2 mt-2">
-                <div
-                  v-for="(tag, index) in form.tags"
-                  :key="tag"
-                  class="btn btn-outline-secondary btn-sm btn-tag d-inline-flex align-items-center"
-                >
-                  {{ tag }}
-                  <button
-                    type="button"
-                    class="btn-close ms-2"
-                    aria-label="Remover"
-                    @click="removeTag(index)"
-                  />
-                </div>
-              </div>
-            </div>
 
-            <div class="mb-4 px-3">
-              <UiField
-                label="Descrição da imagem"
-                explain="Adicione uma descrição detalhada da imagem"
-              >
-                <textarea
-                  class="form-control"
-                  rows="5"
-                  placeholder="Texto exemplo"
-                  v-model="form.description"
-                  maxlength="500"
-                ></textarea>
-              </UiField>
-              <div class="text-end text-muted small mt-1">
-                Máximo 500 caracteres.
-              </div>
-            </div>
-
-            <div class="mb-4 px-3">
-              <UiField
-                label="Data da imagem"
-                explain="Informe a data de criação da imagem"
-              >
-                <div class="d-flex flex-column gap-3">
-                  <div v-if="form.dateType === 'year'" style="width: 120px">
-                    <input
-                      type="number"
+                <div class="metadata-geral__field">
+                  <UiField
+                    label="Descrição da imagem"
+                    explain="Adicione uma descrição detalhada da imagem"
+                  >
+                    <textarea
                       class="form-control"
-                      v-model="dateYearInput"
-                      placeholder="Ano"
-                    />
-                  </div>
-                  <div v-else class="d-flex align-items-center gap-2">
-                    <span>Entre</span>
-                    <div style="width: 120px">
+                      rows="5"
+                      placeholder="Texto exemplo"
+                      v-model="form.description"
+                      maxlength="500"
+                    ></textarea>
+                  </UiField>
+                  <div class="metadata-geral__hint">Máximo 500 caracteres.</div>
+                </div>
+              </div>
+
+              <div class="metadata-geral__field">
+                <UiField
+                  label="Data da imagem"
+                  explain="Informe a data de criação da imagem"
+                >
+                  <div class="metadata-geral__date">
+                    <div
+                      v-if="form.dateType === 'year'"
+                      class="metadata-geral__date-input"
+                    >
                       <input
                         type="number"
                         class="form-control"
@@ -442,76 +439,90 @@
                         placeholder="Ano"
                       />
                     </div>
-                    <span>e</span>
-                    <div style="width: 120px">
-                      <input
-                        type="number"
-                        class="form-control"
-                        v-model="dateEndYearInput"
-                        placeholder="Ano"
-                      />
+                    <div
+                      v-else
+                      class="metadata-geral__date-interval d-flex align-items-center flex-wrap"
+                    >
+                      <span>Entre</span>
+                      <div class="metadata-geral__date-input">
+                        <input
+                          type="number"
+                          class="form-control"
+                          v-model="dateYearInput"
+                          placeholder="Ano"
+                        />
+                      </div>
+                      <span>e</span>
+                      <div class="metadata-geral__date-input">
+                        <input
+                          type="number"
+                          class="form-control"
+                          v-model="dateEndYearInput"
+                          placeholder="Ano"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div class="d-flex gap-4">
-                    <div class="form-check">
-                      <input
-                        class="form-check-input"
-                        type="radio"
-                        name="dateType"
-                        id="dateTypeYear"
-                        value="year"
-                        v-model="form.dateType"
-                      />
-                      <label class="form-check-label" for="dateTypeYear"
-                        >Ano</label
-                      >
+                    <div class="metadata-geral__date-options">
+                      <div class="form-check metadata-geral__date-option">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          name="dateType"
+                          id="dateTypeYear"
+                          value="year"
+                          v-model="form.dateType"
+                        />
+                        <label class="form-check-label" for="dateTypeYear"
+                          >Ano</label
+                        >
+                      </div>
+                      <div class="form-check metadata-geral__date-option">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          name="dateType"
+                          id="dateTypeInterval"
+                          value="interval"
+                          v-model="form.dateType"
+                        />
+                        <label class="form-check-label" for="dateTypeInterval"
+                          >Intervalo</label
+                        >
+                      </div>
                     </div>
-                    <div class="form-check">
-                      <input
-                        class="form-check-input"
-                        type="radio"
-                        name="dateType"
-                        id="dateTypeInterval"
-                        value="interval"
-                        v-model="form.dateType"
-                      />
-                      <label class="form-check-label" for="dateTypeInterval"
-                        >Intervalo</label
-                      >
-                    </div>
-                  </div>
 
-                  <div class="d-flex gap-4">
-                    <div class="form-check">
-                      <input
-                        class="form-check-input"
-                        type="radio"
-                        name="dateAccuracy"
-                        id="dateAccExact"
-                        value="exact"
-                        v-model="form.dateAccuracy"
-                      />
-                      <label class="form-check-label" for="dateAccExact"
-                        >Data exata</label
-                      >
-                    </div>
-                    <div class="form-check">
-                      <input
-                        class="form-check-input"
-                        type="radio"
-                        name="dateAccuracy"
-                        id="dateAccApprox"
-                        value="approximate"
-                        v-model="form.dateAccuracy"
-                      />
-                      <label class="form-check-label" for="dateAccApprox"
-                        >Data aproximada</label
-                      >
+                    <div class="metadata-geral__date-options">
+                      <div class="form-check metadata-geral__date-option">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          name="dateAccuracy"
+                          id="dateAccExact"
+                          value="exact"
+                          v-model="form.dateAccuracy"
+                        />
+                        <label class="form-check-label" for="dateAccExact"
+                          >Data exata</label
+                        >
+                      </div>
+                      <div class="form-check metadata-geral__date-option">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          name="dateAccuracy"
+                          id="dateAccApprox"
+                          value="approximate"
+                          v-model="form.dateAccuracy"
+                        />
+                        <label class="form-check-label" for="dateAccApprox"
+                          >Data aproximada</label
+                        >
+                      </div>
                     </div>
                   </div>
-                </div>
-              </UiField>
+                </UiField>
+              </div>
             </div>
           </section>
 
@@ -667,8 +678,8 @@
     </div>
   </div>
 
-  <div class="preview-actions-bar">
-    <div class="form-check mb-0">
+  <div class="preview-actions-bar" aria-label="Ações do envio">
+    <div class="preview-actions-bar__checkbox form-check mb-0">
       <input
         class="form-check-input"
         type="checkbox"
@@ -676,13 +687,15 @@
         v-model="useSameDataForAll"
         @change="handleSameDataToggle"
       />
-      <label class="form-check-label" for="sameDataToggle">
-        Usar mesmos dados para todos os arquivos enviados
+      <label
+        class="form-check-label preview-actions-bar__checkbox-label"
+        for="sameDataToggle"
+      >
+        Usar mesmos dados para todas as imagens
       </label>
       <button
         type="button"
-        class="btn p-0 border-0 bg-transparent ms-2"
-        style="vertical-align: middle; transform: translateY(-2px)"
+        class="btn p-0 border-0 bg-transparent ms-2 preview-actions-bar__info-btn"
         data-bs-toggle="popover"
         data-bs-placement="top"
         data-bs-trigger="hover focus"
@@ -695,6 +708,7 @@
           height="12"
           viewBox="0 0 12 12"
           fill="none"
+          aria-hidden="true"
         >
           <path
             fill-rule="evenodd"
@@ -705,16 +719,11 @@
         </svg>
       </button>
     </div>
-    <div class="d-flex gap-3">
+
+    <div class="preview-actions-bar__buttons">
       <button
-        class="btn btn-outline-secondary"
-        :disabled="isSubmitting"
-        @click="handleCancel"
-      >
-        Cancelar
-      </button>
-      <button
-        class="btn btn-primary"
+        type="button"
+        class="btn btn-primary preview-actions-bar__btn"
         :disabled="!canSubmit || isSubmitting"
         @click="handleSubmit"
       >
@@ -725,6 +734,15 @@
           aria-hidden="true"
         />
         {{ isSubmitting ? "Enviando..." : "Enviar imagens" }}
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-outline-secondary preview-actions-bar__btn"
+        :disabled="isSubmitting"
+        @click="handleCancel"
+      >
+        Cancelar
       </button>
     </div>
   </div>
@@ -1543,7 +1561,9 @@ function describeUploadError(error) {
   }
 
   return (
-    error.response?.data?.message || error.message || "erro inesperado no envio."
+    error.response?.data?.message ||
+    error.message ||
+    "erro inesperado no envio."
   );
 }
 
@@ -1922,49 +1942,427 @@ $breakpoint-md: 768px;
   border-top: 1px solid color-mix(in srgb, var(--Cinza_C), transparent 50%);
 }
 
-.preview-actions-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: white;
-  padding: 1rem;
+$breakpoint-tablet: 1024px;
+
+.term-text-wrapper {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.75rem;
-  box-shadow: 2px -2px 5px 2px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
 
-  .d-flex.gap-3 {
-    width: 100%;
+  @media (max-width: #{$breakpoint-tablet}) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 
-    .btn {
-      flex: 1;
+  .term-text-link {
+    font-size: 0.75rem;
+
+    @media (max-width: #{$breakpoint-tablet}) {
+      margin-bottom: 12px;
+    }
+
+    .bi {
+      font-size: 14px;
+    }
+  }
+}
+
+.metadata-essenciais {
+  @media (max-width: #{$breakpoint-tablet}) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    align-self: stretch;
+    padding: var(--pp, 8px) var(--p, 12px) !important;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+
+    h2.mb-4 {
+      flex: 1 0 0;
+      align-self: stretch;
+      padding-top: var(--p, 12px);
+      margin-bottom: 1rem !important;
+      font-size: 16px;
     }
   }
 
+  &__field {
+    margin-bottom: 24px;
+
+    @media (max-width: #{$breakpoint-tablet}) {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: stretch;
+      gap: var(--ppp, 4px);
+      align-self: stretch;
+      margin-bottom: 24px;
+      padding: 0;
+      width: 100%;
+    }
+
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+  }
+
+  &__toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+
+    .form-check-label {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .form-check.form-switch {
+      flex-shrink: 0;
+    }
+  }
+
+  &__licenses {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--ppp, 4px);
+    align-self: stretch;
+    width: 100%;
+
+    @media (max-width: #{$breakpoint-tablet}) {
+      padding-right: 24px;
+    }
+  }
+
+  &__license {
+    margin-bottom: 0;
+    padding: 8px 0 4px 0;
+    padding-left: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--pp, 8px);
+    align-self: stretch;
+    width: 100%;
+    min-height: unset;
+
+    &.form-check {
+      padding-left: 0;
+      min-height: unset;
+    }
+
+    .form-check-input {
+      flex-shrink: 0;
+      margin-top: 2px;
+      margin-left: 0;
+
+      @media (max-width: #{$breakpoint-tablet}) {
+        width: 12px;
+        height: 12px;
+      }
+    }
+  }
+
+  &__license-label {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: var(--ppp, 4px);
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-left: 0;
+    margin-bottom: 0;
+  }
+
+  &__license-name {
+    display: block;
+    font-style: normal;
+    color: var(--Preto, #1f1f1f);
+    font-size: 14px;
+    line-height: 150%;
+    font-weight: 600;
+
+    @media (max-width: #{$breakpoint-tablet}) {
+      font-size: 10px;
+      line-height: 16px;
+    }
+  }
+
+  &__license-desc {
+    display: block;
+    margin-top: 0;
+    font-size: 12px;
+    line-height: 125%;
+    color: var(--Cinza_M, #636262);
+    font-style: normal;
+
+    @media (max-width: #{$breakpoint-tablet}) {
+      font-size: 10px;
+      line-height: 16px;
+    }
+  }
+}
+
+.metadata-geral {
+  @media (max-width: #{$breakpoint-tablet}) {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  &__title {
+    @media (max-width: #{$breakpoint-tablet}) {
+      flex: 1 0 0;
+      align-self: stretch;
+      color: var(--Gray-900, #212529);
+      font-family: "DM Sans", sans-serif;
+      font-size: 16px;
+      font-style: normal;
+      font-weight: 500;
+      line-height: 150%;
+      margin-bottom: 0 !important;
+    }
+  }
+
+  &__fields {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+  }
+
+  &__field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+
+  &__field {
+    width: 100%;
+
+    @media (max-width: #{$breakpoint-tablet}) {
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    :deep(.form-control:not(textarea)) {
+      @media (max-width: #{$breakpoint-tablet}) {
+        display: flex;
+        height: 30px;
+        min-height: 30px;
+        padding: 6px 10px;
+        align-items: center;
+        gap: 18px;
+        align-self: stretch;
+        border-radius: 5px;
+        border: 0.75px solid var(--Preto, #1f1f1f);
+        background: var(--Off_white, #faf9f9);
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+    }
+
+    :deep(textarea.form-control) {
+      @media (max-width: #{$breakpoint-tablet}) {
+        display: flex;
+        min-height: 120px;
+        padding: 6px 10px;
+        align-items: flex-start;
+        gap: 18px;
+        align-self: stretch;
+        border-radius: 5px;
+        border: 0.75px solid var(--Preto, #1f1f1f);
+        background: var(--Off_white, #faf9f9);
+        box-sizing: border-box;
+      }
+    }
+  }
+
+  &__tags {
+    gap: 8px 12px;
+    margin-top: var(--p, 12px);
+  }
+
+  &__tag {
+    height: 24px;
+    padding: 4px 8px;
+    gap: var(--p, 12px);
+    border-radius: 2px;
+    border-color: var(--Laranja_E, #aa4f28);
+    color: var(--Laranja_E, #aa4f28);
+    font-size: 12px;
+    line-height: 115%;
+  }
+
+  &__work-selected {
+    @media (max-width: #{$breakpoint-tablet}) {
+      height: auto;
+      min-height: 30px;
+    }
+  }
+
+  &__hint {
+    padding: var(--ppp, 4px) 0;
+    text-align: right;
+    color: var(--Cinza_E, #2f2f2f);
+    font-size: 12px;
+    line-height: 115%;
+  }
+
+  &__date {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  &__date-interval {
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 125%;
+    color: var(--Gray-900, #212529);
+  }
+
+  &__date-input {
+    width: 85px;
+    flex-shrink: 0;
+  }
+
+  &__date-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  &__date-option {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--pp, 8px);
+    padding: 8px 4px 4px;
+    margin-bottom: 0;
+    min-height: unset;
+
+    .form-check-input {
+      flex-shrink: 0;
+      margin-top: 2px;
+      margin-left: 0;
+
+      @media (max-width: #{$breakpoint-tablet}) {
+        width: 12px;
+        height: 12px;
+      }
+    }
+
+    .form-check-label {
+      font-size: 12px;
+      line-height: 125%;
+      font-weight: 500;
+      color: var(--Cinza_E, #2f2f2f);
+    }
+  }
+}
+
+.metadata-upload-page {
+  @media (max-width: 767.98px) {
+    padding-left: var(--g, 24px);
+    padding-right: var(--g, 24px);
+  }
+}
+
+.preview-actions-bar {
+  position: relative;
+  background-color: var(--Branco, #fff);
+  box-shadow: 2px -1px 5px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 24px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  z-index: 1;
+
+  &__checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 4px;
+    padding-right: 4px;
+    width: 100%;
+  }
+
+  &__checkbox-label {
+    flex: 1 1 auto;
+    font-size: 12px;
+    line-height: 125%;
+    color: var(--Cinza_E, #2f2f2f);
+  }
+
+  &__info-btn {
+    vertical-align: middle;
+    transform: translateY(-2px);
+  }
+
+  &__buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  &__btn {
+    width: 100%;
+    justify-content: center;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 150%;
+  }
+
   @include md {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
     flex-direction: row;
     justify-content: flex-end;
     align-items: center;
     gap: 3rem;
     padding: 1rem 2rem;
+    padding-bottom: 1rem;
+    box-shadow: 2px -2px 5px 2px rgba(0, 0, 0, 0.1);
 
-    .d-flex.gap-3 {
+    &__checkbox {
       width: auto;
+      flex: 0 0 auto;
+      padding-bottom: 0;
+      padding-right: 0;
+    }
 
-      .btn {
-        flex: unset;
-      }
+    &__checkbox-label {
+      flex: 0 1 auto;
+      font-size: 14px;
+      line-height: 150%;
+    }
+
+    &__buttons {
+      flex-direction: row-reverse;
+      width: auto;
+      flex: 0 0 auto;
+      gap: 12px;
+    }
+
+    &__btn {
+      width: auto;
+      flex: unset;
     }
   }
-}
-
-.preview-actions-bar button {
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 150%;
 }
 
 @media (min-width: 768px) {

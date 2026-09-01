@@ -22,7 +22,7 @@
         <h3 class="h3 pt-2">Termos</h3>
         <div class="input-group">
           <button
-            class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal"
+            class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
             type="button"
             data-bs-toggle="dropdown"
             aria-expanded="false"
@@ -33,7 +33,7 @@
             <li v-for="opt in fieldOptions" :key="opt.value">
               <button
                 class="dropdown-item"
-                @click.prevent="selectedField = opt.value"
+                @click.prevent="setSelectedField(opt.value)"
               >
                 {{ opt.label }}
               </button>
@@ -42,12 +42,14 @@
           <input
             v-model="textQueryInput"
             type="text"
-            class="form-control border-preto border-end-0"
-            placeholder="Digite o termo de busca"
-            @keydown.enter="addSearchTerm"
+            class="form-control border-preto"
+            :placeholder="textQueryPlaceholder"
+            @keydown.enter="onTermInputEnter"
+            @focus="ensureVocabLoaded"
           />
           <button
-            class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
+            v-if="!activeVocabField"
+            class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40 d-flex align-items-end"
             type="button"
             aria-label="Buscar"
             @click="addSearchTerm"
@@ -55,11 +57,31 @@
             <i class="bi bi-plus-square-fill"></i>
           </button>
         </div>
+
+        <!-- Sugestões do vocabulário ativo (materiais/técnicas/período de estilo/
+             contexto cultural/tipo de obra) — mesmo padrão do autocomplete de
+             "Tags da imagem" na edição de metadados. -->
+        <ul v-if="activeVocabField && textQueryInput.trim()" class="list-group vocab-suggestions dropdown-menu w-100 show">
+          <li v-if="isVocabListLoading" class="dropdown-item text-muted">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+            Carregando...
+          </li>
+          <li v-else-if="vocabSuggestions.length === 0" class="dropdown-item text-muted">
+            Nenhum resultado para "{{ textQueryInput }}".
+          </li>
+          <li v-for="opt in vocabSuggestions" :key="opt.id" class="dropdown-item p-0">
+            <button type="button" class="dropdown-item" @click="selectVocabItem(opt.id)">
+              {{ opt.label }}
+            </button>
+          </li>
+        </ul>
       </div>
 
       <div class="mb-4">
         <div class="d-flex flex-wrap gap-2">
-          <span v-if="searchTerms.length === 0 && extraSelectedTags.length === 0" class="text-muted"
+          <span
+            v-if="searchTerms.length === 0 && extraSelectedTags.length === 0 && vocabChips.length === 0"
+            class="text-muted"
             >Nenhum termo adicionado.</span
           >
           <button
@@ -89,6 +111,21 @@
               class="btn-close ms-1"
               aria-label="Remover tag"
               @click.stop="toggleTagId(id)"
+            ></button>
+          </button>
+          <button
+            v-for="chip in vocabChips"
+            :key="chip.key"
+            type="button"
+            class="btn btn-primary btn-sm btn-tag"
+          >
+            <span v-if="!chip.isLoaded" class="spinner-border spinner-border-sm" role="status" aria-label="Carregando..." />
+            <template v-else>{{ chip.label }}</template>
+            <button
+              type="button"
+              class="btn-close ms-1"
+              :aria-label="`Remover ${chip.label || 'filtro'}`"
+              @click.stop="removeVocabItem(chip.fieldKey, chip.id)"
             ></button>
           </button>
         </div>
@@ -271,39 +308,9 @@
           </div>
         </div>
 
-      <!-- <div class="mb-4">
-        <div class="p pb-2">Uso permitido</div>
-        <div class="d-flex flex-wrap gap-2">
-          <button
-            type="button"
-            :class="[
-              'btn btn-sm',
-              selectedUse === 'commercial'
-                ? 'btn-dark'
-                : 'btn-outline-secondary',
-            ]"
-            @click="setUse('commercial')"
-          >
-            Permite uso comercial
-          </button>
-          <button
-            type="button"
-            :class="[
-              'btn btn-sm',
-              selectedUse === 'nonCommercial'
-                ? 'btn-dark'
-                : 'btn-outline-secondary',
-            ]"
-            @click="setUse('nonCommercial')"
-          >
-            Não permite uso comercial
-          </button>
-        </div>
-      </div> -->
-
       <div class="drawer-actions d-grid gap-2 pt-3">
-        <button class="btn btn-outline-secondary" @click="hasActiveFilters ? emit('clear') : open = false">
-          {{ hasActiveFilters ? 'Limpar busca' : 'Cancelar' }}
+        <button class="btn btn-outline-secondary" @click="cancel">
+          Limpar
         </button>
         <button class="btn btn-dark" @click="confirm">Buscar</button>
       </div>
@@ -317,6 +324,13 @@ import UiMobileDrawer from "@/components/ui/UiMobileDrawer.vue";
 import toggleArrayItem from "@/helpers/toggleArrayItem";
 import createDefaultAdvancedFilters from "@/helpers/createDefaultAdvancedFilters";
 import { useSubjectTerms } from "@/composables/useSubjectTerms";
+import {
+  useMaterialTerms,
+  useTechniqueTerms,
+  useStylePeriodTerms,
+  useCulturalContextTerms,
+  useWorkTypeTerms,
+} from "@/composables/useVocabTerms";
 import { CC_LICENSES } from "@/constants/creativeCommonsLicenses";
 import { CHARACTERISTIC_PAIRS } from "@/constants/characteristicPairs";
 
@@ -356,18 +370,27 @@ const extraSelectedTags = computed(() =>
 );
 
 const fieldOptions = ref([
-  { value: "all", label: "Todos os campos" },
-  { value: "author", label: "Autoria" },
-  { value: "tag", label: "Tag" },
-  { value: "title", label: "Título" },
+  { value: "all", label: "Todos os campos", placeholder: "Texto exemplo" },
+  { value: "author", label: "Autoria", placeholder: "Ex: Le Corbusier" },
+  { value: "tag", label: "Tag", placeholder: "Ex: fachada" },
+  { value: "title", label: "Título", placeholder: "Ex: Edifício Copan" },
+  { value: "location", label: "Localização", placeholder: "Ex: São Paulo" },
+  { value: "materials", label: "Materiais", placeholder: "Ex: concreto" },
+  { value: "techniques", label: "Técnicas de construção", placeholder: "Ex: alvenaria" },
+  { value: "stylePeriod", label: "Período de estilo", placeholder: "Ex: moderno" },
+  { value: "culturalContext", label: "Contexto cultural", placeholder: "Ex: modernismo brasileiro" },
+  { value: "workType", label: "Tipo de obra", placeholder: "Ex: residencial" },
 ]);
 const selectedField = ref("all");
 const textQueryInput = ref("");
 const searchTerms = ref([]); // { field, value, label }
-const selectedLocations = ref([]);
 const selectedTags = ref([]);
-const selectedUse = ref(null);
 const selectedLicenses = ref([]);
+const selectedMaterials = ref([]);
+const selectedTechniques = ref([]);
+const selectedStylePeriods = ref([]);
+const selectedCulturalContexts = ref([]);
+const selectedWorkTypes = ref([]);
 //--------
 const currentYear = new Date().getFullYear();
 const imageStartYear = ref(null);
@@ -375,6 +398,99 @@ const imageEndYear = ref(null);
 const workStartYear = ref(null);
 const workEndYear = ref(null);
 const selectedCharacteristics = ref({});
+
+const textQueryPlaceholder = computed(
+  () => fieldOptions.value.find((f) => f.value === selectedField.value)?.placeholder || "Texto exemplo"
+);
+
+// Integração dos 5 vocabulários VRAC dentro do MESMO input de "Termos" — ver
+// AdvancedSearchModal.vue (mesma lógica). Diferença aqui: select/remove
+// chamam emitFiltersUpdate() no final, porque o drawer emite ao vivo.
+const materialTermsApi = useMaterialTerms();
+const techniqueTermsApi = useTechniqueTerms();
+const stylePeriodTermsApi = useStylePeriodTerms();
+const culturalContextTermsApi = useCulturalContextTerms();
+const workTypeTermsApi = useWorkTypeTerms();
+
+const VOCAB_FIELD_CONFIG = {
+  materials: { selected: selectedMaterials, api: materialTermsApi, chipLabel: "Material" },
+  techniques: { selected: selectedTechniques, api: techniqueTermsApi, chipLabel: "Técnica" },
+  stylePeriod: { selected: selectedStylePeriods, api: stylePeriodTermsApi, chipLabel: "Período de estilo" },
+  culturalContext: { selected: selectedCulturalContexts, api: culturalContextTermsApi, chipLabel: "Contexto cultural" },
+  workType: { selected: selectedWorkTypes, api: workTypeTermsApi, chipLabel: "Tipo de obra" },
+};
+
+const activeVocabField = computed(() => VOCAB_FIELD_CONFIG[selectedField.value] || null);
+
+const isVocabListLoading = ref(false);
+
+async function ensureVocabLoaded() {
+  const field = activeVocabField.value;
+  if (!field || field.api.allItems.value.length > 0) return;
+  isVocabListLoading.value = true;
+  try {
+    await field.api.loadAll();
+  } finally {
+    isVocabListLoading.value = false;
+  }
+}
+
+watch(activeVocabField, (field) => {
+  if (field) ensureVocabLoaded();
+});
+
+const vocabSuggestions = computed(() => {
+  const field = activeVocabField.value;
+  const q = textQueryInput.value.trim().toLowerCase();
+  if (!field || !q) return [];
+  return field.api.allItems.value
+    .filter((item) => !field.selected.value.includes(item.id))
+    .filter((item) => item.label.toLowerCase().includes(q))
+    .slice(0, 20);
+});
+
+function selectVocabItem(id) {
+  const field = activeVocabField.value;
+  if (!field) return;
+  if (!field.selected.value.includes(id)) {
+    field.selected.value = [...field.selected.value, id];
+  }
+  textQueryInput.value = "";
+  emitFiltersUpdate();
+}
+
+function removeVocabItem(fieldKey, id) {
+  const field = VOCAB_FIELD_CONFIG[fieldKey];
+  if (!field) return;
+  field.selected.value = field.selected.value.filter((existingId) => existingId !== id);
+  emitFiltersUpdate();
+}
+
+const vocabChips = computed(() =>
+  Object.entries(VOCAB_FIELD_CONFIG).flatMap(([fieldKey, field]) =>
+    field.selected.value.map((id) => ({
+      key: `${fieldKey}-${id}`,
+      fieldKey,
+      id,
+      isLoaded: field.api.isTermLoaded(id),
+      label: field.api.isTermLoaded(id) ? `${field.chipLabel}: ${field.api.getTermById(id)}` : null,
+    }))
+  )
+);
+
+function onTermInputEnter() {
+  if (activeVocabField.value) {
+    const first = vocabSuggestions.value[0];
+    if (first) selectVocabItem(first.id);
+  } else {
+    addSearchTerm();
+  }
+}
+
+function setSelectedField(value) {
+  selectedField.value = value;
+  textQueryInput.value = "";
+}
 
 function toggleCharacteristic(pairKey, side) {
   if (selectedCharacteristics.value[pairKey] === side) {
@@ -425,10 +541,18 @@ watch(
       value: term.value,
       label: term.label,
     }));
-    selectedLocations.value = [...(filters?.locations || [])];
     selectedTags.value = [...(filters?.tags || [])];
-    selectedUse.value = filters?.use || null;
     selectedLicenses.value = [...(filters?.licenses || [])];
+    selectedMaterials.value = [...(filters?.materials || [])];
+    selectedTechniques.value = [...(filters?.techniques || [])];
+    selectedStylePeriods.value = [...(filters?.stylePeriods || [])];
+    selectedCulturalContexts.value = [...(filters?.culturalContexts || [])];
+    selectedWorkTypes.value = [...(filters?.workTypes || [])];
+    materialTermsApi.loadTerms(selectedMaterials.value);
+    techniqueTermsApi.loadTerms(selectedTechniques.value);
+    stylePeriodTermsApi.loadTerms(selectedStylePeriods.value);
+    culturalContextTermsApi.loadTerms(selectedCulturalContexts.value);
+    workTypeTermsApi.loadTerms(selectedWorkTypes.value);
 
     imageStartYear.value = filters?.imageStartYear ?? null;
     imageEndYear.value = filters?.imageEndYear ?? null;
@@ -446,10 +570,13 @@ watch(
 const emitFiltersUpdate = () => {
   emit("update:filters", {
     terms: searchTerms.value,
-    locations: selectedLocations.value,
     tags: selectedTags.value,
-    use: selectedUse.value,
     licenses: selectedLicenses.value,
+    materials: selectedMaterials.value,
+    techniques: selectedTechniques.value,
+    stylePeriods: selectedStylePeriods.value,
+    culturalContexts: selectedCulturalContexts.value,
+    workTypes: selectedWorkTypes.value,
     imageStartYear: imageStartYear.value,
     imageEndYear: imageEndYear.value,
     workStartYear: workStartYear.value,
@@ -457,6 +584,10 @@ const emitFiltersUpdate = () => {
     characteristics: { ...selectedCharacteristics.value },
   });
 };
+
+// A diferença pro modal desktop: o drawer emite update:filters a cada
+// mudança — selectVocabItem/removeVocabItem já chamam emitFiltersUpdate()
+// internamente (ver acima), então não precisa de wrappers extras aqui.
 
 const selectedFieldLabel = computed(() => {
   const found = fieldOptions.value.find((f) => f.value === selectedField.value);
@@ -493,27 +624,6 @@ function toggleLicense(label) {
   emitFiltersUpdate();
 }
 
-// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
-// eslint-disable-next-line no-unused-vars
-const locationSuggestions = ref([
-  "São Paulo",
-  "Rio de Janeiro",
-  "Brasilia",
-  "Jaú",
-  "Ribeirão Preto",
-  "Londrina",
-  "Mauá",
-  "Itu",
-  "Ouro Preto",
-  "Praia Grande",
-]);
-// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
-// eslint-disable-next-line no-unused-vars
-function toggleLocation(city) {
-  toggleArrayItem(selectedLocations.value, city);
-  emitFiltersUpdate();
-}
-
 const tagSuggestions = [
   { id: "f5c68f66-549f-43db-96b2-ac34ebbd9f9b", label: "alvenaria" },
   { id: "019adaf3-b4f0-7139-be65-66b693091ff5", label: "concreto" },
@@ -533,20 +643,16 @@ function toggleTag(id) {
   emitFiltersUpdate();
 }
 
-// TO-DO: Remover a linha abaixo depois de implementar a funcionalidade
-// eslint-disable-next-line no-unused-vars
-function setUse(use) {
-  selectedUse.value = selectedUse.value === use ? null : use;
-  emitFiltersUpdate();
-}
-
 function confirm() {
   const payload = {
     terms: searchTerms.value,
-    locations: selectedLocations.value,
     tags: selectedTags.value,
-    use: selectedUse.value,
     licenses: selectedLicenses.value,
+    materials: selectedMaterials.value,
+    techniques: selectedTechniques.value,
+    stylePeriods: selectedStylePeriods.value,
+    culturalContexts: selectedCulturalContexts.value,
+    workTypes: selectedWorkTypes.value,
     imageStartYear: imageStartYear.value,
     imageEndYear: imageEndYear.value,
     workStartYear: workStartYear.value,
@@ -554,6 +660,12 @@ function confirm() {
     characteristics: { ...selectedCharacteristics.value },
   };
   emit("confirm", { mode: "avancada", value: payload });
+  open.value = false;
+}
+
+// Cancelar: limpa os campos (emite pro pai limpar a URL/busca ativa) e fecha o drawer
+function cancel() {
+  emit("clear");
   open.value = false;
 }
 
@@ -582,10 +694,34 @@ onUnmounted(() => {
   border-radius: 2px !important;
 }
 
+.vocab-suggestions {
+  position: absolute;
+  z-index: 5;
+  max-height: 220px;
+  overflow-y: auto;
+  width: 93% !important;
+}
+
+.drawer-content {
+ .input-group > .form-control:not(:last-child) {
+    border-right: none !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }  
+}
+
 .drawer-content .p {
   font-size: 14px;
   font-weight: 500;
   line-height: 150%;
+}
+
+.dropdown-menu-scroll {
+  max-height: 240px; /* ajuste o valor conforme o espaço do seu modal */
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #ccc;
 }
 
 .drawer-content .d-flex > .btn.flex-fill {

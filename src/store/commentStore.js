@@ -4,12 +4,28 @@ import axios from "../axios";
 export const useCommentStore = defineStore("comments", () => {
   async function fetchComments(imageId) {
     try {
-      const response = await axios.get(`/api/images/${imageId}/comments`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      return response.data;
+      let allComments = [];
+      let cursor = null;
+      let lastResponse = null;
+
+      do {
+        const response = await axios.get(`/api/images/${imageId}/comments`, {
+          params: cursor ? { cursor } : {},
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        lastResponse = response.data;
+        allComments = allComments.concat(lastResponse.data);
+        cursor = lastResponse.meta?.next_cursor ?? null;
+      } while (cursor);
+
+      return {
+        ...lastResponse,
+        data: allComments,
+        meta: { ...(lastResponse?.meta ?? {}), next_cursor: null },
+      };
     } catch (error) {
       throw Error("Não foi possível carregar os comentários.");
     }
@@ -98,7 +114,6 @@ export const useCommentStore = defineStore("comments", () => {
           },
         }
       );
-      console.log(response);
 
       return response.data;
     } catch (error) {

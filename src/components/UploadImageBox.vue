@@ -152,7 +152,7 @@ function goToMetadata() {
 <template>
   <div>
     <!-- Preview de imagens selecionadas -->
-    <div v-if="imagePreviews.length > 0">
+    <div v-if="imagePreviews.length > 0" class="upload-image-box__preview">
       <div class="preview-box">
         <div v-if="imagePreviews.length < uploadStore.MAX_FILES">
           <label class="preview-box__add-item">
@@ -173,13 +173,23 @@ function goToMetadata() {
           </button>
         </div>
       </div>
-      <div class="preview-actions-bar">
-        <button @click="clearImages" class="btn btn-outline-secondary">
-          Cancelar
-        </button>
-        <button class="btn btn-primary" @click="goToMetadata">
-          Enviar imagens
-        </button>
+      <div class="preview-actions-bar" aria-label="Ações do envio">
+        <div class="preview-actions-bar__buttons">
+          <button
+            type="button"
+            class="btn btn-primary preview-actions-bar__btn"
+            @click="goToMetadata"
+          >
+            Enviar imagens
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-secondary preview-actions-bar__btn"
+            @click="clearImages"
+          >
+            Cancelar
+          </button>
+        </div>
       </div>
     </div>
 
@@ -320,24 +330,65 @@ $breakpoint-md: 768px;
 }
 
 .preview-actions-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: white;
-  padding: 1rem 2rem;
+  position: relative;
+  margin-top: 24px;
+  background-color: var(--Branco, #fff);
+  box-sizing: border-box;
   display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  box-shadow: 2px -2px 5px 2px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 24px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  z-index: 1;
 
-  button {
+  &__buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  &__btn {
+    width: 100%;
+    justify-content: center;
     font-weight: 400;
-    font-style: 9pt;
     font-size: 14px;
     line-height: 150%;
-    letter-spacing: 0%;
+  }
+
+  @include md {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-top: 0;
+    z-index: 1000;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    padding: 1rem 2rem;
+    padding-bottom: 1rem;
+    box-shadow: 2px -2px 5px 2px rgba(0, 0, 0, 0.1);
+
+    &__buttons {
+      flex-direction: row-reverse;
+      width: auto;
+      flex: 0 0 auto;
+      gap: 12px;
+    }
+
+    &__btn {
+      width: auto;
+      flex: unset;
+    }
+  }
+}
+
+.upload-image-box__preview {
+  @include md {
+    padding-bottom: 80px;
   }
 }
 

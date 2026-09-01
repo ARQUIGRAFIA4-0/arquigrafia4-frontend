@@ -20,6 +20,7 @@ import { useRouteQuery } from "@vueuse/router";
 import LocationsMap from "@/components/map/LocationsMap.vue";
 import { mapLocationsGeoJsonToMapItems } from "@/helpers/geojson.js";
 import { api } from "@/services/api.js";
+import { queryToFilters, filtersToQuery } from "@/helpers/searchQueryMapping";
 
 const route = useRoute();
 
@@ -49,53 +50,17 @@ const isLoading = ref(true);
 let loadRequestId = 0;
 
 /**
- * Mesmos filtros do grid/mosaico (URL).
+ * Mesmos filtros do grid/mosaico (URL), via módulo consolidado (Fase 2).
  * Sem filtros > null > acervo completo.
+ *
+ * Ganha automaticamente, em relação ao parser manual anterior:
+ * - sanitização de data (queryToFilters usa sanitizeDateParam) — antes só
+ *   ViewGrid/ViewMosaic sanitizavam, o mapa aceitava datas inválidas direto;
+ * - os campos material_term[]/technique_term[]/aesthetics_term[]/
+ *   cultural_context_term[]/typology_term[], que este parser nunca lia.
  */
 const mapSearchParams = computed(() => {
-  const params = {};
-  const q = typeof route.query.q === "string" ? route.query.q.trim() : "";
-
-  if (q) params.q = q;
-
-  if (route.query.title) params.title = route.query.title;
-  if (route.query.contributor) params.contributor = route.query.contributor;
-
-  if (route.query.date_from) params.date_from = route.query.date_from;
-  if (route.query.date_to) params.date_to = route.query.date_to;
-
-  if (route.query.work_date_from) params.work_date_from = route.query.work_date_from;
-  if (route.query.work_date_to) params.work_date_to = route.query.work_date_to;
-
-  // Características binomiais
-  Object.keys(route.query).forEach((key) => {
-    const match = key.match(/^binomial\[(.+)\]$/);
-    if (match) {
-      const side = route.query[key];
-      if (side === "left" || side === "right") {
-        params[`binomial[${match[1]}]`] = side;
-      }
-    }
-  });
-
-  // Assuntos
-  const rawSubjects = route.query["subject[]"];
-  if (rawSubjects) {
-    params["subject[]"] = Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects];
-  }
-
-  // Assuntos
-  const rawSubjectTerms = route.query["subject_term[]"];
-  if (rawSubjectTerms) {
-    params["subject_term[]"] = Array.isArray(rawSubjectTerms) ? rawSubjectTerms : [rawSubjectTerms];
-  }
-
-  // Licenças
-  const rawLicenses = route.query["license[]"];
-  if (rawLicenses) {
-    params["license[]"] = Array.isArray(rawLicenses) ? rawLicenses : [rawLicenses];
-  }
-
+  const params = filtersToQuery(queryToFilters(route.query));
   return Object.keys(params).length > 0 ? params : null;
 });
 
