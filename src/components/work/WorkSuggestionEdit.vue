@@ -24,12 +24,12 @@ const {
   filteredNameSuggestions, showNameSuggestions, loadContributorNames,
   onAgentNameInput, hideNameSuggestions, addAgent, removeAgent,
   DATE_TYPES, dateTypeInput, dateYearInput, dateYearEndInput, dateIntervalMode,
-  dateCirca, dates, isDateTypeDisabled, addDate, removeDate, dateTypeLabel,
+  dateCirca, dates, dateError, isDateTypeDisabled, addDate, removeDate, dateTypeLabel,
   formatDateChip,
   descriptionInput,
   VOCAB_FIELDS, onVocabInput, addVocabItem, canCreateVocab, createAndAddVocabItem,
   onVocabEnter, onVocabPlusClick, removeVocabItem, hideVocabSuggestions,
-  buildDraft, populateFromWork,
+  commitPendingInputs, buildDraft, populateFromWork,
 } = useWorkForm();
 
 // Justificativa da sugestão — obrigatória, como no fluxo de imagem.
@@ -107,6 +107,9 @@ const buildPayload = async () => {
 
 const handleSubmit = async () => {
   if (isSaving.value) return;
+
+  // Aproveita o que ficou digitado sem virar chip, em vez de descartar em silêncio.
+  commitPendingInputs();
 
   reasonTouched.value = true;
   if (!reason.value.trim()) {
@@ -291,6 +294,7 @@ const handleSubmit = async () => {
             <label class="form-check-label" for="suggestDateCirca">Data aproximada</label>
           </div>
         </div>
+        <p v-if="dateError" class="text-danger small mt-1 mb-0">{{ dateError }}</p>
         <div class="d-flex flex-wrap gap-2 mt-2">
           <button v-for="(d, i) in dates" :key="i" type="button" class="btn btn-primary btn-sm btn-tag">
             {{ formatDateChip(d) }}

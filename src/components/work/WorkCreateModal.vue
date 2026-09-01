@@ -26,12 +26,12 @@ const {
   filteredNameSuggestions, showNameSuggestions, loadContributorNames,
   onAgentNameInput, hideNameSuggestions, addAgent, removeAgent,
   DATE_TYPES, dateTypeInput, dateYearInput, dateYearEndInput, dateIntervalMode,
-  dateCirca, dates, isDateTypeDisabled, addDate, removeDate, dateTypeLabel,
+  dateCirca, dates, dateError, isDateTypeDisabled, addDate, removeDate, dateTypeLabel,
   formatDateChip,
   descriptionInput,
   VOCAB_FIELDS, onVocabInput, addVocabItem, canCreateVocab, createAndAddVocabItem,
   onVocabEnter, onVocabPlusClick, removeVocabItem, hideVocabSuggestions,
-  canSubmit, buildDraft, reset: resetForm,
+  canSubmit, commitPendingInputs, buildDraft, reset: resetForm,
 } = useWorkForm();
 
 // ── Step management ─────────────────────────────────────────────────────────
@@ -224,6 +224,8 @@ const goToStep2 = () => {
 const errorMessage = ref("");
 
 const handleSubmit = () => {
+  // Aproveita o que ficou digitado sem virar chip, em vez de descartar em silêncio.
+  commitPendingInputs();
   if (!canSubmit.value) return;
   // As coordenadas vêm do passo 1, que é exclusivo deste modal.
   const draft = buildDraft(pickedCoords.value);
@@ -627,6 +629,7 @@ onUnmounted(() => {
                     <label class="form-check-label" for="dateCirca">Data aproximada</label>
                   </div>
                 </div>
+                <p v-if="dateError" class="text-danger small mt-1 mb-0">{{ dateError }}</p>
                 <div class="d-flex flex-wrap gap-2 mt-2">
                   <button
                     v-for="(d, i) in dates"
@@ -671,7 +674,7 @@ onUnmounted(() => {
               type="button"
               class="work-modal__btn work-modal__btn--primary"
               :disabled="!hasPreferredTitle"
-              @click="step = 3"
+              @click="commitPendingInputs(); step = 3"
             >
               Próximo
             </button>

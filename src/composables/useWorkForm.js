@@ -156,10 +156,27 @@ export function useWorkForm() {
   const hasDateOfType = (type) => dates.value.some((d) => d.type === type);
   const isDateTypeDisabled = (type) => SINGULAR_DATE_TYPES.includes(type) && hasDateOfType(type);
 
+  // Motivo da última tentativa recusada. Antes `addDate` só fazia `return` e o
+  // usuário não tinha como saber por que o chip não apareceu — o ano digitado era
+  // perdido em silêncio no envio.
+  const dateError = ref("");
+  watch([dateYearInput, dateYearEndInput, dateTypeInput], () => {
+    dateError.value = "";
+  });
+
   const addDate = () => {
-    if (isDateTypeDisabled(dateTypeInput.value)) return;
+    if (isDateTypeDisabled(dateTypeInput.value)) {
+      dateError.value = `Já existe uma data de ${dateTypeLabel(dateTypeInput.value).toLowerCase()} nesta obra.`;
+      return;
+    }
     const year = normalizeYear(dateYearInput.value);
-    if (!year) return;
+    if (!year) {
+      dateError.value = dateYearInput.value.trim()
+        ? `Ano inválido. Informe um ano entre ${MIN_YEAR} e ${MAX_YEAR}.`
+        : "Informe o ano da data.";
+      return;
+    }
+    dateError.value = "";
     const earliest = `${year}-01-01`;
     // No modo intervalo, só usa o ano final se for válido e não anterior ao inicial.
     const yearEnd = dateIntervalMode.value === "interval" ? normalizeYear(dateYearEndInput.value) : null;
@@ -331,6 +348,26 @@ export function useWorkForm() {
   };
 
   // ── Draft ────────────────────────────────────────────────────────────────────
+
+  /**
+   * Confirma o que ficou digitado nos inputs sem virar chip.
+   *
+   * Todos os campos desta tela só entram no rascunho depois de um clique no "+"
+   * ou um Enter. Quem preenchia o ano e clicava direto em "Confirmar" perdia o
+   * valor sem nenhum aviso — foi o que aconteceu com a obra "Mercado São
+   * Sebastião", criada sem a data que o usuário havia digitado.
+   *
+   * Chamado antes de montar o rascunho e ao avançar de passo.
+   */
+  const commitPendingInputs = () => {
+    if (titleLabelInput.value.trim()) addTitle();
+    if (agentNameInput.value.trim()) addAgent();
+    if (dateYearInput.value.trim()) addDate();
+    for (const vfMeta of VOCAB_FIELDS) {
+      if (vfMeta.field.input.value.trim()) commitVocabInput(vfMeta);
+    }
+  };
+
   const canSubmit = computed(() => hasPreferredTitle.value);
 
   const vocabDraftBuckets = (vf) => {
@@ -517,6 +554,7 @@ export function useWorkForm() {
     dateIntervalMode,
     dateCirca,
     dates,
+    dateError,
     MIN_YEAR,
     MAX_YEAR,
     normalizeYear,
@@ -540,6 +578,7 @@ export function useWorkForm() {
     hideVocabSuggestions,
     // draft / ciclo de vida
     canSubmit,
+    commitPendingInputs,
     buildDraft,
     populateFromWork,
     reset,
