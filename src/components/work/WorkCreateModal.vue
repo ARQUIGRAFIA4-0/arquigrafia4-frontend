@@ -25,6 +25,7 @@ const {
   AGENT_ROLE_LABELS, agentRoleInput, agentNameInput, agents,
   filteredNameSuggestions, showNameSuggestions, loadContributorNames,
   onAgentNameInput, hideNameSuggestions, addAgent, removeAgent,
+  canCreateAgent, createAndAddAgent, onAgentEnter, agentPendingError,
   DATE_TYPES, dateTypeInput, dateYearInput, dateYearEndInput, dateIntervalMode,
   dateCirca, dates, dateError, isDateTypeDisabled, addDate, removeDate, dateTypeLabel,
   formatDateChip,
@@ -219,15 +220,23 @@ const goToStep2 = () => {
   step.value = 2;
 };
 
+// O campo de autoria vive no passo 2: segurar o avanço é o que torna o aviso
+// visível, já que no passo 3 ele ficaria fora da tela.
+const goToStep3 = () => {
+  commitPendingInputs();
+  if (agentPendingError.value) return;
+  step.value = 3;
+};
+
 // --- Submit ---
 const errorMessage = ref("");
 
 const handleSubmit = () => {
   // Aproveita o que ficou digitado sem virar chip, em vez de descartar em silêncio.
   commitPendingInputs();
-  // Vocabulário com texto pendente segura o envio: o termo digitado não vira
-  // chip sozinho, então sair daqui agora o perderia.
-  if (vocabPendingError.value) return;
+  // Vocabulário ou autoria com texto pendente seguram o envio: o que foi
+  // digitado não vira chip sozinho, então sair daqui agora o perderia.
+  if (vocabPendingError.value || agentPendingError.value) return;
   if (!canSubmit.value) return;
   // As coordenadas vêm do passo 1, que é exclusivo deste modal.
   const draft = buildDraft(pickedCoords.value);
@@ -528,16 +537,16 @@ onUnmounted(() => {
                   <input
                     v-model="agentNameInput"
                     type="text"
-                    class="form-control border-preto border-end-0"
+                    class="form-control border-preto"
                     placeholder="Nome"
                     autocomplete="off"
                     @input="onAgentNameInput"
                     @focus="showNameSuggestions = true"
                     @blur="hideNameSuggestions"
-                    @keydown.enter.prevent="addAgent()"
+                    @keydown.enter.prevent="onAgentEnter()"
                   />
                   <div
-                    v-if="showNameSuggestions && filteredNameSuggestions.length > 0"
+                    v-if="showNameSuggestions && (filteredNameSuggestions.length > 0 || canCreateAgent())"
                     class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
                     style="z-index: 1500; max-height: 220px; overflow-y: auto"
                   >
@@ -550,16 +559,18 @@ onUnmounted(() => {
                     >
                       {{ c.name }}
                     </button>
+                    <button
+                      v-if="canCreateAgent()"
+                      type="button"
+                      class="dropdown-item text-primary d-flex align-items-center gap-1"
+                      @click="createAndAddAgent()"
+                    >
+                      <i class="bi bi-plus-circle" />
+                      <span>Criar "{{ agentNameInput.trim() }}"</span>
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
-                    aria-label="Adicionar autoria"
-                    @click="addAgent()"
-                  >
-                    <i class="bi bi-plus-square-fill" />
-                  </button>
                 </div>
+                <p v-if="agentPendingError" class="text-danger small mt-1 mb-0">{{ agentPendingError }}</p>
                 <div class="d-flex flex-wrap gap-2 mt-2">
                   <button
                     v-for="(a, i) in agents"
@@ -697,7 +708,7 @@ onUnmounted(() => {
               type="button"
               class="work-modal__btn work-modal__btn--primary"
               :disabled="!hasPreferredTitle"
-              @click="commitPendingInputs(); step = 3"
+              @click="goToStep3"
             >
               Próximo
             </button>

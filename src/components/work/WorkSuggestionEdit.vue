@@ -23,6 +23,7 @@ const {
   AGENT_ROLE_LABELS, agentRoleInput, agentNameInput, agents,
   filteredNameSuggestions, showNameSuggestions, loadContributorNames,
   onAgentNameInput, hideNameSuggestions, addAgent, removeAgent,
+  canCreateAgent, createAndAddAgent, onAgentEnter, agentPendingError,
   DATE_TYPES, dateTypeInput, dateYearInput, dateYearEndInput, dateIntervalMode,
   dateCirca, dates, dateError, isDateTypeDisabled, addDate, removeDate, dateTypeLabel,
   formatDateChip,
@@ -110,10 +111,14 @@ const handleSubmit = async () => {
 
   // Aproveita o que ficou digitado sem virar chip, em vez de descartar em silêncio.
   commitPendingInputs();
-  // Vocabulário com texto pendente segura o envio: o termo digitado não vira
-  // chip sozinho, então enviar agora o perderia.
+  // Vocabulário ou autoria com texto pendente seguram o envio: o que foi
+  // digitado não vira chip sozinho, então enviar agora o perderia.
   if (vocabPendingError.value) {
     showError(vocabPendingError.value);
+    return;
+  }
+  if (agentPendingError.value) {
+    showError(agentPendingError.value);
     return;
   }
 
@@ -225,22 +230,24 @@ const handleSubmit = async () => {
               <button class="dropdown-item" @click.prevent="agentRoleInput = r">{{ r }}</button>
             </li>
           </ul>
-          <input v-model="agentNameInput" type="text" class="form-control border-preto border-end-0"
+          <input v-model="agentNameInput" type="text" class="form-control border-preto"
             placeholder="Nome" autocomplete="off" @input="onAgentNameInput"
-            @focus="showNameSuggestions = true" @blur="hideNameSuggestions" @keydown.enter.prevent="addAgent()" />
-          <div v-if="showNameSuggestions && filteredNameSuggestions.length > 0"
+            @focus="showNameSuggestions = true" @blur="hideNameSuggestions" @keydown.enter.prevent="onAgentEnter()" />
+          <div v-if="showNameSuggestions && (filteredNameSuggestions.length > 0 || canCreateAgent())"
             class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
             style="z-index: 1500; max-height: 220px; overflow-y: auto">
             <button v-for="c in filteredNameSuggestions" :key="c.id" type="button" class="dropdown-item"
               @click="addAgent(c)">
               {{ c.name }}
             </button>
+            <button v-if="canCreateAgent()" type="button"
+              class="dropdown-item text-primary d-flex align-items-center gap-1" @click="createAndAddAgent()">
+              <i class="bi bi-plus-circle" />
+              <span>Criar "{{ agentNameInput.trim() }}"</span>
+            </button>
           </div>
-          <button type="button" class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
-            aria-label="Adicionar autoria" @click="addAgent()">
-            <i class="bi bi-plus-square-fill" />
-          </button>
         </div>
+        <p v-if="agentPendingError" class="text-danger small mt-1 mb-0">{{ agentPendingError }}</p>
         <div class="d-flex flex-wrap gap-2 mt-2">
           <button v-for="(a, i) in agents" :key="i" type="button" class="btn btn-primary btn-sm btn-tag">
             {{ a.roleLabel }}: {{ a.contributorName }}

@@ -124,17 +124,78 @@ export function useWorkForm() {
     }, 200);
   };
 
-  const addAgent = (contributorName = null) => {
-    const name = contributorName?.name || agentNameInput.value.trim();
-    if (!name || !agentRoleInput.value) return;
-    agents.value.push({
-      roleLabel: agentRoleInput.value,
-      contributorNameId: contributorName?.id || null,
-      contributorName: name,
-    });
+  // Aviso de nome digitado que não virou chip — mesmo princípio do vocabulário:
+  // criar uma pessoa no acervo é sempre explícito, nunca efeito colateral do envio.
+  const agentPendingError = ref("");
+
+  // A mesma pessoa pode ter mais de um papel na obra, então a duplicata é a
+  // combinação nome + papel, não o nome sozinho.
+  const isAgentAlreadyAdded = (name) =>
+    agents.value.some(
+      (a) =>
+        (a.contributorName || "").toLowerCase() === name.toLowerCase() &&
+        a.roleLabel === agentRoleInput.value
+    );
+
+  // Busca no catálogo inteiro, não nas 8 sugestões exibidas: um nome existente
+  // fora do recorte da lista não pode ser tratado como novo.
+  const findExactAgentMatch = () => {
+    const term = agentNameInput.value.trim().toLowerCase();
+    if (!term) return null;
+    return allContributorNames.value.find((c) => (c.name || "").toLowerCase() === term) || null;
+  };
+
+  const canCreateAgent = () => {
+    const name = agentNameInput.value.trim();
+    if (!name || !agentRoleInput.value) return false;
+    if (findExactAgentMatch()) return false;
+    return !isAgentAlreadyAdded(name);
+  };
+
+  const pushAgent = (name, contributorNameId) => {
+    if (!name || !agentRoleInput.value) return false;
     agentNameInput.value = "";
     filteredNameSuggestions.value = [];
+    if (isAgentAlreadyAdded(name)) return false;
+    agents.value.push({ roleLabel: agentRoleInput.value, contributorNameId, contributorName: name });
+    agentPendingError.value = "";
+    return true;
   };
+
+  /** Escolha de um nome já existente no acervo (clique na lista). */
+  const addAgent = (contributorName) => {
+    if (!contributorName) return false;
+    return pushAgent(contributorName.name, contributorName.id || null);
+  };
+
+  /** Criação explícita, pelo item "Criar «nome»" da lista. */
+  const createAndAddAgent = () => {
+    if (!canCreateAgent()) return false;
+    return pushAgent(agentNameInput.value.trim(), null);
+  };
+
+  /**
+   * Confirma o digitado só quando é idêntico a um nome existente. Devolve `true`
+   * quando o texto foi resolvido — inclusive se a pessoa já estava na lista,
+   * caso em que não há nada pendente a avisar.
+   */
+  const commitAgentInput = () => {
+    const name = agentNameInput.value.trim();
+    if (!name) return true;
+
+    if (isAgentAlreadyAdded(name)) {
+      agentNameInput.value = "";
+      filteredNameSuggestions.value = [];
+      return true;
+    }
+
+    const exact = findExactAgentMatch();
+    if (!exact) return false;
+    addAgent(exact);
+    return true;
+  };
+
+  const onAgentEnter = commitAgentInput;
 
   const removeAgent = (index) => agents.value.splice(index, 1);
 
@@ -424,8 +485,14 @@ export function useWorkForm() {
    */
   const commitPendingInputs = () => {
     if (titleLabelInput.value.trim()) addTitle();
-    if (agentNameInput.value.trim()) addAgent();
     if (dateYearInput.value.trim()) addDate();
+
+    // Nome digitado só é confirmado se já existir no acervo; do contrário vira
+    // aviso, para o envio nunca criar uma pessoa que o usuário não pediu.
+    agentPendingError.value =
+      agentNameInput.value.trim() && !commitAgentInput()
+        ? 'Escolha um nome da lista ou use "Criar" para confirmar a autoria digitada.'
+        : "";
 
     const pending = [];
     for (const vfMeta of VOCAB_FIELDS) {
@@ -562,6 +629,7 @@ export function useWorkForm() {
     agentRoleInput.value = AGENT_ROLE_LABELS[0];
     agentNameInput.value = "";
     filteredNameSuggestions.value = [];
+    agentPendingError.value = "";
     dates.value = [];
     dateTypeInput.value = "creation";
     dateYearInput.value = "";
@@ -616,6 +684,10 @@ export function useWorkForm() {
     onAgentNameInput,
     hideNameSuggestions,
     addAgent,
+    canCreateAgent,
+    createAndAddAgent,
+    onAgentEnter,
+    agentPendingError,
     removeAgent,
     // datas
     DATE_TYPES,
