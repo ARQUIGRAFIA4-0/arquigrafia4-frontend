@@ -437,6 +437,10 @@ onUnmounted(() => {
                     class="form-control"
                     placeholder="Endereço da obra"
                   />
+                  <p class="text-muted small fst-italic mt-1 mb-0">
+                    A etapa anterior definiu a latitude/longitude da obra. Este campo
+                    serve para ajustar o texto do endereço sugerido, caso você julgue necessário.
+                  </p>
                 </template>
               </UiField>
             </div>
