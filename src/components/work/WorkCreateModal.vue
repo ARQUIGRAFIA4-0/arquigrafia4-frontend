@@ -277,6 +277,9 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <!-- Fora da árvore da página, o modal escapa do estilo de quem o abre: em
+       `.metadata-geral__field` os campos vinham com 30px. -->
+  <Teleport to="body">
   <transition name="fade-modal">
     <div
       v-if="modelValue"
@@ -301,7 +304,7 @@ onUnmounted(() => {
                 <input
                   v-model="searchQuery"
                   type="text"
-                  class="form-control form-control-sm"
+                  class="form-control form-control-sm work-modal__search-input"
                   placeholder="Buscar endereço..."
                   autocomplete="off"
                   @input="onSearchInputDebounced"
@@ -310,7 +313,7 @@ onUnmounted(() => {
                 <button
                   v-if="searchQuery"
                   type="button"
-                  class="btn btn-sm btn-secondary"
+                  class="btn btn-sm btn-secondary work-modal__search-clear"
                   aria-label="Limpar busca"
                   @click="searchQuery = ''; searchSuggestions = []"
                 >
@@ -438,7 +441,7 @@ onUnmounted(() => {
             <!-- Titles -->
             <div class="mb-3">
               <UiField label="Título da obra" explain="Adicione ao menos um título principal">
-                <div class="input-group">
+                <div class="input-group work-modal__combo">
                   <button
                     class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
                     type="button"
@@ -499,7 +502,7 @@ onUnmounted(() => {
             <!-- Agents -->
             <div class="mb-3">
               <UiField label="Autoria da obra" explain="Informe os responsáveis pela obra e seus papéis">
-                <div class="input-group position-relative">
+                <div class="input-group work-modal__combo position-relative">
                   <button
                     class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
                     type="button"
@@ -568,7 +571,8 @@ onUnmounted(() => {
             <div class="mb-3">
               <UiField label="Datas" explain="Informe as datas relevantes da obra (criação, reforma, etc.)">
                 <div class="d-flex flex-column gap-2">
-                  <div class="input-group">
+                  <div class="input-group work-modal__combo work-modal__date-group"
+                    :class="{ 'work-modal__date-group--interval': dateIntervalMode === 'interval' }">
                     <button
                       class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
                       type="button"
@@ -703,7 +707,7 @@ onUnmounted(() => {
 
             <div v-for="vf in VOCAB_FIELDS" :key="vf.label" class="mb-3">
               <UiField :label="vf.label" :explain="vf.explain">
-                <div class="input-group position-relative">
+                <div class="input-group work-modal__combo position-relative">
                   <input
                     v-model="vf.field.input.value"
                     type="text"
@@ -791,6 +795,7 @@ onUnmounted(() => {
       </div>
     </div>
   </transition>
+  </Teleport>
 </template>
 
 <style lang="scss" scoped>
@@ -879,23 +884,25 @@ onUnmounted(() => {
   margin: 0 0 10px;
   z-index: 20;
 
-  /* O input e o botão herdam paddings diferentes (form-control-sm vs btn-sm mais
-     o estilo de botão do projeto), o que deixava o botão visivelmente mais alto.
-     A altura é fixada nos dois para encostarem. */
-  .input-group > .form-control,
-  .input-group > .btn {
-    height: 34px;
-    min-height: 34px;
-    padding-block: 0;
-    font-size: 0.875rem;
-    line-height: 1.2;
-  }
+}
 
-  .input-group > .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
+/* Altura da busca de endereço. Alvo pelas classes dos próprios elementos: com
+   `.work-modal__search-box .input-group > .form-control`, o compilador de CSS
+   scoped perdia o ancestral e a regra vazava para TODOS os campos combinados do
+   modal (título, autoria, datas), encolhendo-os. */
+.work-modal__search-input,
+.work-modal__search-clear {
+  height: 34px;
+  min-height: 34px;
+  padding-block: 0;
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.work-modal__search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Endereço sobreposto ao mapa — mesmo tratamento do mapa de submissão de imagem:
@@ -999,7 +1006,28 @@ onUnmounted(() => {
 }
 .btn-enlarge-40 > i.bi {
   font-size: 1.6rem;
-  line-height: 1.4;
+  /* `1.4` dava 35.8px de caixa de linha, mais do que cabe dentro dos 38px do
+     botão com padding e borda — o ícone estufava a peça. O botão já centraliza
+     por flex, então a linha não precisa de folga própria. */
+  line-height: 1;
+}
+
+/* Inputs combinados (seletor + campo + "+"): os três precisam ler como uma
+   peça só. As alturas vêm do sistema LINA, mas dependiam só das regras globais
+   `.form-control` e `.btn` — bastava uma delas perder para o conjunto
+   desalinhar. Fixar aqui, pela classe do próprio grupo, trava o alinhamento
+   sem atingir a busca de endereço da etapa 1, que é mais baixa de propósito.
+   Regras planas, sem aninhar: o compilador de CSS scoped já perdeu o ancestral
+   de uma lista de seletores aninhada neste arquivo. */
+.work-modal__combo {
+  align-items: stretch;
+}
+
+.work-modal__combo > .form-control,
+.work-modal__combo > .btn,
+.work-modal__combo > .input-group-text {
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
 }
 
 .work-modal__footer {
@@ -1077,15 +1105,13 @@ onUnmounted(() => {
 
   /* Alvos de toque: 44px é o mínimo confortável. O input tinha 34px e os botões
      do rodapé ~31px, altos demais para o dedo errar. */
-  .work-modal__search-box {
-    .input-group > .form-control,
-    .input-group > .btn {
-      height: 44px;
-      min-height: 44px;
-      /* 16px evita o zoom automático que o Safari do iOS aplica ao focar um
-         campo com fonte menor — o modal inteiro saltava de escala. */
-      font-size: 16px;
-    }
+  .work-modal__search-input,
+  .work-modal__search-clear {
+    height: 44px;
+    min-height: 44px;
+    /* 16px evita o zoom automático que o Safari do iOS aplica ao focar um
+       campo com fonte menor — o modal inteiro saltava de escala. */
+    font-size: 16px;
   }
 
   .work-modal__btn {
@@ -1096,6 +1122,75 @@ onUnmounted(() => {
      as últimas sugestões. */
   .work-modal__search-results {
     max-height: min(200px, 30vh);
+  }
+
+  .work-modal__body {
+    /* Respiro no fim do formulário: sem ele o último campo encosta no rodapé
+       quando o teclado está aberto. */
+    padding-bottom: 16px;
+
+    /* 16px evita o zoom automático do Safari do iOS ao focar um campo — abaixo
+       disso ele amplia a página inteira. O CSS global usa 14px; a troca fica
+       restrita a este modal. */
+    .form-control,
+    .form-select {
+      font-size: 16px;
+    }
+  }
+
+  /* Mesma trava de altura do desktop, no valor de toque do celular. */
+  .work-modal__combo > .form-control,
+  .work-modal__combo > .btn,
+  .work-modal__combo > .input-group-text {
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+  }
+
+  /* Só no modo intervalo: são cinco elementos numa linha (seletor, ano, "até",
+     ano e "+") e não cabem em telas estreitas. No modo "Ano" são três e
+     continuam lado a lado. */
+  .work-modal__date-group--interval {
+    flex-wrap: wrap;
+
+    > .dropdown-toggle {
+      width: 100%;
+      justify-content: space-between;
+      border-top-left-radius: 5px;
+      /* Vence o !important do `rounded-end-0`, que serve à disposição em uma
+         linha só; ocupando a linha inteira, o canto superior direito arredonda. */
+      border-top-right-radius: 5px !important;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0 !important;
+    }
+
+    /* Sem a borda superior a segunda linha encosta na primeira sem traço duplo. */
+    > .form-control,
+    > .input-group-text,
+    > .btn:not(.dropdown-toggle) {
+      margin-top: -1px;
+    }
+
+    > .form-control:first-of-type {
+      border-bottom-left-radius: 5px;
+    }
+
+    > .btn:last-child {
+      border-bottom-right-radius: 5px;
+    }
+
+    /* Na linha própria os campos de ano dividem o espaço disponível. */
+    > .form-control {
+      max-width: none !important;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+  }
+
+  /* As listas suspensas são recortadas pelo corpo rolável quando o campo está
+     perto do fim da tela; limitar a altura as mantém visíveis. */
+  .work-modal__body .dropdown-menu {
+    max-height: min(220px, 40vh);
+    overflow-y: auto;
   }
 }
 </style>

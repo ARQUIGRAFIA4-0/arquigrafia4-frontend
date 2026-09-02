@@ -162,7 +162,7 @@ const handleSubmit = async () => {
     <!-- Títulos -->
     <div class="mb-3">
       <UiField label="Título da obra" explain="Adicione ao menos um título principal">
-        <div class="input-group">
+        <div class="input-group work-modal__combo">
           <button class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0" type="button"
             data-bs-toggle="dropdown" aria-expanded="false">
             {{ titleTypeLabel(titleTypeInput) }}
@@ -209,7 +209,7 @@ const handleSubmit = async () => {
     <!-- Autoria -->
     <div class="mb-3">
       <UiField label="Autoria da obra" explain="Informe os responsáveis pela obra e seus papéis">
-        <div class="input-group position-relative">
+        <div class="input-group work-modal__combo position-relative">
           <button class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0" type="button"
             data-bs-toggle="dropdown" aria-expanded="false">
             {{ agentRoleInput }}
@@ -248,7 +248,8 @@ const handleSubmit = async () => {
     <div class="mb-3">
       <UiField label="Datas" explain="Informe as datas relevantes da obra (criação, reforma, etc.)">
         <div class="d-flex flex-column gap-2">
-          <div class="input-group">
+          <div class="input-group work-modal__combo work-modal__date-group"
+                    :class="{ 'work-modal__date-group--interval': dateIntervalMode === 'interval' }">
             <button class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0" type="button"
               data-bs-toggle="dropdown" aria-expanded="false">
               {{ dateTypeLabel(dateTypeInput) }}
@@ -308,7 +309,7 @@ const handleSubmit = async () => {
     <!-- Dados complementares -->
     <div v-for="vf in VOCAB_FIELDS" :key="vf.label" class="mb-3">
       <UiField :label="vf.label" :explain="vf.explain">
-        <div class="input-group position-relative">
+        <div class="input-group work-modal__combo position-relative">
           <input v-model="vf.field.input.value" type="text" class="form-control border-preto border-end-0"
             :placeholder="`Adicione ${vf.label.toLowerCase()}`" autocomplete="off" @input="onVocabInput(vf)"
             @focus="vf.field.showSuggestions.value = true" @blur="hideVocabSuggestions(vf.field)"
@@ -436,5 +437,89 @@ const handleSubmit = async () => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Inputs combinados (seletor + campo + "+"): os três precisam ler como uma peça
+   só. As alturas vêm do sistema LINA, mas dependiam só das regras globais
+   `.form-control` e `.btn` — bastava uma delas perder para o conjunto
+   desalinhar. Regras planas, sem aninhar: o compilador de CSS scoped já perdeu
+   o ancestral de uma lista de seletores aninhada num arquivo deste fluxo. */
+.work-modal__combo {
+  align-items: stretch;
+}
+
+.work-modal__combo > .form-control,
+.work-modal__combo > .btn,
+.work-modal__combo > .input-group-text {
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
+}
+
+/* Telas pequenas — mesmos ajustes do modal de criação, que compartilha estes
+   campos por meio do useWorkForm. */
+@media (max-width: 767.98px) {
+  /* 16px evita o zoom automático do Safari do iOS ao focar um campo — abaixo
+     disso ele amplia a página inteira. O CSS global usa 14px. */
+  .work-suggestion-edit {
+    .form-control,
+    .form-select {
+      font-size: 16px;
+    }
+  }
+
+  /* Mesma trava de altura do desktop, no valor de toque do celular. */
+  .work-modal__combo > .form-control,
+  .work-modal__combo > .btn,
+  .work-modal__combo > .input-group-text {
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+  }
+
+  /* Só no modo intervalo: são cinco elementos numa linha (seletor, ano, "até",
+     ano e "+") e não cabem em telas estreitas. No modo "Ano" são três e
+     continuam lado a lado. */
+  .work-modal__date-group--interval {
+    flex-wrap: wrap;
+
+    > .dropdown-toggle {
+      width: 100%;
+      justify-content: space-between;
+      border-top-left-radius: 5px;
+      /* Vence o !important do `rounded-end-0`, que serve à disposição em uma
+         linha só; ocupando a linha inteira, o canto superior direito arredonda. */
+      border-top-right-radius: 5px !important;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0 !important;
+    }
+
+    /* Sem a borda superior a segunda linha encosta na primeira sem traço duplo. */
+    > .form-control,
+    > .input-group-text,
+    > .btn:not(.dropdown-toggle) {
+      margin-top: -1px;
+    }
+
+    > .form-control:first-of-type {
+      border-bottom-left-radius: 5px;
+    }
+
+    > .btn:last-child {
+      border-bottom-right-radius: 5px;
+    }
+
+    /* Na linha própria os campos de ano dividem o espaço disponível. */
+    > .form-control {
+      max-width: none !important;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+  }
+
+  /* As listas suspensas são recortadas pela coluna rolável quando o campo está
+     perto do fim da tela; limitar a altura as mantém visíveis. */
+  .work-suggestion-edit .dropdown-menu {
+    max-height: min(220px, 40vh);
+    overflow-y: auto;
+  }
 }
 </style>
