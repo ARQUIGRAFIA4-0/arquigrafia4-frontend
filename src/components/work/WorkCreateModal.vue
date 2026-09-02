@@ -787,7 +787,7 @@ onUnmounted(() => {
               :disabled="!canSubmit"
               @click="handleSubmit"
             >
-              Confirmar
+              Salvar e continuar
             </button>
           </div>
         </template>
@@ -1095,6 +1095,8 @@ onUnmounted(() => {
 
   .work-modal__footer {
     padding: 12px 16px calc(20px + env(safe-area-inset-bottom));
+    /* `reverse` para o botão principal ficar em cima sem mexer na ordem do HTML. */
+    flex-direction: column-reverse;
   }
 
   /* No celular o mapa rola junto com o dedo; o modal inteiro não deve rolar
