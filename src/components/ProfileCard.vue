@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
 import profileImageDefault from '@/assets/profile_image.png';
+import { resolveAvatarUrl } from '@/helpers/avatarUrl';
 
 const props = defineProps({
   userData: { type: Object, default: null },
@@ -116,9 +117,7 @@ function checkSocials(socials) {
       <div class="profile-card__header">
         <div class="profile-card__image">
           <!-- <img :src="currentProfileData?.profile_image || profileImageDefault" alt="Foto de perfil" /> -->
-          <img :src="props.userData.avatar_url
-            ? (props.userData.avatar_url.startsWith('http') ? props.userData.avatar_url : `${API_BASE_URL}${props.userData.avatar_url}`)
-            : (props.userData.avatar_path ? `${API_BASE_URL}/storage/${props.userData.avatar_path}` : profileImageDefault)"
+          <img :src="resolveAvatarUrl(props.userData) || profileImageDefault"
             alt="Foto de perfil" />
         </div>
         <div class="profile-card__title">

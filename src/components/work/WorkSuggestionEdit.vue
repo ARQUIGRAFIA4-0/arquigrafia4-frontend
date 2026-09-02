@@ -19,7 +19,7 @@ const authStore = useAuthStore();
 
 const {
   TITLE_TYPES, titleTypeInput, titleLabelInput, titles, hasPreferredTitle,
-  addTitle, removeTitle, titleTypeLabel,
+  addTitle, removeTitle, titleTypeLabel, titleError,
   AGENT_ROLE_LABELS, agentRoleInput, agentNameInput, agents,
   filteredNameSuggestions, showNameSuggestions, loadContributorNames,
   onAgentNameInput, hideNameSuggestions, addAgent, removeAgent,
@@ -28,8 +28,8 @@ const {
   formatDateChip,
   descriptionInput,
   VOCAB_FIELDS, onVocabInput, addVocabItem, canCreateVocab, createAndAddVocabItem,
-  onVocabEnter, onVocabPlusClick, removeVocabItem, hideVocabSuggestions,
-  commitPendingInputs, buildDraft, populateFromWork,
+  onVocabEnter, removeVocabItem, hideVocabSuggestions,
+  vocabPendingError, commitPendingInputs, buildDraft, populateFromWork,
 } = useWorkForm();
 
 // Justificativa da sugestão — obrigatória, como no fluxo de imagem.
@@ -110,6 +110,12 @@ const handleSubmit = async () => {
 
   // Aproveita o que ficou digitado sem virar chip, em vez de descartar em silêncio.
   commitPendingInputs();
+  // Vocabulário com texto pendente segura o envio: o termo digitado não vira
+  // chip sozinho, então enviar agora o perderia.
+  if (vocabPendingError.value) {
+    showError(vocabPendingError.value);
+    return;
+  }
 
   reasonTouched.value = true;
   if (!reason.value.trim()) {
@@ -162,8 +168,8 @@ const handleSubmit = async () => {
     <!-- Títulos -->
     <div class="mb-3">
       <UiField label="Título da obra" explain="Adicione ao menos um título principal">
-        <div class="input-group">
-          <button class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal" type="button"
+        <div class="input-group work-modal__combo">
+          <button class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0" type="button"
             data-bs-toggle="dropdown" aria-expanded="false">
             {{ titleTypeLabel(titleTypeInput) }}
           </button>
@@ -182,7 +188,8 @@ const handleSubmit = async () => {
             <i class="bi bi-plus-square-fill" />
           </button>
         </div>
-        <p v-if="!hasPreferredTitle" class="text-muted small fst-italic mt-1 mb-0">
+        <p v-if="titleError" class="text-danger small mt-1 mb-0">{{ titleError }}</p>
+        <p v-else-if="!hasPreferredTitle" class="text-muted small fst-italic mt-1 mb-0">
           Para trocar o título principal, remova o atual e adicione o novo.
         </p>
         <div class="d-flex flex-wrap gap-2 mt-2">
@@ -208,8 +215,8 @@ const handleSubmit = async () => {
     <!-- Autoria -->
     <div class="mb-3">
       <UiField label="Autoria da obra" explain="Informe os responsáveis pela obra e seus papéis">
-        <div class="input-group position-relative">
-          <button class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal" type="button"
+        <div class="input-group work-modal__combo position-relative">
+          <button class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0" type="button"
             data-bs-toggle="dropdown" aria-expanded="false">
             {{ agentRoleInput }}
           </button>
@@ -247,8 +254,9 @@ const handleSubmit = async () => {
     <div class="mb-3">
       <UiField label="Datas" explain="Informe as datas relevantes da obra (criação, reforma, etc.)">
         <div class="d-flex flex-column gap-2">
-          <div class="input-group">
-            <button class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal" type="button"
+          <div class="input-group work-modal__combo work-modal__date-group"
+                    :class="{ 'work-modal__date-group--interval': dateIntervalMode === 'interval' }">
+            <button class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0" type="button"
               data-bs-toggle="dropdown" aria-expanded="false">
               {{ dateTypeLabel(dateTypeInput) }}
             </button>
@@ -307,8 +315,8 @@ const handleSubmit = async () => {
     <!-- Dados complementares -->
     <div v-for="vf in VOCAB_FIELDS" :key="vf.label" class="mb-3">
       <UiField :label="vf.label" :explain="vf.explain">
-        <div class="input-group position-relative">
-          <input v-model="vf.field.input.value" type="text" class="form-control border-preto border-end-0"
+        <div class="position-relative">
+          <input v-model="vf.field.input.value" type="text" class="form-control border-preto"
             :placeholder="`Adicione ${vf.label.toLowerCase()}`" autocomplete="off" @input="onVocabInput(vf)"
             @focus="vf.field.showSuggestions.value = true" @blur="hideVocabSuggestions(vf.field)"
             @keydown.enter.prevent="onVocabEnter(vf)" />
@@ -329,10 +337,6 @@ const handleSubmit = async () => {
               <span>Criar "{{ vf.field.input.value.trim() }}"</span>
             </button>
           </div>
-          <button type="button" class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
-            :aria-label="`Adicionar ${vf.label.toLowerCase()}`" @click="onVocabPlusClick(vf)">
-            <i class="bi bi-plus-square-fill" />
-          </button>
         </div>
         <div class="d-flex flex-wrap gap-2 mt-2">
           <button v-for="(item, i) in vf.field.selected.value" :key="item.id ?? item.label" type="button"
@@ -435,5 +439,86 @@ const handleSubmit = async () => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Inputs combinados (seletor + campo + "+"): mesma altura nos três. Regras
+   planas de propósito — aninhadas, o CSS scoped perde o ancestral. */
+.work-modal__combo {
+  align-items: stretch;
+}
+
+.work-modal__combo > .form-control,
+.work-modal__combo > .btn,
+.work-modal__combo > .input-group-text {
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
+}
+
+/* Telas pequenas — mesmos ajustes do modal de criação, que compartilha estes
+   campos por meio do useWorkForm. */
+@media (max-width: 767.98px) {
+  /* 16px evita o zoom automático do Safari do iOS ao focar um campo — abaixo
+     disso ele amplia a página inteira. O CSS global usa 14px. */
+  .work-suggestion-edit {
+    .form-control,
+    .form-select {
+      font-size: 16px;
+    }
+  }
+
+  /* Mesma trava de altura do desktop, no valor de toque do celular. */
+  .work-modal__combo > .form-control,
+  .work-modal__combo > .btn,
+  .work-modal__combo > .input-group-text {
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+  }
+
+  /* Só no modo intervalo: são cinco elementos numa linha (seletor, ano, "até",
+     ano e "+") e não cabem em telas estreitas. No modo "Ano" são três e
+     continuam lado a lado. */
+  .work-modal__date-group--interval {
+    flex-wrap: wrap;
+
+    > .dropdown-toggle {
+      width: 100%;
+      justify-content: space-between;
+      border-top-left-radius: 5px;
+      /* Vence o !important do `rounded-end-0`, que serve à disposição em uma
+         linha só; ocupando a linha inteira, o canto superior direito arredonda. */
+      border-top-right-radius: 5px !important;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0 !important;
+    }
+
+    /* Sem a borda superior a segunda linha encosta na primeira sem traço duplo. */
+    > .form-control,
+    > .input-group-text,
+    > .btn:not(.dropdown-toggle) {
+      margin-top: -1px;
+    }
+
+    > .form-control:first-of-type {
+      border-bottom-left-radius: 5px;
+    }
+
+    > .btn:last-child {
+      border-bottom-right-radius: 5px;
+    }
+
+    /* Na linha própria os campos de ano dividem o espaço disponível. */
+    > .form-control {
+      max-width: none !important;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+  }
+
+  /* As listas suspensas são recortadas pela coluna rolável quando o campo está
+     perto do fim da tela; limitar a altura as mantém visíveis. */
+  .work-suggestion-edit .dropdown-menu {
+    max-height: min(220px, 40vh);
+    overflow-y: auto;
+  }
 }
 </style>

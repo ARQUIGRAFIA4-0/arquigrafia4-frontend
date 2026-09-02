@@ -41,7 +41,7 @@
         :createdAt="card.createdAt"
         :reason="card.reason"
         :user-name="card.userName"
-        :user-avatar="card.userAvatar"
+        :user="card.user"
         @accepted="handleAccepted"
         @rejected="handleRejected"
         @error="showAlert('danger', $event)"
@@ -225,7 +225,9 @@ const suggestionCards = computed(() => {
       fields,
       reason: suggestion.payload?.reason ?? null,
       userName: suggestion.user?.name ?? "Usuário",
-      userAvatar: suggestion.user?.avatar_path ?? null,
+      // O objeto inteiro: a URL do avatar depende de `avatar_url` OU
+      // `avatar_path` (esse com prefixo /storage/), e o id abre o perfil.
+      user: suggestion.user ?? null,
       createdAt: suggestion.created_at,
     });
   }
