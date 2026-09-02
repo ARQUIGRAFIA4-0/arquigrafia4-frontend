@@ -30,8 +30,8 @@ const {
   formatDateChip,
   descriptionInput,
   VOCAB_FIELDS, onVocabInput, addVocabItem, canCreateVocab, createAndAddVocabItem,
-  onVocabEnter, onVocabPlusClick, removeVocabItem, hideVocabSuggestions,
-  canSubmit, commitPendingInputs, buildDraft, reset: resetForm,
+  onVocabEnter, removeVocabItem, hideVocabSuggestions,
+  canSubmit, vocabPendingError, commitPendingInputs, buildDraft, reset: resetForm,
 } = useWorkForm();
 
 // ── Step management ─────────────────────────────────────────────────────────
@@ -225,6 +225,9 @@ const errorMessage = ref("");
 const handleSubmit = () => {
   // Aproveita o que ficou digitado sem virar chip, em vez de descartar em silêncio.
   commitPendingInputs();
+  // Vocabulário com texto pendente segura o envio: o termo digitado não vira
+  // chip sozinho, então sair daqui agora o perderia.
+  if (vocabPendingError.value) return;
   if (!canSubmit.value) return;
   // As coordenadas vêm do passo 1, que é exclusivo deste modal.
   const draft = buildDraft(pickedCoords.value);
@@ -701,17 +704,20 @@ onUnmounted(() => {
         <template v-else>
           <div class="work-modal__header">
             <p class="work-modal__title">Dados complementares</p>
+            <!-- No cabeçalho, que não rola: no corpo o aviso ficava abaixo do
+                 último campo e quem preencheu só os primeiros não o via. -->
+            <p v-if="vocabPendingError" class="work-modal__alert">{{ vocabPendingError }}</p>
           </div>
 
           <div class="work-modal__body">
 
             <div v-for="vf in VOCAB_FIELDS" :key="vf.label" class="mb-3">
               <UiField :label="vf.label" :explain="vf.explain">
-                <div class="input-group work-modal__combo position-relative">
+                <div class="position-relative">
                   <input
                     v-model="vf.field.input.value"
                     type="text"
-                    class="form-control border-preto border-end-0"
+                    class="form-control border-preto"
                     :placeholder="`Adicione ${vf.label.toLowerCase()}`"
                     autocomplete="off"
                     @input="onVocabInput(vf)"
@@ -749,14 +755,6 @@ onUnmounted(() => {
                       <span>Criar "{{ vf.field.input.value.trim() }}"</span>
                     </button>
                   </div>
-                  <button
-                    type="button"
-                    class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
-                    :aria-label="`Adicionar ${vf.label.toLowerCase()}`"
-                    @click="onVocabPlusClick(vf)"
-                  >
-                    <i class="bi bi-plus-square-fill" />
-                  </button>
                 </div>
                 <div class="d-flex flex-wrap gap-2 mt-2">
                   <button
@@ -840,6 +838,13 @@ onUnmounted(() => {
   font-size: 20px;
   font-weight: 500;
   color: #2f2f2f;
+}
+
+.work-modal__alert {
+  margin: 8px 0 0;
+  color: #bc1518;
+  font-size: 12px;
+  line-height: 130%;
 }
 
 .work-modal__subtitle {
@@ -1006,19 +1011,13 @@ onUnmounted(() => {
 }
 .btn-enlarge-40 > i.bi {
   font-size: 1.6rem;
-  /* `1.4` dava 35.8px de caixa de linha, mais do que cabe dentro dos 38px do
-     botão com padding e borda — o ícone estufava a peça. O botão já centraliza
-     por flex, então a linha não precisa de folga própria. */
+  /* `1.4` estufava o ícone para além da altura do botão. */
   line-height: 1;
 }
 
-/* Inputs combinados (seletor + campo + "+"): os três precisam ler como uma
-   peça só. As alturas vêm do sistema LINA, mas dependiam só das regras globais
-   `.form-control` e `.btn` — bastava uma delas perder para o conjunto
-   desalinhar. Fixar aqui, pela classe do próprio grupo, trava o alinhamento
-   sem atingir a busca de endereço da etapa 1, que é mais baixa de propósito.
-   Regras planas, sem aninhar: o compilador de CSS scoped já perdeu o ancestral
-   de uma lista de seletores aninhada neste arquivo. */
+/* Inputs combinados (seletor + campo + "+"): mesma altura nos três, sem atingir
+   a busca de endereço da etapa 1, que é mais baixa de propósito. Regras planas
+   de propósito — aninhadas, o CSS scoped já perdeu o ancestral neste arquivo. */
 .work-modal__combo {
   align-items: stretch;
 }

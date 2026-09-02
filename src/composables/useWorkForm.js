@@ -352,6 +352,9 @@ export function useWorkForm() {
   const canCreateVocab = (vfMeta) => {
     const term = vfMeta.field.input.value.trim();
     if (!term) return false;
+    // Só oferece criar depois que o vocabulário foi de fato consultado.
+    if (term.length < VOCAB_MIN_CHARS) return false;
+    if (vfMeta.field.loading.value) return false;
     const labelKey = vfMeta.labelKey;
     // Resultado atual da busca no servidor (a busca é substring, então um
     // termo idêntico aparece nos resultados quando existe). Se escapar ao limite
@@ -364,9 +367,10 @@ export function useWorkForm() {
 
   // Termo novo fica só no cliente — o POST acontece quando o consumidor materializa.
   const createAndAddVocabItem = (vfMeta) => {
-    const term = vfMeta.field.input.value.trim().toLowerCase();
+    // Preserva a caixa digitada, para o termo novo não destoar dos do vocabulário.
+    const term = vfMeta.field.input.value.trim();
     if (!term) return;
-    if (vfMeta.field.selected.value.some((s) => s.label.toLowerCase() === term)) return;
+    if (vfMeta.field.selected.value.some((s) => s.label.toLowerCase() === term.toLowerCase())) return;
     vfMeta.field.selected.value.push({ id: null, label: term, isNew: true });
     vfMeta.field.input.value = "";
     vfMeta.field.suggestions.value = [];
@@ -380,23 +384,19 @@ export function useWorkForm() {
     return items.find((i) => (i[labelKey] || "").toLowerCase() === term) || null;
   };
 
+  /**
+   * Confirma o texto digitado só quando é idêntico a um termo existente; devolve
+   * `true` se virou chip. Criar termo novo é sempre explícito, pelo item
+   * "Criar «termo»" da lista.
+   */
   const commitVocabInput = (vfMeta) => {
     const exact = findExactVocabMatch(vfMeta);
-    if (exact) {
-      addVocabItem(vfMeta.field, exact);
-      return;
-    }
-    const first = vfMeta.field.suggestions.value[0];
-    if (first) {
-      addVocabItem(vfMeta.field, first);
-    } else if (canCreateVocab(vfMeta)) {
-      createAndAddVocabItem(vfMeta);
-    }
+    if (!exact) return false;
+    addVocabItem(vfMeta.field, exact);
+    return true;
   };
 
-  // Enter no input e clique no "+" resolvem do mesmo jeito.
   const onVocabEnter = commitVocabInput;
-  const onVocabPlusClick = commitVocabInput;
 
   const removeVocabItem = (vf, index) => vf.selected.value.splice(index, 1);
 
@@ -409,12 +409,16 @@ export function useWorkForm() {
   // ── Draft ────────────────────────────────────────────────────────────────────
 
   /**
-   * Confirma o que ficou digitado nos inputs sem virar chip.
-   *
-   * Todos os campos desta tela só entram no rascunho depois de um clique no "+"
-   * ou um Enter. Quem preenchia o ano e clicava direto em "Confirmar" perdia o
-   * valor sem nenhum aviso — foi o que aconteceu com a obra "Mercado São
-   * Sebastião", criada sem a data que o usuário havia digitado.
+   * Aviso dos vocabulários com texto digitado que não virou chip. Enquanto
+   * estiver preenchido, o envio não acontece.
+   */
+  const vocabPendingError = ref("");
+
+  /**
+   * Confirma o que ficou digitado nos inputs sem virar chip — só o que vira chip
+   * entra no rascunho, e quem digitava o ano e enviava direto perdia o valor.
+   * Nos vocabulários vale só para termo idêntico a um existente; o resto vira
+   * aviso, nunca termo novo.
    *
    * Chamado antes de montar o rascunho e ao avançar de passo.
    */
@@ -422,9 +426,15 @@ export function useWorkForm() {
     if (titleLabelInput.value.trim()) addTitle();
     if (agentNameInput.value.trim()) addAgent();
     if (dateYearInput.value.trim()) addDate();
+
+    const pending = [];
     for (const vfMeta of VOCAB_FIELDS) {
-      if (vfMeta.field.input.value.trim()) commitVocabInput(vfMeta);
+      if (!vfMeta.field.input.value.trim()) continue;
+      if (!commitVocabInput(vfMeta)) pending.push(vfMeta.label);
     }
+    vocabPendingError.value = pending.length
+      ? `Escolha um termo da lista ou use "Criar" para confirmar o que foi digitado em: ${pending.join(", ")}.`
+      : "";
   };
 
   const canSubmit = computed(() => hasPreferredTitle.value);
@@ -634,11 +644,11 @@ export function useWorkForm() {
     canCreateVocab,
     createAndAddVocabItem,
     onVocabEnter,
-    onVocabPlusClick,
     removeVocabItem,
     hideVocabSuggestions,
     // draft / ciclo de vida
     canSubmit,
+    vocabPendingError,
     commitPendingInputs,
     buildDraft,
     populateFromWork,

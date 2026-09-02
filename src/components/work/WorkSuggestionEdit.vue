@@ -28,8 +28,8 @@ const {
   formatDateChip,
   descriptionInput,
   VOCAB_FIELDS, onVocabInput, addVocabItem, canCreateVocab, createAndAddVocabItem,
-  onVocabEnter, onVocabPlusClick, removeVocabItem, hideVocabSuggestions,
-  commitPendingInputs, buildDraft, populateFromWork,
+  onVocabEnter, removeVocabItem, hideVocabSuggestions,
+  vocabPendingError, commitPendingInputs, buildDraft, populateFromWork,
 } = useWorkForm();
 
 // Justificativa da sugestão — obrigatória, como no fluxo de imagem.
@@ -110,6 +110,12 @@ const handleSubmit = async () => {
 
   // Aproveita o que ficou digitado sem virar chip, em vez de descartar em silêncio.
   commitPendingInputs();
+  // Vocabulário com texto pendente segura o envio: o termo digitado não vira
+  // chip sozinho, então enviar agora o perderia.
+  if (vocabPendingError.value) {
+    showError(vocabPendingError.value);
+    return;
+  }
 
   reasonTouched.value = true;
   if (!reason.value.trim()) {
@@ -309,8 +315,8 @@ const handleSubmit = async () => {
     <!-- Dados complementares -->
     <div v-for="vf in VOCAB_FIELDS" :key="vf.label" class="mb-3">
       <UiField :label="vf.label" :explain="vf.explain">
-        <div class="input-group work-modal__combo position-relative">
-          <input v-model="vf.field.input.value" type="text" class="form-control border-preto border-end-0"
+        <div class="position-relative">
+          <input v-model="vf.field.input.value" type="text" class="form-control border-preto"
             :placeholder="`Adicione ${vf.label.toLowerCase()}`" autocomplete="off" @input="onVocabInput(vf)"
             @focus="vf.field.showSuggestions.value = true" @blur="hideVocabSuggestions(vf.field)"
             @keydown.enter.prevent="onVocabEnter(vf)" />
@@ -331,10 +337,6 @@ const handleSubmit = async () => {
               <span>Criar "{{ vf.field.input.value.trim() }}"</span>
             </button>
           </div>
-          <button type="button" class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
-            :aria-label="`Adicionar ${vf.label.toLowerCase()}`" @click="onVocabPlusClick(vf)">
-            <i class="bi bi-plus-square-fill" />
-          </button>
         </div>
         <div class="d-flex flex-wrap gap-2 mt-2">
           <button v-for="(item, i) in vf.field.selected.value" :key="item.id ?? item.label" type="button"
@@ -439,11 +441,8 @@ const handleSubmit = async () => {
   opacity: 0;
 }
 
-/* Inputs combinados (seletor + campo + "+"): os três precisam ler como uma peça
-   só. As alturas vêm do sistema LINA, mas dependiam só das regras globais
-   `.form-control` e `.btn` — bastava uma delas perder para o conjunto
-   desalinhar. Regras planas, sem aninhar: o compilador de CSS scoped já perdeu
-   o ancestral de uma lista de seletores aninhada num arquivo deste fluxo. */
+/* Inputs combinados (seletor + campo + "+"): mesma altura nos três. Regras
+   planas de propósito — aninhadas, o CSS scoped perde o ancestral. */
 .work-modal__combo {
   align-items: stretch;
 }
