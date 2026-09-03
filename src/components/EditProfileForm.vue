@@ -7,6 +7,7 @@ import { useUsersStore } from '../store/users';
 import { useVracStore } from "@/store/vrac";
 import { useProfilesStore } from '../store/profiles';
 import defaultProfileImage from '@/assets/profile_image.png';
+import { resolveAvatarUrl } from '@/helpers/avatarUrl';
 import axios from 'axios';
 import imageCompression from 'browser-image-compression';
 
@@ -62,22 +63,8 @@ const scholarityPublic = ref();
 const selectedSocialOption = ref("");
 const selectedSocialValue = ref("");
 
-const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
-
 // URL da imagem atual do usuário (antes de qualquer upload novo)
-// Replica a mesma lógica do ProfileCard e AppHeader: avatar_url tem prioridade,
-// com fallback para avatar_path (padrão /storage/{path})
-const currentAvatarUrl = computed(() => {
-  const av = props.userData?.avatar_url;
-  if (av) {
-    return av.startsWith('http') ? av : `${API_BASE_URL}${av}`;
-  }
-  const path = props.userData?.avatar_path;
-  if (path) {
-    return `${API_BASE_URL}/storage/${path}`;
-  }
-  return null;
-});
+const currentAvatarUrl = computed(() => resolveAvatarUrl(props.userData));
 
 // Refs para upload de imagem de perfil
 const profileImageFile = ref(null);
@@ -140,6 +127,7 @@ const alertMessage = ref("");
 const alertType = ref("");
 const showAlert = ref(false);
 const isProcessingImage = ref(false);
+const isSaving = ref(false);
 
 function displayAlert(message, type = "error") {
   alertMessage.value = message;
@@ -360,6 +348,10 @@ async function handleProfileImageChange(event) {
       URL.revokeObjectURL(profileImageURLPreview.value);
     }
     profileImageURLPreview.value = URL.createObjectURL(compressed);
+  } catch (error) {
+    console.error(error);
+    displayAlert('Não foi possível processar esta imagem. Tente outro arquivo.');
+    scrollToTop();
   } finally {
     isProcessingImage.value = false;
   }
@@ -523,6 +515,9 @@ function goForgotPassword() {
 }
 
 async function updatePersonalData() {
+  if (isSaving.value || isProcessingImage.value) return;
+
+  isSaving.value = true;
   try {
     const hasNameChanged = name.value !== props.userData.name;
     const hasImageChanged = !!profileImageFile.value;
@@ -535,10 +530,10 @@ async function updatePersonalData() {
       formData.append('_method', 'PUT');
 
       if (hasImageChanged) {
-        formData.append('avatar', profileImageFile.value);
+        formData.append('avatar', profileImageFile.value, profileImageFile.value.name);
       }
 
-      const response = await axios.post(
+      await axios.post(
         `/api/users/${props.userData.id}`,
         formData,
         {
@@ -548,9 +543,13 @@ async function updatePersonalData() {
         }
       );
 
-      const updatedUser = { ...authStore.loggedUser, ...response.data.data };
-      authStore.loggedUser = updatedUser;
-      localStorage.setItem("loggedUser", JSON.stringify(updatedUser));
+      // Relê o usuário da API para refletir o avatar já confirmado pelo backend,
+      // em vez de confiar no formato do corpo da resposta do update.
+      await authStore.getLoggedUser();
+
+      if (hasImageChanged) {
+        authStore.markAvatarUpdated();
+      }
     }
 
     await updateProfile();
@@ -567,6 +566,8 @@ async function updatePersonalData() {
     }
 
     console.error(error);
+  } finally {
+    isSaving.value = false;
   }
 }
 
@@ -762,7 +763,7 @@ function handleCancel() {
       <UiField label="Suas redes" labelTag="span"
         explain="Escolha uma rede social, digite o link do seu perfil nessa rede e clique no botão (+) para adicionar à lista.">
         <div class="input-group input-group-sm">
-          <button class="btn btn-primary dropdown-toggle bg-azul-e border-azul-e fw-normal" type="button"
+          <button class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0" type="button"
             data-bs-toggle="dropdown" aria-expanded="false">
             {{ socialOptions[selectedSocialOption]?.label || "Selecione" }}
           </button>
@@ -774,11 +775,11 @@ function handleCancel() {
             </li>
           </ul>
           <input v-model="selectedSocialValue" id="social-value-input" name="social-value-input"
-            class="form-control border-azul-e border-end-0"
+            class="form-control border-preto border-end-0"
             :placeholder="socialOptions[selectedSocialOption]?.placeholder || 'Selecione uma rede social'" />
-          <button class="btn btn-light btn-sm border-azul-e border-start-0" type="button" aria-label="Adicionar"
-            @click="addSocial" :disabled="!selectedSocialOption || !selectedSocialValue">
-            <i class="bi bi-plus-square-fill fs-8"></i>
+          <button class="btn btn-light btn-sm border-preto border-start-0 social-icon-btn" type="button"
+            aria-label="Adicionar" @click="addSocial" :disabled="!selectedSocialOption || !selectedSocialValue">
+            <i class="bi bi-plus-square-fill"></i>
           </button>
         </div>
       </UiField>
@@ -789,8 +790,8 @@ function handleCancel() {
               {{ socialOptions[key]?.label }}
             </button>
             <input :id="'social-' + key" :name="'social-' + key" :value="value" disabled="true"
-              class="form-control border-azul-e border-end-0" placeholder="" />
-            <button class="btn btn-light btn-sm border-azul-e border-start-0" type="button" aria-label="Remover"
+              class="form-control border-preto border-end-0" placeholder="" />
+            <button class="btn btn-light btn-sm border-preto border-start-0 social-icon-btn" type="button" aria-label="Remover"
               @click="removeSocial(key)">
               <i class="bi bi-x-lg"></i>
             </button>
@@ -1053,10 +1054,27 @@ function handleCancel() {
     <!-- Botões de submit e cancelamento -->
     <div class="row row-cols-2 g-3 mb-5">
       <div class="col">
-        <button class="btn btn-outline-secondary w-100" @click="handleCancel">Cancelar</button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary w-100"
+          @click="handleCancel"
+          :disabled="isSaving"
+        >
+          Cancelar
+        </button>
       </div>
       <div class="col">
-        <button class="btn btn-secondary w-100" type="submit">Salvar alterações</button>
+        <button
+          type="submit"
+          class="btn btn-secondary w-100"
+          :disabled="isSaving || isProcessingImage"
+        >
+          <span v-if="isSaving">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Salvando...
+          </span>
+          <span v-else>Salvar alterações</span>
+        </button>
       </div>
     </div>
   </form>
@@ -1721,5 +1739,20 @@ $breakpoint-edit-wide: 1024px;
   .gy-edit-half-0 {
     --bs-gutter-y: 0;
   }
+}
+
+/* Botões de ícone do campo de redes ("+" e "×"). Sem tamanho definido, o ícone
+   crescia livre e deixava o botão mais alto que o campo ao lado — no caso do
+   "+", agravado por `fs-8`, classe que sequer existe (a escala vai até fs-6). */
+.social-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.social-icon-btn > .bi {
+  font-size: 1rem;
+  line-height: 1;
 }
 </style>

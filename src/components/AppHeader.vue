@@ -2,12 +2,13 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
+import { resolveAvatarUrl } from "@/helpers/avatarUrl";
 
 const route = useRoute();
 const router = useRouter();
 const store = useAuthStore();
 const isLoggedIn = computed(() => store.isLoggedIn);
-const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
+const avatarUrl = computed(() => resolveAvatarUrl(store.loggedUser));
 
 const options = [
   { label: "Explore", path: "/explore", routeName: "explore" },
@@ -31,12 +32,7 @@ const handleLogout = async () => {
       <!-- Profile Dropdown -->
       <div class="dropdown">
         <span class="profile px-1" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-          <img v-if="store.loggedUser?.avatar_url || store.loggedUser?.avatar_path"
-            :src="store.loggedUser.avatar_url
-            // TODO investigar formação da URL no backend
-              ? (store.loggedUser.avatar_url.startsWith('http') ? store.loggedUser.avatar_url : `${API_BASE_URL}${store.loggedUser.avatar_url}`)
-              : `${API_BASE_URL}/storage/${store.loggedUser.avatar_path}`"
-            alt="Foto de perfil" />
+          <img v-if="avatarUrl" :src="avatarUrl" alt="Foto de perfil" />
           <i v-else class="bi bi-person-square"
             :style="{ color: isLoggedIn ? 'var(--Laranja_E)' : 'var(--Cinza_M)' }"></i>
         </span>

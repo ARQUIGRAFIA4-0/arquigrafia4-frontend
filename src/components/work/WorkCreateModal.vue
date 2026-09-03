@@ -21,7 +21,7 @@ const emit = defineEmits(["update:modelValue", "created", "select-existing"]);
 const {
   locationLabel,
   TITLE_TYPES, titleTypeInput, titleLabelInput, titles, hasPreferredTitle,
-  addTitle, removeTitle, titleTypeLabel,
+  addTitle, removeTitle, titleTypeLabel, titleError,
   AGENT_ROLE_LABELS, agentRoleInput, agentNameInput, agents,
   filteredNameSuggestions, showNameSuggestions, loadContributorNames,
   onAgentNameInput, hideNameSuggestions, addAgent, removeAgent,
@@ -30,8 +30,8 @@ const {
   formatDateChip,
   descriptionInput,
   VOCAB_FIELDS, onVocabInput, addVocabItem, canCreateVocab, createAndAddVocabItem,
-  onVocabEnter, onVocabPlusClick, removeVocabItem, hideVocabSuggestions,
-  canSubmit, commitPendingInputs, buildDraft, reset: resetForm,
+  onVocabEnter, removeVocabItem, hideVocabSuggestions,
+  canSubmit, vocabPendingError, commitPendingInputs, buildDraft, reset: resetForm,
 } = useWorkForm();
 
 // ── Step management ─────────────────────────────────────────────────────────
@@ -169,7 +169,6 @@ const handleMapClick = async ({ lng, lat }) => {
 
 const canAdvance = computed(() => pickedCoords.value !== null && !isReverseGeocoding.value);
 
-const showSearch = ref(true); // Começa visível;
 const searchQuery = ref("");
 const searchSuggestions = ref([]);
 const isForwardGeocoding = ref(false);
@@ -226,6 +225,9 @@ const errorMessage = ref("");
 const handleSubmit = () => {
   // Aproveita o que ficou digitado sem virar chip, em vez de descartar em silêncio.
   commitPendingInputs();
+  // Vocabulário com texto pendente segura o envio: o termo digitado não vira
+  // chip sozinho, então sair daqui agora o perderia.
+  if (vocabPendingError.value) return;
   if (!canSubmit.value) return;
   // As coordenadas vêm do passo 1, que é exclusivo deste modal.
   const draft = buildDraft(pickedCoords.value);
@@ -241,7 +243,6 @@ const reset = () => {
   pickedCoords.value = null;
   pickedAddress.value = "";
   errorMessage.value = "";
-  showSearch.value = true;
   searchQuery.value = "";
   searchSuggestions.value = [];
   existingWorks.value = [];
@@ -279,6 +280,9 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <!-- Fora da árvore da página, o modal escapa do estilo de quem o abre: em
+       `.metadata-geral__field` os campos vinham com 30px. -->
+  <Teleport to="body">
   <transition name="fade-modal">
     <div
       v-if="modelValue"
@@ -291,9 +295,49 @@ onUnmounted(() => {
         <template v-if="step === 1">
           <div class="work-modal__header">
             <p class="work-modal__title">Localização da obra</p>
+            <p class="work-modal__subtitle">
+              Busque o endereço ou clique no mapa para marcar onde a obra fica.
+            </p>
           </div>
 
           <div class="work-modal__map-wrapper">
+            <!-- Busca de endereço: fora do mapa, entre o título e ele. -->
+            <div class="work-modal__search-box">
+              <div class="input-group">
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  class="form-control form-control-sm work-modal__search-input"
+                  placeholder="Buscar endereço..."
+                  autocomplete="off"
+                  @input="onSearchInputDebounced"
+                  @keydown.escape="searchQuery = ''; searchSuggestions = []"
+                />
+                <button
+                  v-if="searchQuery"
+                  type="button"
+                  class="btn btn-sm btn-secondary work-modal__search-clear"
+                  aria-label="Limpar busca"
+                  @click="searchQuery = ''; searchSuggestions = []"
+                >
+                  <i class="bi bi-x" />
+                </button>
+              </div>
+              <ul v-if="searchSuggestions.length || isForwardGeocoding" class="work-modal__search-results">
+                <li v-if="isForwardGeocoding" class="work-modal__search-result text-muted fst-italic">
+                  Buscando...
+                </li>
+                <li
+                  v-for="r in searchSuggestions"
+                  :key="r.place_id"
+                  class="work-modal__search-result"
+                  @click="selectSearchResult(r)"
+                >
+                  {{ r.display_name }}
+                </li>
+              </ul>
+            </div>
+
             <div class="work-modal__map-container">
               <MapLibreMap
                 :style-url="mapStyleUrl"
@@ -305,41 +349,23 @@ onUnmounted(() => {
                 @map-ready="handleMapReady"
                 @click="handleMapClick"
               />
+              <!-- O botão de busca some: o campo agora vive acima do mapa, sempre visível. -->
               <MapControls
                 class="work-modal__map-controls"
+                :show-search="false"
                 @zoom-in="mapInstance?.zoomIn()"
                 @zoom-out="mapInstance?.zoomOut()"
-                @search="showSearch = !showSearch"
               />
-              <div v-if="showSearch" class="work-modal__search-box">
-                <div class="input-group">
-                  <input
-                    v-model="searchQuery"
-                    type="text"
-                    class="form-control form-control-sm"
-                    placeholder="Buscar endereço..."
-                    autocomplete="off"
-                    @input="onSearchInputDebounced"
-                    @keydown.escape="showSearch = false"
-                  />
-                  <button type="button" class="btn btn-sm btn-secondary" @click="showSearch = false">
-                    <i class="bi bi-x" />
-                  </button>
-                </div>
-                <ul v-if="searchSuggestions.length" class="work-modal__search-results">
-                  <li v-if="isForwardGeocoding" class="work-modal__search-result text-muted fst-italic">
-                    Buscando...
-                  </li>
-                  <li
-                    v-for="r in searchSuggestions"
-                    :key="r.place_id"
-                    class="work-modal__search-result"
-                    @click="selectSearchResult(r)"
-                  >
-                    {{ r.display_name }}
-                  </li>
-                </ul>
-              </div>
+
+              <!-- Endereço do ponto escolhido, sobreposto ao mapa: aparecer e sumir
+                   não empurra mais o resto do modal. Mesmo tratamento do mapa da
+                   submissão de imagem. -->
+              <span v-if="isReverseGeocoding" class="work-modal__map-badge">
+                Buscando o endereço deste ponto…
+              </span>
+              <span v-else-if="pickedAddress" class="work-modal__map-badge">
+                {{ pickedAddress }}
+              </span>
 
               <div
                 v-if="selectedExistingWork"
@@ -375,15 +401,6 @@ onUnmounted(() => {
                 </div>
               </div>
             </div>
-            <p v-if="isReverseGeocoding" class="work-modal__geocode-hint text-muted">
-              Buscando endereço...
-            </p>
-            <p v-else-if="pickedAddress" class="work-modal__geocode-hint text-muted">
-              {{ pickedAddress }}
-            </p>
-            <p v-else class="work-modal__geocode-hint text-muted fst-italic">
-              Clique no mapa para selecionar a localização da obra
-            </p>
           </div>
 
           <div class="work-modal__footer">
@@ -420,6 +437,10 @@ onUnmounted(() => {
                     class="form-control"
                     placeholder="Endereço da obra"
                   />
+                  <p class="text-muted small fst-italic mt-1 mb-0">
+                    A etapa anterior definiu a latitude/longitude da obra. Este campo
+                    serve para ajustar o texto do endereço sugerido, caso você julgue necessário.
+                  </p>
                 </template>
               </UiField>
             </div>
@@ -427,9 +448,9 @@ onUnmounted(() => {
             <!-- Titles -->
             <div class="mb-3">
               <UiField label="Título da obra" explain="Adicione ao menos um título principal">
-                <div class="input-group">
+                <div class="input-group work-modal__combo">
                   <button
-                    class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal"
+                    class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
                     type="button"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
@@ -467,7 +488,8 @@ onUnmounted(() => {
                     <i class="bi bi-plus-square-fill" />
                   </button>
                 </div>
-                <p v-if="titles.length === 0" class="text-muted small fst-italic mt-1 mb-0">
+                <p v-if="titleError" class="text-danger small mt-1 mb-0">{{ titleError }}</p>
+                <p v-else-if="titles.length === 0" class="text-muted small fst-italic mt-1 mb-0">
                   Adicione ao menos um título principal.
                 </p>
                 <div class="d-flex flex-wrap gap-2 mt-2">
@@ -487,9 +509,9 @@ onUnmounted(() => {
             <!-- Agents -->
             <div class="mb-3">
               <UiField label="Autoria da obra" explain="Informe os responsáveis pela obra e seus papéis">
-                <div class="input-group position-relative">
+                <div class="input-group work-modal__combo position-relative">
                   <button
-                    class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal"
+                    class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
                     type="button"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
@@ -556,9 +578,10 @@ onUnmounted(() => {
             <div class="mb-3">
               <UiField label="Datas" explain="Informe as datas relevantes da obra (criação, reforma, etc.)">
                 <div class="d-flex flex-column gap-2">
-                  <div class="input-group">
+                  <div class="input-group work-modal__combo work-modal__date-group"
+                    :class="{ 'work-modal__date-group--interval': dateIntervalMode === 'interval' }">
                     <button
-                      class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal"
+                      class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
                       type="button"
                       data-bs-toggle="dropdown"
                       aria-expanded="false"
@@ -685,17 +708,20 @@ onUnmounted(() => {
         <template v-else>
           <div class="work-modal__header">
             <p class="work-modal__title">Dados complementares</p>
+            <!-- No cabeçalho, que não rola: no corpo o aviso ficava abaixo do
+                 último campo e quem preencheu só os primeiros não o via. -->
+            <p v-if="vocabPendingError" class="work-modal__alert">{{ vocabPendingError }}</p>
           </div>
 
           <div class="work-modal__body">
 
             <div v-for="vf in VOCAB_FIELDS" :key="vf.label" class="mb-3">
               <UiField :label="vf.label" :explain="vf.explain">
-                <div class="input-group position-relative">
+                <div class="position-relative">
                   <input
                     v-model="vf.field.input.value"
                     type="text"
-                    class="form-control border-preto border-end-0"
+                    class="form-control border-preto"
                     :placeholder="`Adicione ${vf.label.toLowerCase()}`"
                     autocomplete="off"
                     @input="onVocabInput(vf)"
@@ -733,14 +759,6 @@ onUnmounted(() => {
                       <span>Criar "{{ vf.field.input.value.trim() }}"</span>
                     </button>
                   </div>
-                  <button
-                    type="button"
-                    class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
-                    :aria-label="`Adicionar ${vf.label.toLowerCase()}`"
-                    @click="onVocabPlusClick(vf)"
-                  >
-                    <i class="bi bi-plus-square-fill" />
-                  </button>
                 </div>
                 <div class="d-flex flex-wrap gap-2 mt-2">
                   <button
@@ -771,7 +789,7 @@ onUnmounted(() => {
               :disabled="!canSubmit"
               @click="handleSubmit"
             >
-              Confirmar
+              Salvar e continuar
             </button>
           </div>
         </template>
@@ -779,6 +797,7 @@ onUnmounted(() => {
       </div>
     </div>
   </transition>
+  </Teleport>
 </template>
 
 <style lang="scss" scoped>
@@ -825,21 +844,37 @@ onUnmounted(() => {
   color: #2f2f2f;
 }
 
+.work-modal__alert {
+  margin: 8px 0 0;
+  color: #bc1518;
+  font-size: 12px;
+  line-height: 130%;
+}
+
+.work-modal__subtitle {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--Cinza_M, #636262);
+}
+
 .work-modal__map-wrapper {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 0 16px;
+  /* Mesma margem lateral do header e do footer (32px). */
+  padding: 0 32px;
   gap: 0;
 }
 
 .work-modal__map-container {
   position: relative;
   flex: 1 1 0;
-  min-height: 0;
-  border-radius: 8px;
+  /* Piso de altura: com o teclado aberto no celular a viewport encolhe e, sem
+     isso, o mapa era espremido a quase nada — restando um modal só de campos. */
+  min-height: 220px;
   overflow: hidden;
-  border: 2px solid #1f1f1f;
+  border: 1px solid #1f1f1f;
 }
 
 .work-modal__map-controls {
@@ -849,18 +884,72 @@ onUnmounted(() => {
   z-index: 10;
 }
 
+/* Fora do mapa, entre o título e ele. `relative` para a lista de sugestões
+   flutuar sobre o mapa sem alargar o modal. */
 .work-modal__search-box {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  right: 10px;
+  position: relative;
+  flex-shrink: 0;
+  /* Sem margem lateral: o padding do wrapper já alinha o campo à largura do mapa. */
+  margin: 0 0 10px;
   z-index: 20;
+
+}
+
+/* Altura da busca de endereço. Alvo pelas classes dos próprios elementos: com
+   `.work-modal__search-box .input-group > .form-control`, o compilador de CSS
+   scoped perdia o ancestral e a regra vazava para TODOS os campos combinados do
+   modal (título, autoria, datas), encolhendo-os. */
+.work-modal__search-input,
+.work-modal__search-clear {
+  height: 34px;
+  min-height: 34px;
+  padding-block: 0;
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.work-modal__search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Endereço sobreposto ao mapa — mesmo tratamento do mapa de submissão de imagem:
+   informa sem empurrar o restante do modal ao aparecer e sumir. */
+.work-modal__map-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  /* A caixa acompanha o texto; o teto evita que um endereço longo do Nominatim
+     atravesse o mapa inteiro. */
+  max-width: calc(100% - 16px);
+  margin: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--Cinza_C, #dcdcdc);
+  border-radius: 4px;
+  background-color: #fff;
+  color: var(--Preto, #2f2f2f);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  /* No máximo duas linhas, para não cobrir o mapa. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .work-modal__search-results {
+  /* Flutua sobre o mapa em vez de empurrá-lo. */
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 30;
   list-style: none;
   margin: 2px 0 0;
   padding: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -875,12 +964,6 @@ onUnmounted(() => {
   line-height: 1.3;
 
   &:hover { background: #f5f5f5; }
-}
-
-.work-modal__geocode-hint {
-  flex-shrink: 0;
-  margin: 6px 16px 0;
-  font-size: 13px;
 }
 
 .work-modal__existing-confirm {
@@ -932,14 +1015,30 @@ onUnmounted(() => {
 }
 .btn-enlarge-40 > i.bi {
   font-size: 1.6rem;
-  line-height: 1.4;
+  /* `1.4` estufava o ícone para além da altura do botão. */
+  line-height: 1;
+}
+
+/* Inputs combinados (seletor + campo + "+"): mesma altura nos três, sem atingir
+   a busca de endereço da etapa 1, que é mais baixa de propósito. Regras planas
+   de propósito — aninhadas, o CSS scoped já perdeu o ancestral neste arquivo. */
+.work-modal__combo {
+  align-items: stretch;
+}
+
+.work-modal__combo > .form-control,
+.work-modal__combo > .btn,
+.work-modal__combo > .input-group-text {
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
 }
 
 .work-modal__footer {
   flex-shrink: 0;
   display: flex;
   gap: 16px;
-  padding: 16px 32px;
+  /* O 24px final espelha o respiro do topo do modal (header). */
+  padding: 16px 32px 24px;
   background: var(--off_white, #faf9f9);
 }
 
@@ -994,11 +1093,109 @@ onUnmounted(() => {
   }
 
   .work-modal__map-wrapper {
-    padding: 0 8px;
+    padding: 0 16px;
   }
 
   .work-modal__footer {
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    padding: 12px 16px calc(20px + env(safe-area-inset-bottom));
+    /* `reverse` para o botão principal ficar em cima sem mexer na ordem do HTML. */
+    flex-direction: column-reverse;
+  }
+
+  /* No celular o mapa rola junto com o dedo; o modal inteiro não deve rolar
+     por baixo dele. */
+  .work-modal__map-wrapper {
+    overscroll-behavior: contain;
+  }
+
+  /* Alvos de toque: 44px é o mínimo confortável. O input tinha 34px e os botões
+     do rodapé ~31px, altos demais para o dedo errar. */
+  .work-modal__search-input,
+  .work-modal__search-clear {
+    height: 44px;
+    min-height: 44px;
+    /* 16px evita o zoom automático que o Safari do iOS aplica ao focar um
+       campo com fonte menor — o modal inteiro saltava de escala. */
+    font-size: 16px;
+  }
+
+  .work-modal__btn {
+    min-height: 44px;
+  }
+
+  /* A lista não pode passar do mapa: o painel tem overflow hidden e cortaria
+     as últimas sugestões. */
+  .work-modal__search-results {
+    max-height: min(200px, 30vh);
+  }
+
+  .work-modal__body {
+    /* Respiro no fim do formulário: sem ele o último campo encosta no rodapé
+       quando o teclado está aberto. */
+    padding-bottom: 16px;
+
+    /* 16px evita o zoom automático do Safari do iOS ao focar um campo — abaixo
+       disso ele amplia a página inteira. O CSS global usa 14px; a troca fica
+       restrita a este modal. */
+    .form-control,
+    .form-select {
+      font-size: 16px;
+    }
+  }
+
+  /* Mesma trava de altura do desktop, no valor de toque do celular. */
+  .work-modal__combo > .form-control,
+  .work-modal__combo > .btn,
+  .work-modal__combo > .input-group-text {
+    height: var(--control-height-mobile, 48px);
+    min-height: var(--control-height-mobile, 48px);
+  }
+
+  /* Só no modo intervalo: são cinco elementos numa linha (seletor, ano, "até",
+     ano e "+") e não cabem em telas estreitas. No modo "Ano" são três e
+     continuam lado a lado. */
+  .work-modal__date-group--interval {
+    flex-wrap: wrap;
+
+    > .dropdown-toggle {
+      width: 100%;
+      justify-content: space-between;
+      border-top-left-radius: 5px;
+      /* Vence o !important do `rounded-end-0`, que serve à disposição em uma
+         linha só; ocupando a linha inteira, o canto superior direito arredonda. */
+      border-top-right-radius: 5px !important;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0 !important;
+    }
+
+    /* Sem a borda superior a segunda linha encosta na primeira sem traço duplo. */
+    > .form-control,
+    > .input-group-text,
+    > .btn:not(.dropdown-toggle) {
+      margin-top: -1px;
+    }
+
+    > .form-control:first-of-type {
+      border-bottom-left-radius: 5px;
+    }
+
+    > .btn:last-child {
+      border-bottom-right-radius: 5px;
+    }
+
+    /* Na linha própria os campos de ano dividem o espaço disponível. */
+    > .form-control {
+      max-width: none !important;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+  }
+
+  /* As listas suspensas são recortadas pelo corpo rolável quando o campo está
+     perto do fim da tela; limitar a altura as mantém visíveis. */
+  .work-modal__body .dropdown-menu {
+    max-height: min(220px, 40vh);
+    overflow-y: auto;
   }
 }
 </style>

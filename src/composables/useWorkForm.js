@@ -33,13 +33,39 @@ export function useWorkForm() {
 
   const hasPreferredTitle = computed(() => titles.value.some((t) => t.type === "other"));
 
+  // Teto de títulos por obra: um principal e alguns nomes alternativos cobrem os
+  // casos reais (sigla, nome popular, nome antigo). Sem limite, nada impedia
+  // encher a obra de variações.
+  const MAX_TITLES = 6;
+  const titleError = ref("");
+  watch([titleLabelInput, titleTypeInput], () => {
+    titleError.value = "";
+  });
+
   const addTitle = () => {
     const label = titleLabelInput.value.trim();
-    if (!label) return;
+    if (!label) {
+      titleError.value = "Informe o título da obra.";
+      return;
+    }
+    if (titles.value.length >= MAX_TITLES) {
+      titleError.value = `Máximo de ${MAX_TITLES} títulos por obra.`;
+      return;
+    }
+    // O mesmo texto não se repete, nem trocando o tipo: "Pina" como principal e
+    // como alternativo seria o mesmo nome duas vezes.
+    if (titles.value.some((t) => t.label.trim().toLowerCase() === label.toLowerCase())) {
+      titleError.value = "Este título já foi adicionado.";
+      return;
+    }
     const isPrincipal = titleTypeInput.value === "other";
     // Só pode existir UM título principal; um segundo é bloqueado (o dropdown já
     // impede selecioná-lo quando um existe — isto é a rede de segurança).
-    if (isPrincipal && hasPreferredTitle.value) return;
+    if (isPrincipal && hasPreferredTitle.value) {
+      titleError.value = "A obra já tem um título principal.";
+      return;
+    }
+    titleError.value = "";
     titles.value.push({ type: titleTypeInput.value, label, pref: isPrincipal });
     titleLabelInput.value = "";
     // Definido o principal, o padrão passa a ser "Alternativo".
@@ -164,6 +190,34 @@ export function useWorkForm() {
     dateError.value = "";
   });
 
+  // Ano de uma data já adicionada, para as checagens de ordem cronológica.
+  const yearOf = (d) => parseInt(String(d.earliest).slice(0, 4), 10);
+  const creationYear = computed(() => {
+    const creation = dates.value.find((d) => d.type === "creation");
+    return creation ? yearOf(creation) : null;
+  });
+
+  /**
+   * A obra não pode ser reformada nem demolida antes de existir. A checagem vale
+   * nos dois sentidos, porque a ordem em que o usuário preenche é livre: ao
+   * adicionar a criação depois, ela não pode ser posterior ao que já está lá.
+   */
+  const dateOrderError = (type, year) => {
+    if (type === "creation") {
+      const anterior = dates.value.find((d) => d.type !== "creation" && yearOf(d) < year);
+      if (anterior) {
+        return `O ano de criação não pode ser posterior à data de ${dateTypeLabel(
+          anterior.type
+        ).toLowerCase()} (${yearOf(anterior)}).`;
+      }
+      return "";
+    }
+    if (creationYear.value !== null && year < creationYear.value) {
+      return `A data de ${dateTypeLabel(type).toLowerCase()} não pode ser anterior ao ano de criação (${creationYear.value}).`;
+    }
+    return "";
+  };
+
   const addDate = () => {
     if (isDateTypeDisabled(dateTypeInput.value)) {
       dateError.value = `Já existe uma data de ${dateTypeLabel(dateTypeInput.value).toLowerCase()} nesta obra.`;
@@ -174,6 +228,11 @@ export function useWorkForm() {
       dateError.value = dateYearInput.value.trim()
         ? `Ano inválido. Informe um ano entre ${MIN_YEAR} e ${MAX_YEAR}.`
         : "Informe o ano da data.";
+      return;
+    }
+    const ordem = dateOrderError(dateTypeInput.value, parseInt(year, 10));
+    if (ordem) {
+      dateError.value = ordem;
       return;
     }
     dateError.value = "";
@@ -293,6 +352,9 @@ export function useWorkForm() {
   const canCreateVocab = (vfMeta) => {
     const term = vfMeta.field.input.value.trim();
     if (!term) return false;
+    // Só oferece criar depois que o vocabulário foi de fato consultado.
+    if (term.length < VOCAB_MIN_CHARS) return false;
+    if (vfMeta.field.loading.value) return false;
     const labelKey = vfMeta.labelKey;
     // Resultado atual da busca no servidor (a busca é substring, então um
     // termo idêntico aparece nos resultados quando existe). Se escapar ao limite
@@ -305,9 +367,10 @@ export function useWorkForm() {
 
   // Termo novo fica só no cliente — o POST acontece quando o consumidor materializa.
   const createAndAddVocabItem = (vfMeta) => {
-    const term = vfMeta.field.input.value.trim().toLowerCase();
+    // Preserva a caixa digitada, para o termo novo não destoar dos do vocabulário.
+    const term = vfMeta.field.input.value.trim();
     if (!term) return;
-    if (vfMeta.field.selected.value.some((s) => s.label.toLowerCase() === term)) return;
+    if (vfMeta.field.selected.value.some((s) => s.label.toLowerCase() === term.toLowerCase())) return;
     vfMeta.field.selected.value.push({ id: null, label: term, isNew: true });
     vfMeta.field.input.value = "";
     vfMeta.field.suggestions.value = [];
@@ -321,23 +384,19 @@ export function useWorkForm() {
     return items.find((i) => (i[labelKey] || "").toLowerCase() === term) || null;
   };
 
+  /**
+   * Confirma o texto digitado só quando é idêntico a um termo existente; devolve
+   * `true` se virou chip. Criar termo novo é sempre explícito, pelo item
+   * "Criar «termo»" da lista.
+   */
   const commitVocabInput = (vfMeta) => {
     const exact = findExactVocabMatch(vfMeta);
-    if (exact) {
-      addVocabItem(vfMeta.field, exact);
-      return;
-    }
-    const first = vfMeta.field.suggestions.value[0];
-    if (first) {
-      addVocabItem(vfMeta.field, first);
-    } else if (canCreateVocab(vfMeta)) {
-      createAndAddVocabItem(vfMeta);
-    }
+    if (!exact) return false;
+    addVocabItem(vfMeta.field, exact);
+    return true;
   };
 
-  // Enter no input e clique no "+" resolvem do mesmo jeito.
   const onVocabEnter = commitVocabInput;
-  const onVocabPlusClick = commitVocabInput;
 
   const removeVocabItem = (vf, index) => vf.selected.value.splice(index, 1);
 
@@ -350,12 +409,16 @@ export function useWorkForm() {
   // ── Draft ────────────────────────────────────────────────────────────────────
 
   /**
-   * Confirma o que ficou digitado nos inputs sem virar chip.
-   *
-   * Todos os campos desta tela só entram no rascunho depois de um clique no "+"
-   * ou um Enter. Quem preenchia o ano e clicava direto em "Confirmar" perdia o
-   * valor sem nenhum aviso — foi o que aconteceu com a obra "Mercado São
-   * Sebastião", criada sem a data que o usuário havia digitado.
+   * Aviso dos vocabulários com texto digitado que não virou chip. Enquanto
+   * estiver preenchido, o envio não acontece.
+   */
+  const vocabPendingError = ref("");
+
+  /**
+   * Confirma o que ficou digitado nos inputs sem virar chip — só o que vira chip
+   * entra no rascunho, e quem digitava o ano e enviava direto perdia o valor.
+   * Nos vocabulários vale só para termo idêntico a um existente; o resto vira
+   * aviso, nunca termo novo.
    *
    * Chamado antes de montar o rascunho e ao avançar de passo.
    */
@@ -363,9 +426,15 @@ export function useWorkForm() {
     if (titleLabelInput.value.trim()) addTitle();
     if (agentNameInput.value.trim()) addAgent();
     if (dateYearInput.value.trim()) addDate();
+
+    const pending = [];
     for (const vfMeta of VOCAB_FIELDS) {
-      if (vfMeta.field.input.value.trim()) commitVocabInput(vfMeta);
+      if (!vfMeta.field.input.value.trim()) continue;
+      if (!commitVocabInput(vfMeta)) pending.push(vfMeta.label);
     }
+    vocabPendingError.value = pending.length
+      ? `Escolha um termo da lista ou use "Criar" para confirmar o que foi digitado em: ${pending.join(", ")}.`
+      : "";
   };
 
   const canSubmit = computed(() => hasPreferredTitle.value);
@@ -530,6 +599,8 @@ export function useWorkForm() {
     titleLabelInput,
     titles,
     hasPreferredTitle,
+    titleError,
+    MAX_TITLES,
     addTitle,
     removeTitle,
     titleTypeLabel,
@@ -573,11 +644,11 @@ export function useWorkForm() {
     canCreateVocab,
     createAndAddVocabItem,
     onVocabEnter,
-    onVocabPlusClick,
     removeVocabItem,
     hideVocabSuggestions,
     // draft / ciclo de vida
     canSubmit,
+    vocabPendingError,
     commitPendingInputs,
     buildDraft,
     populateFromWork,

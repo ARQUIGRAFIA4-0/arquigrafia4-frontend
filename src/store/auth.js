@@ -209,6 +209,15 @@ export const useAuthStore = defineStore("auth", () => {
       console.error("Error fetching logged user:", error);
     }
   }
+  // Carimba o avatar como recém-trocado para quebrar o cache do browser (ver
+  // helpers/avatarUrl.js). Só deve ser chamada depois que a API confirmou o
+  // upload, e serve de fallback para quando o usuário não traz `updated_at`.
+  function markAvatarUpdated() {
+    if (!loggedUser.value) return;
+
+    loggedUser.value = { ...loggedUser.value, avatar_updated_at: Date.now() };
+    localStorage.setItem("loggedUser", JSON.stringify(loggedUser.value));
+  }
   async function logout() {
     try {
       if (accessToken.value) {
@@ -490,6 +499,7 @@ export const useAuthStore = defineStore("auth", () => {
     handleRegister,
     getAccessToken,
     getLoggedUser,
+    markAvatarUpdated,
     logout,
     registerUser,
     sendVerificationEmail,
