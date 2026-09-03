@@ -17,11 +17,11 @@ import {
   selectionToViewRoute,
   selectionToViewMode,
 } from "@/constants/viewModes";
-import { api } from "@/services/api";
 import CollectionToolbar from "@/components/CollectionToolbar.vue";
 import DownloadModal from "@/components/imageDetail/DownloadModal.vue";
 import { downloadCollectionAsZip } from "@/helpers/downloadCollectionZip";
 import { sanitizeDownloadFilename } from "@/helpers/downloadImage";
+import { useAlbumImagesInfiniteQuery } from "@/composables/useAlbumImagesInfiniteQuery";
 
 defineOptions({ name: "CollectionDetail" });
 
@@ -49,10 +49,32 @@ const userAuthHeader = computed(() =>
 );
 
 const albumData = ref(null);
-const collectionImages = ref([]);
-const isLoadingCollection = ref(true);
+const isLoadingAlbum = ref(true);
 // null = ok | "forbidden" | "notfound" | "error"
 const accessState = ref(null);
+
+const albumImagesEnabled = computed(
+  () => Boolean(collectionId.value) && Boolean(albumData.value) && !accessState.value
+);
+
+const {
+  items: collectionImages,
+  hasNextPage,
+  fetchNextPage,
+  isPending: isImagesPending,
+  isFetchingNextPage,
+} = useAlbumImagesInfiniteQuery({
+  albumId: collectionId,
+  enabled: albumImagesEnabled,
+});
+
+const isLoadingCollection = computed(
+  () =>
+    isLoadingAlbum.value ||
+    (albumImagesEnabled.value &&
+      isImagesPending.value &&
+      collectionImages.value.length === 0)
+);
 
 // título e descrição reais vindos da API
 const collectionTitle = computed(() => {
@@ -144,7 +166,7 @@ const ownerAvatarSrc = computed(() => {
 async function fetchCollectionData() {
   if (!collectionId.value) return;
 
-  isLoadingCollection.value = true;
+  isLoadingAlbum.value = true;
   isLoadingOwner.value = true;
   accessState.value = null;
 
@@ -155,7 +177,6 @@ async function fetchCollectionData() {
 
   if (!result.success) {
     albumData.value = null;
-    collectionImages.value = [];
     collectionTags.value = [];
     isLoadingCollectionTags.value = false;
     ownerUser.value = null;
@@ -168,16 +189,14 @@ async function fetchCollectionData() {
     } else {
       accessState.value = "error";
     }
-    isLoadingCollection.value = false;
+    isLoadingAlbum.value = false;
     return;
   }
 
   albumData.value = result.data;
 
-  // carrega as imagens e as tags da coleção
-  await loadCollectionImageDetails(result.data.images || []);
   await loadCollectionTags();
-  isLoadingCollection.value = false;
+  isLoadingAlbum.value = false;
 
   // Resolve o dono conforme o tipo do álbum (coletivo ou usuário).
   if (result.data.collective_id) {
@@ -210,36 +229,6 @@ async function fetchOwnerUser(userId) {
   } finally {
     isLoadingOwner.value = false;
   }
-}
-
-// Carrega as imagens da coleção
-async function loadCollectionImageDetails(imagesFromAlbum = []) {
-  
-  // Ordena as imagens pela position do pivot
-  const ordered = [...imagesFromAlbum].sort((a, b) => {
-    const pa = a?.pivot?.position ?? Number.MAX_SAFE_INTEGER;
-    const pb = b?.pivot?.position ?? Number.MAX_SAFE_INTEGER;
-    return pa - pb;
-  });
-
-  // Se não houver imagens, retorna um array vazio
-  if (!ordered.length) {
-    collectionImages.value = [];
-    return;
-  }
-
-  try {
-    // Carrega as imagens detalhadas
-    collectionImages.value = await Promise.all(
-      ordered.map((img) => api.getImageDetails(img.id))
-    );
-
-  } catch (err) {
-    console.error("Erro ao carregar imagens da coleção:", err);
-    collectionImages.value = [];
-
-  }
-
 }
 
 /**
@@ -365,6 +354,28 @@ function handleToggleCollectionInfo() {
  */
 const collectionTags = ref([]);
 const isLoadingCollectionTags = ref(true);
+const COLLECTION_TAGS_VISIBLE_LIMIT = 8;
+const COLLECTION_TAGS_HARD_LIMIT = 50;
+const showAllCollectionTags = ref(false);
+
+const cappedCollectionTags = computed(() =>
+  collectionTags.value.slice(0, COLLECTION_TAGS_HARD_LIMIT)
+);
+
+const visibleCollectionTags = computed(() => {
+  if (showAllCollectionTags.value) return cappedCollectionTags.value;
+  return cappedCollectionTags.value.slice(0, COLLECTION_TAGS_VISIBLE_LIMIT);
+});
+
+const hiddenCollectionTagsCount = computed(() => {
+  const remaining =
+    cappedCollectionTags.value.length - COLLECTION_TAGS_VISIBLE_LIMIT;
+  return remaining > 0 ? remaining : 0;
+});
+
+function toggleCollectionTagsExpanded() {
+  showAllCollectionTags.value = !showAllCollectionTags.value;
+}
 
 // Normaliza as tags da coleção, preservando o id do subject (necessário para
 // o filtro de busca ao clicar na tag).
@@ -376,11 +387,13 @@ function normalizeCollectionTags(tags = []) {
 async function loadCollectionTags() {
   if (!collectionId.value) {
     collectionTags.value = [];
+    showAllCollectionTags.value = false;
     isLoadingCollectionTags.value = false;
     return;
   }
 
   isLoadingCollectionTags.value = true;
+  showAllCollectionTags.value = false;
 
   try {
     const data = await albumsStore.getTagsByAlbumId(
@@ -389,14 +402,11 @@ async function loadCollectionTags() {
     );
 
     collectionTags.value = normalizeCollectionTags(data.tags ?? data);
-
   } catch (error) {
     console.error("Erro ao carregar tags da coleção:", error);
     collectionTags.value = [];
-
   } finally {
     isLoadingCollectionTags.value = false;
-
   }
 }
 
@@ -460,8 +470,7 @@ async function handleCollectionDownloadConfirm() {
 // senão, cai na página do dono (coletivo/perfil) derivada do álbum.
 function goBack() {
   const backPath = window.history.state?.back ?? null;
-  const isBackToEdit =
-    typeof backPath === "string" && backPath.includes("/edit");
+  const isBackToEdit = typeof backPath === "string" && backPath.includes("/edit");
 
   if (backPath && !isBackToEdit) {
     router.back();
@@ -473,14 +482,53 @@ function goBack() {
   else router.push("/");
 }
 
+const tryFetchNextPage = () => {
+  if (!hasNextPage.value || isFetchingNextPage.value || isLoadingCollection.value) {
+    return;
+  }
+  fetchNextPage();
+};
+
+const handleImagesScroll = () => {
+  // Mosaico escuta o scroll no próprio componente (padrão Explore).
+  if (collectionViewMode.value === "mosaic") return;
+
+  const scrollPosition = window.innerHeight + window.scrollY;
+  const pageBottom = document.documentElement.offsetHeight - 1000;
+
+  if (scrollPosition >= pageBottom) {
+    tryFetchNextPage();
+  }
+};
+
+watch(
+  [collectionImages, hasNextPage, isFetchingNextPage, isLoadingCollection],
+  () => {
+    if (isLoadingCollection.value || isFetchingNextPage.value || !hasNextPage.value) {
+      return;
+    }
+    if (collectionImages.value.length === 0) return;
+    if (collectionViewMode.value === "mosaic") return;
+
+    const pageTooShort =
+      document.documentElement.offsetHeight <= window.innerHeight + 1000;
+
+    if (pageTooShort) {
+      tryFetchNextPage();
+    }
+  }
+);
+
 onMounted(() => {
   fetchCollectionData();
   updateIsMobile();
   window.addEventListener("resize", updateIsMobile);
+  window.addEventListener("scroll", handleImagesScroll, { passive: true });
 });
 
 onUnmounted(() => {
   window.removeEventListener("resize", updateIsMobile);
+  window.removeEventListener("scroll", handleImagesScroll);
 });
 
 watch(
@@ -619,16 +667,22 @@ watch(
                 v-if="collectionViewMode === 'grid'"
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
+                :is-fetching-next-page="isFetchingNextPage"
+                :has-next-page="hasNextPage"
                 :is-grid-reflowing="isGridReflowing"
                 :is-info-active="isInfoActive"
                 :allow-remove="false"
+                @load-more="tryFetchNextPage"
               />
 
               <CollectionImagesMosaic
                 v-else-if="collectionViewMode === 'mosaic'"
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
+                :is-fetching-next-page="isFetchingNextPage"
+                :has-next-page="hasNextPage"
                 :is-info-active="isInfoActive"
+                @load-more="tryFetchNextPage"
               />
 
               <CollectionImagesMap
@@ -666,8 +720,11 @@ watch(
                 v-if="collectionViewMode !== 'map'"
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
+                :is-fetching-next-page="isFetchingNextPage"
+                :has-next-page="hasNextPage"
                 :is-info-active="false"
                 :allow-remove="false"
+                @load-more="tryFetchNextPage"
               />
 
               <CollectionImagesMap
@@ -855,15 +912,29 @@ watch(
                   aria-hidden="true"
                 />
               </div>
-              <div v-else-if="collectionTags.length" class="metadata-tags">
+              <div v-else-if="cappedCollectionTags.length" class="metadata-tags">
                 <button
-                  v-for="(tag, index) in collectionTags"
+                  v-for="(tag, index) in visibleCollectionTags"
                   :key="`${tag.id}-${index}`"
                   type="button"
                   class="btn btn-outline-primary btn-sm btn-tag"
                   @click="goToSubject(tag.id)"
                 >
                   {{ tag.term }}
+                </button>
+                <button
+                  v-if="hiddenCollectionTagsCount > 0"
+                  type="button"
+                  class="btn btn-outline-primary btn-sm btn-tag metadata-tags__more"
+                  :aria-expanded="showAllCollectionTags"
+                  :aria-label="
+                    showAllCollectionTags
+                      ? 'Mostrar menos tags'
+                      : `Mostrar mais ${hiddenCollectionTagsCount} tags`
+                  "
+                  @click="toggleCollectionTagsExpanded"
+                >
+                  {{ showAllCollectionTags ? "menos" : `+${hiddenCollectionTagsCount}` }}
                 </button>
               </div>
             </section>
@@ -1041,15 +1112,29 @@ watch(
                     aria-hidden="true"
                   />
                 </div>
-                <div v-else-if="collectionTags.length" class="metadata-tags">
+                <div v-else-if="cappedCollectionTags.length" class="metadata-tags">
                   <button
-                    v-for="(tag, index) in collectionTags"
+                    v-for="(tag, index) in visibleCollectionTags"
                     :key="`desktop-${tag.id}-${index}`"
                     type="button"
                     class="btn btn-outline-primary btn-sm btn-tag"
                     @click="goToSubject(tag.id)"
                   >
                     {{ tag.term }}
+                  </button>
+                  <button
+                    v-if="hiddenCollectionTagsCount > 0"
+                    type="button"
+                    class="btn btn-outline-primary btn-sm btn-tag metadata-tags__more"
+                    :aria-expanded="showAllCollectionTags"
+                    :aria-label="
+                      showAllCollectionTags
+                        ? 'Mostrar menos tags'
+                        : `Mostrar mais ${hiddenCollectionTagsCount} tags`
+                    "
+                    @click="toggleCollectionTagsExpanded"
+                  >
+                    {{ showAllCollectionTags ? "menos" : `+${hiddenCollectionTagsCount}` }}
                   </button>
                 </div>
               </section>
@@ -1409,8 +1494,11 @@ a.collection-detail__actor-name:hover {
   width: 338px;
   max-width: 338px;
   min-width: 280px;
-  height: 100%;
-  align-self: stretch;
+  height: auto;
+  max-height: 100vh;
+  align-self: flex-start;
+  position: sticky;
+  top: 0;
   box-sizing: border-box;
   transition:
     flex-basis 360ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -1431,7 +1519,7 @@ a.collection-detail__actor-name:hover {
   display: flex;
   flex: 1 1 auto;
   width: 100%;
-  height: 100%;
+  max-height: 100vh;
   align-self: stretch;
   box-sizing: border-box;
   overflow: hidden;
@@ -1450,6 +1538,9 @@ a.collection-detail__actor-name:hover {
   flex-direction: column;
   width: 338px;
   flex-shrink: 0;
+  max-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
   opacity: 1;
   transform: translateX(0);
   will-change: transform, opacity;
@@ -1865,6 +1956,10 @@ a.collection-detail__actor-name:hover {
   font-weight: 400;
   line-height: 115%;
   cursor: pointer;
+}
+
+.metadata-tags__more {
+  font-weight: 500;
 }
 
 .collection-detail__periods-block {

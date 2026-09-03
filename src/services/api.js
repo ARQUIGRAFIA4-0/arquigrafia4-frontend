@@ -26,7 +26,7 @@ const workPrimaryTitle = (work) => {
  */
 export const mapImageListItem = (image) => ({
   id: image.id,
-  title: image.titles?.[0]?.label || `Imagem ${image.legacy_id || image.id.substring(0, 8)}`,
+  title: image.titles?.[0]?.label || "Imagem " + (image.legacy_id || image.id.substring(0, 8)),
   imageUrl: `${baseURL()}/${image.mid_url}`,
   thumbUrl: `${baseURL()}/${image.thumb_url}`,
   fullUrl: `${baseURL()}/${image.full_url}`,
@@ -63,7 +63,7 @@ const getImageDetails = async (id) => {
     const image = result.data.data;
 
     const preferredTitle = image.titles?.find((t) => t.pref === true);
-    const title = preferredTitle?.label || image.titles?.[0]?.label || `Imagem ${image.legacy_id || image.id.substring(0, 8)}`;
+    const title = preferredTitle?.label || image.titles?.[0]?.label || "Imagem " + (image.legacy_id || image.id.substring(0, 8));
 
     const uploader = image.user;
     const description = image.descriptions?.[0]?.text || null;
@@ -137,8 +137,8 @@ const getImageDetails = async (id) => {
     const subjects = image.subjects || [];
     const rights = image.rights || [];
 
-    // Obras associadas à imagem. O backend inclui `works` com `works.titles` e
-    // `works.location` no GET /images/{id}. Uma imagem pode não ter obra (array vazio).
+    // Obras associadas à imagem. O backend inclui "works" com "works.titles" e
+    // "works.location" no GET /images/{id}. Uma imagem pode não ter obra (array vazio).
     const works = Array.isArray(image.works)
       ? image.works.map((work) => ({
           id: work.id,
@@ -199,7 +199,7 @@ const vocabTerms = (list, key = "label") => (list || []).map((item) => ({ id: it
  * Normaliza uma VRACWork crua da API para o formato usado nas telas.
  *
  * Exportada porque o aceite de uma sugestão devolve a obra já atualizada — no
- * formato cru — e a tela precisa do mesmo shape que `getWorkDetails` entrega.
+ * formato cru — e a tela precisa do mesmo shape que "getWorkDetails" entrega.
  */
 const normalizeWork = (work) => {
   if (!work) return null;
@@ -251,8 +251,8 @@ const getWorkDetails = async (id) => {
  * Autocomplete de um vocabulário VRAC via backend — GET /api/{endpoint}?search=.
  * Substitui o download do catálogo inteiro (per_page=-1) por busca sob demanda.
  * O backend filtra com LIKE cru (insensível a acento/caixa por colação), então
- * `%` e `_` são escapados para não virarem curingas. Devolve o array de itens
- * crus (cada um com `id` e o campo de texto do vocabulário: `label` ou `term`).
+ * "%" e "_" são escapados para não virarem curingas. Devolve o array de itens
+ * crus (cada um com "id" e o campo de texto do vocabulário: "label" ou "term").
  */
 const searchVocab = async (endpoint, query, { limit = 15 } = {}) => {
   const q = (query || "").trim();
@@ -340,7 +340,7 @@ const fetchImages = async (page = 1, filters = {}) => {
     const params = { page };
 
     // Filtro por busca textual geral (q)
-    if (filters.q && typeof filters.q === 'string') {
+    if (filters.q && typeof filters.q === "string") {
       params.q = filters.q.trim();
     }
 
@@ -361,9 +361,9 @@ const fetchImages = async (page = 1, filters = {}) => {
     }
 
     // Filtro por características (binômios da comunidade)
-    if (filters.characteristics && typeof filters.characteristics === 'object') {
+    if (filters.characteristics && typeof filters.characteristics === "object") {
       Object.entries(filters.characteristics).forEach(([key, side]) => {
-        if (side === 'left' || side === 'right') {
+        if (side === "left" || side === "right") {
           params[`binomial[${key}]`] = side;
         }
       });
@@ -381,44 +381,44 @@ const fetchImages = async (page = 1, filters = {}) => {
     
     // Filtro por assuntos (tags de sujeito por ID)
     if (filters.subjects?.length) {
-      params['subject[]'] = filters.subjects.length === 1 ? filters.subjects[0] : filters.subjects;
+      params["subject[]"] = filters.subjects.length === 1 ? filters.subjects[0] : filters.subjects;
     }
 
     // Filtro por termos de assunto (partial match)
     if (filters.subjectTerms?.length) {
-      params['subject_term[]'] = filters.subjectTerms.length === 1 ? filters.subjectTerms[0] : filters.subjectTerms;
+      params["subject_term[]"] = filters.subjectTerms.length === 1 ? filters.subjectTerms[0] : filters.subjectTerms;
     }
 
     // --- Novos campos ---
     if (filters.materialTerms?.length) {
-      params['material_term[]'] = filters.materialTerms.length === 1 ? filters.materialTerms[0] : filters.materialTerms;
+      params["material_term[]"] = filters.materialTerms.length === 1 ? filters.materialTerms[0] : filters.materialTerms;
     }
     if (filters.techniqueTerms?.length) {
-      params['technique_term[]'] = filters.techniqueTerms.length === 1 ? filters.techniqueTerms[0] : filters.techniqueTerms;
+      params["technique_term[]"] = filters.techniqueTerms.length === 1 ? filters.techniqueTerms[0] : filters.techniqueTerms;
     }
     if (filters.aestheticsTerms?.length) {
-      params['aesthetics_term[]'] = filters.aestheticsTerms.length === 1 ? filters.aestheticsTerms[0] : filters.aestheticsTerms;
+      params["aesthetics_term[]"] = filters.aestheticsTerms.length === 1 ? filters.aestheticsTerms[0] : filters.aestheticsTerms;
     }
     if (filters.culturalContextTerms?.length) {
-      params['cultural_context_term[]'] = filters.culturalContextTerms.length === 1 ? filters.culturalContextTerms[0] : filters.culturalContextTerms;
+      params["cultural_context_term[]"] = filters.culturalContextTerms.length === 1 ? filters.culturalContextTerms[0] : filters.culturalContextTerms;
     }
     if (filters.typologyTerms?.length) {
-      params['typology_term[]'] = filters.typologyTerms.length === 1 ? filters.typologyTerms[0] : filters.typologyTerms;
+      params["typology_term[]"] = filters.typologyTerms.length === 1 ? filters.typologyTerms[0] : filters.typologyTerms;
     }
 
     // Filtro por título (partial match)
-    if (filters.title && typeof filters.title === 'string') {
+    if (filters.title && typeof filters.title === "string") {
       params.title = filters.title.trim();
     }
 
     // Filtro por contribuidor/autor (partial match)
-    if (filters.contributor && typeof filters.contributor === 'string') {
+    if (filters.contributor && typeof filters.contributor === "string") {
       params.contributor = filters.contributor.trim();
     }
 
     // Filtro por licença CC (OR semântico: uma imagem só pode ter uma licença)
     if (filters.licenses?.length) {
-      params['license[]'] = filters.licenses.length === 1 ? filters.licenses[0] : filters.licenses;
+      params["license[]"] = filters.licenses.length === 1 ? filters.licenses[0] : filters.licenses;
     }
 
     // Ordenação
@@ -451,6 +451,64 @@ const fetchImages = async (page = 1, filters = {}) => {
 };
 
 /**
+ * Imagens paginadas de um álbum — GET /api/albums/{albumId}/images?page=
+ * Se o item não trouxer mid_url/thumb_url, enriquece com GET /api/images/{id}
+ * (mesmo formato usado antes em CollectionDetail).
+ */
+const getAlbumImages = async (albumId, page = 1) => {
+  if (!albumId) {
+    return { items: [], hasMore: false };
+  }
+
+  try {
+    const { data } = await axios.get(`/api/albums/${albumId}/images`, {
+      params: { page },
+    });
+
+    const rawItems = Array.isArray(data.data) ? data.data : [];
+    const meta = data.meta || null;
+    const links = data.links || {};
+    const currentPage = Number(meta?.current_page) || page;
+    const lastPage = Number(meta?.last_page) || null;
+    const perPage = Number(meta?.per_page) || rawItems.length || 15;
+    const total = Number(meta?.total);
+
+    const hasMore = Boolean(links.next)
+      || (lastPage != null && currentPage < lastPage)
+      || (Number.isFinite(total) && currentPage * perPage < total)
+      // fallback: página "cheia" sem meta/links → assume que há mais
+      || (!links.next && lastPage == null && !Number.isFinite(total) && rawItems.length >= perPage);
+
+    const items = (
+      await Promise.all(
+        rawItems.map(async (item) => {
+          const candidate = item?.image ?? item?.data ?? item;
+          const imageId = candidate?.id ?? item?.image_id ?? item?.pivot?.image_id ?? null;
+
+          if (candidate?.mid_url || candidate?.thumb_url) {
+            return mapImageListItem(candidate);
+          }
+
+          if (!imageId) return null;
+
+          try {
+            return await getImageDetails(imageId);
+          } catch (error) {
+            console.error("Error enriching album image:", imageId, error);
+            return null;
+          }
+        })
+      )
+    ).filter(Boolean);
+
+    return { items, meta, hasMore };
+  } catch (error) {
+    console.error("Error fetching album images:", error);
+    return { items: [], hasMore: false };
+  }
+};
+
+/**
  * Busca o total de imagens cadastradas no sistema
  * Faz uma chamada mínima à API (per_page=-1) para obter apenas o total
  * @returns {Promise<number>} Total de imagens cadastradas
@@ -463,7 +521,7 @@ const getTotalImages = async () => {
     const response = await fetch(apiUrl);
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch images total: ${response.statusText}`);
+      throw new Error("Failed to fetch images total: " + response.statusText);
     }
 
     const data = await response.json();
@@ -480,8 +538,8 @@ const getTotalImages = async () => {
  * @returns {Promise<{id: string, term: string}|null>} Objeto com id e term, ou null em caso de erro
  */
 const getSubjectById = async (id) => {
-  if (!id || typeof id !== 'string') {
-    console.error('getSubjectById: ID inválido', id);
+  if (!id || typeof id !== "string") {
+    console.error("getSubjectById: ID inválido", id);
     return null;
   }
 
@@ -492,20 +550,20 @@ const getSubjectById = async (id) => {
     const response = await fetch(apiUrl);
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch subject: ${response.statusText}`);
+      throw new Error("Failed to fetch subject: " + response.statusText);
     }
 
     const responseData = await response.json();
     const term = responseData.data?.term;
 
     if (!term) {
-      console.warn(`Subject ${id} sem termo válido`);
+      console.warn("Subject " + id + " sem termo válido");
       return null;
     }
 
     return { id, term };
   } catch (error) {
-    console.error(`Error fetching subject ${id}:`, error);
+    console.error("Error fetching subject " + id + ":", error);
     return null;
   }
 };
@@ -514,12 +572,12 @@ const getSubjectById = async (id) => {
  * Fábrica de funções getById/getAll para os vocabulários VRAC que só têm
  * rótulo simples ({id, label}) — materiais, técnicas, períodos de estilo,
  * contextos culturais, tipos de obra. Todos batem em endpoints
- * `->only(['index', 'show'])`, então só GET é necessário.
+ * "->only(['index', 'show'])", então só GET é necessário.
  */
-const makeVocabApi = (resourcePath, labelField = 'label') => ({
+const makeVocabApi = (resourcePath, labelField = "label") => ({
   getById: async (id) => {
-    if (!id || typeof id !== 'string') {
-      console.error(`${resourcePath}: ID inválido`, id);
+    if (!id || typeof id !== "string") {
+      console.error(resourcePath + ": ID inválido", id);
       return null;
     }
     try {
@@ -527,12 +585,12 @@ const makeVocabApi = (resourcePath, labelField = 'label') => ({
       const item = response.data?.data;
       const label = item?.[labelField];
       if (!label) {
-        console.warn(`${resourcePath} ${id} sem ${labelField} válido`);
+        console.warn(resourcePath + " " + id + " sem " + labelField + " válido");
         return null;
       }
       return { id, [labelField]: label };
     } catch (error) {
-      console.error(`Error fetching ${resourcePath} ${id}:`, error);
+      console.error("Error fetching " + resourcePath + " " + id + ":", error);
       return null;
     }
   },
@@ -544,17 +602,17 @@ const makeVocabApi = (resourcePath, labelField = 'label') => ({
       });
       return response.data.data || [];
     } catch (error) {
-      console.error(`Error fetching all ${resourcePath}:`, error);
+      console.error("Error fetching all " + resourcePath + ":", error);
       return [];
     }
   },
 });
 
-const materialsApi = makeVocabApi('vrac-materials');
-const techniquesApi = makeVocabApi('vrac-techniques');
-const stylePeriodsApi = makeVocabApi('vrac-style-periods');
-const culturalContextsApi = makeVocabApi('vrac-cultural-contexts');
-const workTypesApi = makeVocabApi('vrac-work-types');
+const materialsApi = makeVocabApi("vrac-materials");
+const techniquesApi = makeVocabApi("vrac-techniques");
+const stylePeriodsApi = makeVocabApi("vrac-style-periods");
+const culturalContextsApi = makeVocabApi("vrac-cultural-contexts");
+const workTypesApi = makeVocabApi("vrac-work-types");
 
 const getMaterialById = materialsApi.getById;
 const getAllMaterials = materialsApi.getAll;
@@ -878,12 +936,12 @@ const handleJoinRequest = async (authHeader, collectiveId, userId, action) => {
  *
  * Um mapa único, chaveado pela chave usada no payload de sugestão de obra. Cada
  * endpoint devolve o registro sob um envelope próprio, e três deles não derivam
- * do nome do recurso: `vrac-style-periods` → `period`, `vrac-cultural-contexts`
- * → `context` e `vrac-subjects` → `data`. Criar e resolver leem o mesmo mapa,
+ * do nome do recurso: "vrac-style-periods" → "period", "vrac-cultural-contexts"
+ * → "context" e "vrac-subjects" → "data". Criar e resolver leem o mesmo mapa,
  * justamente para que os dois caminhos não divirjam.
  *
- * `draftKey` liga a chave do backend à do rascunho do formulário de obra
- * (`useWorkForm`), que usa nomes camelCase próprios.
+ * "draftKey" liga a chave do backend à do rascunho do formulário de obra
+ * ("useWorkForm"), que usa nomes camelCase próprios.
  * ──────────────────────────────────────────────────────────────────────────── */
 const VRAC_ENTITIES = {
   titles:  { endpoint: "vrac-titles", envelope: "title", displayKey: "label" },
@@ -906,7 +964,7 @@ const VRAC_ENTITIES = {
     draftKey: "techniques", createPayload: (v) => ({ label: v, vocab: "Arquigrafia" }),
   },
   materials: {
-    // `type` é obrigatório na prática (a coluna é NOT NULL e o backend nunca usa
+    // "type" é obrigatório na prática (a coluna é NOT NULL e o backend nunca usa
     // o default); "medium" é o único valor presente na base.
     endpoint: "vrac-materials", envelope: "material", displayKey: "label",
     draftKey: "materials", createPayload: (v) => ({ label: v, type: "medium", vocab: "Arquigrafia" }),
@@ -952,7 +1010,7 @@ const createVracDate = async (authHeader, date) => {
 
 /**
  * Procura um termo de vocabulário já existente antes de criar: o backend não
- * deduplica. `%` e `_` são escapados porque a busca é um LIKE cru — curingas não
+ * deduplica. "%" e "_" são escapados porque a busca é um LIKE cru — curingas não
  * são tratados do lado de lá.
  */
 const findExistingVocabId = async (payloadKey, term) => {
@@ -977,7 +1035,7 @@ const createVocabTerm = async (authHeader, payloadKey, term) => {
 };
 
 /**
- * Resolve um balde `{ existing: [ids], newTerms: [labels] }` do formulário em uma
+ * Resolve um balde "{ existing: [ids], newTerms: [labels] }" do formulário em uma
  * lista final de IDs, reaproveitando termos existentes em vez de duplicar.
  */
 const resolveVocabIds = async (authHeader, payloadKey, bucket) => {
@@ -1005,7 +1063,7 @@ const resolveVocabIds = async (authHeader, payloadKey, bucket) => {
  * A promessa é cacheada, não só o resultado, para que N pedidos simultâneos do
  * mesmo UUID gerem uma única requisição.
  */
-const _vracEntityCache = new Map(); // `${payloadKey}:${id}` → Promise<entidade|null>
+const _vracEntityCache = new Map(); // "${payloadKey}:${id}" → Promise<entidade|null>
 
 const resolveVracEntity = (payloadKey, id) => {
   const cfg = VRAC_ENTITIES[payloadKey];
@@ -1034,12 +1092,12 @@ const resolveVracEntity = (payloadKey, id) => {
 };
 
 /**
- * Converte uma entidade VRAC crua (vinda dos endpoints `show`) para o mesmo
- * formato que `normalizeWork` entrega às telas.
+ * Converte uma entidade VRAC crua (vinda dos endpoints "show") para o mesmo
+ * formato que "normalizeWork" entrega às telas.
  *
  * Sem isso os dois lados do diff de sugestões falam línguas diferentes: a obra
- * traz `earliestYear`/`name`/`role` já normalizados, enquanto o `show` devolve
- * `earliest_date`/`contributorName`/`role.label` crus — e a tela, lendo só o
+ * traz "earliestYear"/"name"/"role" já normalizados, enquanto o "show" devolve
+ * "earliest_date"/"contributorName"/"role.label" crus — e a tela, lendo só o
  * primeiro formato, exibia "Reforma:" sem o ano.
  */
 const normalizeVracEntity = (payloadKey, entity) => {
@@ -1058,7 +1116,7 @@ const normalizeVracEntity = (payloadKey, entity) => {
   if (payloadKey === "agents") {
     return {
       id: entity.id,
-      // `vrac-agents/{id}` devolve camelCase; a obra, snake_case.
+      // "vrac-agents/{id}" devolve camelCase; a obra, snake_case.
       name: entity.contributorName?.name || entity.contributor_name?.name || null,
       role: entity.role?.label || null,
       attribution: entity.attribution || null,
@@ -1105,9 +1163,9 @@ const createWorkSuggestion = async (authHeader, workId, payload) => {
 };
 
 /**
- * Aceita uma sugestão. `acceptedFields` **nunca** pode ser uma lista vazia: o
- * backend testa `! empty()`, então `[]` cai no mesmo caminho de "ausente" e
- * aceita a sugestão inteira. Para não aceitar nada, use `rejectWorkSuggestion`.
+ * Aceita uma sugestão. "acceptedFields" **nunca** pode ser uma lista vazia: o
+ * backend testa "! empty()", então "[]" cai no mesmo caminho de "ausente" e
+ * aceita a sugestão inteira. Para não aceitar nada, use "rejectWorkSuggestion".
  *
  * Devolve também a obra já atualizada, evitando um GET extra.
  */
@@ -1124,7 +1182,7 @@ const acceptWorkSuggestion = async (authHeader, suggestionId, acceptedFields, re
   });
   return {
     suggestion: response.data?.suggestion ?? null,
-    // Normalizada aqui: a tela espera o mesmo shape de `getWorkDetails`, e o
+    // Normalizada aqui: a tela espera o mesmo shape de "getWorkDetails", e o
     // backend devolve o model cru.
     work: normalizeWork(response.data?.work),
   };
@@ -1140,13 +1198,13 @@ const rejectWorkSuggestion = async (authHeader, suggestionId, reviewNote) => {
 
 /**
  * O usuário enviou alguma imagem desta obra? É o critério para julgar sugestões,
- * calculado no cliente porque `GET /api/vrac-works/{id}` ainda não expõe
- * `can_review`.
+ * calculado no cliente porque "GET /api/vrac-works/{id}" ainda não expõe
+ * "can_review".
  *
- * Pergunta direta ao backend com `user_id` em vez de baixar a lista de
- * contribuidores: basta saber se existe ao menos uma, então `per_page=1` resolve.
- * (`per_page=-1` **não** vale aqui — diferente de `vrac-works`, a listagem de
- * imagens valida `per_page >= 1` e devolve 422.)
+ * Pergunta direta ao backend com "user_id" em vez de baixar a lista de
+ * contribuidores: basta saber se existe ao menos uma, então "per_page=1" resolve.
+ * ("per_page=-1" **não** vale aqui — diferente de "vrac-works", a listagem de
+ * imagens valida "per_page >= 1" e devolve 422.)
  */
 const isWorkContributor = async (workId, userId) => {
   if (!workId || !userId) return false;
@@ -1165,6 +1223,7 @@ const isWorkContributor = async (workId, userId) => {
 
 export const api = {
   getImages: fetchImages,
+  getAlbumImages,
   getGeoJSON,
   getLocationsGeoJSON,
   getFilteredLocationsGeoJSON,
