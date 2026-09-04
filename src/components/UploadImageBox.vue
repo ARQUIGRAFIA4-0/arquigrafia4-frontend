@@ -9,6 +9,7 @@ import {
 } from "@/helpers/convertHeic";
 import { useToast } from "@/composables/useToast";
 import AppToast from "@/components/ui/AppToast.vue";
+import UploadInstructionsModal from "@/components/UploadInstructionsModal.vue";
 
 const props = defineProps({
   showUploadInstructions: {
@@ -65,6 +66,11 @@ function markUnrenderable(name) {
 const fileInputRef = ref();
 const isDragging = ref(false);
 const toast = useToast();
+const showInstructionsModal = ref(false);
+
+function openInstructionsModal() {
+  showInstructionsModal.value = true;
+}
 
 function removeImage(index) {
   uploadStore.removeImageAt(index);
@@ -195,7 +201,7 @@ function goToMetadata() {
 
     <!-- Caixa de upload inicial -->
     <div v-else>
-      <div class="upload-box" :class="{ 'upload-box--dragging': isDragging }" @click="openFileDialog"
+      <div class="upload-box" :class="{ 'upload-box--dragging': isDragging }" @click="openInstructionsModal"
         @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
         <h1 v-if="showUploadInstructions" v-html="instructionsTitle"></h1>
         <i class="bi bi-plus-circle-fill upload-box__icon"></i>
@@ -218,6 +224,12 @@ function goToMetadata() {
       @close="toast.hide"
       @pause="toast.pause"
       @resume="toast.resume"
+    />
+
+    <!-- Orientações de colaboração, exibidas antes de abrir o seletor de arquivos -->
+    <UploadInstructionsModal
+      v-model="showInstructionsModal"
+      @confirm="openFileDialog"
     />
   </div>
 </template>

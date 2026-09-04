@@ -1,8 +1,9 @@
 <script setup>
-import { computed } from "vue";
+import { ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import { resolveAvatarUrl } from "@/helpers/avatarUrl";
+import AppMenuOverlay from "./AppMenuOverlay.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -14,6 +15,20 @@ const options = [
   { label: "Explore", path: "/explore", routeName: "explore" },
   { label: "Colabore", path: "/colabore", routeName: "colabore" },
 ];
+
+// Qual menu em tela cheia está aberto no momento: "profile" | "about" | null.
+// Substitui os antigos dropdowns do Bootstrap pelo AppMenuOverlay.
+const activeMenu = ref(null);
+const isProfileMenuOpen = computed(() => activeMenu.value === "profile");
+const isAboutMenuOpen = computed(() => activeMenu.value === "about");
+
+function toggleMenu(menu) {
+  activeMenu.value = activeMenu.value === menu ? null : menu;
+}
+
+function closeMenu() {
+  activeMenu.value = null;
+}
 
 const handleLogout = async () => {
   await store.logout();
@@ -29,61 +44,28 @@ const handleLogout = async () => {
       </a>
     </div>
     <div class="d-flex icons-column order-sm-3 gap-3">
-      <!-- Profile Dropdown -->
-      <div class="dropdown">
-        <span class="profile px-1" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-          <img v-if="avatarUrl" :src="avatarUrl" alt="Foto de perfil" />
-          <i v-else class="bi bi-person-square"
-            :style="{ color: isLoggedIn ? 'var(--Laranja_E)' : 'var(--Cinza_M)' }"></i>
-        </span>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <template v-if="isLoggedIn">
-            <li>
-              <router-link class="dropdown-item" to="/eu">Ver perfil</router-link>
-            </li>
-            <li>
-              <router-link class="dropdown-item" to="/eu/editar">Editar perfil</router-link>
-            </li>
-            <li>
-              <router-link class="dropdown-item" to="/coletivos/criar">Criar coletivo</router-link>
-            </li>
-            <li>
-              <hr class="dropdown-divider" />
-            </li>
-            <li>
-              <a class="dropdown-item" href="#" @click.prevent="handleLogout">Sair</a>
-            </li>
-          </template>
-          <template v-else>
-            <li>
-              <router-link class="dropdown-item" to="/login">Entrar</router-link>
-            </li>
-          </template>
-        </ul>
-      </div>
-      <!-- About Dropdown -->
-      <div class="dropdown">
-        <span class="about px-1" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-          <i class="bi bi-three-dots-vertical"></i>
-        </span>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li>
-            <router-link class="dropdown-item" to="/about/project">Sobre</router-link>
-          </li>
-          <li>
-            <router-link class="dropdown-item" to="/about/members">Membros</router-link>
-          </li>
-          <li>
-            <router-link class="dropdown-item" to="/about/policies">Políticas</router-link>
-          </li>
-          <li>
-            <router-link class="dropdown-item" to="/about/faq">FAQ</router-link>
-          </li>
-          <li>
-            <router-link class="dropdown-item" to="/about/vocabulary">Vocabulário</router-link>
-          </li>
-        </ul>
-      </div>
+      <!-- Abre o menu de perfil em tela cheia -->
+      <span
+        class="profile px-1"
+        role="button"
+        aria-haspopup="dialog"
+        :aria-expanded="isProfileMenuOpen"
+        @click="toggleMenu('profile')"
+      >
+        <img v-if="avatarUrl" :src="avatarUrl" alt="Foto de perfil" />
+        <i v-else class="bi bi-person-square"
+          :style="{ color: isLoggedIn ? 'var(--Laranja_E)' : 'var(--Cinza_M)' }"></i>
+      </span>
+      <!-- Abre o menu institucional (Sobre) em tela cheia -->
+      <span
+        class="about px-1"
+        role="button"
+        aria-haspopup="dialog"
+        :aria-expanded="isAboutMenuOpen"
+        @click="toggleMenu('about')"
+      >
+        <i class="bi bi-three-dots-vertical"></i>
+      </span>
     </div>
     <!-- Desktop Navigation -->
     <nav class="d-none d-sm-flex order-2 col-sm-auto">
@@ -112,6 +94,19 @@ const handleLogout = async () => {
       </div>
     </div>
   </header>
+
+  <!-- Menu em tela cheia (perfil ou institucional, conforme o ícone clicado).
+       Fica fora do <header> propositalmente: o próprio componente usa
+       Teleport to="body", então mantê-lo aqui fora só evita que ele
+       participe do flex-wrap do cabeçalho. -->
+  <AppMenuOverlay
+    :show="activeMenu !== null"
+    :mode="activeMenu || 'about'"
+    :is-logged-in="isLoggedIn"
+    :avatar-url="avatarUrl"
+    @update:show="closeMenu"
+    @logout="handleLogout"
+  />
 </template>
 
 <style lang="scss" scoped>
@@ -136,14 +131,20 @@ $breakpoint-md: 768px;
   padding-left: 1rem;
   padding-right: 1rem;
 
+  // Precisa de position + z-index em qualquer breakpoint (não só a partir
+  // do md) para que o header sempre pinte por cima do AppMenuOverlay
+  // (z-index: 1029) — é o que faz o header "sobreviver" visualmente ao
+  // menu em tela cheia no mobile, como nos mockups de design.
+  position: relative;
+  z-index: 1030;
+  background-color: var(--Branco, #ffffff);
+
   @include md {
     position: sticky;
     top: 0;
-    z-index: 1030;
     margin-bottom: 0;
     padding-left: 50px;
     padding-right: 50px;
-    background-color: var(--Branco, #ffffff);
   }
 }
 
