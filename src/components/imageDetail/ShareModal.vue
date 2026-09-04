@@ -96,17 +96,17 @@
         <div class="share-modal__footer">
           <button
             type="button"
-            class="share-modal__btn share-modal__btn--secondary"
-            @click="close"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
             class="share-modal__btn share-modal__btn--primary"
             @click="shareTransferAreaLink"
           >
             Continuar
+          </button>
+          <button
+            type="button"
+            class="share-modal__btn share-modal__btn--secondary"
+            @click="close"
+          >
+            Cancelar
           </button>
         </div>
       </div>
@@ -282,7 +282,7 @@ function shareToX() {
 
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 
 .fade-modal-enter-active {
   transition: opacity 0.2s ease;
@@ -361,14 +361,31 @@ function shareToX() {
 }
 
 .share-modal__panel {
+  // display: flex;
+  // width: 600px;
+  // max-width: calc(100vw - 32px);
+  // padding: 0 16px;
+  // flex-direction: column;
+  // align-items: center;
+  // gap: 16px;
+  // overflow: clip;
+  // border-radius: 16px;
+  // background: var(--off_white, #faf9f9);
+  // box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.1);
   display: flex;
   width: 600px;
   max-width: calc(100vw - 32px);
+  height: 90vh;
+  max-height: 90vh;
+
   padding: 0 16px;
+
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  overflow: clip;
+
+  overflow: hidden;
+
   border-radius: 16px;
   background: var(--off_white, #faf9f9);
   box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.1);
@@ -381,6 +398,9 @@ function shareToX() {
   align-items: flex-start;
   padding: 0 32px;
   box-sizing: border-box;
+
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .share-modal__header {
@@ -404,11 +424,33 @@ function shareToX() {
 
 .share-modal__content {
   width: 100%;
+
+  flex: 1 1 auto;
+  min-height: 0;
+
   padding: 0 12px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+  width: 4px; /* Largura bem fina */
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent; /* Fundo do trilho transparente */
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #ccc; /* Cor da barra */
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: #999; /* Cor ao passar o mouse */
+  }
 }
 
 .share-modal__image-section {
@@ -555,6 +597,8 @@ function shareToX() {
   align-self: stretch;
   padding: 16px 0;
   box-sizing: border-box;
+
+  flex: 0 0 auto;
 }
 
 .share-modal__btn {
@@ -681,7 +725,7 @@ function shareToX() {
   .share-modal__footer {
     width: 100%;
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
     gap: 8px;
     padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
     box-sizing: border-box;
@@ -718,6 +762,13 @@ function shareToX() {
     padding: 10px 12px;
     font-size: 13px;
     box-sizing: border-box;
+  }
+}
+
+@media (max-width: 425px) {
+  .share-modal__panel {
+    height: 100%;
+    max-height: 100vh;
   }
 }
 
