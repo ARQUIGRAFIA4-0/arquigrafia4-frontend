@@ -1,335 +1,337 @@
 <template>
-  <div v-if="modelValue" class="modal-backdrop" @click.self="close">
-    <div
-      class="modal-panel"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="advanced-search-title"
-    >
-      <div class="modal-header text-center">
-        <h5 id="advanced-search-title" class="m-0 w-100 h2">Busca avançada</h5>
-      </div>
+  <Transition name="modal-fade">
+    <div v-if="modelValue" class="modal-backdrop" @click.self="close">
+      <div
+        class="modal-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="advanced-search-title"
+      >
+        <div class="modal-header text-center">
+          <h5 id="advanced-search-title" class="m-0 w-100 h2">Busca avançada</h5>
+        </div>
 
-      <div class="modal-body">
+        <div class="modal-body">
 
-        <!-- Termos -->
-        <div class="mb-5">
-          <h3 class="h3 pt-2">Termos</h3>
-          <div class="input-group">
-            <button
-              class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              {{ selectedFieldLabel }}
-            </button>
-            <ul class="dropdown-menu menu-light dropdown-menu-scroll">
-              <li v-for="opt in fieldOptions" :key="opt.value">
-                <button
-                  class="dropdown-item"
-                  @click.prevent="setSelectedField(opt.value)"
-                >
+          <!-- Termos -->
+          <div class="mb-5">
+            <h3 class="h3 pt-2">Termos</h3>
+            <div class="input-group">
+              <button
+                class="btn btn-primary dropdown-toggle bg-cinza-m border-preto fw-normal rounded-end-0"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                {{ selectedFieldLabel }}
+              </button>
+              <ul class="dropdown-menu menu-light dropdown-menu-scroll">
+                <li v-for="opt in fieldOptions" :key="opt.value">
+                  <button
+                    class="dropdown-item"
+                    @click.prevent="setSelectedField(opt.value)"
+                  >
+                    {{ opt.label }}
+                  </button>
+                </li>
+              </ul>
+              <input
+                v-model="textQueryInput"
+                type="text"
+                class="form-control border-preto"
+                :placeholder="textQueryPlaceholder"
+                @keydown.enter="onTermInputEnter"
+                @focus="ensureVocabLoaded"
+              />
+              <button
+                v-if="!activeVocabField"
+                class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40 d-flex align-items-baseline"
+                type="button"
+                aria-label="Adicionar termo"
+                @click="addSearchTerm"
+              >
+                <i class="bi bi-plus-square-fill"></i>
+              </button>
+            </div>
+
+            <!-- Sugestões do vocabulário ativo (materiais/técnicas/período de estilo/
+                contexto cultural/tipo de obra) — mesmo padrão do autocomplete de
+                "Tags da imagem" na edição de metadados: digitar filtra, clicar seleciona. -->
+            <ul v-if="activeVocabField && textQueryInput.trim()" class="list-group dropdown-menu w-100 show vocab-suggestions">
+              <li v-if="isVocabListLoading" class="dropdown-item text-muted">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                Carregando...
+              </li>
+              <li v-else-if="vocabSuggestions.length === 0" class="dropdown-item text-muted">
+                Nenhum resultado para "{{ textQueryInput }}".
+              </li>
+              <li v-for="opt in vocabSuggestions" :key="opt.id" class="dropdown-item p-0">
+                <button type="button" class="dropdown-item" @click="selectVocabItem(opt.id)">
                   {{ opt.label }}
                 </button>
               </li>
             </ul>
-            <input
-              v-model="textQueryInput"
-              type="text"
-              class="form-control border-preto"
-              :placeholder="textQueryPlaceholder"
-              @keydown.enter="onTermInputEnter"
-              @focus="ensureVocabLoaded"
-            />
-            <button
-              v-if="!activeVocabField"
-              class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40 d-flex align-items-baseline"
-              type="button"
-              aria-label="Adicionar termo"
-              @click="addSearchTerm"
-            >
-              <i class="bi bi-plus-square-fill"></i>
-            </button>
-          </div>
 
-          <!-- Sugestões do vocabulário ativo (materiais/técnicas/período de estilo/
-               contexto cultural/tipo de obra) — mesmo padrão do autocomplete de
-               "Tags da imagem" na edição de metadados: digitar filtra, clicar seleciona. -->
-          <ul v-if="activeVocabField && textQueryInput.trim()" class="list-group dropdown-menu w-100 show vocab-suggestions">
-            <li v-if="isVocabListLoading" class="dropdown-item text-muted">
-              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
-              Carregando...
-            </li>
-            <li v-else-if="vocabSuggestions.length === 0" class="dropdown-item text-muted">
-              Nenhum resultado para "{{ textQueryInput }}".
-            </li>
-            <li v-for="opt in vocabSuggestions" :key="opt.id" class="dropdown-item p-0">
-              <button type="button" class="dropdown-item" @click="selectVocabItem(opt.id)">
-                {{ opt.label }}
+
+            <!-- Listagem de termos adicionados e tags/vocabulários selecionados (vindas do ViewGrid, etc.) -->
+            <div class="list-group-item">
+              <span
+                v-if="searchTerms.length === 0 && extraSelectedTags.length === 0 && vocabChips.length === 0"
+                class="text-muted"
+                >Nenhum termo adicionado.</span
+              >
+              <button
+                v-for="(term, idx) in searchTerms"
+                :key="idx"
+                type="button"
+                class="btn btn-primary btn-sm btn-tag"
+              >
+                {{ term.label }}
+                <button
+                  type="button"
+                  class="btn-close ms-2"
+                  aria-label="Remover termo"
+                  @click.stop="removeSearchTerm(idx)"
+                ></button>
               </button>
-            </li>
-          </ul>
-
-
-          <!-- Listagem de termos adicionados e tags/vocabulários selecionados (vindas do ViewGrid, etc.) -->
-          <div class="list-group-item">
-            <span
-              v-if="searchTerms.length === 0 && extraSelectedTags.length === 0 && vocabChips.length === 0"
-              class="text-muted"
-              >Nenhum termo adicionado.</span
-            >
-            <button
-              v-for="(term, idx) in searchTerms"
-              :key="idx"
-              type="button"
-              class="btn btn-primary btn-sm btn-tag"
-            >
-              {{ term.label }}
               <button
+                v-for="id in extraSelectedTags"
+                :key="id"
                 type="button"
-                class="btn-close ms-2"
-                aria-label="Remover termo"
-                @click.stop="removeSearchTerm(idx)"
-              ></button>
-            </button>
-            <button
-              v-for="id in extraSelectedTags"
-              :key="id"
-              type="button"
-              class="btn btn-primary btn-sm btn-tag"
-            >
-              <span v-if="!isTermLoaded(id)" class="spinner-border spinner-border-sm" role="status" aria-label="Carregando..." />
-              <template v-else>{{ getTermById(id) }}</template>
+                class="btn btn-primary btn-sm btn-tag"
+              >
+                <span v-if="!isTermLoaded(id)" class="spinner-border spinner-border-sm" role="status" aria-label="Carregando..." />
+                <template v-else>{{ getTermById(id) }}</template>
+                <button
+                  type="button"
+                  class="btn-close ms-1"
+                  aria-label="Remover tag"
+                  @click.stop="toggleTag(id)"
+                ></button>
+              </button>
               <button
+                v-for="chip in vocabChips"
+                :key="chip.key"
                 type="button"
-                class="btn-close ms-1"
-                aria-label="Remover tag"
-                @click.stop="toggleTag(id)"
-              ></button>
-            </button>
-            <button
-              v-for="chip in vocabChips"
-              :key="chip.key"
-              type="button"
-              class="btn btn-primary btn-sm btn-tag"
-            >
-              <span v-if="!chip.isLoaded" class="spinner-border spinner-border-sm" role="status" aria-label="Carregando..." />
-              <template v-else>{{ chip.label }}</template>
-              <button
-                type="button"
-                class="btn-close ms-1"
-                :aria-label="`Remover ${chip.label || 'filtro'}`"
-                @click.stop="removeVocabItem(chip.fieldKey, chip.id)"
-              ></button>
-            </button>
-          </div>
-        </div>
-
-        <!-- Período e Características -->
-        <div class="filter-panel">
-          <div class="filter-panel__column">
-            
-            <section class="period-filter">
-              <h3 class="period-filter__title">Período da imagem</h3>
-              <div class="period-filter__inputs">
-                <span class="period-filter__label">Entre</span>
-                
-                <input
-                  v-model.number="imageStartYear"
-                  type="number"
-                  class="year-field__input"
-                  min="0"
-                  :max="currentYear"
-                  placeholder="Ano"
-                  aria-label="Ano inicial do período da imagem"
-                  @keydown="onYearKeydown"
-                  @change="validateYearRange(imageStartYear, imageEndYear, 'start', v => imageStartYear = v, v => imageEndYear = v)"
-                />
-                <span class="period-filter__label">e</span>
-                <input
-                  v-model.number="imageEndYear"
-                  type="number"
-                  class="year-field__input"
-                  min="0"
-                  :max="currentYear"
-                  placeholder="Ano"
-                  aria-label="Ano final do período da imagem"
-                  @keydown="onYearKeydown"
-                  @change="validateYearRange(imageStartYear, imageEndYear, 'end', v => imageStartYear = v, v => imageEndYear = v)"
-                />
-              </div>
-            </section>
-
-            <section class="period-filter">
-              <h3 class="period-filter__title">Período da obra</h3>
-              <div class="period-filter__inputs">
-                <span class="period-filter__label">Entre</span>
-                <input
-                  v-model.number="workStartYear"
-                  type="number"
-                  class="year-field__input"
-                  min="0"
-                  :max="currentYear"
-                  placeholder="Ano"
-                  aria-label="Ano inicial do período da obra"
-                  @keydown="onYearKeydown"
-                  @change="validateYearRange(workStartYear, workEndYear, 'start', v => workStartYear = v, v => workEndYear = v)"
-                />
-
-                <span class="period-filter__label">e</span>
-                
-                <input
-                  v-model.number="workEndYear"
-                  type="number"
-                  class="year-field__input"
-                  min="0"
-                  :max="currentYear"
-                  placeholder="Ano"
-                  aria-label="Ano final do período da obra"
-                  @keydown="onYearKeydown"
-                  @change="validateYearRange(workStartYear, workEndYear, 'end', v => workStartYear = v, v => workEndYear = v)"
-                />
-              </div>
-            </section>
-
-            <!-- <section class="color-picker">
-              <h3 class="color-picker__title">Cor predominante</h3>
-              <div class="color-picker__wrapper">
-                <input
-                  type="range"
-                  min="0"
-                  max="359"
-                  step="1"
-                  class="color-picker__slider"
-                  v-model.number="predominantHue"
-                  aria-label="Cor predominante"
-                />
-              </div>
-            </section> -->
-          </div>
-
-          <div class="filter-panel__column">
-            <section class="characteristics">
-              <h3 class="characteristics__title">Características da imagem</h3>
-              <p class="characteristics__subtitle">Interpretação da comunidade</p>
-              
-              <div class="characteristics__grid">
-                <div
-                  v-for="pair in CHARACTERISTIC_PAIRS"
-                  :key="pair.left.key"
-                  class="characteristics__row"
-                >
-                  <div class="checkbox-option">
-                    <input
-                      :id="`char${pair.left.key}left`"
-                      class="checkbox-option__input"
-                      type="checkbox"
-                      :checked="selectedCharacteristics[pair.left.key] === 'left'"
-                      @change="toggleCharacteristic(pair.left.key, 'left')"
-                    />
-                    <label class="checkbox-option__label" :for="`char${pair.left.key}left`">
-                      {{ pair.left.label }}
-                    </label>
-                  </div>
-  
-                  <div class="checkbox-option">
-                    <input
-                      :id="`char${pair.left.key}right`"
-                      class="checkbox-option__input"
-                      type="checkbox"
-                      :checked="selectedCharacteristics[pair.left.key] === 'right'"
-                      @change="toggleCharacteristic(pair.left.key, 'right')"
-                    />
-                    <label class="checkbox-option__label" :for="`char${pair.left.key}right`">
-                      {{ pair.right.label }}
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
-
-        
-        <!-- Sugestões -->
-        <div class="tags-Suggestions">
-          <div class="tags-Suggestions__title">Sugestões</div>
-          <div class="tags-Suggestions__subtitle">
-            Termos mais utilizados em nosso acervo
-          </div>
-          <div class="tags-Suggestions__tags">
-            <button
-              v-for="tag in tagSuggestions"
-              :key="tag.id"
-              type="button"
-              :class="[
-                'btn btn-sm',
-                selectedTags.includes(tag.id)
-                  ? 'btn-primary'
-                  : 'btn-outline-secondary',
-              ]"
-              @click="toggleTag(tag.id)"
-            >
-              {{ tag.label }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Direitos de uso -->
-        <div class="rights">
-          <div class="rights__header">
-            <div class="rights__title">Direitos de uso</div>
-            <a
-              class="cc-link"
-              href="https://creativecommons.org/licenses/"
-              target="_blank"
-              rel="noopener"
-            >
-              <i class="bi bi-book"></i>
-              Sobre os Creative Commons
-            </a>
-          </div>
-
-          <div class="rights__licenses">
-            <div
-              v-for="license in CC_LICENSES"
-              :key="license.label"
-              class="rights__license"
-            >
-              <label class="rights__label">
-                <input
-                  class="rights__checkbox"
-                  type="checkbox"
-                  :checked="selectedLicenses.includes(license.label)"
-                  @change="toggleLicense(license.label)"
-                />
-                {{ license.label }}
-              </label>
+                class="btn btn-primary btn-sm btn-tag"
+              >
+                <span v-if="!chip.isLoaded" class="spinner-border spinner-border-sm" role="status" aria-label="Carregando..." />
+                <template v-else>{{ chip.label }}</template>
+                <button
+                  type="button"
+                  class="btn-close ms-1"
+                  :aria-label="`Remover ${chip.label || 'filtro'}`"
+                  @click.stop="removeVocabItem(chip.fieldKey, chip.id)"
+                ></button>
+              </button>
             </div>
           </div>
-        </div>
-        
-      </div>
 
-      <div class="modal-footer footer-grid">
-        <button
-          type="button"
-          class="btn btn-outline-secondary btn-sm w-100"
-          @click="cancel"
-        >
-          Limpar
-        </button>
-        <button
-          type="button"
-          class="btn btn-secondary btn-sm w-100"
-          @click="confirm"
-        >
-          Buscar
-        </button>
+          <!-- Período e Características -->
+          <div class="filter-panel">
+            <div class="filter-panel__column">
+              
+              <section class="period-filter">
+                <h3 class="period-filter__title">Período da imagem</h3>
+                <div class="period-filter__inputs">
+                  <span class="period-filter__label">Entre</span>
+                  
+                  <input
+                    v-model.number="imageStartYear"
+                    type="number"
+                    class="year-field__input"
+                    min="0"
+                    :max="currentYear"
+                    placeholder="Ano"
+                    aria-label="Ano inicial do período da imagem"
+                    @keydown="onYearKeydown"
+                    @change="validateYearRange(imageStartYear, imageEndYear, 'start', v => imageStartYear = v, v => imageEndYear = v)"
+                  />
+                  <span class="period-filter__label">e</span>
+                  <input
+                    v-model.number="imageEndYear"
+                    type="number"
+                    class="year-field__input"
+                    min="0"
+                    :max="currentYear"
+                    placeholder="Ano"
+                    aria-label="Ano final do período da imagem"
+                    @keydown="onYearKeydown"
+                    @change="validateYearRange(imageStartYear, imageEndYear, 'end', v => imageStartYear = v, v => imageEndYear = v)"
+                  />
+                </div>
+              </section>
+
+              <section class="period-filter">
+                <h3 class="period-filter__title">Período da obra</h3>
+                <div class="period-filter__inputs">
+                  <span class="period-filter__label">Entre</span>
+                  <input
+                    v-model.number="workStartYear"
+                    type="number"
+                    class="year-field__input"
+                    min="0"
+                    :max="currentYear"
+                    placeholder="Ano"
+                    aria-label="Ano inicial do período da obra"
+                    @keydown="onYearKeydown"
+                    @change="validateYearRange(workStartYear, workEndYear, 'start', v => workStartYear = v, v => workEndYear = v)"
+                  />
+
+                  <span class="period-filter__label">e</span>
+                  
+                  <input
+                    v-model.number="workEndYear"
+                    type="number"
+                    class="year-field__input"
+                    min="0"
+                    :max="currentYear"
+                    placeholder="Ano"
+                    aria-label="Ano final do período da obra"
+                    @keydown="onYearKeydown"
+                    @change="validateYearRange(workStartYear, workEndYear, 'end', v => workStartYear = v, v => workEndYear = v)"
+                  />
+                </div>
+              </section>
+
+              <!-- <section class="color-picker">
+                <h3 class="color-picker__title">Cor predominante</h3>
+                <div class="color-picker__wrapper">
+                  <input
+                    type="range"
+                    min="0"
+                    max="359"
+                    step="1"
+                    class="color-picker__slider"
+                    v-model.number="predominantHue"
+                    aria-label="Cor predominante"
+                  />
+                </div>
+              </section> -->
+            </div>
+
+            <div class="filter-panel__column">
+              <section class="characteristics">
+                <h3 class="characteristics__title">Características da imagem</h3>
+                <p class="characteristics__subtitle">Interpretação da comunidade</p>
+                
+                <div class="characteristics__grid">
+                  <div
+                    v-for="pair in CHARACTERISTIC_PAIRS"
+                    :key="pair.left.key"
+                    class="characteristics__row"
+                  >
+                    <div class="checkbox-option">
+                      <input
+                        :id="`char${pair.left.key}left`"
+                        class="checkbox-option__input"
+                        type="checkbox"
+                        :checked="selectedCharacteristics[pair.left.key] === 'left'"
+                        @change="toggleCharacteristic(pair.left.key, 'left')"
+                      />
+                      <label class="checkbox-option__label" :for="`char${pair.left.key}left`">
+                        {{ pair.left.label }}
+                      </label>
+                    </div>
+    
+                    <div class="checkbox-option">
+                      <input
+                        :id="`char${pair.left.key}right`"
+                        class="checkbox-option__input"
+                        type="checkbox"
+                        :checked="selectedCharacteristics[pair.left.key] === 'right'"
+                        @change="toggleCharacteristic(pair.left.key, 'right')"
+                      />
+                      <label class="checkbox-option__label" :for="`char${pair.left.key}right`">
+                        {{ pair.right.label }}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          
+          <!-- Sugestões -->
+          <div class="tags-Suggestions">
+            <div class="tags-Suggestions__title">Sugestões</div>
+            <div class="tags-Suggestions__subtitle">
+              Termos mais utilizados em nosso acervo
+            </div>
+            <div class="tags-Suggestions__tags">
+              <button
+                v-for="tag in tagSuggestions"
+                :key="tag.id"
+                type="button"
+                :class="[
+                  'btn btn-sm',
+                  selectedTags.includes(tag.id)
+                    ? 'btn-primary'
+                    : 'btn-outline-secondary',
+                ]"
+                @click="toggleTag(tag.id)"
+              >
+                {{ tag.label }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Direitos de uso -->
+          <div class="rights">
+            <div class="rights__header">
+              <div class="rights__title">Direitos de uso</div>
+              <a
+                class="cc-link"
+                href="https://creativecommons.org/licenses/"
+                target="_blank"
+                rel="noopener"
+              >
+                <i class="bi bi-book"></i>
+                Sobre os Creative Commons
+              </a>
+            </div>
+
+            <div class="rights__licenses">
+              <div
+                v-for="license in CC_LICENSES"
+                :key="license.label"
+                class="rights__license"
+              >
+                <label class="rights__label">
+                  <input
+                    class="rights__checkbox"
+                    type="checkbox"
+                    :checked="selectedLicenses.includes(license.label)"
+                    @change="toggleLicense(license.label)"
+                  />
+                  {{ license.label }}
+                </label>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+
+        <div class="modal-footer footer-grid">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm w-100"
+            @click="cancel"
+          >
+            Limpar
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm w-100"
+            @click="confirm"
+          >
+            Buscar
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <script setup>
@@ -723,6 +725,24 @@ watch(
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.15s linear;
+}
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-fade-enter-active .modal-panel,
+.modal-fade-leave-active .modal-panel {
+  transition: transform 0.3s ease-out;
+}
+.modal-fade-enter-from .modal-panel,
+.modal-fade-leave-to .modal-panel {
+  transform: translate(0, -50px);
+}
+
 
 .modal-backdrop {
   position: fixed;

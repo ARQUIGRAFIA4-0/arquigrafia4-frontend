@@ -76,7 +76,10 @@
       </div>
 
       <!-- Mobile Drawers -->
-      <mobile-drawer-view-menu v-model="drawerViewMenu" @select="handleMobileViewChange" />
+      <mobile-drawer-view-menu 
+        v-model="drawerViewMenu" 
+        @select="handleMobileViewChange"
+      />
 
       <mobile-drawer-search-text v-model="drawerSearchText" :filters="advancedFilters"
         :has-active-filters="hasActiveDrawerTextFilters"
