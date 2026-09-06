@@ -916,7 +916,6 @@ onUnmounted(() => {
   box-sizing: border-box;
 }
 
-/* Não usar width: 100% do UiInput aqui — estoura o flex e o painel corta a borda. */
 .work-modal__search-group :deep(.ui-input.work-modal__search-input) {
   flex: 1 1 auto;
   width: auto !important;
@@ -974,8 +973,6 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   z-index: 10;
-  /* A caixa acompanha o texto; o teto evita que um endereço longo do Nominatim
-     atravesse o mapa inteiro. */
   max-width: calc(100% - 16px);
   margin: 8px;
   padding: 8px 12px;
@@ -985,7 +982,6 @@ onUnmounted(() => {
   color: var(--Preto, #2f2f2f);
   font-size: 0.8125rem;
   line-height: 1.35;
-  /* No máximo duas linhas, para não cobrir o mapa. */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1064,12 +1060,14 @@ onUnmounted(() => {
 }
 
 .btn-enlarge-40 {
-  padding: calc(0.1rem) calc(0.75rem);
+  padding: 0 0.5rem;
 }
+
 .btn-enlarge-40 > i.bi {
+  display: block;
   font-size: 1.6rem;
-  /* `1.4` estufava o ícone para além da altura do botão. */
   line-height: 1;
+  transform: translateY(1px);
 }
 
 .work-modal__combo {
@@ -1105,12 +1103,23 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 0 0.5rem;
 }
 
-.work-modal__date-year {
-  max-width: 90px;
-  flex: 0 0 90px !important;
-  width: 90px !important;
+/* Ano estica como Título/Autoria, para o "+" ficar na mesma coluna. */
+.work-modal__date-group:not(.work-modal__date-group--interval)
+  :deep(.ui-input.work-modal__date-year) {
+  flex: 1 1 auto !important;
+  width: 1% !important;
+  max-width: none !important;
+}
+
+/* Intervalo: os dois anos dividem o espaço entre dropdown e "+". */
+.work-modal__date-group--interval :deep(.ui-input.work-modal__date-year) {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0;
 }
 
 .work-modal__footer {
@@ -1178,7 +1187,7 @@ onUnmounted(() => {
 
   .work-modal__footer {
     padding: 12px 16px calc(20px + env(safe-area-inset-bottom));
-    /* `reverse` para o botão principal ficar em cima sem mexer na ordem do HTML. */
+    /* reverse para o botão principal ficar em cima sem mexer na ordem do HTML. */
     flex-direction: column-reverse;
   }
 
@@ -1197,8 +1206,6 @@ onUnmounted(() => {
     height: 44px;
     min-height: 44px;
     width: auto !important;
-    /* 16px evita o zoom automático que o Safari do iOS aplica ao focar um
-       campo com fonte menor — o modal inteiro saltava de escala. */
     font-size: 16px;
   }
 
@@ -1221,13 +1228,7 @@ onUnmounted(() => {
   }
 
   .work-modal__body {
-    /* Respiro no fim do formulário: sem ele o último campo encosta no rodapé
-       quando o teclado está aberto. */
     padding-bottom: 16px;
-
-    /* 16px evita o zoom automático do Safari do iOS ao focar um campo — abaixo
-       disso ele amplia a página inteira. O CSS global usa 14px; a troca fica
-       restrita a este modal. */
     .form-control,
     .form-select {
       font-size: 16px;
@@ -1280,8 +1281,6 @@ onUnmounted(() => {
     min-width: 0;
   }
 
-  /* As listas suspensas são recortadas pelo corpo rolável quando o campo está
-     perto do fim da tela; limitar a altura as mantém visíveis. */
   .work-modal__body .dropdown-menu {
     max-height: min(220px, 40vh);
     overflow-y: auto;
