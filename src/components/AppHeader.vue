@@ -16,19 +16,30 @@ const options = [
   { label: "Colabore", path: "/colabore", routeName: "colabore" },
 ];
 
-// Qual menu em tela cheia está aberto no momento: "profile" | "about" | null.
-// Substitui os antigos dropdowns do Bootstrap pelo AppMenuOverlay.
-const activeMenu = ref(null);
-const isProfileMenuOpen = computed(() => activeMenu.value === "profile");
-const isAboutMenuOpen = computed(() => activeMenu.value === "about");
+// O menu institucional ("Sobre") e o de perfil foram unificados em um só
+// painel com acordeão (AppMenuOverlay), então agora há apenas um estado de
+// aberto/fechado — qualquer um dos dois ícones abre o mesmo menu.
+const isMenuOpen = ref(false);
 
-function toggleMenu(menu) {
-  activeMenu.value = activeMenu.value === menu ? null : menu;
+function toggleMenu() {
+  isMenuOpen.value = !isMenuOpen.value;
 }
 
 function closeMenu() {
-  activeMenu.value = null;
+  isMenuOpen.value = false;
 }
+
+// Coletivos do usuário logado, para a seção "Coletivos" do menu.
+// Mesmo padrão usado em HomePage.vue (collectionScopes) para resolver o
+// avatar de cada coletivo.
+const collectives = computed(() => {
+  const list = store.loggedUser?.collectives ?? [];
+  return list.map((collective) => ({
+    id: collective.id,
+    name: collective.name,
+    avatarUrl: resolveAvatarUrl(collective),
+  }));
+});
 
 const handleLogout = async () => {
   await store.logout();
@@ -44,25 +55,24 @@ const handleLogout = async () => {
       </a>
     </div>
     <div class="d-flex icons-column order-sm-3 gap-3">
-      <!-- Abre o menu de perfil em tela cheia -->
+      <!-- Os dois ícones abrem o mesmo menu unificado (perfil + institucional) -->
       <span
         class="profile px-1"
         role="button"
         aria-haspopup="dialog"
-        :aria-expanded="isProfileMenuOpen"
-        @click="toggleMenu('profile')"
+        :aria-expanded="isMenuOpen"
+        @click="toggleMenu"
       >
         <img v-if="avatarUrl" :src="avatarUrl" alt="Foto de perfil" />
         <i v-else class="bi bi-person-square"
           :style="{ color: isLoggedIn ? 'var(--Laranja_E)' : 'var(--Cinza_M)' }"></i>
       </span>
-      <!-- Abre o menu institucional (Sobre) em tela cheia -->
       <span
         class="about px-1"
         role="button"
         aria-haspopup="dialog"
-        :aria-expanded="isAboutMenuOpen"
-        @click="toggleMenu('about')"
+        :aria-expanded="isMenuOpen"
+        @click="toggleMenu"
       >
         <i class="bi bi-three-dots-vertical"></i>
       </span>
@@ -100,10 +110,10 @@ const handleLogout = async () => {
        Teleport to="body", então mantê-lo aqui fora só evita que ele
        participe do flex-wrap do cabeçalho. -->
   <AppMenuOverlay
-    :show="activeMenu !== null"
-    :mode="activeMenu || 'about'"
+    :show="isMenuOpen"
     :is-logged-in="isLoggedIn"
     :avatar-url="avatarUrl"
+    :collectives="collectives"
     @update:show="closeMenu"
     @logout="handleLogout"
   />

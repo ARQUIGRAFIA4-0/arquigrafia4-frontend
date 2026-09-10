@@ -1,59 +1,69 @@
 <script setup>
-import { computed, watch, onBeforeUnmount } from "vue";
+import { reactive, watch, onBeforeUnmount } from "vue";
 import { useRoute } from "vue-router";
 
 /**
- * Menu em tela cheia (fullscreen), usado tanto para o menu institucional
- * ("Sobre", aberto pelo ícone de três pontos) quanto para o menu de perfil
- * (aberto pelo avatar), conforme os mockups do time de design:
+ * Menu em tela cheia (fullscreen), unificado: junta o que antes eram dois
+ * menus separados ("Sobre" e "Perfil") em um único painel com acordeão,
+ * conforme o novo design (Menu_completo / Menu_lateral):
  *
- *  - Mobile: ocupa a tela toda, com botão "X" para fechar e o bloco de
- *    marca (logo + informações do acervo) empurrado para o rodapé.
- *  - Desktop (>= $breakpoint-md): vira um painel de duas colunas — marca à
- *    esquerda, lista de opções à direita — mantendo o header real visível
- *    por cima (ver truque de z-index nos estilos + AppHeader.vue).
- *
- * O componente não conhece rotas de autenticação/logout: quem chama decide
- * o que fazer no evento "logout", mantendo este componente reutilizável.
+ *  - Coletivos: avatares dos coletivos do usuário + botão "+" (criar
+ *    coletivo).
+ *  - Acordeão "Sobre" (Membros, Políticas) e "Perfil" (Meu perfil, Editar
+ *    perfil) — os dois podem ficar abertos ao mesmo tempo, de forma
+ *    independente.
+ *  - Itens fixos fora do acordeão: FAQ e Sair.
+ *  - Logo + informações do acervo, ancorados com position: absolute no
+ *    canto inferior para não se mexerem quando o acordeão abre/fecha.
+ *  - Botão "X" para fechar, visível em qualquer breakpoint.
  */
 
 const props = defineProps({
   show: { type: Boolean, default: false },
-  // "about"   -> itens institucionais (Sobre, Membros, Políticas...)
-  // "profile" -> itens de conta (Ver perfil, Editar perfil, Sair...)
-  mode: {
-    type: String,
-    default: "about",
-    validator: (value) => ["about", "profile"].includes(value),
-  },
   isLoggedIn: { type: Boolean, default: false },
   avatarUrl: { type: String, default: null },
   // TODO: substituir pelo total real do acervo (endpoint/store) quando
   // essa informação estiver disponível fora do componente.
   photoCount: { type: [String, Number], default: "14030" },
+  // Coletivos do usuário logado: [{ id, name, avatarUrl }]
+  collectives: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(["update:show", "logout"]);
 
 const route = useRoute();
 
-const aboutItems = [
-  { label: "Sobre", to: "/about/project" },
+const sobreItems = [
   { label: "Membros", to: "/about/members" },
   { label: "Políticas", to: "/about/policies" },
-  // Renomeado de "FAQ" para "Código aberto" no novo design; rota mantida
-  // até confirmação do time — ajustar aqui se o destino mudar.
-  { label: "Código aberto", to: "/about/faq" },
-  { label: "Vocabulário", to: "/about/vocabulary" },
 ];
 
-const profileItems = [
-  { label: "Ver perfil", to: "/eu" },
+const perfilItems = [
+  { label: "Meu perfil", to: "/eu/imagens" },
   { label: "Editar perfil", to: "/eu/editar" },
-  { label: "Criar coletivo", to: "/coletivos/criar" },
 ];
 
-const isProfileMode = computed(() => props.mode === "profile");
+// Estado de abertura de cada seção do acordeão. Ambas podem ficar abertas
+// ao mesmo tempo (não é "accordion exclusivo").
+const openSections = reactive({
+  sobre: false,
+  perfil: false,
+});
+
+function toggleSection(key) {
+  openSections[key] = !openSections[key];
+}
+
+function initials(name) {
+  if (!name) return "?";
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
+}
 
 function close() {
   emit("update:show", false);
@@ -91,53 +101,37 @@ onBeforeUnmount(() => {
   <!--
     Teleport para o body: assim o overlay vira IRMÃO do <header> no DOM
     (em vez de filho dele). Isso é essencial para o truque de z-index
-    funcionar — z-index só decide a ordem entre elementos que disputam o
-    mesmo contexto de empilhamento. Se o overlay ficasse aninhado dentro do
-    <header>, o seu z-index (1029) venceria os filhos internos do header
-    (logo, ícones, nav, que têm z-index bem menor) e cobriria o próprio
-    header por dentro — foi exatamente o bug visto no preview.
+    funcionar — se o overlay ficasse aninhado dentro do <header>, o seu
+    z-index venceria os filhos internos do header (logo, ícones, nav) e
+    cobriria o próprio header por dentro.
   -->
   <Teleport to="body">
-  <Transition name="menu-fade">
-    <div
-      v-if="show"
-      class="app-menu-overlay"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="isProfileMode ? 'Menu de perfil' : 'Menu institucional'"
-      @click.self="close"
-    >
-      <!-- Botão fechar: visível só no mobile (imagem "Menu_aberto"). No
-           desktop fecha clicando fora, clicando de novo no ícone que abriu,
-           ou com Esc — como nos mockups de desktop, sem "X" visível. -->
-      <button
-        type="button"
-        class="app-menu-overlay__close d-md-none"
-        aria-label="Fechar menu"
-        @click="close"
+    <Transition name="menu-fade">
+      <div
+        v-if="show"
+        class="app-menu-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu"
+        @click.self="close"
       >
-        <i class="bi bi-x-lg"></i>
-      </button>
+        <button
+          type="button"
+          class="app-menu-overlay__close"
+          aria-label="Fechar menu"
+          @click="close"
+        >
+          <i class="bi bi-x-lg"></i>
+        </button>
 
-      <div class="app-menu-overlay__content">
-        <div class="app-menu-overlay__brand-desktop d-none d-md-block">
+        <!-- Logo + informações do acervo: position absolute (ver estilos)
+             para não se mexer quando o acordeão à direita abre/fecha. -->
+        <div class="app-menu-overlay__brand">
           <img
             src="../assets/logo_footer.png"
             alt="Arquigrafia"
             class="app-menu-overlay__brand-logo"
           />
-
-          <!-- <nav class="app-menu-overlay__brand-links d-none d-md-flex">
-            <router-link
-              v-for="(item, index) in aboutItems"
-              :key="item.to"
-              :to="item.to"
-              @click="close"
-            >
-              {{ item.label.toLowerCase() }}<span v-if="index < aboutItems.length - 1">&nbsp;·</span>
-            </router-link>
-          </nav> -->
-
           <p class="app-menu-overlay__brand-text">
             Nosso acervo conta com {{ photoCount }} fotos.
           </p>
@@ -151,80 +145,111 @@ onBeforeUnmount(() => {
           </p>
         </div>
 
-        <nav class="app-menu-overlay__list">
-          <template v-if="isProfileMode">
-            <template v-if="isLoggedIn">
+        <div class="app-menu-overlay__content">
+          <!-- Coletivos -->
+          <section class="app-menu-overlay__section">
+            <h2 class="app-menu-overlay__section-title">Coletivos</h2>
+            <div class="app-menu-overlay__collectives">
               <router-link
-                v-for="item in profileItems"
-                :key="item.to"
-                :to="item.to"
-                class="app-menu-overlay__link"
-                :class="{ 'is-active': route.path.startsWith(item.to) }"
+                v-for="collective in collectives"
+                :key="collective.id"
+                :to="`/coletivos/${collective.id}`"
+                class="app-menu-overlay__collective-avatar"
+                :title="collective.name"
                 @click="close"
               >
-                {{ item.label }}
+                <img v-if="collective.avatarUrl" :src="collective.avatarUrl" :alt="collective.name" />
+                <span v-else>{{ initials(collective.name) }}</span>
               </router-link>
+              <router-link
+                to="/coletivos/criar"
+                class="app-menu-overlay__collective-add"
+                aria-label="Criar coletivo"
+                title="Criar coletivo"
+                @click="close"
+              >
+                <i class="bi bi-plus-lg"></i>
+              </router-link>
+            </div>
+          </section>
+
+          <!-- Acordeão unificado -->
+          <nav class="app-menu-overlay__accordion">
+            <div class="app-menu-overlay__accordion-item">
               <button
                 type="button"
-                class="app-menu-overlay__link app-menu-overlay__link--button"
-                @click="handleLogout"
+                class="app-menu-overlay__accordion-trigger"
+                :class="{ 'is-open': openSections.sobre }"
+                :aria-expanded="openSections.sobre"
+                @click="toggleSection('sobre')"
               >
-                Sair
+                <span>Sobre</span>
+                <i class="bi bi-chevron-down app-menu-overlay__chevron" :class="{ 'is-open': openSections.sobre }"></i>
               </button>
-            </template>
-            <template v-else>
-              <router-link to="/login" class="app-menu-overlay__link" @click="close">
-                Entrar
-              </router-link>
-            </template>
-          </template>
-
-          <template v-else>
-            <router-link
-              v-for="item in aboutItems"
-              :key="item.to"
-              :to="item.to"
-              class="app-menu-overlay__link"
-              :class="{ 'is-active': route.path.startsWith(item.to) }"
-              @click="close"
-            >
-              {{ item.label }}
-            </router-link>
-          </template>
-        </nav>
-      </div>
-      <div class="app-menu-overlay__brand">
-            <img
-                src="../assets/logo_footer.png"
-                alt="Arquigrafia"
-                class="app-menu-overlay__brand-logo"
-            />
-
-            <nav class="app-menu-overlay__brand-links d-md-flex">
-                <router-link
-                v-for="(item, index) in aboutItems"
-                :key="item.to"
-                :to="item.to"
-                @click="close"
-                >
-                {{ item.label.toLowerCase() }}<span v-if="index < aboutItems.length - 1">&nbsp;·</span>
-                </router-link>
-            </nav>
-
-            <p class="app-menu-overlay__brand-text">
-                Nosso acervo conta com {{ photoCount }} fotos.
-            </p>
-            <p class="app-menu-overlay__brand-text">
-                Este site possui uma licença
-                <a
-                href="https://creativecommons.org/licenses/by/3.0/"
-                target="_blank"
-                rel="noopener"
-                >Creative Commons Attribution 3.0</a>
-            </p>
+              <div class="app-menu-overlay__accordion-panel-wrapper" :class="{ 'is-open': openSections.sobre }">
+                <div class="app-menu-overlay__accordion-panel">
+                  <router-link
+                    v-for="item in sobreItems"
+                    :key="item.to"
+                    :to="item.to"
+                    class="app-menu-overlay__link"
+                    :class="{ 'is-active': route.path === item.to }"
+                    @click="close"
+                  >
+                    {{ item.label }}
+                  </router-link>
+                </div>
+              </div>
             </div>
-    </div>
-  </Transition>
+
+            <template v-if="isLoggedIn">
+              <div class="app-menu-overlay__accordion-item">
+                <button
+                  type="button"
+                  class="app-menu-overlay__accordion-trigger"
+                  :class="{ 'is-open': openSections.perfil }"
+                  :aria-expanded="openSections.perfil"
+                  @click="toggleSection('perfil')"
+                >
+                  <span>Perfil</span>
+                  <i class="bi bi-chevron-down app-menu-overlay__chevron" :class="{ 'is-open': openSections.perfil }"></i>
+                </button>
+                <div class="app-menu-overlay__accordion-panel-wrapper" :class="{ 'is-open': openSections.perfil }">
+                  <div class="app-menu-overlay__accordion-panel">
+                    <router-link
+                      v-for="item in perfilItems"
+                      :key="item.to"
+                      :to="item.to"
+                      class="app-menu-overlay__link"
+                      :class="{ 'is-active': route.path === item.to }"
+                      @click="close"
+                    >
+                      {{ item.label }}
+                    </router-link>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <router-link v-else to="/login" class="app-menu-overlay__link app-menu-overlay__accordion-item" @click="close">
+              Entrar
+            </router-link>
+
+            <router-link to="/about/faq" class="app-menu-overlay__link app-menu-overlay__accordion-item" @click="close">
+              FAQ
+            </router-link>
+
+            <button
+              v-if="isLoggedIn"
+              type="button"
+              class="app-menu-overlay__link app-menu-overlay__link--top app-menu-overlay__link--button"
+              @click="handleLogout"
+            >
+              Sair
+            </button>
+          </nav>
+        </div>
+      </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -240,33 +265,39 @@ $breakpoint-md: 768px;
 
 .app-menu-overlay {
   position: fixed;
+  display:  flex;
+  flex-direction: column-reverse;
+  justify-content: space-between;
+
   inset: 0;
   // Um ponto abaixo do .app-header (z-index: 1030) para que o header real
-  // — logo, abas Explore/Colabore, avatar, ícone de três pontos — continue
-  // visível por cima deste overlay em qualquer breakpoint.
+  // continue visível por cima deste overlay em qualquer breakpoint.
   z-index: 1029;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--Branco, #ffffff);
   overflow-y: auto;
-  padding: 1.5rem 1rem 2rem;
+  background-color: var(--Branco, #ffffff);
+  // padding-top maior para abrir espaço para o botão "X", que agora fica
+  // absolute e visível em qualquer largura de tela.
+  padding-top: 120px;
 
-  
   @include md {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 50px;
-      
-      justify-content: center;
+    // padding: 6.5rem 50px 3rem;
+    // margin: auto;
+    flex-direction: row;
+    justify-content: space-around;
+    padding-bottom: 64px;
   }
 }
 
+// Fecha o menu: agora visível em qualquer breakpoint (antes só aparecia no
+// mobile). Fica com position: absolute para não interferir no fluxo do
+// conteúdo abaixo dele.
 .app-menu-overlay__close {
-  align-self: flex-end;
+  position: absolute;
+  top: 120px;
+  right: 24px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -275,91 +306,54 @@ $breakpoint-md: 768px;
   background-color: var(--Cinza_E, #222222);
   color: var(--Branco, #ffffff);
   font-size: 18px;
-  margin-bottom: 2rem;
 
-  position: relative;
-  top: 100px;
-}
-
-.app-menu-overlay__content {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-
-    
-    width: 100%;
-    max-width: 1027px;
-
-    @include md {
-        flex-direction: row;
-        align-items: flex-end;
-        // justify-content: space-between;
-        gap: 3rem;
-        width: 100%;
-
-    }
-}
-
-.app-menu-overlay__brand-desktop {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: left;
-    margin-bottom: 2rem;
-    
-    @include md {
-        display: none;
-        margin-bottom: 0;
-    }
-}
-
-.app-menu-overlay__brand {
-    // margin-top: auto;
-    text-align: left;
-    padding: 16px 16px;
-
-    @include md {
-        margin-top: 0;
-        max-width: 420px;
-        order: 1;
-        display: none;
-    }
-}
-
-.app-menu-overlay__brand-logo {
-  height: 34px;
-  width: auto;
-  margin-bottom: 1rem;
+  .bi {
+    font-size: 15px;
+  }
 
   @include md {
-    height: 100%;
-    width: 50%;
+    right: 60px;
   }
 }
 
-.app-menu-overlay__brand-links {
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-  display: flex;
-  gap: 4px;
+// Logo + textos do acervo: position absolute, ancorado no canto inferior
+// esquerdo. Isso garante que ele NÃO se mova quando o acordeão à direita
+// muda de altura ao abrir/fechar seções — antes ele fazia parte do fluxo
+// flex e "pulava" de posição a cada toggle.
+.app-menu-overlay__brand {
+  // left: 1rem;
+  // bottom: 1.5rem;
+  // max-width: calc(100% - 2rem);
+  text-align: left;
+  padding: 40px 32px;
+  border-top: 1px solid var(--Cinza_C);
 
-  a {
-    color: var(--Cinza_E);
-    font-weight: 700;
-    font-size: 14px;
-    text-decoration: none;
+  @include md {
+    border-top: none;
+    padding: 0px;
+    position: relative;
+    top: 330px;
+    height: fit-content;
+    // left: 50px;
+    // position: relative;
+    // bottom: 200px;
+    // max-width: 420px;
+  }
+}
 
-    span {
-        margin: 0 4px;
-    }
+.app-menu-overlay__brand-logo {
+  height: 40px;
+  width: auto;
+  margin-bottom: 0.75rem;
+
+  @include md {
+    height: 56px;
   }
 }
 
 .app-menu-overlay__brand-text {
-  color: var(--Cinza_C);
-  font-size: 10px;
+  color: var(--Cinza_E);
+  font-size: .625rem;
   line-height: 16px;
   margin-bottom: 0.25rem;
   font-weight: 400;
@@ -367,25 +361,153 @@ $breakpoint-md: 768px;
   a {
     color: inherit;
     text-decoration: underline;
-    font-size: 10px;
+    font-size: .625rem;
+    line-height: 16px;
+    margin-bottom: 0.25rem;
+    font-weight: 400;
   }
 }
 
-.app-menu-overlay__list {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2rem;
-  text-align: center;
+// Conteúdo principal: no mobile ocupa a largura toda (alinhado à
+// esquerda); no desktop fica limitado e empurrado para a direita, como no
+// mockup — sem centralizar verticalmente, para não saltar quando o
+// acordeão expande.
+.app-menu-overlay__content {
+  // width: 100%;
+  width: 210px;
+  margin: auto;
 
   @include md {
-    flex: 0 0 auto;
-    align-items: flex-start;
-    text-align: left;
-    order: 2;
-    gap: 2.5rem;
+    // max-width: 340px;
+    // margin-left: auto;
+    margin: initial;
+    height: fit-content;
+  }
+}
+
+.app-menu-overlay__section {
+  margin-bottom: 2.5rem;
+}
+
+.app-menu-overlay__section-title {
+  color: var(--Cinza_E);
+  font-weight: 700;
+  font-size: 20px;
+  margin-bottom: 1rem;
+}
+
+.app-menu-overlay__collectives {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.app-menu-overlay__collective-avatar,
+.app-menu-overlay__collective-add {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.app-menu-overlay__collective-avatar {
+  background-color: var(--Cinza_E, #222222);
+  color: var(--Branco, #ffffff);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+// Botão "+" -> rota de criar coletivo (antes era um link de texto
+// "Criar coletivo" dentro do menu de perfil).
+.app-menu-overlay__collective-add {
+  background-color: var(--Laranja_E, #c1531b);
+  color: var(--Branco, #ffffff);
+  font-size: 22px;
+}
+
+.app-menu-overlay__accordion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2.75rem;
+}
+
+.app-menu-overlay__accordion-item {
+  width: 100%;
+}
+
+.app-menu-overlay__accordion-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4.1875rem;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--Cinza_E);
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 150%;
+  cursor: pointer;
+  text-align: left;
+
+  span {
+    width: 91px;
+  }
+
+  &.is-open {
+    font-weight: 700;
+  }
+
+  @include md {
+    font-size: 28px;
+  }
+}
+
+.app-menu-overlay__chevron {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+
+  &.is-open {
+    transform: rotate(180deg);
+  }
+}
+
+// Truque de grid-template-rows para animar a altura do painel sem medir
+// altura via JS: 0fr fechado -> 1fr aberto, com overflow hidden no filho.
+.app-menu-overlay__accordion-panel-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+
+  &.is-open {
+    grid-template-rows: 1fr;
+  }
+}
+
+.app-menu-overlay__accordion-panel {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  
+  a {
+    padding-top: 1rem;
   }
 }
 
@@ -394,11 +516,12 @@ $breakpoint-md: 768px;
   background: none;
   padding: 0;
   color: var(--Cinza_E);
-  font-weight: 600;
-  font-size: 26px;
-  line-height: 100%;
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 150%;
   text-decoration: none;
   cursor: pointer;
+  text-align: left;
 
   &.is-active {
     color: var(--Laranja_E);
@@ -408,6 +531,10 @@ $breakpoint-md: 768px;
     font-size: 28px;
   }
 }
+
+// .app-menu-overlay__link--top {
+//   font-weight: 500;
+// }
 
 // Transição fade no mesmo padrão já usado no projeto (ver
 // .copy-toast-fade-* em HomePage.vue), espelhando o comportamento de
