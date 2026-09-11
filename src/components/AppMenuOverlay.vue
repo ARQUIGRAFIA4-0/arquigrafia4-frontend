@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, watch, onBeforeUnmount } from "vue";
+import { reactive, computed, watch, onBeforeUnmount } from "vue";
 import { useRoute } from "vue-router";
 
 /**
@@ -33,9 +33,18 @@ const emit = defineEmits(["update:show", "logout"]);
 
 const route = useRoute();
 
+// Mostra no máximo 2 coletivos aqui; para ver o resto, o usuário passa
+// pela bolinha de perfil (ela leva pro perfil, que lista todos).
+const MAX_VISIBLE_COLLECTIVES = 2;
+const visibleCollectives = computed(() =>
+  props.collectives.slice(0, MAX_VISIBLE_COLLECTIVES)
+);
+
 const sobreItems = [
+  { label: "ARQUIGRAFIA 4.0", to: "/about/project" },
   { label: "Membros", to: "/about/members" },
   { label: "Políticas", to: "/about/policies" },
+  { label: "Vocabulário", to: "/about/vocabulary" },
 ];
 
 const perfilItems = [
@@ -43,15 +52,17 @@ const perfilItems = [
   { label: "Editar perfil", to: "/eu/editar" },
 ];
 
-// Estado de abertura de cada seção do acordeão. Ambas podem ficar abertas
-// ao mesmo tempo (não é "accordion exclusivo").
+
 const openSections = reactive({
   sobre: false,
   perfil: false,
 });
 
 function toggleSection(key) {
-  openSections[key] = !openSections[key];
+  const wasOpen = openSections[key];
+  openSections.sobre = false;
+  openSections.perfil = false;
+  openSections[key] = !wasOpen;
 }
 
 function initials(name) {
@@ -151,7 +162,7 @@ onBeforeUnmount(() => {
             <h2 class="app-menu-overlay__section-title">Coletivos</h2>
             <div class="app-menu-overlay__collectives">
               <router-link
-                v-for="collective in collectives"
+                v-for="collective in visibleCollectives"
                 :key="collective.id"
                 :to="`/coletivos/${collective.id}`"
                 class="app-menu-overlay__collective-avatar"
@@ -160,6 +171,17 @@ onBeforeUnmount(() => {
               >
                 <img v-if="collective.avatarUrl" :src="collective.avatarUrl" :alt="collective.name" />
                 <span v-else>{{ initials(collective.name) }}</span>
+              </router-link>
+              <!-- Bolinha do próprio usuário: leva pro perfil, de onde dá
+                   pra ver os demais coletivos (além dos 2 exibidos aqui). -->
+              <router-link
+                v-if="visibleCollectives.length > 1"
+                to="/eu/imagens"
+                class="app-menu-overlay__collective-avatar app-menu-overlay__collective-profile"
+                title="Ver todos os coletivos"
+                @click="close"
+              >
+                <i class="bi bi-three-dots"></i>
               </router-link>
               <router-link
                 to="/coletivos/criar"
@@ -277,7 +299,9 @@ $breakpoint-md: 768px;
   background-color: var(--Branco, #ffffff);
   // padding-top maior para abrir espaço para o botão "X", que agora fica
   // absolute e visível em qualquer largura de tela.
-  padding-top: 120px;
+  // padding-top: 120px;
+  padding-top: 250px;
+  gap: 64px;
 
   @include md {
     // padding: 6.5rem 50px 3rem;
@@ -293,6 +317,7 @@ $breakpoint-md: 768px;
 // conteúdo abaixo dele.
 .app-menu-overlay__close {
   position: absolute;
+  // position: relative;
   top: 120px;
   right: 24px;
   width: 24px;
@@ -332,7 +357,7 @@ $breakpoint-md: 768px;
     border-top: none;
     padding: 0px;
     position: relative;
-    top: 330px;
+    top: 265px;
     height: fit-content;
     // left: 50px;
     // position: relative;
@@ -374,8 +399,9 @@ $breakpoint-md: 768px;
 // acordeão expande.
 .app-menu-overlay__content {
   // width: 100%;
-  width: 210px;
-  margin: auto;
+  width: 240px;
+  margin: 0 auto;
+  margin-left: 84px;
 
   @include md {
     // max-width: 340px;
@@ -405,8 +431,8 @@ $breakpoint-md: 768px;
 
 .app-menu-overlay__collective-avatar,
 .app-menu-overlay__collective-add {
-  width: 56px;
-  height: 56px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -417,8 +443,9 @@ $breakpoint-md: 768px;
 }
 
 .app-menu-overlay__collective-avatar {
-  background-color: var(--Cinza_E, #222222);
+  background-color: var(--Cinza_E);
   color: var(--Branco, #ffffff);
+  border: 2px solid var(--Cinza_C);
   font-size: 11px;
   font-weight: 700;
   line-height: 1.1;
@@ -428,6 +455,18 @@ $breakpoint-md: 768px;
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+}
+
+// Bolinha de perfil: mesma base visual do avatar de coletivo, com uma
+// borda pra deixar claro que é "você" (e não mais um coletivo).
+.app-menu-overlay__collective-profile {
+  border: 2px solid var(--Cinza_C);
+  background-color: var(--Branco);
+
+  .bi {
+    font-size: 20px;
+    color: var(--Cinza_E);
   }
 }
 
@@ -443,7 +482,7 @@ $breakpoint-md: 768px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2.75rem;
+  gap: 24px;
 }
 
 .app-menu-overlay__accordion-item {
