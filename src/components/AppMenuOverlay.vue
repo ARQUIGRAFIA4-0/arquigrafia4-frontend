@@ -263,7 +263,7 @@ onBeforeUnmount(() => {
             <button
               v-if="isLoggedIn"
               type="button"
-              class="app-menu-overlay__link app-menu-overlay__link--top app-menu-overlay__link--button"
+              class="app-menu-overlay__link app-menu-overlay__link--top app-menu-overlay__link--button app-menu-overlay__accordion-item"
               @click="handleLogout"
             >
               Sair
@@ -300,7 +300,7 @@ $breakpoint-md: 768px;
   // padding-top maior para abrir espaço para o botão "X", que agora fica
   // absolute e visível em qualquer largura de tela.
   // padding-top: 120px;
-  padding-top: 250px;
+  padding-top: 160px;
   gap: 64px;
 
   @include md {
