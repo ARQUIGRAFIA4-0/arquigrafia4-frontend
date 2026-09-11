@@ -10,7 +10,7 @@
 export async function fetchOsrmRoute(coordinates, options = {}) {
   if (!Array.isArray(coordinates) || coordinates.length < 2) return null; // Verifica se as coordenadas são um array e tem pelo menos 2 pontos
 
-  const profile = options.profile ?? "driving"; // walking, driving, cycling
+  const profile = options.profile ?? "walking"; // walking, driving, cycling
   const base = import.meta.env.VITE_OSRM_URL || "https://router.project-osrm.org"; // *IMPORTANTE: URL do servidor OSRM
 
   const path = coordinates.map(([lng, lat]) => `${lng},${lat}`).join(";"); // Converte as coordenadas para o formato esperado pelo OSRM

@@ -113,6 +113,9 @@ function stopCoordinatesInOrder() {
     .filter(Boolean);
 }
 
+/**
+ * IMPORTANTE: Cria o GeoJSON da linha da rota
+*/
 function buildLineGeoJson() {
   const coordinates = routeCoordinates.value;
   return {
@@ -137,11 +140,16 @@ function syncStopSource() {
   if (stops) stops.setData(featureCollection.value);
 }
 
+// Atualiza a fonte da linha do mapa
 function syncLineSource() {
-  const map = mapRef.value;
-  if (!map?.getSource) return;
-  const line = map.getSource(LINE_SOURCE_ID);
-  if (line) line.setData(buildLineGeoJson());
+  const map = mapRef.value; // Pega o mapa
+
+  if (!map?.getSource) return; // Pega a fonte da linha do mapa
+
+  const line = map.getSource(LINE_SOURCE_ID); // Pega a fonte da linha do mapa
+
+  if (line) line.setData(buildLineGeoJson()); // Atualiza a fonte da linha do mapa
+
 }
 
 // Limpa a rota
@@ -155,11 +163,11 @@ function clearRoute() {
   routeDurationSeconds.value = 0;
   routeIsStreet.value = false;
   routeLoading.value = false;
-  syncLineSource();
+  syncLineSource(); // Limpa a linha do mapa
 }
 
 /**
- * TUTORIAL - Atualiza a rota
+ * Atualiza a rota
  * ---------------------------------------------------------------------------
  *
  * Aqui ele pega as coordenadas das paradas e chama a função fetchOsrmRoute para calcular a rota.
@@ -182,7 +190,7 @@ async function refreshRoute() {
   routeIsStreet.value = false;
   routeDistanceMeters.value = 0;
   routeDurationSeconds.value = 0;
-  syncLineSource();
+  syncLineSource(); // IMPORTANTE: Desenha os percursos no mapa. É aqui que desenha os percursos no mapa.
 
   if (routeAbort) routeAbort.abort();
   routeAbort = new AbortController();
@@ -191,7 +199,7 @@ async function refreshRoute() {
 
   try {
     /**
-     * TUTORIAL - Calcula a rota
+     * Calcula a rota
      * ---------------------------------------------------------------------------
      *
      * Aqui ele chama a função fetchOsrmRoute para calcular a rota.
@@ -205,7 +213,7 @@ async function refreshRoute() {
      * @param {AbortSignal} options.signal - O sinal de abortação da requisição
      */
     const result = await fetchOsrmRoute(waypoints, {
-      profile: "driving", // walking, driving, cycling
+      profile: "walking", // walking, driving, cycling
       signal: routeAbort.signal,
     });
 
@@ -226,14 +234,14 @@ async function refreshRoute() {
       routeIsStreet.value = false;
     }
 
-    syncLineSource();
+    syncLineSource(); // IMPORTANTE: Desenha os percursos no mapa. É aqui que desenha os percursos no mapa.
 
   } catch (err) {
     if (err?.name === "AbortError") return;
     if (requestId !== routeRequestId) return;
 
     routeIsStreet.value = false;
-    syncLineSource();
+    syncLineSource(); // Limpa a linha do mapa se houver erro
 
   } finally {
     if (requestId === routeRequestId) routeLoading.value = false;
