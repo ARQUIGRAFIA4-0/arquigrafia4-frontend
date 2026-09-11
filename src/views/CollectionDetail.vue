@@ -12,6 +12,7 @@ import UiField from "@/components/ui/UiField.vue";
 import CollectionImagesGrid from "@/components/collection/CollectionImagesGrid.vue";
 import CollectionImagesMosaic from "@/components/collection/CollectionImagesMosaic.vue";
 import CollectionImagesMap from "@/components/collection/CollectionImagesMap.vue";
+import CollectionPathMap from "@/components/collection/CollectionPathMap.vue";
 import {
   viewRouteToSelection,
   selectionToViewRoute,
@@ -19,6 +20,7 @@ import {
 } from "@/constants/viewModes";
 import CollectionToolbar from "@/components/CollectionToolbar.vue";
 import DownloadModal from "@/components/imageDetail/DownloadModal.vue";
+import CollectionPathModal from "@/components/collection/CollectionPathModal.vue";
 import { downloadCollectionAsZip } from "@/helpers/downloadCollectionZip";
 import { sanitizeDownloadFilename } from "@/helpers/downloadImage";
 import { useAlbumImagesInfiniteQuery } from "@/composables/useAlbumImagesInfiniteQuery";
@@ -39,6 +41,28 @@ const authStore = useAuthStore();
 const albumsStore = useAlbumsStore();
 
 const isLoadingOwner = ref(true);
+// UI: transformar coleção em percurso (sem API ainda).
+const isCollectionPath = ref(false);
+const showPathModal = ref(false);
+
+function onPathSwitchClick() {
+  // Só abre o modal ao ativar; desligar não precisa de confirmação.
+  if (isCollectionPath.value) {
+    isCollectionPath.value = false;
+    return;
+  }
+  showPathModal.value = true;
+}
+
+function onPathModalConfirm({ mode } = {}) {
+  isCollectionPath.value = true;
+  // mode: 'same' | 'duplicate' — API depois
+  void mode;
+
+  if (collectionViewMode.value !== "map") {
+    handleCollectionViewChange({ selection: "map" });
+  }
+}
 
 const collectionId = computed(() => route.params.collectionId);
 
@@ -582,6 +606,10 @@ watch(
       :busy="downloadingCollection"
       @confirm="handleCollectionDownloadConfirm"
     />
+    <CollectionPathModal
+      v-model="showPathModal"
+      @confirm="onPathModalConfirm"
+    />
     <header class="collection-detail__header">
         <button
           type="button"
@@ -685,6 +713,11 @@ watch(
                 @load-more="tryFetchNextPage"
               />
 
+              <CollectionPathMap
+                v-if="collectionViewMode === 'map' && isCollectionPath"
+                :images="collectionImages"
+                :is-loading="isLoadingCollection"
+              />
               <CollectionImagesMap
                 ref="collectionMapRef"
                 v-else-if="collectionViewMode === 'map'"
@@ -727,9 +760,14 @@ watch(
                 @load-more="tryFetchNextPage"
               />
 
+              <CollectionPathMap
+                v-else-if="isCollectionPath"
+                :images="collectionImages"
+                :is-loading="isLoadingCollection"
+              />
               <CollectionImagesMap
-                ref="collectionMapRef"
                 v-else
+                ref="collectionMapRef"
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
                 @select="handleMapSelect"
@@ -956,6 +994,42 @@ watch(
               </div>
               <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
             </section>
+
+            <section
+              v-if="canManage"
+              class="collection-detail__path-block"
+              aria-labelledby="collection-path-heading"
+            >
+              <div class="collection-detail__path-heading-row">
+                <h2 id="collection-path-heading" class="collection-detail__path-title">
+                  Percurso da coleção
+                </h2>
+                <UiField
+                  id="collection-path-help"
+                  class="collection-detail__help-field"
+                  label="Ajuda"
+                  explain="Ao ativar, esta coleção passa a ser tratada como um percurso."
+                />
+              </div>
+              <div class="collection-detail__path-toggle">
+                <button
+                  type="button"
+                  class="collection-detail__path-switch"
+                  role="switch"
+                  :aria-checked="isCollectionPath"
+                  aria-labelledby="collection-path-switch-label"
+                  @click="onPathSwitchClick"
+                >
+                  <span class="collection-detail__path-switch-thumb" aria-hidden="true" />
+                </button>
+                <span
+                  id="collection-path-switch-label"
+                  class="collection-detail__path-label"
+                >
+                  Transformar essa coleção em um percurso
+                </span>
+              </div>
+            </section>
             </template>
             </div>
 
@@ -1155,6 +1229,45 @@ watch(
                   />
                 </div>
                 <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
+              </section>
+
+              <section
+                v-if="canManage"
+                class="collection-detail__path-block"
+                aria-labelledby="collection-path-heading-desktop"
+              >
+                <div class="collection-detail__path-heading-row">
+                  <h2
+                    id="collection-path-heading-desktop"
+                    class="collection-detail__path-title"
+                  >
+                    Percurso da coleção
+                  </h2>
+                  <UiField
+                    id="collection-path-help-desktop"
+                    class="collection-detail__help-field"
+                    label="Ajuda"
+                    explain="Ao ativar, esta coleção passa a ser tratada como um percurso."
+                  />
+                </div>
+                <div class="collection-detail__path-toggle">
+                  <button
+                    type="button"
+                    class="collection-detail__path-switch"
+                    role="switch"
+                    :aria-checked="isCollectionPath"
+                    aria-labelledby="collection-path-switch-label-desktop"
+                    @click="onPathSwitchClick"
+                  >
+                    <span class="collection-detail__path-switch-thumb" aria-hidden="true" />
+                  </button>
+                  <span
+                    id="collection-path-switch-label-desktop"
+                    class="collection-detail__path-label"
+                  >
+                    Transformar essa coleção em um percurso
+                  </span>
+                </div>
               </section>
               </template>
               </div>
@@ -1490,9 +1603,9 @@ a.collection-detail__actor-name:hover {
 
 .collection-detail__info-slot {
   display: flex;
-  flex: 0 0 338px;
-  width: 338px;
-  max-width: 338px;
+  flex: 0 0 380px;
+  width: 380px;
+  max-width: 380px;
   min-width: 280px;
   height: auto;
   max-height: 100vh;
@@ -1536,9 +1649,11 @@ a.collection-detail__actor-name:hover {
 .collection-detail__info-inner {
   display: flex;
   flex-direction: column;
-  width: 338px;
+  width: 100%;
+  max-width: 100%;
   flex-shrink: 0;
   max-height: 100vh;
+  box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
   opacity: 1;
@@ -1795,6 +1910,7 @@ a.collection-detail__actor-name:hover {
   .collection-detail__info-summary,
   .collection-detail__tags-block,
   .collection-detail__periods-block,
+  .collection-detail__path-block,
   .collection-detail__actors {
     max-width: 100%;
     min-width: 0;
@@ -1986,6 +2102,87 @@ a.collection-detail__actor-name:hover {
   font-size: 20px;
   font-style: normal;
   font-weight: 500;
+  line-height: 150%;
+}
+
+.collection-detail__path-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  align-self: stretch;
+  max-width: 600px;
+  padding: 0 12px;
+  margin-top: 24px;
+}
+
+.collection-detail__path-heading-row {
+  display: flex;
+  padding-right: var(--p, 12px);
+  align-items: center;
+  gap: var(--p, 12px);
+  align-self: stretch;
+}
+
+.collection-detail__path-title {
+  flex: 1 0 0;
+  margin: 0;
+  color: var(--Preto, #1f1f1f);
+  font-family: "DM Sans", sans-serif;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 150%;
+}
+
+.collection-detail__path-toggle {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  align-self: stretch;
+}
+
+.collection-detail__path-switch {
+  position: relative;
+  flex: 0 0 37px;
+  width: 37px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 11px;
+  background: #636262;
+  cursor: pointer;
+}
+
+.collection-detail__path-switch-thumb {
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transform: translateY(-50%);
+  transition: left 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.collection-detail__path-switch[aria-checked="true"] {
+  background: var(--Preto, #1f1f1f);
+}
+
+.collection-detail__path-switch[aria-checked="true"] .collection-detail__path-switch-thumb {
+  left: calc(100% - 3px - 16px);
+}
+
+.collection-detail__path-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--Cinza_E, #2f2f2f);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
   line-height: 150%;
 }
 
