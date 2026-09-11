@@ -112,6 +112,9 @@ onBeforeUnmount(() => {
             <section class="uim-section">
               <p>Você pode enviar até 10 imagens por vez.</p>
               <div class="uim-grid">
+                <div class="uim-grid__add" aria-hidden="true">
+                  <i class="bi bi-plus-circle-fill"></i>
+                </div>
                 <img
                   v-for="n in 3"
                   :key="n"
@@ -119,9 +122,6 @@ onBeforeUnmount(() => {
                   :alt="`Exemplo de imagem enviada ${n}`"
                   class="uim-thumb uim-thumb--grid"
                 />
-                <div class="uim-grid__add" aria-hidden="true">
-                  <i class="bi bi-plus-circle-fill"></i>
-                </div>
               </div>
             </section>
 
@@ -355,7 +355,7 @@ $breakpoint-md: 768px;
     align-items: center;
     justify-content: center;
     aspect-ratio: 1 / 1;
-    border-radius: 8px;
+    border-radius: 16px;
     border: 1px solid #2f2f2f;
 
     i {
@@ -382,7 +382,7 @@ $breakpoint-md: 768px;
 .uim-thumb {
   width: 100%;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 16px;
   border: 2px solid transparent;
   display: block;
 
@@ -410,6 +410,7 @@ $breakpoint-md: 768px;
 
   &--warning {
     border-color: #e5252c;
+    opacity: 0.7;
   }
 }
 
