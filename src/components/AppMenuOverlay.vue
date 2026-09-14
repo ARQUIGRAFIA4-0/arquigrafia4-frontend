@@ -7,11 +7,10 @@ import { useRoute } from "vue-router";
  * menus separados ("Sobre" e "Perfil") em um único painel com acordeão,
  * conforme o novo design (Menu_completo / Menu_lateral):
  *
- *  - Coletivos: avatares dos coletivos do usuário + botão "+" (criar
- *    coletivo).
- *  - Acordeão "Sobre" (Membros, Políticas) e "Perfil" (Meu perfil, Editar
- *    perfil) — os dois podem ficar abertos ao mesmo tempo, de forma
- *    independente.
+ *  - Perfil: avatar (leva pro "meu perfil") + botão de editar, e
+ *    Coletivos: avatares dos coletivos do usuário + botão "+" (criar
+ *    coletivo) — mesmo padrão visual pros dois.
+ *  - Acordeão "Sobre" (ARQUIGRAFIA 4.0, Membros, Políticas, Vocabulário).
  *  - Itens fixos fora do acordeão: FAQ e Sair.
  *  - Logo + informações do acervo, ancorados com position: absolute no
  *    canto inferior para não se mexerem quando o acordeão abre/fecha.
@@ -47,22 +46,15 @@ const sobreItems = [
   { label: "Vocabulário", to: "/about/vocabulary" },
 ];
 
-const perfilItems = [
-  { label: "Meu perfil", to: "/eu/imagens" },
-  { label: "Editar perfil", to: "/eu/editar" },
-];
-
-
+// Estado de abertura das seções do acordeão. Hoje só "Sobre" é accordion —
+// "Perfil" virou uma seção com avatar + botão de editar (igual Coletivos),
+// não faz mais parte do accordion.
 const openSections = reactive({
   sobre: false,
-  perfil: false,
 });
 
 function toggleSection(key) {
-  const wasOpen = openSections[key];
-  openSections.sobre = false;
-  openSections.perfil = false;
-  openSections[key] = !wasOpen;
+  openSections[key] = !openSections[key];
 }
 
 function initials(name) {
@@ -157,45 +149,75 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="app-menu-overlay__content">
-          <!-- Coletivos -->
-          <section class="app-menu-overlay__section">
-            <h2 class="app-menu-overlay__section-title">Coletivos</h2>
-            <div class="app-menu-overlay__collectives">
-              <router-link
-                v-for="collective in visibleCollectives"
-                :key="collective.id"
-                :to="`/coletivos/${collective.id}`"
-                class="app-menu-overlay__collective-avatar"
-                :title="collective.name"
-                @click="close"
-              >
-                <img v-if="collective.avatarUrl" :src="collective.avatarUrl" :alt="collective.name" />
-                <span v-else>{{ initials(collective.name) }}</span>
-              </router-link>
-              <!-- Bolinha do próprio usuário: leva pro perfil, de onde dá
-                   pra ver os demais coletivos (além dos 2 exibidos aqui). -->
-              <router-link
-                v-if="visibleCollectives.length > 1"
-                to="/eu/imagens"
-                class="app-menu-overlay__collective-avatar app-menu-overlay__collective-profile"
-                title="Ver todos os coletivos"
-                @click="close"
-              >
-                <i class="bi bi-three-dots"></i>
-              </router-link>
-              <router-link
-                to="/coletivos/criar"
-                class="app-menu-overlay__collective-add"
-                aria-label="Criar coletivo"
-                title="Criar coletivo"
-                @click="close"
-              >
-                <i class="bi bi-plus-lg"></i>
-              </router-link>
-            </div>
-          </section>
+          <template v-if="isLoggedIn">
+            <!-- Perfil: avatar (vai pro "meu perfil") + botão de editar -->
+            <section class="app-menu-overlay__section">
+              <h2 class="app-menu-overlay__section-title">Perfil</h2>
+              <div class="app-menu-overlay__collectives">
+                <router-link
+                  to="/eu/imagens"
+                  class="app-menu-overlay__collective-avatar"
+                  title="Meu perfil"
+                  @click="close"
+                >
+                  <img v-if="avatarUrl" :src="avatarUrl" alt="Foto de perfil" />
+                  <i v-else class="bi bi-person-fill"></i>
+                </router-link>
+                <router-link
+                  to="/eu/editar"
+                  class="app-menu-overlay__collective-add"
+                  aria-label="Editar perfil"
+                  title="Editar perfil"
+                  @click="close"
+                >
+                  <i class="bi bi-pencil-square"></i>
+                </router-link>
+              </div>
+            </section>
 
-          <!-- Acordeão unificado -->
+            <!-- Coletivos -->
+            <section class="app-menu-overlay__section">
+              <h2 class="app-menu-overlay__section-title">Coletivos</h2>
+              <div class="app-menu-overlay__collectives">
+                <router-link
+                  v-for="collective in visibleCollectives"
+                  :key="collective.id"
+                  :to="`/coletivos/${collective.id}`"
+                  class="app-menu-overlay__collective-avatar"
+                  :title="collective.name"
+                  @click="close"
+                >
+                  <img v-if="collective.avatarUrl" :src="collective.avatarUrl" :alt="collective.name" />
+                  <span v-else>{{ initials(collective.name) }}</span>
+                </router-link>
+                <!-- Bolinha "ver mais": só aparece se sobrar coletivo além
+                     dos MAX_VISIBLE_COLLECTIVES já exibidos acima. -->
+                <router-link
+                  v-if="collectives.length > MAX_VISIBLE_COLLECTIVES"
+                  to="/eu/imagens"
+                  class="app-menu-overlay__collective-avatar app-menu-overlay__collective-profile"
+                  title="Ver todos os coletivos"
+                  @click="close"
+                >
+                  <i class="bi bi-three-dots"></i>
+                </router-link>
+                <router-link
+                  to="/coletivos/criar"
+                  class="app-menu-overlay__collective-add"
+                  aria-label="Criar coletivo"
+                  title="Criar coletivo"
+                  @click="close"
+                >
+                  <i class="bi bi-plus-lg"></i>
+                </router-link>
+              </div>
+            </section>
+          </template>
+          <router-link v-else to="/login" class="app-menu-overlay__link app-menu-overlay__accordion-item" @click="close">
+            Entrar
+          </router-link>
+
+          <!-- Acordeão -->
           <nav class="app-menu-overlay__accordion">
             <div class="app-menu-overlay__accordion-item">
               <button
@@ -224,38 +246,6 @@ onBeforeUnmount(() => {
               </div>
             </div>
 
-            <template v-if="isLoggedIn">
-              <div class="app-menu-overlay__accordion-item">
-                <button
-                  type="button"
-                  class="app-menu-overlay__accordion-trigger"
-                  :class="{ 'is-open': openSections.perfil }"
-                  :aria-expanded="openSections.perfil"
-                  @click="toggleSection('perfil')"
-                >
-                  <span>Perfil</span>
-                  <i class="bi bi-chevron-down app-menu-overlay__chevron" :class="{ 'is-open': openSections.perfil }"></i>
-                </button>
-                <div class="app-menu-overlay__accordion-panel-wrapper" :class="{ 'is-open': openSections.perfil }">
-                  <div class="app-menu-overlay__accordion-panel">
-                    <router-link
-                      v-for="item in perfilItems"
-                      :key="item.to"
-                      :to="item.to"
-                      class="app-menu-overlay__link"
-                      :class="{ 'is-active': route.path === item.to }"
-                      @click="close"
-                    >
-                      {{ item.label }}
-                    </router-link>
-                  </div>
-                </div>
-              </div>
-            </template>
-            <router-link v-else to="/login" class="app-menu-overlay__link app-menu-overlay__accordion-item" @click="close">
-              Entrar
-            </router-link>
-
             <router-link to="/about/faq" class="app-menu-overlay__link app-menu-overlay__accordion-item" @click="close">
               FAQ
             </router-link>
@@ -263,7 +253,7 @@ onBeforeUnmount(() => {
             <button
               v-if="isLoggedIn"
               type="button"
-              class="app-menu-overlay__link app-menu-overlay__link--top app-menu-overlay__link--button app-menu-overlay__accordion-item"
+              class="app-menu-overlay__link app-menu-overlay__link--top app-menu-overlay__link--button"
               @click="handleLogout"
             >
               Sair
@@ -300,7 +290,7 @@ $breakpoint-md: 768px;
   // padding-top maior para abrir espaço para o botão "X", que agora fica
   // absolute e visível em qualquer largura de tela.
   // padding-top: 120px;
-  padding-top: 160px;
+  padding-top: 180px;
   gap: 64px;
 
   @include md {
@@ -357,7 +347,7 @@ $breakpoint-md: 768px;
     border-top: none;
     padding: 0px;
     position: relative;
-    top: 265px;
+    top: 310px;
     height: fit-content;
     // left: 50px;
     // position: relative;
@@ -372,7 +362,7 @@ $breakpoint-md: 768px;
   margin-bottom: 0.75rem;
 
   @include md {
-    height: 56px;
+    height: 80px;
   }
 }
 
