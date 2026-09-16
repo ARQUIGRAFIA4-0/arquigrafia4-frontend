@@ -147,6 +147,8 @@ function goToMetadata() {
   }
   router.push({ name: "image-metadata", query });
 }
+
+defineExpose({ openFileDialog });
 </script>
 
 <template>
@@ -393,6 +395,7 @@ $breakpoint-md: 768px;
 }
 
 .upload-box {
+
   >*+* {
     margin-top: 1.5rem;
   }

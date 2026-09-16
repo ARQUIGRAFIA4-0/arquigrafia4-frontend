@@ -29,7 +29,7 @@
           >
             {{ selectedFieldLabel }}
           </button>
-          <ul class="dropdown-menu menu-light">
+          <ul class="dropdown-menu menu-light  dropdown-menu-scroll">
             <li v-for="opt in fieldOptions" :key="opt.value">
               <button
                 class="dropdown-item"
@@ -308,11 +308,11 @@
           </div>
         </div>
 
-      <div class="drawer-actions d-grid gap-2 pt-3">
+      <div class="d-grid gap-2 pt-3">
+        <button class="btn btn-dark" @click="confirm">Buscar</button>
         <button class="btn btn-outline-secondary" @click="cancel">
           Limpar
         </button>
-        <button class="btn btn-dark" @click="confirm">Buscar</button>
       </div>
     </div>
   </ui-mobile-drawer>
@@ -690,10 +690,6 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
 
-.drawer-content .btn.btn-sm {
-  border-radius: 2px !important;
-}
-
 .vocab-suggestions {
   position: absolute;
   z-index: 5;
@@ -718,19 +714,17 @@ onUnmounted(() => {
 
 .dropdown-menu-scroll {
   max-height: 240px; /* ajuste o valor conforme o espaço do seu modal */
-  overflow-y: auto;
+  overflow-y: scroll;
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: #ccc;
+  border: 1px solid #ccc;
 }
 
 .drawer-content .d-flex > .btn.flex-fill {
   min-width: 0;
 }
 
-.drawer-content .drawer-actions {
-  grid-template-columns: 1fr 1fr;
-}
 .drawer-content .drawer-actions > .btn {
   width: 100%;
 }
