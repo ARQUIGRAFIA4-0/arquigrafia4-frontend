@@ -2,29 +2,11 @@
 import { reactive, computed, watch, onBeforeUnmount } from "vue";
 import { useRoute } from "vue-router";
 
-/**
- * Menu em tela cheia (fullscreen), unificado: junta o que antes eram dois
- * menus separados ("Sobre" e "Perfil") em um único painel com acordeão,
- * conforme o novo design (Menu_completo / Menu_lateral):
- *
- *  - Perfil: avatar (leva pro "meu perfil") + botão de editar, e
- *    Coletivos: avatares dos coletivos do usuário + botão "+" (criar
- *    coletivo) — mesmo padrão visual pros dois.
- *  - Acordeão "Sobre" (ARQUIGRAFIA 4.0, Membros, Políticas, Vocabulário).
- *  - Itens fixos fora do acordeão: FAQ e Sair.
- *  - Logo + informações do acervo, ancorados com position: absolute no
- *    canto inferior para não se mexerem quando o acordeão abre/fecha.
- *  - Botão "X" para fechar, visível em qualquer breakpoint.
- */
-
 const props = defineProps({
   show: { type: Boolean, default: false },
   isLoggedIn: { type: Boolean, default: false },
   avatarUrl: { type: String, default: null },
-  // TODO: substituir pelo total real do acervo (endpoint/store) quando
-  // essa informação estiver disponível fora do componente.
   photoCount: { type: [String, Number], default: "14030" },
-  // Coletivos do usuário logado: [{ id, name, avatarUrl }]
   collectives: { type: Array, default: () => [] },
 });
 
@@ -46,9 +28,6 @@ const sobreItems = [
   { label: "Vocabulário", to: "/about/vocabulary" },
 ];
 
-// Estado de abertura das seções do acordeão. Hoje só "Sobre" é accordion —
-// "Perfil" virou uma seção com avatar + botão de editar (igual Coletivos),
-// não faz mais parte do accordion.
 const openSections = reactive({
   sobre: false,
 });
@@ -81,7 +60,6 @@ function handleKeydown(event) {
   if (event.key === "Escape") close();
 }
 
-// Trava o scroll do body e escuta o "Esc" enquanto o menu está aberto
 watch(
   () => props.show,
   (isOpen) => {
@@ -101,13 +79,6 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <!--
-    Teleport para o body: assim o overlay vira IRMÃO do <header> no DOM
-    (em vez de filho dele). Isso é essencial para o truque de z-index
-    funcionar — se o overlay ficasse aninhado dentro do <header>, o seu
-    z-index venceria os filhos internos do header (logo, ícones, nav) e
-    cobriria o próprio header por dentro.
-  -->
   <Teleport to="body">
     <Transition name="menu-fade">
       <div
@@ -127,8 +98,6 @@ onBeforeUnmount(() => {
           <i class="bi bi-x-lg"></i>
         </button>
 
-        <!-- Logo + informações do acervo: position absolute (ver estilos)
-             para não se mexer quando o acordeão à direita abre/fecha. -->
         <div class="app-menu-overlay__brand">
           <img
             src="../assets/logo_footer.png"
@@ -213,7 +182,7 @@ onBeforeUnmount(() => {
               </div>
             </section>
           </template>
-          <router-link v-else to="/login" class="app-menu-overlay__link app-menu-overlay__accordion-item" @click="close">
+          <router-link v-else to="/login" class="app-menu-overlay__link app-menu-overlay__accordion-item link-login" @click="close">
             Entrar
           </router-link>
 
@@ -267,7 +236,10 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
-$breakpoint-md: 768px;
+
+$breakpoint-md: 768px; 
+$breakpoint-lg: 1000px; 
+$breakpoint-xlg: 2000px;
 
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
@@ -275,43 +247,54 @@ $breakpoint-md: 768px;
   }
 }
 
-.app-menu-overlay {
-  position: fixed;
-  display:  flex;
-  flex-direction: column-reverse;
-  justify-content: space-between;
-
-  inset: 0;
-  // Um ponto abaixo do .app-header (z-index: 1030) para que o header real
-  // continue visível por cima deste overlay em qualquer breakpoint.
-  z-index: 1029;
-  overflow-y: auto;
-  background-color: var(--Branco, #ffffff);
-  // padding-top maior para abrir espaço para o botão "X", que agora fica
-  // absolute e visível em qualquer largura de tela.
-  // padding-top: 120px;
-  padding-top: 180px;
-  gap: 64px;
-
-  @include md {
-    // padding: 6.5rem 50px 3rem;
-    // margin: auto;
-    flex-direction: row;
-    justify-content: space-around;
-    padding-bottom: 64px;
+@mixin lg {
+  @media (min-width: #{$breakpoint-lg}) {
+    @content;
   }
 }
 
-// Fecha o menu: agora visível em qualquer breakpoint (antes só aparecia no
-// mobile). Fica com position: absolute para não interferir no fluxo do
-// conteúdo abaixo dele.
+@mixin xlg {
+  @media (min-width: #{$breakpoint-xlg}) {
+    @content;
+  }
+}
+
+.app-menu-overlay {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  inset: 0;
+  z-index: 1029;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  background-color: var(--Branco, #ffffff);
+  min-height: 100dvh;
+  padding: clamp(11rem, 26vw, 11.25rem) clamp(1.25rem, 6vw, 3.75rem)
+    clamp(2rem, 8vw, 4rem);
+  gap: clamp(2rem, 8vw, 4rem);
+
+  @include md {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: clamp(2.5rem, 5vw, 4rem) clamp(2.5rem, 5vw, 6rem);
+    gap: clamp(2rem, 4vw, 4rem);
+  }
+
+  @include lg {
+    padding-inline: clamp(4rem, 8vw, 10rem);
+  }
+}
+
 .app-menu-overlay__close {
-  position: absolute;
-  // position: relative;
-  top: 120px;
-  right: 24px;
-  width: 24px;
-  height: 24px;
+  position: fixed;
+  top: max(8rem, env(safe-area-inset-top) + 0.75rem);
+  right: max(1.1rem, env(safe-area-inset-right) + 0.75rem);
+  width: clamp(1.75rem, 5vw, 2.25rem);
+  height: clamp(1.75rem, 5vw, 2.25rem);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -321,108 +304,122 @@ $breakpoint-md: 768px;
   background-color: var(--Cinza_E, #222222);
   color: var(--Branco, #ffffff);
   font-size: 18px;
+  z-index: 1;
 
   .bi {
-    font-size: 15px;
+    font-size: clamp(0.8rem, 3vw, 0.9375rem);
   }
 
   @include md {
-    right: 60px;
+    top: clamp(5.1rem, 3vw, 2.5rem);
+    right: clamp(3rem, 3vw, 3.75rem);
   }
 }
 
-// Logo + textos do acervo: position absolute, ancorado no canto inferior
-// esquerdo. Isso garante que ele NÃO se mova quando o acordeão à direita
-// muda de altura ao abrir/fechar seções — antes ele fazia parte do fluxo
-// flex e "pulava" de posição a cada toggle.
 .app-menu-overlay__brand {
-  // left: 1rem;
-  // bottom: 1.5rem;
-  // max-width: calc(100% - 2rem);
+  order: 2;
   text-align: left;
-  padding: 40px 32px;
+  padding-top: clamp(1.5rem, 6vw, 2.5rem);
   border-top: 1px solid var(--Cinza_C);
+  flex-shrink: 0;
 
   @include md {
+    order: 0;
     border-top: none;
-    padding: 0px;
-    position: relative;
-    top: 310px;
-    height: fit-content;
-    // left: 50px;
-    // position: relative;
-    // bottom: 200px;
-    // max-width: 420px;
+    padding: 0;
+    align-self: flex-end;
+    margin-bottom: clamp(0.5rem, 3vw, 2.5rem);
+    max-width: 26rem;
+  }
+
+  @include lg {
+     align-self: flex-end;
+    margin-bottom: 10px;
+  }
+
+  @include xlg {
+    align-self: auto;
+    margin-top: 555px;
   }
 }
 
 .app-menu-overlay__brand-logo {
-  height: 40px;
+  height: clamp(2.25rem, 9vw, 3.5rem);
   width: auto;
   margin-bottom: 0.75rem;
 
   @include md {
-    height: 80px;
+    height: clamp(3.5rem, 6vw, 5rem);
   }
 }
 
 .app-menu-overlay__brand-text {
   color: var(--Cinza_E);
-  font-size: .625rem;
-  line-height: 16px;
+  font-size: clamp(0.625rem, 2.2vw, 0.75rem);
+  line-height: 1.4;
   margin-bottom: 0.25rem;
   font-weight: 400;
 
   a {
     color: inherit;
     text-decoration: underline;
-    font-size: .625rem;
-    line-height: 16px;
-    margin-bottom: 0.25rem;
+    font-size: inherit;
+    line-height: inherit;
     font-weight: 400;
   }
 }
 
-// Conteúdo principal: no mobile ocupa a largura toda (alinhado à
-// esquerda); no desktop fica limitado e empurrado para a direita, como no
-// mockup — sem centralizar verticalmente, para não saltar quando o
-// acordeão expande.
 .app-menu-overlay__content {
-  // width: 100%;
-  width: 240px;
-  margin: 0 auto;
-  margin-left: 84px;
+  order: 1;
+  width: 100%;
+  max-width: 21rem;
+  padding-left: clamp(1rem, 10vw, 5.25rem);
+  box-sizing: border-box;
+  flex-shrink: 0;
 
   @include md {
-    // max-width: 340px;
-    // margin-left: auto;
-    margin: initial;
-    height: fit-content;
+    order: 0;
+    width: auto;
+    max-width: 24rem;
+    padding-left: 0;
+    margin-top: 120px;
+  }
+
+  @include lg {
+    margin-top: 75px;
   }
 }
 
 .app-menu-overlay__section {
-  margin-bottom: 2.5rem;
+  margin-bottom: clamp(1.75rem, 6vw, 2.5rem);
 }
 
 .app-menu-overlay__section-title {
   color: var(--Cinza_E);
   font-weight: 700;
-  font-size: 20px;
+  font-size: clamp(1.125rem, 4vw, 1.25rem);
   margin-bottom: 1rem;
+
+   @include md {
+    font-size: clamp(1rem, 1.125rem, 1.25rem);
+  }
+
+  @include lg {
+    font-size: clamp(1.125rem, 4vw, 1.25rem);
+  }
 }
 
 .app-menu-overlay__collectives {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: clamp(0.5rem, 2.5vw, 0.75rem);
 }
 
 .app-menu-overlay__collective-avatar,
 .app-menu-overlay__collective-add {
-  width: 50px;
-  height: 50px;
+  width: clamp(2.75rem, 10vw, 3.125rem);
+  height: clamp(2.75rem, 10vw, 3.125rem);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -448,8 +445,6 @@ $breakpoint-md: 768px;
   }
 }
 
-// Bolinha de perfil: mesma base visual do avatar de coletivo, com uma
-// borda pra deixar claro que é "você" (e não mais um coletivo).
 .app-menu-overlay__collective-profile {
   border: 2px solid var(--Cinza_C);
   background-color: var(--Branco);
@@ -460,8 +455,6 @@ $breakpoint-md: 768px;
   }
 }
 
-// Botão "+" -> rota de criar coletivo (antes era um link de texto
-// "Criar coletivo" dentro do menu de perfil).
 .app-menu-overlay__collective-add {
   background-color: var(--Laranja_E, #c1531b);
   color: var(--Branco, #ffffff);
@@ -472,44 +465,50 @@ $breakpoint-md: 768px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 24px;
+  width: 100%;
+  gap: clamp(1.25rem, 4vw, 1.5rem);
 }
 
 .app-menu-overlay__accordion-item {
   width: 100%;
 }
 
+.link-login {
+  display: block;
+  margin-bottom: 1.5rem;
+}
+
 .app-menu-overlay__accordion-trigger {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 4.1875rem;
+  justify-content: space-between;
   width: 100%;
   border: none;
   background: none;
   padding: 0;
   color: var(--Cinza_E);
   font-weight: 500;
-  font-size: 20px;
+  font-size: clamp(1.125rem, 4vw + 0.4rem, 1.25rem);
   line-height: 150%;
   cursor: pointer;
   text-align: left;
-
-  span {
-    width: 91px;
-  }
 
   &.is-open {
     font-weight: 700;
   }
 
   @include md {
-    font-size: 28px;
+    font-size: clamp(1rem, 2.4vw, 1.75rem);
+  }
+
+  @include lg {
+    font-size: clamp(1.5rem, 2.4vw, 1.75rem);
   }
 }
 
 .app-menu-overlay__chevron {
-  font-size: 16px;
+  font-size: clamp(0.875rem, 3vw, 1rem);
+  flex-shrink: 0;
   transition: transform 0.2s ease;
 
   &.is-open {
@@ -517,8 +516,6 @@ $breakpoint-md: 768px;
   }
 }
 
-// Truque de grid-template-rows para animar a altura do painel sem medir
-// altura via JS: 0fr fechado -> 1fr aberto, com overflow hidden no filho.
 .app-menu-overlay__accordion-panel-wrapper {
   display: grid;
   grid-template-rows: 0fr;
@@ -546,7 +543,7 @@ $breakpoint-md: 768px;
   padding: 0;
   color: var(--Cinza_E);
   font-weight: 500;
-  font-size: 20px;
+  font-size: clamp(1.125rem, 4vw + 0.4rem, 1.25rem);
   line-height: 150%;
   text-decoration: none;
   cursor: pointer;
@@ -556,18 +553,15 @@ $breakpoint-md: 768px;
     color: var(--Laranja_E);
   }
 
-  @include md {
-    font-size: 28px;
+   @include md {
+    font-size: clamp(1rem, 2.4vw, 1.75rem);
+  }
+
+  @include lg {
+    font-size: clamp(1.5rem, 2.4vw, 1.75rem);
   }
 }
 
-// .app-menu-overlay__link--top {
-//   font-weight: 500;
-// }
-
-// Transição fade no mesmo padrão já usado no projeto (ver
-// .copy-toast-fade-* em HomePage.vue), espelhando o comportamento de
-// fade/show do Bootstrap.
 .menu-fade-enter-active,
 .menu-fade-leave-active {
   transition: opacity 0.2s ease;
