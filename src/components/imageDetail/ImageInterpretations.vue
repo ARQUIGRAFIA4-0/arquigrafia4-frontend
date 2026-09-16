@@ -347,7 +347,7 @@ $breakpoint-md: 770px;
     margin-top: 28px;
 
     @include md {
-      gap: 24px;
+      gap: 20px;
     }
   }
 
@@ -450,11 +450,11 @@ $breakpoint-md: 770px;
 
   &__range {
     position: absolute;
-    top: -11px;
+    top: -15px;
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 28px;
+    height: 40px;
     background: transparent;
     border-radius: 10px;
     outline: none;
