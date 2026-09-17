@@ -200,7 +200,7 @@ onBeforeUnmount(() => {
               </section>
             </template>
             <router-link v-else to="/login" class="app-menu-overlay__link app-menu-overlay__accordion-item link-login" @click="close">
-              Entrar
+              Login
             </router-link>
 
             <!-- Acordeão -->
