@@ -60,11 +60,27 @@ function handleKeydown(event) {
   if (event.key === "Escape") close();
 }
 
+function getScrollbarWidth() {
+  return window.innerWidth - document.documentElement.clientWidth;
+}
+
+function lockBodyScroll() {
+  const scrollbarWidth = getScrollbarWidth();
+  document.body.style.overflow = "hidden";
+  if (scrollbarWidth > 0) {
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+  }
+}
+
+function unlockBodyScroll() {
+  document.body.style.overflow = "";
+  document.body.style.paddingRight = "";
+}
 watch(
   () => props.show,
   (isOpen) => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
     if (isOpen) {
+      lockBodyScroll();
       window.addEventListener("keydown", handleKeydown);
     } else {
       window.removeEventListener("keydown", handleKeydown);
@@ -73,14 +89,14 @@ watch(
 );
 
 onBeforeUnmount(() => {
-  document.body.style.overflow = "";
+  unlockBodyScroll();
   window.removeEventListener("keydown", handleKeydown);
 });
 </script>
 
 <template>
   <Teleport to="body">
-    <Transition name="menu-fade">
+    <Transition name="menu-fade" @after-leave="unlockBodyScroll">
       <div
         v-if="show"
         class="app-menu-overlay"
