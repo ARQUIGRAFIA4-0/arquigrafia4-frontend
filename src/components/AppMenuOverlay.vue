@@ -22,10 +22,10 @@ const visibleCollectives = computed(() =>
 );
 
 const sobreItems = [
-  { label: "ARQUIGRAFIA 4.0", to: "/about/project" },
+  { label: "ARQUIGRAFIA", to: "/about/project" },
   { label: "Membros", to: "/about/members" },
   { label: "Políticas", to: "/about/policies" },
-  { label: "Vocabulário", to: "/about/vocabulary" },
+  // { label: "Vocabulário", to: "/about/vocabulary" },
 ];
 
 const openSections = reactive({
@@ -60,11 +60,27 @@ function handleKeydown(event) {
   if (event.key === "Escape") close();
 }
 
+function getScrollbarWidth() {
+  return window.innerWidth - document.documentElement.clientWidth;
+}
+
+function lockBodyScroll() {
+  const scrollbarWidth = getScrollbarWidth();
+  document.body.style.overflow = "hidden";
+  if (scrollbarWidth > 0) {
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+  }
+}
+
+function unlockBodyScroll() {
+  document.body.style.overflow = "";
+  document.body.style.paddingRight = "";
+}
 watch(
   () => props.show,
   (isOpen) => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
     if (isOpen) {
+      lockBodyScroll();
       window.addEventListener("keydown", handleKeydown);
     } else {
       window.removeEventListener("keydown", handleKeydown);
@@ -73,14 +89,14 @@ watch(
 );
 
 onBeforeUnmount(() => {
-  document.body.style.overflow = "";
+  unlockBodyScroll();
   window.removeEventListener("keydown", handleKeydown);
 });
 </script>
 
 <template>
   <Teleport to="body">
-    <Transition name="menu-fade">
+    <Transition name="menu-fade" @after-leave="unlockBodyScroll">
       <div
         v-if="show"
         class="app-menu-overlay"
@@ -89,145 +105,147 @@ onBeforeUnmount(() => {
         aria-label="Menu"
         @click.self="close"
       >
-        <button
-          type="button"
-          class="app-menu-overlay__close"
-          aria-label="Fechar menu"
-          @click="close"
-        >
-          <i class="bi bi-x-lg"></i>
-        </button>
+        <div class="app-menu-overlay-wrapper">
+          <button
+            type="button"
+            class="app-menu-overlay__close"
+            aria-label="Fechar menu"
+            @click="close"
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
 
-        <div class="app-menu-overlay__brand">
-          <img
-            src="../assets/logo_footer.png"
-            alt="Arquigrafia"
-            class="app-menu-overlay__brand-logo"
-          />
-          <p class="app-menu-overlay__brand-text">
-            Nosso acervo conta com {{ photoCount }} fotos.
-          </p>
-          <p class="app-menu-overlay__brand-text">
-            Este site possui uma licença
-            <a
-              href="https://creativecommons.org/licenses/by/3.0/"
-              target="_blank"
-              rel="noopener"
-            >Creative Commons Attribution 3.0</a>
-          </p>
-        </div>
+          <div class="app-menu-overlay__brand">
+            <img
+              src="../assets/logo_footer.png"
+              alt="Arquigrafia"
+              class="app-menu-overlay__brand-logo"
+            />
+            <p class="app-menu-overlay__brand-text">
+              Nosso acervo conta com {{ photoCount }} fotos.
+            </p>
+            <p class="app-menu-overlay__brand-text">
+              Este site possui uma licença
+              <a
+                href="https://creativecommons.org/licenses/by/3.0/"
+                target="_blank"
+                rel="noopener"
+              >Creative Commons Attribution 3.0</a>
+            </p>
+          </div>
 
-        <div class="app-menu-overlay__content">
-          <template v-if="isLoggedIn">
-            <!-- Perfil: avatar (vai pro "meu perfil") + botão de editar -->
-            <section class="app-menu-overlay__section">
-              <h2 class="app-menu-overlay__section-title">Perfil</h2>
-              <div class="app-menu-overlay__collectives">
-                <router-link
-                  to="/eu/imagens"
-                  class="app-menu-overlay__collective-avatar"
-                  title="Meu perfil"
-                  @click="close"
-                >
-                  <img v-if="avatarUrl" :src="avatarUrl" alt="Foto de perfil" />
-                  <i v-else class="bi bi-person-fill"></i>
-                </router-link>
-                <router-link
-                  to="/eu/editar"
-                  class="app-menu-overlay__collective-add"
-                  aria-label="Editar perfil"
-                  title="Editar perfil"
-                  @click="close"
-                >
-                  <i class="bi bi-pencil-square"></i>
-                </router-link>
-              </div>
-            </section>
-
-            <!-- Coletivos -->
-            <section class="app-menu-overlay__section">
-              <h2 class="app-menu-overlay__section-title">Coletivos</h2>
-              <div class="app-menu-overlay__collectives">
-                <router-link
-                  v-for="collective in visibleCollectives"
-                  :key="collective.id"
-                  :to="`/coletivos/${collective.id}`"
-                  class="app-menu-overlay__collective-avatar"
-                  :title="collective.name"
-                  @click="close"
-                >
-                  <img v-if="collective.avatarUrl" :src="collective.avatarUrl" :alt="collective.name" />
-                  <span v-else>{{ initials(collective.name) }}</span>
-                </router-link>
-                <!-- Bolinha "ver mais": só aparece se sobrar coletivo além
-                     dos MAX_VISIBLE_COLLECTIVES já exibidos acima. -->
-                <router-link
-                  v-if="collectives.length > MAX_VISIBLE_COLLECTIVES"
-                  to="/eu/imagens"
-                  class="app-menu-overlay__collective-avatar app-menu-overlay__collective-profile"
-                  title="Ver todos os coletivos"
-                  @click="close"
-                >
-                  <i class="bi bi-three-dots"></i>
-                </router-link>
-                <router-link
-                  to="/coletivos/criar"
-                  class="app-menu-overlay__collective-add"
-                  aria-label="Criar coletivo"
-                  title="Criar coletivo"
-                  @click="close"
-                >
-                  <i class="bi bi-plus-lg"></i>
-                </router-link>
-              </div>
-            </section>
-          </template>
-          <router-link v-else to="/login" class="app-menu-overlay__link app-menu-overlay__accordion-item link-login" @click="close">
-            Entrar
-          </router-link>
-
-          <!-- Acordeão -->
-          <nav class="app-menu-overlay__accordion">
-            <div class="app-menu-overlay__accordion-item">
-              <button
-                type="button"
-                class="app-menu-overlay__accordion-trigger"
-                :class="{ 'is-open': openSections.sobre }"
-                :aria-expanded="openSections.sobre"
-                @click="toggleSection('sobre')"
-              >
-                <span>Sobre</span>
-                <i class="bi bi-chevron-down app-menu-overlay__chevron" :class="{ 'is-open': openSections.sobre }"></i>
-              </button>
-              <div class="app-menu-overlay__accordion-panel-wrapper" :class="{ 'is-open': openSections.sobre }">
-                <div class="app-menu-overlay__accordion-panel">
+          <div class="app-menu-overlay__content" :class="{ 'user-not-logged': !isLoggedIn }">
+            <template v-if="isLoggedIn">
+              <!-- Perfil: avatar (vai pro "meu perfil") + botão de editar -->
+              <section class="app-menu-overlay__section">
+                <h2 class="app-menu-overlay__section-title">Perfil</h2>
+                <div class="app-menu-overlay__collectives">
                   <router-link
-                    v-for="item in sobreItems"
-                    :key="item.to"
-                    :to="item.to"
-                    class="app-menu-overlay__link"
-                    :class="{ 'is-active': route.path === item.to }"
+                    to="/eu/imagens"
+                    class="app-menu-overlay__collective-avatar"
+                    title="Meu perfil"
                     @click="close"
                   >
-                    {{ item.label }}
+                    <img v-if="avatarUrl" :src="avatarUrl" alt="Foto de perfil" />
+                    <i v-else class="bi bi-person-fill"></i>
+                  </router-link>
+                  <router-link
+                    to="/eu/editar"
+                    class="app-menu-overlay__collective-add"
+                    aria-label="Editar perfil"
+                    title="Editar perfil"
+                    @click="close"
+                  >
+                    <i class="bi bi-pencil-square"></i>
                   </router-link>
                 </div>
-              </div>
-            </div>
+              </section>
 
-            <router-link to="/about/faq" class="app-menu-overlay__link app-menu-overlay__accordion-item" @click="close">
-              FAQ
+              <!-- Coletivos -->
+              <section class="app-menu-overlay__section">
+                <h2 class="app-menu-overlay__section-title">Coletivos</h2>
+                <div class="app-menu-overlay__collectives">
+                  <router-link
+                    v-for="collective in visibleCollectives"
+                    :key="collective.id"
+                    :to="`/coletivos/${collective.id}`"
+                    class="app-menu-overlay__collective-avatar"
+                    :title="collective.name"
+                    @click="close"
+                  >
+                    <img v-if="collective.avatarUrl" :src="collective.avatarUrl" :alt="collective.name" />
+                    <span v-else>{{ initials(collective.name) }}</span>
+                  </router-link>
+                  <!-- Bolinha "ver mais": só aparece se sobrar coletivo além
+                      dos MAX_VISIBLE_COLLECTIVES já exibidos acima. -->
+                  <router-link
+                    v-if="collectives.length > MAX_VISIBLE_COLLECTIVES"
+                    to="/eu/imagens"
+                    class="app-menu-overlay__collective-avatar app-menu-overlay__collective-profile"
+                    title="Ver todos os coletivos"
+                    @click="close"
+                  >
+                    <i class="bi bi-three-dots"></i>
+                  </router-link>
+                  <router-link
+                    to="/coletivos/criar"
+                    class="app-menu-overlay__collective-add"
+                    aria-label="Criar coletivo"
+                    title="Criar coletivo"
+                    @click="close"
+                  >
+                    <i class="bi bi-plus-lg"></i>
+                  </router-link>
+                </div>
+              </section>
+            </template>
+            <router-link v-else to="/login" class="app-menu-overlay__link app-menu-overlay__accordion-item link-login" @click="close">
+              Login
             </router-link>
 
-            <button
-              v-if="isLoggedIn"
-              type="button"
-              class="app-menu-overlay__link app-menu-overlay__link--top app-menu-overlay__link--button"
-              @click="handleLogout"
-            >
-              Sair
-            </button>
-          </nav>
+            <!-- Acordeão -->
+            <nav class="app-menu-overlay__accordion">
+              <div class="app-menu-overlay__accordion-item">
+                <button
+                  type="button"
+                  class="app-menu-overlay__accordion-trigger"
+                  :class="{ 'is-open': openSections.sobre }"
+                  :aria-expanded="openSections.sobre"
+                  @click="toggleSection('sobre')"
+                >
+                  <span>Sobre</span>
+                  <i class="bi bi-chevron-down app-menu-overlay__chevron" :class="{ 'is-open': openSections.sobre }"></i>
+                </button>
+                <div class="app-menu-overlay__accordion-panel-wrapper" :class="{ 'is-open': openSections.sobre }">
+                  <div class="app-menu-overlay__accordion-panel">
+                    <router-link
+                      v-for="item in sobreItems"
+                      :key="item.to"
+                      :to="item.to"
+                      class="app-menu-overlay__link"
+                      :class="{ 'is-active': route.path === item.to }"
+                      @click="close"
+                    >
+                      {{ item.label }}
+                    </router-link>
+                  </div>
+                </div>
+              </div>
+
+              <router-link to="/about/faq" class="app-menu-overlay__link app-menu-overlay__accordion-item" @click="close">
+                FAQ
+              </router-link>
+
+              <button
+                v-if="isLoggedIn"
+                type="button"
+                class="app-menu-overlay__link app-menu-overlay__link--top app-menu-overlay__link--button"
+                @click="handleLogout"
+              >
+                Sair
+              </button>
+            </nav>
+          </div>
         </div>
       </div>
     </Transition>
@@ -239,7 +257,7 @@ onBeforeUnmount(() => {
 
 $breakpoint-md: 768px; 
 $breakpoint-lg: 1000px; 
-$breakpoint-xlg: 2000px;
+$breakpoint-xlg: 1400px;
 
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
@@ -261,38 +279,65 @@ $breakpoint-xlg: 2000px;
 
 .app-menu-overlay {
   position: fixed;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: stretch;
+  // display: flex;
+  // flex-direction: column;
+  // justify-content: flex-start;
+  // justify-content: space-between;
+  // align-items: stretch;
   inset: 0;
-  z-index: 1029;
+  z-index: 1030;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   background-color: var(--Branco, #ffffff);
   min-height: 100dvh;
-  padding: clamp(11rem, 26vw, 11.25rem) clamp(1.25rem, 6vw, 3.75rem)
-    clamp(2rem, 8vw, 4rem);
-  gap: clamp(2rem, 8vw, 4rem);
+  padding-top: 248px;
+  // gap: 24px;
 
   @include md {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: clamp(2.5rem, 5vw, 4rem) clamp(2.5rem, 5vw, 6rem);
-    gap: clamp(2rem, 4vw, 4rem);
+    padding-top: 230px;
+  //   height: 439px;
+
+  //   flex-direction: row;
+  //   align-items: flex-start;
+  //   justify-content: space-between;
+  //   padding: clamp(2.5rem, 5vw, 4rem) clamp(2.5rem, 5vw, 6rem);
+  //   gap: clamp(2rem, 4vw, 4rem);
   }
 
   @include lg {
-    padding-inline: clamp(4rem, 8vw, 10rem);
+    display: flex;
+    justify-content: center;
+    padding-top: 55px;
+  }
+
+}
+
+.app-menu-overlay-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 24px;
+  height: 100%;
+
+  @include md {
+    flex-direction: row;
+    height: 370px;
+    // align-items: center;
+  }
+
+  @include lg {
+    width: 932px;
   }
 }
 
 .app-menu-overlay__close {
   position: fixed;
-  top: max(8rem, env(safe-area-inset-top) + 0.75rem);
-  right: max(1.1rem, env(safe-area-inset-right) + 0.75rem);
+  // top: max(8rem, env(safe-area-inset-top) + 0.75rem);
+  top: 122px;
+  // right: max(1.1rem, env(safe-area-inset-right) + 0.75rem);
+  right: 24px;
   width: clamp(1.75rem, 5vw, 2.25rem);
   height: clamp(1.75rem, 5vw, 2.25rem);
   flex-shrink: 0;
@@ -307,19 +352,25 @@ $breakpoint-xlg: 2000px;
   z-index: 1;
 
   .bi {
-    font-size: clamp(0.8rem, 3vw, 0.9375rem);
+    font-size: 16px;
   }
 
   @include md {
-    top: clamp(5.1rem, 3vw, 2.5rem);
-    right: clamp(3rem, 3vw, 3.75rem);
+    top: 60px;
+    right: 60px;
   }
+
+  
 }
 
 .app-menu-overlay__brand {
   order: 2;
   text-align: left;
-  padding-top: clamp(1.5rem, 6vw, 2.5rem);
+  // padding-top: clamp(1.5rem, 6vw, 2.5rem);
+  gap: 4px;
+  display: flex;
+  flex-direction: column;
+  padding: 40px 32px;
   border-top: 1px solid var(--Cinza_C);
   flex-shrink: 0;
 
@@ -327,29 +378,27 @@ $breakpoint-xlg: 2000px;
     order: 0;
     border-top: none;
     padding: 0;
+    padding-left: 44px;
     align-self: flex-end;
-    margin-bottom: clamp(0.5rem, 3vw, 2.5rem);
-    max-width: 26rem;
+    // max-width: 26rem;
   }
 
   @include lg {
-     align-self: flex-end;
-    margin-bottom: 10px;
+    padding-left: 0;
   }
 
-  @include xlg {
-    align-self: auto;
-    margin-top: 555px;
-  }
 }
 
 .app-menu-overlay__brand-logo {
-  height: clamp(2.25rem, 9vw, 3.5rem);
-  width: auto;
-  margin-bottom: 0.75rem;
+  width: 200px;
+  margin-bottom: 20px;
 
   @include md {
-    height: clamp(3.5rem, 6vw, 5rem);
+    width: 250px;
+  }
+
+  @include lg {
+    width: 350px;
   }
 }
 
@@ -357,9 +406,9 @@ $breakpoint-xlg: 2000px;
   color: var(--Cinza_E);
   font-size: clamp(0.625rem, 2.2vw, 0.75rem);
   line-height: 1.4;
-  margin-bottom: 0.25rem;
   font-weight: 400;
-
+  margin: 0;
+  
   a {
     color: inherit;
     text-decoration: underline;
@@ -373,7 +422,8 @@ $breakpoint-xlg: 2000px;
   order: 1;
   width: 100%;
   max-width: 21rem;
-  padding-left: clamp(1rem, 10vw, 5.25rem);
+  // padding-left: clamp(1rem, 10vw, 5.25rem);
+  padding: 0px 44px 0px 87px;
   box-sizing: border-box;
   flex-shrink: 0;
 
@@ -382,30 +432,35 @@ $breakpoint-xlg: 2000px;
     width: auto;
     max-width: 24rem;
     padding-left: 0;
-    margin-top: 120px;
+    // margin-top: 10px;
   }
+}
 
-  @include lg {
-    margin-top: 75px;
+.user-not-logged {
+
+  @include md {
+    align-self: flex-end;
+    height: 150px;
   }
 }
 
 .app-menu-overlay__section {
-  margin-bottom: clamp(1.75rem, 6vw, 2.5rem);
+  // margin-bottom: clamp(1.75rem, 6vw, 2.5rem);
+  margin-bottom: 32px;
+  
+  &:first-child {
+    margin-bottom: 24px;
+  }
 }
 
 .app-menu-overlay__section-title {
   color: var(--Cinza_E);
   font-weight: 700;
-  font-size: clamp(1.125rem, 4vw, 1.25rem);
+  font-size: 16px;
   margin-bottom: 1rem;
 
    @include md {
-    font-size: clamp(1rem, 1.125rem, 1.25rem);
-  }
-
-  @include lg {
-    font-size: clamp(1.125rem, 4vw, 1.25rem);
+    font-size: 20px;
   }
 }
 
@@ -466,11 +521,13 @@ $breakpoint-xlg: 2000px;
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
-  gap: clamp(1.25rem, 4vw, 1.5rem);
+  // gap: clamp(1.25rem, 4vw, 1.5rem);
+  gap: 20px;
 }
 
 .app-menu-overlay__accordion-item {
   width: 100%;
+  
 }
 
 .link-login {
@@ -481,35 +538,40 @@ $breakpoint-xlg: 2000px;
 .app-menu-overlay__accordion-trigger {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  // justify-content: c;
+  gap: 67px;
   width: 100%;
   border: none;
   background: none;
   padding: 0;
   color: var(--Cinza_E);
   font-weight: 500;
-  font-size: clamp(1.125rem, 4vw + 0.4rem, 1.25rem);
+  // font-size: clamp(1.125rem, 4vw + 0.4rem, 1.25rem);
+  font-size: 20px;
   line-height: 150%;
   cursor: pointer;
   text-align: left;
+  transition: text-shadow 0.1s ease;
 
   &.is-open {
-    font-weight: 700;
+    // font-weight: 700;
+    text-shadow: 0 0 0.65px currentColor, 0 0 0.65px currentColor;
   }
 
   @include md {
-    font-size: clamp(1rem, 2.4vw, 1.75rem);
+    font-size: 20px;
   }
-
+  
   @include lg {
-    font-size: clamp(1.5rem, 2.4vw, 1.75rem);
+    
   }
 }
 
 .app-menu-overlay__chevron {
-  font-size: clamp(0.875rem, 3vw, 1rem);
+  font-size: 20px;
   flex-shrink: 0;
   transition: transform 0.2s ease;
+  color: var(--Cinza_E);
 
   &.is-open {
     transform: rotate(180deg);
@@ -530,11 +592,11 @@ $breakpoint-xlg: 2000px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 20px;
   
-  a {
-    padding-top: 1rem;
-  }
+  // a {
+  //   padding-top: 1rem;
+  // }
 }
 
 .app-menu-overlay__link {
@@ -549,16 +611,16 @@ $breakpoint-xlg: 2000px;
   cursor: pointer;
   text-align: left;
 
+  &:first-child {
+    padding-top: 20px;
+  }
+
   &.is-active {
     color: var(--Laranja_E);
   }
 
-   @include md {
-    font-size: clamp(1rem, 2.4vw, 1.75rem);
-  }
-
-  @include lg {
-    font-size: clamp(1.5rem, 2.4vw, 1.75rem);
+  @include md {
+    font-size: 20px;
   }
 }
 
