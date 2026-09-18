@@ -703,7 +703,21 @@ onUnmounted(() => {
     border-right: none !important;
     border-top-right-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
-  }  
+    
+  } 
+
+  .input-group {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: stretch;
+    width: 100% ;
+
+    > .form-control {
+      flex: 1 1 auto;
+      width: 1%;
+      min-width: 0;
+    }
+  }
 }
 
 .drawer-content .p {
