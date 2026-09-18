@@ -1,13 +1,15 @@
 <script setup>
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import ImageGridCard from "@/components/image/ImageGridCard.vue";
 
 defineOptions({ name: "CollectionImagesGrid" });
 
-// Define as props do componente
 const props = defineProps({
   images: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
+  isFetchingNextPage: { type: Boolean, default: false },
+  hasNextPage: { type: Boolean, default: false },
   isGridReflowing: { type: Boolean, default: false },
   selectedImageId: { type: [String, Number], default: null },
   removingImageId: { type: [String, Number], default: null },
@@ -15,14 +17,48 @@ const props = defineProps({
   allowRemove: { type: Boolean, default: true },
 });
 
-// Emite eventos para ativar/desativar a imagem e remover a imagem da coleção
-const emit = defineEmits(["activate", "remove"]);
+const emit = defineEmits(["activate", "remove", "load-more"]);
 
 // Verifica se a imagem está selecionada
 function isCardSelected(item) {
   return props.selectedImageId === item.id;
 }
 
+const loadMoreSentinel = ref(null);
+let observer = null;
+
+function setupObserver() {
+  observer?.disconnect();
+  if (!loadMoreSentinel.value) return;
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      const entry = entries[0];
+      if (!entry?.isIntersecting) return;
+      if (!props.hasNextPage || props.isFetchingNextPage || props.isLoading) return;
+      emit("load-more");
+    },
+    { root: null, rootMargin: "1000px 0px", threshold: 0 }
+  );
+
+  observer.observe(loadMoreSentinel.value);
+}
+
+onMounted(() => {
+  nextTick(() => setupObserver());
+});
+
+onBeforeUnmount(() => {
+  observer?.disconnect();
+  observer = null;
+});
+
+watch(
+  () => [props.images.length, props.hasNextPage, props.isLoading],
+  () => {
+    nextTick(() => setupObserver());
+  }
+);
 </script>
 
 <template>
@@ -104,6 +140,19 @@ function isCardSelected(item) {
         </div>
       </template>
     </div>
+
+    <div v-if="isFetchingNextPage" class="text-center my-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
+    <div
+      v-if="hasNextPage"
+      ref="loadMoreSentinel"
+      class="collection-grid__sentinel"
+      aria-hidden="true"
+    />
   </template>
 
   <div v-else class="collection-detail__gallery-empty">
@@ -148,6 +197,11 @@ function isCardSelected(item) {
 
 .collection-grid__link--selectable {
   cursor: pointer;
+}
+
+.collection-grid__sentinel {
+  width: 100%;
+  height: 1px;
 }
 
 .collection-grid__card {

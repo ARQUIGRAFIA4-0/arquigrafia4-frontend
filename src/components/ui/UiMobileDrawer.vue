@@ -8,7 +8,6 @@
     :data-bs-backdrop="backdropAttr"
   >
     <div class="offcanvas-header">
-      <div class="drawer-handle" aria-hidden="true"></div>
       <h2 class="h2" :id="`${id}-label`">
         {{ title }}
       </h2>
@@ -122,11 +121,17 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .offcanvas-bottom {
-  height: fit-content;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
+  height: stretch;
   box-shadow: var(--shadow-elevation-high);
+  transform: none;
+  opacity: 0;
+  transition: opacity 0.10s linear;
 }
+
+.offcanvas-bottom.show {
+  opacity: 1;
+}
+
 .offcanvas-header {
   padding: 12px 16px 0px 16px;
   display: flex;
@@ -141,13 +146,6 @@ onBeforeUnmount(() => {
 }
 .offcanvas-body {
   overflow-y: auto;
-}
-.drawer-handle {
-  width: 60px;
-  height: 3px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.25);
-  margin: 4px auto 26px;
 }
 .header-close {
   position: absolute;

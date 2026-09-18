@@ -89,9 +89,16 @@
             <UiField label="Título da imagem" explain="Adicione um título para a imagem" :invalid="isTitleInvalid"
               invalidMessage="O título da imagem é obrigatório">
               <template #default="{ id, ariaInvalid, ariaDescribedby }">
-                <input :id="id" type="text" class="form-control" :class="{ 'is-invalid': isTitleInvalid }"
-                  placeholder="Adicione um título" v-model="form.title" :aria-invalid="ariaInvalid"
-                  :aria-describedby="ariaDescribedby" @blur="isTitleTouched = true" />
+                <UiInput
+                  :id="id"
+                  type="text"
+                  placeholder="Adicione um título"
+                  v-model="form.title"
+                  :invalid="isTitleInvalid"
+                  :aria-invalid="ariaInvalid"
+                  :aria-describedby="ariaDescribedby"
+                  @blur="isTitleTouched = true"
+                />
               </template>
             </UiField>
           </div>
@@ -146,10 +153,17 @@
                 <UiField label="Autoria da imagem" explain="Informe o nome de quem detém a autoria da imagem"
                   :invalid="isAuthorNameInvalid" invalidMessage="Informe quem detém a autoria da imagem">
                   <template #default="{ id, ariaInvalid, ariaDescribedby }">
-                    <input :id="id" type="text" class="form-control" :class="{ 'is-invalid': isAuthorNameInvalid }"
-                      placeholder="Nome" v-model="form.authorName" :disabled="form.unknownAuthor"
-                      :aria-invalid="ariaInvalid" :aria-describedby="ariaDescribedby"
-                      @blur="isAuthorNameTouched = true" />
+                    <UiInput
+                      :id="id"
+                      type="text"
+                      placeholder="Nome"
+                      v-model="form.authorName"
+                      :disabled="form.unknownAuthor"
+                      :invalid="isAuthorNameInvalid"
+                      :aria-invalid="ariaInvalid"
+                      :aria-describedby="ariaDescribedby"
+                      @blur="isAuthorNameTouched = true"
+                    />
                   </template>
                 </UiField>
               </div>
@@ -192,9 +206,16 @@
           <div class="mb-4 px-3">
             <UiField label="Tags da imagem" explain="Adicione tags para classificar a imagem">
               <div class="position-relative">
-                <input type="text" class="form-control" placeholder="Digite uma tag e pressione Enter"
-                  v-model="tagInput" @keydown.enter.prevent="addTag" @input="onTagInputChange"
-                  @focus="showTagSuggestions = true" @blur="hideTagSuggestions" autocomplete="off" />
+                <UiInput
+                  type="text"
+                  placeholder="Digite uma tag e pressione Enter"
+                  v-model="tagInput"
+                  autocomplete="off"
+                  @keydown.enter.prevent="addTag"
+                  @input="onTagInputChange"
+                  @focus="showTagSuggestions = true"
+                  @blur="hideTagSuggestions"
+                />
                 <div v-if="
                   showTagSuggestions &&
                   (filteredTagSuggestions.length > 0 || canCreateSubject)
@@ -228,8 +249,13 @@
 
           <div class="mb-4 px-3">
             <UiField label="Descrição da imagem" explain="Adicione uma descrição detalhada da imagem">
-              <textarea class="form-control" rows="5" placeholder="Texto exemplo" v-model="form.description"
-                maxlength="500"></textarea>
+              <UiInput
+                multiline
+                :rows="5"
+                placeholder="Texto exemplo"
+                v-model="form.description"
+                :maxlength="500"
+              />
             </UiField>
             <div class="text-end text-muted small mt-1">
               Máximo 500 caracteres.
@@ -240,16 +266,16 @@
             <UiField label="Data da imagem" explain="Informe a data de criação da imagem">
               <div class="d-flex flex-column gap-3">
                 <div v-if="form.dateType === 'year'" style="width: 120px">
-                  <input type="number" class="form-control" v-model="dateYearInput" placeholder="Ano" />
+                  <UiInput type="number" v-model="dateYearInput" placeholder="Ano" />
                 </div>
                 <div v-else class="d-flex align-items-center gap-2">
                   <span>Entre</span>
                   <div style="width: 120px">
-                    <input type="number" class="form-control" v-model="dateYearInput" placeholder="Ano" />
+                    <UiInput type="number" v-model="dateYearInput" placeholder="Ano" />
                   </div>
                   <span>e</span>
                   <div style="width: 120px">
-                    <input type="number" class="form-control" v-model="dateEndYearInput" placeholder="Ano" />
+                    <UiInput type="number" v-model="dateEndYearInput" placeholder="Ano" />
                   </div>
                 </div>
 
@@ -290,22 +316,44 @@
           <div class="mb-4">
             <UiField label="Buscar por localidade" explain="Busque e selecione a localidade no mapa">
               <div class="position-relative mb-3">
-                <div class="input-group">
-                  <input type="text" class="form-control" placeholder="Ex: Av. Paulista, 1578, São Paulo"
-                    v-model="form.location" @keydown.enter.prevent="searchLocation"
-                    @focus="showLocationSuggestions = true" @blur="hideLocationSuggestions" autocomplete="off" />
-                  <button type="button" class="btn btn-outline-secondary" @click="searchLocation"
-                    :disabled="isSearchingLocation">
-                    <span v-if="isSearchingLocation" class="spinner-border spinner-border-sm" role="status" />
+                <div class="location-search-group">
+                  <UiInput
+                    type="text"
+                    class="location-search-input"
+                    placeholder="Ex: Av. Paulista, 1578, São Paulo"
+                    v-model="form.location"
+                    autocomplete="off"
+                    @keydown.enter.prevent="searchLocation"
+                    @focus="showLocationSuggestions = true"
+                    @blur="hideLocationSuggestions"
+                  />
+                  <button
+                    type="button"
+                    class="location-search-btn"
+                    :disabled="isSearchingLocation"
+                    aria-label="Buscar localidade"
+                    @click="searchLocation"
+                  >
+                    <span
+                      v-if="isSearchingLocation"
+                      class="spinner-border spinner-border-sm"
+                      role="status"
+                    />
                     <i v-else class="bi bi-search" />
                   </button>
                 </div>
-                <div v-if="
-                  showLocationSuggestions && locationSuggestions.length > 0
-                " class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
-                  style="z-index: 1000; max-height: 300px; overflow-y: auto">
-                  <button v-for="(suggestion, index) in locationSuggestions" :key="index" type="button"
-                    class="dropdown-item text-wrap small" @click="selectLocationSuggestion(suggestion)">
+                <div
+                  v-if="showLocationSuggestions && locationSuggestions.length > 0"
+                  class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
+                  style="z-index: 1000; max-height: 300px; overflow-y: auto"
+                >
+                  <button
+                    v-for="(suggestion, index) in locationSuggestions"
+                    :key="index"
+                    type="button"
+                    class="dropdown-item text-wrap small"
+                    @click="selectLocationSuggestion(suggestion)"
+                  >
                     {{ suggestion.display_name }}
                   </button>
                 </div>
@@ -352,6 +400,7 @@
 import { ref, watch } from "vue";
 import axios from "@/axios";
 import UiField from "@/components/ui/UiField.vue";
+import UiInput from "@/components/ui/UiInput.vue";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
 import { useAuthStore } from "@/store/auth";
@@ -381,10 +430,10 @@ const isSaved = ref(false);
 const workFieldRef = ref(null);
 
 /**
- * Monta o array de obras a enviar. O backend faz `sync` — o que for enviado
- * substitui todos os vínculos — mas o formulário só edita a primeira obra.
+ * Monta o array de obras a enviar. O backend faz sync - o que for enviado
+ * substitui todos os vínculos - mas o formulário só edita a primeira obra.
  * Então recompomos o conjunto: a obra selecionada mais as demais já vinculadas.
- * Devolve `null` quando nada mudou, para omitir o campo (omitir preserva).
+ * Devolve null quando nada mudou, para omitir o campo (omitir preserva).
  */
 const buildWorksPayload = (workId) => {
   const originalIds = (props.image?.works || []).map((work) => work.id);
@@ -738,5 +787,67 @@ $breakpoint-md: 768px;
   100% {
     background-position: -200% 0;
   }
+}
+
+.location-search-group {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 30px;
+  box-sizing: border-box;
+}
+
+.location-search-group :deep(.ui-input.location-search-input) {
+  flex: 1 1 auto;
+  width: auto !important;
+  min-width: 0;
+  max-width: 100%;
+  height: 30px;
+  min-height: 30px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  box-sizing: border-box;
+}
+
+.location-search-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  border: 0.75px solid var(--Preto, #1f1f1f);
+  border-left: 0;
+  border-radius: 0 5px 5px 0;
+  background: var(--Off_white, #faf9f9);
+  color: var(--Preto, #1f1f1f);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.location-search-btn:hover:not(:disabled),
+.location-search-btn:focus:not(:disabled) {
+  background-color: var(--Preto, #1f1f1f);
+  border-color: var(--Preto, #1f1f1f);
+  color: var(--Branco, #fff);
+  outline: none;
+}
+
+.location-search-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.location-search-btn .bi {
+  font-size: 12px;
+  line-height: 1;
 }
 </style>

@@ -111,7 +111,7 @@
       </template>
 
       <!-- Chips de URL (visíveis quando NÃO em modo avançado derivado) -->
-      <div v-else-if="urlChips.length > 0" class="d-flex align-items-center flex-wrap gap-2">
+      <div v-else-if="currentSearchMode !== 'avancada' && urlChips.length > 0" class="d-flex align-items-center flex-wrap gap-2">
         <button v-for="chip in urlChips" :key="chip.uid" class="btn btn-primary btn-sm btn-tag" type="button">
           <span v-if="chip.label === null" class="spinner-border spinner-border-sm" role="status"
             aria-label="Carregando..." />
@@ -130,7 +130,7 @@
         </div>
 
         <!-- Avançada -->
-        <div class="w-100" id="search-input-avancada" v-show="currentSearchMode === 'avancada'">
+        <div class="w-100" id="search-input-avancada" v-show="currentSearchMode === 'avancada' && !isAdvancedByUrl">
           <div class="advanced-filters-container d-flex align-items-center flex-wrap gap-2">
             <template v-if="hasAdvancedFilters">
               <button v-for="chip in visibleAdvancedChips" :key="chip.uid" class="btn btn-info btn-sm btn-tag"

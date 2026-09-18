@@ -138,13 +138,12 @@
                 invalidMessage="O título da imagem é obrigatório"
               >
                 <template #default="{ id, ariaInvalid, ariaDescribedby }">
-                  <input
+                  <UiInput
                     :id="id"
                     type="text"
-                    class="form-control"
-                    :class="{ 'is-invalid': isTitleInvalid }"
                     placeholder="Adicione um título"
                     v-model="form.title"
+                    :invalid="isTitleInvalid"
                     :aria-invalid="ariaInvalid"
                     :aria-describedby="ariaDescribedby"
                     @blur="isTitleTouched = true"
@@ -230,14 +229,13 @@
                     invalidMessage="Informe quem detém a autoria da imagem"
                   >
                     <template #default="{ id, ariaInvalid, ariaDescribedby }">
-                      <input
+                      <UiInput
                         :id="id"
                         type="text"
-                        class="form-control"
-                        :class="{ 'is-invalid': isAuthorNameInvalid }"
                         placeholder="Nome"
                         v-model="form.authorName"
                         :disabled="form.unknownAuthor"
+                        :invalid="isAuthorNameInvalid"
                         :aria-invalid="ariaInvalid"
                         :aria-describedby="ariaDescribedby"
                         @blur="isAuthorNameTouched = true"
@@ -338,16 +336,15 @@
                     explain="Adicione tags para classificar a imagem"
                   >
                     <div class="position-relative">
-                      <input
+                      <UiInput
                         type="text"
-                        class="form-control"
                         placeholder="Adicione novas tags aqui"
                         v-model="tagInput"
+                        autocomplete="off"
                         @keydown.enter.prevent="addTag"
                         @input="onTagInputChange"
                         @focus="showTagSuggestions = true"
                         @blur="hideTagSuggestions"
-                        autocomplete="off"
                       />
                       <div
                         v-if="
@@ -410,13 +407,13 @@
                     label="Descrição da imagem"
                     explain="Adicione uma descrição detalhada da imagem"
                   >
-                    <textarea
-                      class="form-control"
-                      rows="5"
+                    <UiInput
+                      multiline
+                      :rows="5"
                       placeholder="Texto exemplo"
                       v-model="form.description"
-                      maxlength="500"
-                    ></textarea>
+                      :maxlength="500"
+                    />
                   </UiField>
                   <div class="metadata-geral__hint">Máximo 500 caracteres.</div>
                 </div>
@@ -432,9 +429,8 @@
                       v-if="form.dateType === 'year'"
                       class="metadata-geral__date-input"
                     >
-                      <input
+                      <UiInput
                         type="number"
-                        class="form-control"
                         v-model="dateYearInput"
                         placeholder="Ano"
                       />
@@ -445,18 +441,16 @@
                     >
                       <span>Entre</span>
                       <div class="metadata-geral__date-input">
-                        <input
+                        <UiInput
                           type="number"
-                          class="form-control"
                           v-model="dateYearInput"
                           placeholder="Ano"
                         />
                       </div>
                       <span>e</span>
                       <div class="metadata-geral__date-input">
-                        <input
+                        <UiInput
                           type="number"
-                          class="form-control"
                           v-model="dateEndYearInput"
                           placeholder="Ano"
                         />
@@ -544,14 +538,13 @@
               >
                 <!-- Estado de busca: enquanto não há marcador. -->
                 <div v-if="!isLocationSelected" class="position-relative mb-3">
-                  <input
+                  <UiInput
                     type="text"
-                    class="form-control"
                     placeholder="Ex: Av. Paulista, 1578, São Paulo"
                     v-model="locationQuery"
+                    autocomplete="off"
                     @input="onLocationInput"
                     @keydown.escape="closeLocationSuggestions"
-                    autocomplete="off"
                   />
                   <div
                     v-if="
@@ -586,30 +579,25 @@
                   </div>
                 </div>
 
-                <!-- Estado selecionado: o endereço do marcador, com o X de
-                     remover no padrão de "Suas redes" do formulário de perfil. -->
                 <div v-else class="mb-3">
-                  <div class="input-group">
-                    <input
+                  <div class="input-group location-selected-group">
+                    <UiInput
                       v-if="isEditingLocationLabel"
                       type="text"
-                      class="form-control border-end-0"
+                      class="border-end-0"
                       v-model="form.location"
                       aria-label="Endereço da imagem"
                       @keydown.enter.prevent="finishEditingLocationLabel"
                       @blur="finishEditingLocationLabel"
                       v-focus
                     />
-                    <!-- `readonly` em vez de `disabled`: mantém o endereço
-                         acessível ao teclado e ao leitor de tela, e permite
-                         rolar o texto quando ele é longo. -->
-                    <input
+                    <UiInput
                       v-else
                       type="text"
-                      class="form-control border-end-0 location-readonly"
+                      class="border-end-0 location-readonly"
                       aria-label="Endereço da imagem"
                       readonly
-                      :value="
+                      :model-value="
                         isReverseGeocoding
                           ? 'Buscando endereço…'
                           : selectedLocationLabel
@@ -617,7 +605,7 @@
                     />
                     <button
                       type="button"
-                      class="btn btn-light location-clear-btn"
+                      class="location-clear-btn"
                       aria-label="Limpar localização"
                       @click="clearLocation"
                     >
@@ -635,7 +623,7 @@
                 </div>
               </UiField>
 
-              <h3 class="form-label text-cinza-e h3 mb-2">
+              <h3 class="form-label text-cinza-e location-map-heading mb-2">
                 Selecione no mapa a localização de sua imagem
               </h3>
 
@@ -660,8 +648,7 @@
                     @zoom-in="zoomIn"
                     @zoom-out="zoomOut"
                   />
-                  <!-- Sobreposto ao mapa: informa a busca sem empurrar o
-                       restante da página ao aparecer e sumir. -->
+
                   <span
                     v-if="isReverseGeocoding"
                     class="position-absolute top-0 start-0 m-2 px-2 py-1 rounded bg-white border small text-muted"
@@ -775,6 +762,7 @@ import ImagePreviewPanel from "@/components/imageMetadaUpload/ImagePreviewPanel.
 import AppToast from "@/components/ui/AppToast.vue";
 import { useToast } from "@/composables/useToast";
 import UiField from "@/components/ui/UiField.vue";
+import UiInput from "@/components/ui/UiInput.vue";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
 import WorkAutocompleteField from "@/components/work/WorkAutocompleteField.vue";
@@ -843,9 +831,7 @@ const getInitials = (name) => name?.charAt(0).toUpperCase() || "?";
 
 const resolveAvatarUrl = (entity) => {
   if (entity.avatar_url) {
-    return entity.avatar_url.startsWith("http")
-      ? entity.avatar_url
-      : `${API_BASE_URL}${entity.avatar_url}`;
+    return entity.avatar_url.startsWith("http") ? entity.avatar_url : `${API_BASE_URL}${entity.avatar_url}`;
   }
   if (entity.avatar_path) {
     return `${API_BASE_URL}/storage/${entity.avatar_path}`;
@@ -1072,9 +1058,7 @@ watch(
         if (endYear) dateEnd = formatDate(endYear, 12, 31);
       }
 
-      const dateAccuracy =
-        storedMetadata.dateAccuracy ||
-        (exifDate ? "exact" : defaultForm.dateAccuracy);
+      const dateAccuracy = storedMetadata.dateAccuracy || (exifDate ? "exact" : defaultForm.dateAccuracy);
 
       form.value = {
         ...defaultForm,
@@ -1177,8 +1161,8 @@ const zoomOut = () => {
 
 // Geocodificação de localização
 //
-// `locationQuery` é o que o usuário digita para procurar, e `form.location` é
-// o rótulo do ponto escolhido — o valor que vai para o backend. Só existe
+// "locationQuery" é o que o usuário digita para procurar, e "form.location" é
+// o rótulo do ponto escolhido o valor que vai para o backend. Só existe
 // rótulo quando existe coordenada, o que impede o endereço de apontar para um
 // lugar diferente do marcador.
 const locationQuery = ref("");
@@ -1222,7 +1206,7 @@ const searchLocation = async () => {
   isSearchingLocation.value = true;
   try {
     const response = await fetch(
-      // `addressdetails=1` traz o objeto `address` estruturado, de onde o
+      // addressdetails=1 traz o objeto address estruturado, de onde o
       // rótulo é composto sem o nome do estabelecimento.
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`,
       { headers: { "Accept-Language": "pt-BR,pt" }, signal },
@@ -1288,8 +1272,8 @@ const vFocus = {
 
 // Zera só o que é estado de tela, preservando rótulo e coordenada da imagem.
 // Declarado aqui, junto do estado que manipula, e ligado à troca de imagem por
-// um watcher próprio — o watcher de `selectedIndex` que restaura o formulário
-// roda com `immediate: true`, ou seja, ainda durante o setup, quando estas
+// um watcher próprio o watcher de selectedIndex que restaura o formulário
+// roda com immediate: true, ou seja, ainda durante o setup, quando estas
 // referências não existem.
 const resetLocationUi = () => {
   if (locationDebounce) clearTimeout(locationDebounce);
@@ -1545,7 +1529,7 @@ const handleUploadError = (message) => {
 };
 
 // Traduz a falha de um POST /api/images em frase.
-// A API responde 422 com `errors`/`message` legíveis na validação;
+// A API responde 422 com errors/message legíveis na validação;
 // um 5xx não traz motivo aproveitável (o corpo é genérico).
 function describeUploadError(error) {
   const status = error.response?.status;
@@ -1822,6 +1806,7 @@ const handleSubmit = async () => {
 <style lang="scss" scoped>
 @use "@/scss/variables" as *;
 $breakpoint-md: 768px;
+$breakpoint-tablet: 1024px;
 
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
@@ -1833,25 +1818,63 @@ $breakpoint-md: 768px;
   cursor: default;
 }
 
-// X de remover a localização: claro em repouso, invertido no hover.
-.location-clear-btn {
+.location-map-heading {
+  margin-bottom: 8px !important;
+  color: var(--Gray-900, #212529);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 125%;
+
+  @media (max-width: #{$breakpoint-tablet}) {
+    font-size: 11px;
+    line-height: 125%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.location-selected-group {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  padding-top: 0;
-  padding-bottom: 0;
-  border: var(--bs-border-width) solid var(--Preto);
+  width: 100%;
+  height: 30px;
+}
+
+.location-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  border: 0.75px solid var(--Preto, #1f1f1f);
   border-left: 0;
+  border-radius: 0 5px 5px 0;
+  background: var(--Off_white, #faf9f9);
+  color: var(--Preto, #1f1f1f);
+  line-height: 1;
+  cursor: pointer;
 
   .bi {
+    font-size: 12px;
     line-height: 1;
-    vertical-align: 0;
   }
 
   &:hover,
   &:focus {
-    background-color: var(--Preto);
-    border-color: var(--Preto);
-    color: var(--Branco);
+    background-color: var(--Preto, #1f1f1f);
+    border-color: var(--Preto, #1f1f1f);
+    color: var(--Branco, #fff);
+    outline: none;
   }
 }
 
@@ -1941,8 +1964,6 @@ $breakpoint-md: 768px;
 .identity-item {
   border-top: 1px solid color-mix(in srgb, var(--Cinza_C), transparent 50%);
 }
-
-$breakpoint-tablet: 1024px;
 
 .term-text-wrapper {
   display: flex;
@@ -2037,14 +2058,13 @@ $breakpoint-tablet: 1024px;
   }
 
   &__license {
-    margin-bottom: 0;
-    padding: 8px 0 4px 0;
-    padding-left: 0;
     display: flex;
+    padding: 8px 0 4px 0;
     align-items: flex-start;
     gap: var(--pp, 8px);
     align-self: stretch;
     width: 100%;
+    margin-bottom: 0;
     min-height: unset;
 
     &.form-check {
@@ -2054,12 +2074,23 @@ $breakpoint-tablet: 1024px;
 
     .form-check-input {
       flex-shrink: 0;
+      width: 12px;
+      height: 12px;
       margin-top: 2px;
       margin-left: 0;
+      background-color: var(--Branco, #fff);
+      border: 1px solid var(--Preto, #1f1f1f);
+      box-shadow: none;
 
-      @media (max-width: #{$breakpoint-tablet}) {
-        width: 12px;
-        height: 12px;
+      &:checked {
+        background-color: var(--Branco, #fff);
+        border-color: var(--Preto, #1f1f1f);
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%231F1F1F'/%3e%3c/svg%3e");
+      }
+
+      &:focus {
+        box-shadow: none;
+        border-color: var(--Preto, #1f1f1f);
       }
     }
   }
@@ -2067,22 +2098,23 @@ $breakpoint-tablet: 1024px;
   &__license-label {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: flex-start;
-    gap: var(--ppp, 4px);
-    flex: 1 1 auto;
+    flex: 1 0 0;
     min-width: 0;
     padding-left: 0;
     margin-bottom: 0;
+    color: var(--Preto, #1f1f1f);
+    font-family: "DM Sans", sans-serif;
   }
 
   &__license-name {
     display: block;
-    font-style: normal;
     color: var(--Preto, #1f1f1f);
+    font-family: "DM Sans", sans-serif;
     font-size: 14px;
-    line-height: 150%;
+    font-style: normal;
     font-weight: 600;
+    line-height: 150%;
 
     @media (max-width: #{$breakpoint-tablet}) {
       font-size: 10px;
@@ -2093,10 +2125,12 @@ $breakpoint-tablet: 1024px;
   &__license-desc {
     display: block;
     margin-top: 0;
+    color: var(--Preto, #1f1f1f);
+    font-family: "DM Sans", sans-serif;
     font-size: 12px;
-    line-height: 125%;
-    color: var(--Cinza_M, #636262);
     font-style: normal;
+    font-weight: 400;
+    line-height: 125%;
 
     @media (max-width: #{$breakpoint-tablet}) {
       font-size: 10px;
@@ -2146,38 +2180,6 @@ $breakpoint-tablet: 1024px;
     @media (max-width: #{$breakpoint-tablet}) {
       padding-left: 0;
       padding-right: 0;
-    }
-
-    :deep(.form-control:not(textarea)) {
-      @media (max-width: #{$breakpoint-tablet}) {
-        display: flex;
-        height: 30px;
-        min-height: 30px;
-        padding: 6px 10px;
-        align-items: center;
-        gap: 18px;
-        align-self: stretch;
-        border-radius: 5px;
-        border: 0.75px solid var(--Preto, #1f1f1f);
-        background: var(--Off_white, #faf9f9);
-        font-size: 14px;
-        box-sizing: border-box;
-      }
-    }
-
-    :deep(textarea.form-control) {
-      @media (max-width: #{$breakpoint-tablet}) {
-        display: flex;
-        min-height: 120px;
-        padding: 6px 10px;
-        align-items: flex-start;
-        gap: 18px;
-        align-self: stretch;
-        border-radius: 5px;
-        border: 0.75px solid var(--Preto, #1f1f1f);
-        background: var(--Off_white, #faf9f9);
-        box-sizing: border-box;
-      }
     }
   }
 
@@ -2289,7 +2291,7 @@ $breakpoint-tablet: 1024px;
   z-index: 1;
 
   &__checkbox {
-    display: flex;
+    display: none;
     align-items: center;
     gap: 8px;
     padding-bottom: 4px;
@@ -2305,6 +2307,7 @@ $breakpoint-tablet: 1024px;
   }
 
   &__info-btn {
+    display: none;
     vertical-align: middle;
     transform: translateY(-2px);
   }
@@ -2339,6 +2342,7 @@ $breakpoint-tablet: 1024px;
     box-shadow: 2px -2px 5px 2px rgba(0, 0, 0, 0.1);
 
     &__checkbox {
+      display: flex;
       width: auto;
       flex: 0 0 auto;
       padding-bottom: 0;
@@ -2349,6 +2353,10 @@ $breakpoint-tablet: 1024px;
       flex: 0 1 auto;
       font-size: 14px;
       line-height: 150%;
+    }
+
+    &__info-btn {
+      display: flex;
     }
 
     &__buttons {

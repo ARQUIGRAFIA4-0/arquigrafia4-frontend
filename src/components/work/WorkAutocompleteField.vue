@@ -3,8 +3,8 @@
     <!-- Estado selecionado -->
     <div
       v-if="selected"
-      class="form-control d-flex align-items-center justify-content-between gap-2"
-      style="height: auto; min-height: 38px"
+      class="ui-input form-control d-flex align-items-center justify-content-between gap-2"
+      style="height: auto; min-height: 30px; padding: 6px 10px"
       data-cy="work-selected"
     >
       <div class="d-flex flex-column lh-sm">
@@ -23,16 +23,15 @@
     </div>
     <!-- Estado de busca -->
     <div v-else class="position-relative">
-      <input
+      <UiInput
         type="text"
-        class="form-control"
         placeholder="Busque por nome ou endereço"
         v-model="workInput"
         data-cy="work-autocomplete"
+        autocomplete="off"
         @input="onWorkInputChange"
         @focus="showWorkSuggestions = true"
         @blur="hideWorkSuggestions"
-        autocomplete="off"
       />
       <div
         v-if="
@@ -94,6 +93,7 @@
 
 <script setup>
 import UiField from "@/components/ui/UiField.vue";
+import UiInput from "@/components/ui/UiInput.vue";
 import WorkCreateModal from "@/components/work/WorkCreateModal.vue";
 import { useWorkAutocomplete } from "@/composables/useWorkAutocomplete";
 
@@ -103,11 +103,6 @@ defineProps({
   explain: { type: String, default: "Informe a obra relacionada" },
 });
 
-/**
- * Obra selecionada: `{ id, label, address }` para obra existente ou
- * `{ draft, label, address }` para rascunho ainda não criado no backend.
- * Cabe à tela que consome resolver o rascunho no envio, com `resolveWorkId`.
- */
 const selected = defineModel({ type: Object, default: null });
 
 const {

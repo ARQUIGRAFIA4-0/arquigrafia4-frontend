@@ -76,7 +76,10 @@
       </div>
 
       <!-- Mobile Drawers -->
-      <mobile-drawer-view-menu v-model="drawerViewMenu" @select="handleMobileViewChange" />
+      <mobile-drawer-view-menu 
+        v-model="drawerViewMenu" 
+        @select="handleMobileViewChange"
+      />
 
       <mobile-drawer-search-text v-model="drawerSearchText" :filters="advancedFilters"
         :has-active-filters="hasActiveDrawerTextFilters"
@@ -425,6 +428,7 @@ watch(
   () => route.query,
   () => {
     const mode = searchMode.value;
+    localSearchMode.value = mode;
     syncFromSnapshot(mode);
     const snapshot = loadSnapshot(mode);
     // Fase 1: para "avancada", usa advancedFilters.value (buildAdvancedFiltersFromUrl),

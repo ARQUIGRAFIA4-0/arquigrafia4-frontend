@@ -3,6 +3,7 @@ import { ref, computed, watch, onUnmounted, markRaw } from "vue";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import MapControls from "@/components/map/MapControls.vue";
 import UiField from "@/components/ui/UiField.vue";
+import UiInput from "@/components/ui/UiInput.vue";
 import axios from "@/axios";
 import { useWorkForm } from "@/composables/useWorkForm";
 import { Marker } from "maplibre-gl";
@@ -312,28 +313,39 @@ onUnmounted(() => {
           <div class="work-modal__map-wrapper">
             <!-- Busca de endereço: fora do mapa, entre o título e ele. -->
             <div class="work-modal__search-box">
-              <div class="input-group">
-                <input
+              <div
+                class="work-modal__search-group"
+                :class="{ 'work-modal__search-group--has-clear': Boolean(searchQuery) }"
+              >
+                <UiInput
                   v-model="searchQuery"
                   type="text"
-                  class="form-control form-control-sm work-modal__search-input"
+                  class="work-modal__search-input"
+                  :class="{ 'border-end-0': Boolean(searchQuery) }"
                   placeholder="Buscar endereço..."
                   autocomplete="off"
+                  aria-label="Buscar endereço"
                   @input="onSearchInputDebounced"
                   @keydown.escape="searchQuery = ''; searchSuggestions = []"
                 />
                 <button
                   v-if="searchQuery"
                   type="button"
-                  class="btn btn-sm btn-secondary work-modal__search-clear"
+                  class="work-modal__search-clear"
                   aria-label="Limpar busca"
                   @click="searchQuery = ''; searchSuggestions = []"
                 >
-                  <i class="bi bi-x" />
+                  <i class="bi bi-x-lg" />
                 </button>
               </div>
-              <ul v-if="searchSuggestions.length || isForwardGeocoding" class="work-modal__search-results">
-                <li v-if="isForwardGeocoding" class="work-modal__search-result text-muted fst-italic">
+              <ul
+                v-if="searchSuggestions.length || isForwardGeocoding"
+                class="work-modal__search-results"
+              >
+                <li
+                  v-if="isForwardGeocoding"
+                  class="work-modal__search-result text-muted fst-italic"
+                >
                   Buscando...
                 </li>
                 <li
@@ -439,11 +451,10 @@ onUnmounted(() => {
             <div class="mb-3">
               <UiField label="Localização" explain="Endereço ou nome do local da obra">
                 <template #default="{ id }">
-                  <input
+                  <UiInput
                     :id="id"
                     v-model="locationLabel"
                     type="text"
-                    class="form-control"
                     placeholder="Endereço da obra"
                   />
                   <p class="text-muted small fst-italic mt-1 mb-0">
@@ -481,10 +492,10 @@ onUnmounted(() => {
                       </button>
                     </li>
                   </ul>
-                  <input
+                  <UiInput
                     v-model="titleLabelInput"
                     type="text"
-                    class="form-control border-preto border-end-0"
+                    class="border-end-0"
                     placeholder="Título"
                     @keydown.enter.prevent="addTitle"
                   />
@@ -534,10 +545,10 @@ onUnmounted(() => {
                       </button>
                     </li>
                   </ul>
-                  <input
+                  <UiInput
                     v-model="agentNameInput"
                     type="text"
-                    class="form-control border-preto"
+                    class="border-preto"
                     placeholder="Nome"
                     autocomplete="off"
                     @input="onAgentNameInput"
@@ -613,27 +624,25 @@ onUnmounted(() => {
                         </button>
                       </li>
                     </ul>
-                    <input
+                    <UiInput
                       v-model="dateYearInput"
                       type="text"
                       inputmode="numeric"
                       maxlength="4"
-                      class="form-control border-preto"
+                      class="work-modal__date-year"
                       :class="{ 'border-end-0': dateIntervalMode === 'interval' }"
                       placeholder="Ano"
-                      style="max-width: 90px"
                       @keydown.enter.prevent="addDate"
                     />
                     <template v-if="dateIntervalMode === 'interval'">
                       <span class="input-group-text border-preto bg-transparent">até</span>
-                      <input
+                      <UiInput
                         v-model="dateYearEndInput"
                         type="text"
                         inputmode="numeric"
                         maxlength="4"
-                        class="form-control border-preto border-end-0"
+                        class="work-modal__date-year border-end-0"
                         placeholder="Ano"
-                        style="max-width: 90px"
                         @keydown.enter.prevent="addDate"
                       />
                     </template>
@@ -682,11 +691,11 @@ onUnmounted(() => {
             <div class="mb-3">
               <UiField label="Descrição da obra" explain="Descreva brevemente a obra">
                 <template #default="{ id }">
-                  <textarea
+                  <UiInput
                     :id="id"
                     v-model="descriptionInput"
-                    class="form-control"
-                    rows="4"
+                    multiline
+                    :rows="4"
                     placeholder="Texto exemplo"
                     maxlength="500"
                   />
@@ -729,10 +738,9 @@ onUnmounted(() => {
             <div v-for="vf in VOCAB_FIELDS" :key="vf.label" class="mb-3">
               <UiField :label="vf.label" :explain="vf.explain">
                 <div class="position-relative">
-                  <input
+                  <UiInput
                     v-model="vf.field.input.value"
                     type="text"
-                    class="form-control border-preto"
                     :placeholder="`Adicione ${vf.label.toLowerCase()}`"
                     autocomplete="off"
                     @input="onVocabInput(vf)"
@@ -900,29 +908,73 @@ onUnmounted(() => {
 .work-modal__search-box {
   position: relative;
   flex-shrink: 0;
-  /* Sem margem lateral: o padding do wrapper já alinha o campo à largura do mapa. */
   margin: 0 0 10px;
   z-index: 20;
-
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
-/* Altura da busca de endereço. Alvo pelas classes dos próprios elementos: com
-   `.work-modal__search-box .input-group > .form-control`, o compilador de CSS
-   scoped perdia o ancestral e a regra vazava para TODOS os campos combinados do
-   modal (título, autoria, datas), encolhendo-os. */
-.work-modal__search-input,
-.work-modal__search-clear {
-  height: 34px;
-  min-height: 34px;
-  padding-block: 0;
-  font-size: 0.875rem;
-  line-height: 1.2;
+.work-modal__search-group {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 30px;
+  box-sizing: border-box;
+}
+
+.work-modal__search-group :deep(.ui-input.work-modal__search-input) {
+  flex: 1 1 auto;
+  width: auto !important;
+  min-width: 0;
+  max-width: 100%;
+  height: 30px;
+  min-height: 30px;
+  box-sizing: border-box;
+}
+
+.work-modal__search-group--has-clear :deep(.ui-input.work-modal__search-input) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .work-modal__search-clear {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  border: 0.75px solid var(--Preto, #1f1f1f);
+  border-left: 0;
+  border-radius: 0 5px 5px 0;
+  background: var(--Off_white, #faf9f9);
+  color: var(--Preto, #1f1f1f);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.work-modal__search-clear :deep(.bi),
+.work-modal__search-clear .bi {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.work-modal__search-clear:hover,
+.work-modal__search-clear:focus {
+  background-color: var(--Preto, #1f1f1f);
+  border-color: var(--Preto, #1f1f1f);
+  color: var(--Branco, #fff);
+  outline: none;
 }
 
 /* Endereço sobreposto ao mapa — mesmo tratamento do mapa de submissão de imagem:
@@ -932,8 +984,6 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   z-index: 10;
-  /* A caixa acompanha o texto; o teto evita que um endereço longo do Nominatim
-     atravesse o mapa inteiro. */
   max-width: calc(100% - 16px);
   margin: 8px;
   padding: 8px 12px;
@@ -943,7 +993,6 @@ onUnmounted(() => {
   color: var(--Preto, #2f2f2f);
   font-size: 0.8125rem;
   line-height: 1.35;
-  /* No máximo duas linhas, para não cobrir o mapa. */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1022,26 +1071,66 @@ onUnmounted(() => {
 }
 
 .btn-enlarge-40 {
-  padding: calc(0.1rem) calc(0.75rem);
-}
-.btn-enlarge-40 > i.bi {
-  font-size: 1.6rem;
-  /* `1.4` estufava o ícone para além da altura do botão. */
-  line-height: 1;
+  padding: 0 0.5rem;
 }
 
-/* Inputs combinados (seletor + campo + "+"): mesma altura nos três, sem atingir
-   a busca de endereço da etapa 1, que é mais baixa de propósito. Regras planas
-   de propósito — aninhadas, o CSS scoped já perdeu o ancestral neste arquivo. */
+.btn-enlarge-40 > i.bi {
+  display: block;
+  font-size: 1.6rem;
+  line-height: 1;
+  transform: translateY(1px);
+}
+
 .work-modal__combo {
+  display: flex;
+  flex-wrap: nowrap;
   align-items: stretch;
+  width: 100%;
+}
+
+.work-modal__combo > .dropdown-toggle {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 42%;
 }
 
 .work-modal__combo > .form-control,
-.work-modal__combo > .btn,
-.work-modal__combo > .input-group-text {
+.work-modal__combo :deep(.ui-input) {
+  flex: 1 1 auto;
+  width: 1%;
+  min-width: 0;
   height: var(--control-height-desk, 38px);
   min-height: var(--control-height-desk, 38px);
+}
+
+.work-modal__combo > .btn,
+.work-modal__combo > .input-group-text {
+  flex: 0 0 auto;
+  height: var(--control-height-desk, 38px);
+  min-height: var(--control-height-desk, 38px);
+}
+
+.work-modal__combo > .btn:not(.dropdown-toggle) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+}
+
+/* Ano estica como Título/Autoria, para o "+" ficar na mesma coluna. */
+.work-modal__date-group:not(.work-modal__date-group--interval)
+  :deep(.ui-input.work-modal__date-year) {
+  flex: 1 1 auto !important;
+  width: 1% !important;
+  max-width: none !important;
+}
+
+/* Intervalo: os dois anos dividem o espaço entre dropdown e "+". */
+.work-modal__date-group--interval :deep(.ui-input.work-modal__date-year) {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0;
 }
 
 .work-modal__footer {
@@ -1109,7 +1198,7 @@ onUnmounted(() => {
 
   .work-modal__footer {
     padding: 12px 16px calc(20px + env(safe-area-inset-bottom));
-    /* `reverse` para o botão principal ficar em cima sem mexer na ordem do HTML. */
+    /* reverse para o botão principal ficar em cima sem mexer na ordem do HTML. */
     flex-direction: column-reverse;
   }
 
@@ -1119,15 +1208,24 @@ onUnmounted(() => {
     overscroll-behavior: contain;
   }
 
-  /* Alvos de toque: 44px é o mínimo confortável. O input tinha 34px e os botões
-     do rodapé ~31px, altos demais para o dedo errar. */
-  .work-modal__search-input,
-  .work-modal__search-clear {
+  /* Alvos de toque: 44px é o mínimo confortável. */
+  .work-modal__search-group {
+    height: 44px;
+  }
+
+  .work-modal__search-group :deep(.ui-input.work-modal__search-input) {
     height: 44px;
     min-height: 44px;
-    /* 16px evita o zoom automático que o Safari do iOS aplica ao focar um
-       campo com fonte menor — o modal inteiro saltava de escala. */
+    width: auto !important;
     font-size: 16px;
+  }
+
+  .work-modal__search-clear {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
   }
 
   .work-modal__btn {
@@ -1141,13 +1239,7 @@ onUnmounted(() => {
   }
 
   .work-modal__body {
-    /* Respiro no fim do formulário: sem ele o último campo encosta no rodapé
-       quando o teclado está aberto. */
     padding-bottom: 16px;
-
-    /* 16px evita o zoom automático do Safari do iOS ao focar um campo — abaixo
-       disso ele amplia a página inteira. O CSS global usa 14px; a troca fica
-       restrita a este modal. */
     .form-control,
     .form-select {
       font-size: 16px;
@@ -1156,54 +1248,50 @@ onUnmounted(() => {
 
   /* Mesma trava de altura do desktop, no valor de toque do celular. */
   .work-modal__combo > .form-control,
+  .work-modal__combo :deep(.ui-input),
   .work-modal__combo > .btn,
   .work-modal__combo > .input-group-text {
     height: var(--control-height-mobile, 48px);
     min-height: var(--control-height-mobile, 48px);
   }
 
-  /* Só no modo intervalo: são cinco elementos numa linha (seletor, ano, "até",
-     ano e "+") e não cabem em telas estreitas. No modo "Ano" são três e
-     continuam lado a lado. */
   .work-modal__date-group--interval {
     flex-wrap: wrap;
-
-    > .dropdown-toggle {
-      width: 100%;
-      justify-content: space-between;
-      border-top-left-radius: 5px;
-      /* Vence o !important do `rounded-end-0`, que serve à disposição em uma
-         linha só; ocupando a linha inteira, o canto superior direito arredonda. */
-      border-top-right-radius: 5px !important;
-      border-bottom-left-radius: 0;
-      border-bottom-right-radius: 0 !important;
-    }
-
-    /* Sem a borda superior a segunda linha encosta na primeira sem traço duplo. */
-    > .form-control,
-    > .input-group-text,
-    > .btn:not(.dropdown-toggle) {
-      margin-top: -1px;
-    }
-
-    > .form-control:first-of-type {
-      border-bottom-left-radius: 5px;
-    }
-
-    > .btn:last-child {
-      border-bottom-right-radius: 5px;
-    }
-
-    /* Na linha própria os campos de ano dividem o espaço disponível. */
-    > .form-control {
-      max-width: none !important;
-      flex: 1 1 0;
-      min-width: 0;
-    }
   }
 
-  /* As listas suspensas são recortadas pelo corpo rolável quando o campo está
-     perto do fim da tela; limitar a altura as mantém visíveis. */
+  .work-modal__date-group--interval > .dropdown-toggle {
+    width: 100%;
+    justify-content: space-between;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px !important;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0 !important;
+  }
+
+  .work-modal__date-group--interval > .form-control,
+  .work-modal__date-group--interval :deep(.ui-input),
+  .work-modal__date-group--interval > .input-group-text,
+  .work-modal__date-group--interval > .btn:not(.dropdown-toggle) {
+    margin-top: -1px;
+  }
+
+  .work-modal__date-group--interval > .form-control:first-of-type,
+  .work-modal__date-group--interval :deep(.ui-input.work-modal__date-year:first-of-type) {
+    border-bottom-left-radius: 5px;
+  }
+
+  .work-modal__date-group--interval > .btn:last-child {
+    border-bottom-right-radius: 5px;
+  }
+
+  .work-modal__date-group--interval > .form-control,
+  .work-modal__date-group--interval :deep(.ui-input) {
+    max-width: none !important;
+    flex: 1 1 0 !important;
+    width: 1% !important;
+    min-width: 0;
+  }
+
   .work-modal__body .dropdown-menu {
     max-height: min(220px, 40vh);
     overflow-y: auto;

@@ -143,7 +143,7 @@ export default {
 .ui-field__label {
   flex: 1 1 auto;
   min-width: 0;
-  margin-bottom: 0;
+  margin-bottom: 8px !important;
   color: var(--Gray-900, #212529);
   font-family: "DM Sans", sans-serif;
   font-size: 14px;
@@ -164,6 +164,12 @@ export default {
   justify-content: center;
   line-height: 1;
   vertical-align: middle;
+}
+
+@media (max-width: 767.98px) {
+  .ui-field__explain {
+    display: none;
+  }
 }
 
 .invalid-feedback {
