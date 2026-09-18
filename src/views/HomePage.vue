@@ -428,6 +428,7 @@ watch(
   () => route.query,
   () => {
     const mode = searchMode.value;
+    localSearchMode.value = mode;
     syncFromSnapshot(mode);
     const snapshot = loadSnapshot(mode);
     // Fase 1: para "avancada", usa advancedFilters.value (buildAdvancedFiltersFromUrl),
