@@ -34,10 +34,10 @@ $breakpoint-wide: 1440px;
 
 .about-layout {
   width: 100%;
-  margin-top: 34px;
+  // margin-top: 34px;
   padding: 0 1rem;
   box-sizing: border-box;
-
+  
   @media (min-width: #{$breakpoint-laptop}) {
     margin-top: 0;
     padding: 8px 1.25rem;
@@ -64,8 +64,9 @@ $breakpoint-wide: 1440px;
 
 /* Menu lateral a partir de 768 (comportamento atual); sem gutter até 1440 */
 .about-layout__menu {
-  display: none;
-  min-width: 0;
+  // display: none;
+  // min-width: 0;
+  padding: 0;
 
   @media (min-width: #{$breakpoint-laptop}) {
     display: block;
