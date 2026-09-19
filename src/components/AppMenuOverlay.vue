@@ -1,6 +1,5 @@
 <script setup>
-import { reactive, computed, watch, onBeforeUnmount } from "vue";
-import { useRoute } from "vue-router";
+import { computed, watch, onBeforeUnmount } from "vue";
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -12,29 +11,12 @@ const props = defineProps({
 
 const emit = defineEmits(["update:show", "logout"]);
 
-const route = useRoute();
-
 // Mostra no máximo 2 coletivos aqui; para ver o resto, o usuário passa
 // pela bolinha de perfil (ela leva pro perfil, que lista todos).
 const MAX_VISIBLE_COLLECTIVES = 2;
 const visibleCollectives = computed(() =>
   props.collectives.slice(0, MAX_VISIBLE_COLLECTIVES)
 );
-
-const sobreItems = [
-  { label: "ARQUIGRAFIA", to: "/about/project" },
-  { label: "Membros", to: "/about/members" },
-  { label: "Políticas", to: "/about/policies" },
-  // { label: "Vocabulário", to: "/about/vocabulary" },
-];
-
-const openSections = reactive({
-  sobre: false,
-});
-
-function toggleSection(key) {
-  openSections[key] = !openSections[key];
-}
 
 function initials(name) {
   if (!name) return "?";
@@ -203,34 +185,11 @@ onBeforeUnmount(() => {
               Login
             </router-link>
 
-            <!-- Acordeão -->
+            <!-- Navegação -->
             <nav class="app-menu-overlay__accordion">
-              <div class="app-menu-overlay__accordion-item">
-                <button
-                  type="button"
-                  class="app-menu-overlay__accordion-trigger"
-                  :class="{ 'is-open': openSections.sobre }"
-                  :aria-expanded="openSections.sobre"
-                  @click="toggleSection('sobre')"
-                >
-                  <span>Sobre</span>
-                  <i class="bi bi-chevron-down app-menu-overlay__chevron" :class="{ 'is-open': openSections.sobre }"></i>
-                </button>
-                <div class="app-menu-overlay__accordion-panel-wrapper" :class="{ 'is-open': openSections.sobre }">
-                  <div class="app-menu-overlay__accordion-panel">
-                    <router-link
-                      v-for="item in sobreItems"
-                      :key="item.to"
-                      :to="item.to"
-                      class="app-menu-overlay__link"
-                      :class="{ 'is-active': route.path === item.to }"
-                      @click="close"
-                    >
-                      {{ item.label }}
-                    </router-link>
-                  </div>
-                </div>
-              </div>
+              <router-link to="/about/project" class="app-menu-overlay__link app-menu-overlay__accordion-item" @click="close">
+                Sobre
+              </router-link>
 
               <router-link to="/about/faq" class="app-menu-overlay__link app-menu-overlay__accordion-item" @click="close">
                 FAQ
@@ -291,11 +250,14 @@ $breakpoint-xlg: 1400px;
   -webkit-overflow-scrolling: touch;
   background-color: var(--Branco, #ffffff);
   min-height: 100dvh;
-  padding-top: 248px;
+  // padding-top: 248px;
   // gap: 24px;
 
   @include md {
-    padding-top: 230px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    // padding-top: 230px;
   //   height: 439px;
 
   //   flex-direction: row;
@@ -324,6 +286,8 @@ $breakpoint-xlg: 1400px;
   @include md {
     flex-direction: row;
     height: 370px;
+    gap: 40px;
+    // width: 36px;
     // align-items: center;
   }
 
@@ -335,11 +299,11 @@ $breakpoint-xlg: 1400px;
 .app-menu-overlay__close {
   position: fixed;
   // top: max(8rem, env(safe-area-inset-top) + 0.75rem);
-  top: 122px;
+  top: 24px;
   // right: max(1.1rem, env(safe-area-inset-right) + 0.75rem);
   right: 24px;
-  width: clamp(1.75rem, 5vw, 2.25rem);
-  height: clamp(1.75rem, 5vw, 2.25rem);
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -378,7 +342,7 @@ $breakpoint-xlg: 1400px;
     order: 0;
     border-top: none;
     padding: 0;
-    padding-left: 44px;
+    // padding-left: 44px;
     align-self: flex-end;
     // max-width: 26rem;
   }
@@ -398,14 +362,14 @@ $breakpoint-xlg: 1400px;
   }
 
   @include lg {
-    width: 350px;
+    width: 460px;
   }
 }
 
 .app-menu-overlay__brand-text {
   color: var(--Cinza_E);
-  font-size: clamp(0.625rem, 2.2vw, 0.75rem);
-  line-height: 1.4;
+  font-size: 12px;
+  line-height: 115%;
   font-weight: 400;
   margin: 0;
   
@@ -423,7 +387,7 @@ $breakpoint-xlg: 1400px;
   width: 100%;
   max-width: 21rem;
   // padding-left: clamp(1rem, 10vw, 5.25rem);
-  padding: 0px 44px 0px 87px;
+  padding: 213px 32px;
   box-sizing: border-box;
   flex-shrink: 0;
 
@@ -431,7 +395,7 @@ $breakpoint-xlg: 1400px;
     order: 0;
     width: auto;
     max-width: 24rem;
-    padding-left: 0;
+    padding: 0;
     // margin-top: 10px;
   }
 }
@@ -440,7 +404,8 @@ $breakpoint-xlg: 1400px;
 
   @include md {
     align-self: flex-end;
-    height: 150px;
+    // height: 150px;
+    width: 236px;
   }
 }
 
@@ -473,8 +438,8 @@ $breakpoint-xlg: 1400px;
 
 .app-menu-overlay__collective-avatar,
 .app-menu-overlay__collective-add {
-  width: clamp(2.75rem, 10vw, 3.125rem);
-  height: clamp(2.75rem, 10vw, 3.125rem);
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -482,6 +447,11 @@ $breakpoint-xlg: 1400px;
   flex-shrink: 0;
   text-decoration: none;
   overflow: hidden;
+
+  .bi {
+    line-height: 100%;
+    font-size: 16px;
+  }
 }
 
 .app-menu-overlay__collective-avatar {
@@ -535,70 +505,6 @@ $breakpoint-xlg: 1400px;
   margin-bottom: 1.5rem;
 }
 
-.app-menu-overlay__accordion-trigger {
-  display: flex;
-  align-items: center;
-  // justify-content: c;
-  gap: 67px;
-  width: 100%;
-  border: none;
-  background: none;
-  padding: 0;
-  color: var(--Cinza_E);
-  font-weight: 500;
-  // font-size: clamp(1.125rem, 4vw + 0.4rem, 1.25rem);
-  font-size: 20px;
-  line-height: 150%;
-  cursor: pointer;
-  text-align: left;
-  transition: text-shadow 0.1s ease;
-
-  &.is-open {
-    // font-weight: 700;
-    text-shadow: 0 0 0.65px currentColor, 0 0 0.65px currentColor;
-  }
-
-  @include md {
-    font-size: 20px;
-  }
-  
-  @include lg {
-    
-  }
-}
-
-.app-menu-overlay__chevron {
-  font-size: 20px;
-  flex-shrink: 0;
-  transition: transform 0.2s ease;
-  color: var(--Cinza_E);
-
-  &.is-open {
-    transform: rotate(180deg);
-  }
-}
-
-.app-menu-overlay__accordion-panel-wrapper {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.25s ease;
-
-  &.is-open {
-    grid-template-rows: 1fr;
-  }
-}
-
-.app-menu-overlay__accordion-panel {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  
-  // a {
-  //   padding-top: 1rem;
-  // }
-}
-
 .app-menu-overlay__link {
   border: none;
   background: none;
@@ -610,10 +516,6 @@ $breakpoint-xlg: 1400px;
   text-decoration: none;
   cursor: pointer;
   text-align: left;
-
-  &:first-child {
-    padding-top: 20px;
-  }
 
   &.is-active {
     color: var(--Laranja_E);
