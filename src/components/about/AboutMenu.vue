@@ -39,12 +39,52 @@
       </li>
     </ul>
   </nav>
+  <nav class="about-menu-mobile" aria-label="Navegação da seção Sobre">
+    <div class="about-menu-mobile__scroller" ref="scrollerRef">
+      <router-link
+        v-for="item in items"
+        :key="item.name"
+        :to="{ name: item.name }"
+        class="about-menu-mobile__tab"
+        :class="{ 'about-menu-mobile__tab--active': $route.name === item.name }"
+      >
+        {{ item.label }}
+      </router-link>
+    </div>
+  </nav>
 </template>
 
-<script>
-export default {
-  name: "AboutMenu",
-};
+<script setup>
+import { ref, onMounted, watch, nextTick } from "vue";
+import { useRoute } from "vue-router";
+
+defineOptions({ name: "AboutMenu" });
+
+const items = [
+  { name: "about-project", label: "Sobre" },
+  { name: "about-members", label: "Membros" },
+  { name: "about-policies", label: "Políticas da plataforma" },
+  { name: "about-faq", label: "FAQ" },
+  { name: "about-open-source", label: "Código aberto" },
+  { name: "about-vocabulary", label: "Vocabulário" },
+];
+
+const route = useRoute();
+const scrollerRef = ref(null);
+
+function scrollActiveTabIntoView() {
+  const activeTab = scrollerRef.value?.querySelector(
+    ".about-menu-mobile__tab--active"
+  );
+  activeTab?.scrollIntoView({ inline: "center", block: "nearest" });
+}
+
+onMounted(scrollActiveTabIntoView);
+
+watch(
+  () => route.name,
+  () => nextTick(scrollActiveTabIntoView)
+);
 </script>
 
 <style lang="scss" scoped>
@@ -122,6 +162,59 @@ $breakpoint-md: 768px;
       line-height: 125%;
       letter-spacing: 0%;
     }
+  }
+
+  display: none;
+
+  @include md {
+    display: block;
+  }
+
+}
+
+.about-menu-mobile {
+  margin-bottom: 32px;
+
+  @include md {
+    display: none;
+  }
+}
+ 
+.about-menu-mobile__scroller {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
+  @include md {
+    padding: 0 16px;
+  }
+ 
+
+  scrollbar-width: none; 
+ 
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+ 
+.about-menu-mobile__tab {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 12px 2px;
+  border-bottom: 2px solid transparent;
+  color: var(--Cinza_E, #222222);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 125%;
+  text-decoration: none;
+  transition: text-shadow 0.1s ease;
+ 
+  &--active {
+    color: var(--Laranja_E, #ff7f00);
+    text-shadow: 0 0 0.65px currentColor, 0 0 0.65px currentColor;
+    border-bottom-color: var(--Laranja_E, #ff7f00);
   }
 }
 </style>
