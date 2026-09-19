@@ -98,6 +98,13 @@ $breakpoint-wide: 1440px; // mesmo limite do gutter em /eu/imagens
   min-width: 0;
 }
 
+.authentication-container__mosaic {
+  @media (max-width: 1000px) {
+    display: none;
+  }
+}
+
+
 /* 1024–1439: 2 colunas, SEM gutter */
 @media (min-width: #{$breakpoint-tablet-side}) and (max-width: 1439.98px) {
   .authentication-container__form {
