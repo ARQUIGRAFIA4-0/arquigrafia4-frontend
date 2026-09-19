@@ -238,11 +238,6 @@ $breakpoint-xlg: 1400px;
 
 .app-menu-overlay {
   position: fixed;
-  // display: flex;
-  // flex-direction: column;
-  // justify-content: flex-start;
-  // justify-content: space-between;
-  // align-items: stretch;
   inset: 0;
   z-index: 1030;
   overflow-y: auto;
@@ -250,27 +245,17 @@ $breakpoint-xlg: 1400px;
   -webkit-overflow-scrolling: touch;
   background-color: var(--Branco, #ffffff);
   min-height: 100dvh;
-  // padding-top: 248px;
-  // gap: 24px;
+
 
   @include md {
     display: flex;
     justify-content: center;
     align-items: center;
-    // padding-top: 230px;
-  //   height: 439px;
-
-  //   flex-direction: row;
-  //   align-items: flex-start;
-  //   justify-content: space-between;
-  //   padding: clamp(2.5rem, 5vw, 4rem) clamp(2.5rem, 5vw, 6rem);
-  //   gap: clamp(2rem, 4vw, 4rem);
   }
 
   @include lg {
     display: flex;
-    justify-content: center;
-    padding-top: 55px;
+    justify-content: center;;
   }
 
 }
@@ -285,10 +270,8 @@ $breakpoint-xlg: 1400px;
 
   @include md {
     flex-direction: row;
-    height: 370px;
+    height: auto;
     gap: 40px;
-    // width: 36px;
-    // align-items: center;
   }
 
   @include lg {
@@ -298,9 +281,7 @@ $breakpoint-xlg: 1400px;
 
 .app-menu-overlay__close {
   position: fixed;
-  // top: max(8rem, env(safe-area-inset-top) + 0.75rem);
   top: 24px;
-  // right: max(1.1rem, env(safe-area-inset-right) + 0.75rem);
   right: 24px;
   width: 24px;
   height: 24px;
@@ -330,7 +311,6 @@ $breakpoint-xlg: 1400px;
 .app-menu-overlay__brand {
   order: 2;
   text-align: left;
-  // padding-top: clamp(1.5rem, 6vw, 2.5rem);
   gap: 4px;
   display: flex;
   flex-direction: column;
@@ -342,9 +322,7 @@ $breakpoint-xlg: 1400px;
     order: 0;
     border-top: none;
     padding: 0;
-    // padding-left: 44px;
     align-self: flex-end;
-    // max-width: 26rem;
   }
 
   @include lg {
@@ -386,7 +364,6 @@ $breakpoint-xlg: 1400px;
   order: 1;
   width: 100%;
   max-width: 21rem;
-  // padding-left: clamp(1rem, 10vw, 5.25rem);
   padding: 213px 32px;
   box-sizing: border-box;
   flex-shrink: 0;
@@ -396,7 +373,6 @@ $breakpoint-xlg: 1400px;
     width: auto;
     max-width: 24rem;
     padding: 0;
-    // margin-top: 10px;
   }
 }
 
@@ -404,13 +380,11 @@ $breakpoint-xlg: 1400px;
 
   @include md {
     align-self: flex-end;
-    // height: 150px;
     width: 236px;
   }
 }
 
 .app-menu-overlay__section {
-  // margin-bottom: clamp(1.75rem, 6vw, 2.5rem);
   margin-bottom: 32px;
   
   &:first-child {
@@ -491,7 +465,6 @@ $breakpoint-xlg: 1400px;
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
-  // gap: clamp(1.25rem, 4vw, 1.5rem);
   gap: 20px;
 }
 
@@ -511,7 +484,7 @@ $breakpoint-xlg: 1400px;
   padding: 0;
   color: var(--Cinza_E);
   font-weight: 500;
-  font-size: clamp(1.125rem, 4vw + 0.4rem, 1.25rem);
+  font-size: 20px;
   line-height: 150%;
   text-decoration: none;
   cursor: pointer;
@@ -522,7 +495,7 @@ $breakpoint-xlg: 1400px;
   }
 
   @include md {
-    font-size: 20px;
+    font-size: 30px;
   }
 }
 
