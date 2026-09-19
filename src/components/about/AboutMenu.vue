@@ -40,7 +40,7 @@
     </ul>
   </nav>
   <nav class="about-menu-mobile" aria-label="Navegação da seção Sobre">
-    <div class="about-menu-mobile__scroller">
+    <div class="about-menu-mobile__scroller" ref="scrollerRef">
       <router-link
         v-for="item in items"
         :key="item.name"
@@ -55,6 +55,8 @@
 </template>
 
 <script setup>
+import { ref, onMounted, watch, nextTick } from "vue";
+import { useRoute } from "vue-router";
 
 defineOptions({ name: "AboutMenu" });
 
@@ -66,6 +68,23 @@ const items = [
   { name: "about-open-source", label: "Código aberto" },
   { name: "about-vocabulary", label: "Vocabulário" },
 ];
+
+const route = useRoute();
+const scrollerRef = ref(null);
+
+function scrollActiveTabIntoView() {
+  const activeTab = scrollerRef.value?.querySelector(
+    ".about-menu-mobile__tab--active"
+  );
+  activeTab?.scrollIntoView({ inline: "center", block: "nearest" });
+}
+
+onMounted(scrollActiveTabIntoView);
+
+watch(
+  () => route.name,
+  () => nextTick(scrollActiveTabIntoView)
+);
 </script>
 
 <style lang="scss" scoped>
@@ -173,7 +192,7 @@ $breakpoint-md: 768px;
   }
  
 
-  scrollbar-width: none;
+  scrollbar-width: none; 
  
   &::-webkit-scrollbar {
     display: none;
