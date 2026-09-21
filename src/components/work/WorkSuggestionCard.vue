@@ -39,7 +39,7 @@ const FIELD_LABELS = {
   titles: "novos títulos",
   agents: "nova autoria",
   dates: "novas datas",
-  description: "uma nova descrição",
+  descriptions: "uma nova descrição",
   style_periods: "novos aspectos estéticos",
   cultural_contexts: "um novo contexto cultural",
   work_types: "uma nova tipologia",
@@ -61,7 +61,7 @@ const DATE_TYPE_LABELS = {
 // `reason` viaja dentro do payload mas não é um campo decidível.
 const payloadFields = computed(() =>
   Object.keys(props.suggestion.payload || {}).filter(
-    (key) => key === "description" || FIELD_TO_WORK_KEY[key] !== undefined
+    (key) => key === "descriptions" || FIELD_TO_WORK_KEY[key] !== undefined
   )
 );
 
@@ -166,12 +166,15 @@ const buildListDiff = async (field) => {
 
 onMounted(async () => {
   for (const field of payloadFields.value) {
-    if (field === "description") {
+    if (field === "descriptions") {
+      // O payload traz só UUIDs; o texto vem de "vrac-descriptions/{id}".
+      const ids = props.suggestion.payload.descriptions || [];
+      const entities = await Promise.all(ids.map((id) => api.resolveVracEntity("descriptions", id)));
       fieldStates.push({
         field,
         kind: "scalar",
         current: props.work?.description || "",
-        suggested: props.suggestion.payload.description || "",
+        suggested: entities.map((e) => e?.text).filter(Boolean).join("\n\n"),
         decision: null,
       });
       continue;

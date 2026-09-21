@@ -95,8 +95,12 @@ const buildPayload = async () => {
   if (current.titles !== initialSnapshot.titles) payload.titles = titleIds;
   if (current.agents !== initialSnapshot.agents) payload.agents = agentIds;
   if (current.dates !== initialSnapshot.dates) payload.dates = dateIds;
+  // Sempre uma descrição nova: editar a existente mudaria a obra sem revisão.
+  // `descriptions` substitui a lista; campo vazio sugere remover.
   if (current.description !== initialSnapshot.description) {
-    payload.description = draft.description;
+    payload.descriptions = draft.description
+      ? [await api.createVracDescription(authHeader, draft.description)]
+      : [];
   }
   for (const payloadKey of api.VRAC_VOCAB_KEYS) {
     if (current[payloadKey] === initialSnapshot[payloadKey]) continue;
