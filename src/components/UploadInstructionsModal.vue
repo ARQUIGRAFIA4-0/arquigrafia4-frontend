@@ -10,9 +10,6 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue", "confirm", "cancel"]);
 
-// Placeholder temporário — trocar pelas imagens reais do tutorial.
-const placeholderImg = "https://placehold.co/600x400";
-
 const buscarImagem = (numero) => {
   return new URL(`../assets/uploadPlaceholder${numero}.png`, import.meta.url).href
 }
