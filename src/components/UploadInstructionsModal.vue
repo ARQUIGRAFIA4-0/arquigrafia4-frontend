@@ -154,8 +154,7 @@ onBeforeUnmount(() => {
             <section class="uim-section">
               <p>
                 Buscamos difundir imagens de arquiteturas e do espaço
-                construído nos contextos brasileiro e lusófono. Sendo assim,
-                garanta que suas imagens tenham esses elementos como foco.
+                construído nos contextos brasileiro e lusófono. Garanta que suas imagens tenham esses elementos como foco.
               </p>
               <div class="uim-row">
                 <img
