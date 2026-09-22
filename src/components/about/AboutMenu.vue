@@ -25,6 +25,12 @@
           <i class="bi bi-arrow-right about-menu__icon"></i>
         </router-link>
       </li>
+      <li class="about-menu__item" :class="{ 'about-menu__item--active': $route.name === 'about-advanced-search' }">
+        <router-link :to="{ name: 'about-advanced-search' }" class="about-menu__link">
+          <span class="about-menu__text">Busca Avançada</span>
+          <i class="bi bi-arrow-right about-menu__icon"></i>
+        </router-link>
+      </li>
       <li class="about-menu__item" :class="{ 'about-menu__item--active': $route.name === 'about-open-source' }">
         <router-link :to="{ name: 'about-open-source' }" class="about-menu__link">
           <span class="about-menu__text">Código aberto</span>
@@ -65,6 +71,7 @@ const items = [
   { name: "about-members", label: "Membros" },
   { name: "about-policies", label: "Políticas da plataforma" },
   { name: "about-faq", label: "FAQ" },
+  { name: "about-advanced-search", label: "Busca avançada" },
   { name: "about-open-source", label: "Código aberto" },
   { name: "about-vocabulary", label: "Vocabulário" },
 ];
