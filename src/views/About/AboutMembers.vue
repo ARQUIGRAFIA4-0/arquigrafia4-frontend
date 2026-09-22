@@ -12,6 +12,7 @@
       <div class="row">
         <div class="col-12 col-md-6">
           <p class="about-members__paragraph"><strong>Pesquisadores associados</strong></p>
+          <p class="about-members__paragraph">Prof. Dr. Artur Simões Rozestraten – FAUUSP</p>
           <p class="about-members__paragraph">Profa. Dra. Kalinka R. L. Jaquie Castelo Branco – ICMCUSP</p>
           <p class="about-members__paragraph">Profa. Dra. Vania Mara Alves Lima – ECAUSP</p>
           <p class="about-members__paragraph">Profa. Dra. Cibele Araujo C. M. dos Santos – ECAUSP</p>
@@ -74,6 +75,7 @@
           <p class="about-members__paragraph">André Jin Teh Chou – Graduado FAUUSP</p>
           <p class="about-members__paragraph">André Luís de Lima – Mestre FAUUSP</p>
           <p class="about-members__paragraph">Angélica Batassim Nunes – Graduada ICMCUSP</p>
+          <p class="about-members__paragraph">Arlon da Silva Moreira – TT4A</p>
           <p class="about-members__paragraph">Arthur de Sousa Prates – Graduando FAUUSP</p>
           <p class="about-members__paragraph">Aurelio Akira M. Matsui – Doutor Universidade de Tokyo</p>
           <p class="about-members__paragraph">Beatriz Moraes de Andrade – Graduanda FAUUSP</p>
@@ -89,6 +91,7 @@
           <p class="about-members__paragraph">Carolina Alves da Silva – Graduanda ECAUSP</p>
           <p class="about-members__paragraph">Diogo Augusto – Graduado em IC FAUUSP</p>
           <p class="about-members__paragraph">Edith Zaida Sonco Mamani – Mestre IMEUSP</p>
+          <p class="about-members__paragraph">Eduardo Antonio Miranda Quezada – TT5</p>
           <p class="about-members__paragraph">Eduardo Paschoal de Sousa – Pós-doutorando FAUUSP</p>
           <p class="about-members__paragraph">Enzo Toshio S. L. de Mello – FITO</p>
           <p class="about-members__paragraph">Fernanda Adams Domingos – Graduanda FAUUSP</p>
@@ -113,7 +116,7 @@
           <p class="about-members__paragraph">Izadora Feldner Graci – Graduanda ECAUSP</p>
           <p class="about-members__paragraph">Jéssica Carvalho Silva – Graduanda FAUUSP</p>
           <p class="about-members__paragraph">Jéssica Maria Neves Lúcio – Graduanda FAUUSP</p>
-          <p class="about-members__paragraph">João Henrique Kersul Faria – Graduando PoliUSP</p>
+          <p class="about-members__paragraph">João Henrique Kersul Faria – Graduando PoliUSP</p>     
         </div>
         <div class="col-12 col-md-6">
           <p class="about-members__paragraph">João Lucas Vieira Nogueira – Pós-doutorando FAUUSP</p>
@@ -136,6 +139,7 @@
           <p class="about-members__paragraph">Luzia Saeko Kanashiro – Graduanda ECAUSP</p>
           <p class="about-members__paragraph">Lygia Brito Santos – Graduanda ECAUSP</p>
           <p class="about-members__paragraph">Maísa Urbano – Graduanda FAUUSP</p>
+          <p class="about-members__paragraph">Maria Cecilia Augusto da Silva – TT4</p>
           <p class="about-members__paragraph">Maria Gabriela Feitosa dos Santos – Graduanda FAUUSP</p>
           <p class="about-members__paragraph">Mariana dos Anjos Silva – Graduanda UFSCAR</p>
           <p class="about-members__paragraph">Marianna Kinuyo Kuraoka – Graduanda FAUUSP</p>
@@ -167,6 +171,7 @@
           <p class="about-members__paragraph">Victor Luís Vital Martins – Graduando FAUUSP</p>
           <p class="about-members__paragraph">Victor Williams Stafusa da Silva – Mestre IMEUSP</p>
           <p class="about-members__paragraph">Vladimir Emiliano Moreira Rocha – Doutorando PoliUSP</p>
+          <p class="about-members__paragraph">Weslley Ferreira de Moraes – TT4</p>
           <p class="about-members__paragraph">Willian Carvalho Silva – Mestre ECAUSP</p>
           <p class="about-members__paragraph">Yuri Alexsander Tavares Pereira – Mestre Universidad Complutense de Madrid</p>
         </div>

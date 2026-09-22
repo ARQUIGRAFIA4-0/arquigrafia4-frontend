@@ -76,7 +76,7 @@ const buscarImagem = (numero) => {
     <section class="cg-section">
       <p>
         Buscamos difundir imagens de arquiteturas e do espaço construído nos
-        contextos brasileiro e lusófono. Sendo assim, garanta que suas
+        contextos brasileiro e lusófono. Garanta que suas
         imagens tenham esses elementos como foco.
       </p>
       <div class="cg-row">
@@ -123,7 +123,7 @@ $breakpoint-md: 768px;
     font-weight: 500;
     font-size: 20px;
     line-height: 150%;
-    margin: 32px 0 16px 0;
+    margin: 0px 0 16px 0;
     color: var(--Cinza_E);
 
     @include md {

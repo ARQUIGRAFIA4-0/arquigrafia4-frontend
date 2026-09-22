@@ -152,7 +152,7 @@ defineExpose({ openFileDialog });
 </script>
 
 <template>
-  <div>
+  <div class="h-100">
     <!-- Preview de imagens selecionadas -->
     <div v-if="imagePreviews.length > 0" class="upload-image-box__preview">
       <div class="preview-box">
@@ -196,7 +196,7 @@ defineExpose({ openFileDialog });
     </div>
 
     <!-- Caixa de upload inicial -->
-    <div v-else>
+    <div class="h-100" v-else>
       <div class="upload-box" :class="{ 'upload-box--dragging': isDragging }" @click="openFileDialog"
         @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
         <h1 v-if="showUploadInstructions" v-html="instructionsTitle"></h1>
@@ -414,6 +414,7 @@ $breakpoint-md: 768px;
   cursor: pointer;
 
   @include md {
+    height: 100%;
     min-height: 500px;
   }
 

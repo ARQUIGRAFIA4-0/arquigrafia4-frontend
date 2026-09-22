@@ -86,7 +86,7 @@ $breakpoint-lg: 1024px;
 }
 
 .collaborate-layout {
-  padding: 1.5rem 1rem;
+  padding: 1.5rem 1rem 0 1rem;
 
   @include md {
     padding-left: 50px;
@@ -101,6 +101,12 @@ $breakpoint-lg: 1024px;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
     gap: 20px;
     align-items: start;
+    max-width: 1440px;
+    margin: auto;
+
+    &__main {
+      height: 100%;
+    }
   }
 
   &__help-btn {
