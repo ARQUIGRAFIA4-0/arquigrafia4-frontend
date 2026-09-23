@@ -15,9 +15,12 @@ defineOptions({ name: "PathMap" });
 const props = defineProps({
   images: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
+  isSaving: { type: Boolean, default: false },
+  initialStops: { type: Array, default: () => [] },
+  initialRoute: { type: Object, default: null },
 });
 
-const emit = defineEmits(["stop-change"]);
+const emit = defineEmits(["stop-change", "save", "back"]);
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 const IMAGE_COLOR = "#D27D30";
@@ -50,6 +53,72 @@ const draggingStopId = ref(null);
 const pathStops = ref([]);
 let pathStopSeq = 0;
 
+const routeCoordinates = ref(/** @type {Array<[number, number]>} */ ([]));
+const routeDistanceMeters = ref(0);
+const routeDurationSeconds = ref(0);
+const routeLoading = ref(false);
+const routeIsStreet = ref(false);
+
+let routeAbort = /** @type {AbortController | null} */ (null);
+let routeRequestId = 0;
+
+// Aplica a rota inicial do percurso.
+function applyInitialRoute(route) {
+  if (!route || !Array.isArray(route.coordinates) || route.coordinates.length < 2) {
+    routeCoordinates.value = [];
+    routeDistanceMeters.value = 0;
+    routeDurationSeconds.value = 0;
+    routeIsStreet.value = false;
+
+    return;
+
+  }
+
+  routeCoordinates.value = route.coordinates.map(([lng, lat]) => [lng, lat]);
+  routeDistanceMeters.value = Number(route.distanceMeters) || 0;
+  routeDurationSeconds.value = Number(route.durationSeconds) || 0;
+  routeIsStreet.value = Boolean(route.isStreet);
+
+}
+
+// Esse método é responsável por hidratar as paradas iniciais do percurso.
+// Hidratar significa preencher o estado local com os dados iniciais do percurso.
+function hydrateStopsFromInitial(list) {
+  if (!Array.isArray(list) || !list.length) {
+    pathStops.value = [];
+    pathStopSeq = 0;
+    
+    return;
+
+  }
+
+  // Reinicia o contador de paradas.
+  pathStopSeq = 0;
+  pathStops.value = list.map((stop, index) => {
+    pathStopSeq += 1; // Incrementa o contador de paradas.
+    const raw = Array.isArray(stop.coordinates) ? stop.coordinates.slice(0, 2) : null;
+    const coordinates = raw && raw.length >= 2 ? [Number(raw[0]), Number(raw[1])] : null;
+
+    return {
+      id: `stop-${pathStopSeq}`,
+      type: stop.type === "custom" ? "custom" : "image",
+      title: stop.title?.trim() || `Ponto ${index + 1}`,
+      order: Number(stop.order) || index + 1,
+      coordinates:
+        coordinates &&
+        Number.isFinite(coordinates[0]) &&
+        Number.isFinite(coordinates[1])
+          ? coordinates
+          : null,
+      imageId: stop.imageId ?? null,
+    };
+  });
+}
+
+hydrateStopsFromInitial(props.initialStops);
+applyInitialRoute(props.initialRoute);
+
+// Emite o evento de mudança de parada.
 function emitStopChange() {
   emit(
     "stop-change",
@@ -62,6 +131,7 @@ function emitStopChange() {
   );
 }
 
+// Renumera as paradas do percurso.
 function renumberPathStops() {
   pathStops.value = pathStops.value.map((stop, index) => ({
     ...stop,
@@ -69,6 +139,7 @@ function renumberPathStops() {
   }));
 }
 
+// Constroi o GeoJSON das paradas do percurso.
 function buildPathPinsGeoJson() {
   return {
     type: "FeatureCollection",
@@ -88,19 +159,25 @@ function buildPathPinsGeoJson() {
   };
 }
 
+// Sincroniza a fonte das paradas do percurso.
 async function syncPathPinsSource() {
   const map = mapRef.value;
+
   if (!map?.getSource) return;
+
   await ensurePathPinIcons(map, pathStops.value);
+
   const source = map.getSource(PATH_PIN_SOURCE_ID);
+
   if (source) source.setData(buildPathPinsGeoJson());
 }
 
-/** Botão “Adicionar novo ponto” → modo escolher no mapa */
+/** Botão “Adicionar novo ponto” > modo escolher no mapa */
 function onAddPathStopClick() {
   isPickingCustom.value = true;
 }
 
+// Remove uma parada do percurso.
 function removePathStop(id) {
   pathStops.value = pathStops.value.filter((stop) => stop.id !== id);
   renumberPathStops();
@@ -109,45 +186,66 @@ function removePathStop(id) {
   emitStopChange();
 }
 
+// Renomeia uma parada do percurso.
 function renamePathStop({ id, title }) {
   pathStops.value = pathStops.value.map((stop) =>
     stop.id === id ? { ...stop, title } : stop
   );
+  emitStopChange();
 }
 
+// Atualiza as coordenadas de uma parada do percurso.
 function updateStopCoordinates(id, coordinates) {
   pathStops.value = pathStops.value.map((stop) =>
     stop.id === id
       ? {
           ...stop,
-          coordinates: /** @type {[number, number]} */ (coordinates.slice(0, 2)),
+          coordinates: (coordinates.slice(0, 2)),
         }
       : stop
   );
   syncPathPinsSource();
 }
 
+// Salva o percurso.
 function onPathStopsSave() {
+  if (props.isSaving) return;
+
+  if (pathStops.value.length < 2) {
+    emit("save", { error: "Adicione pelo menos 2 pontos para salvar o percurso." });
+    return;
+  }
+
   const stops = pathStops.value.map(
     ({ type, title, order, coordinates, imageId }) => ({
       type,
       title,
       order,
       coordinates,
-      imageId,
+      imageId: type === "image" ? imageId : null,
     })
   );
 
   const route = {
     isStreet: routeIsStreet.value,
-    distanceMeters: routeDistanceMeters.value,
-    durationSeconds: routeDurationSeconds.value,
+    distanceMeters: routeDistanceMeters.value || null,
+    durationSeconds: routeDurationSeconds.value || null,
     coordinates: routeCoordinates.value.map(([lng, lat]) => [lng, lat]),
   };
 
-  console.log("percurso:", { stops, route });
+  if (!route.coordinates.length) {
+    route.coordinates = stopCoordinatesInOrder();
+  }
+
+  emit("save", { stops, route });
 }
 
+// Volta para a tela anterior.
+function onPathStopsBack() {
+  emit("back");
+}
+
+// Adiciona uma parada customizada ao percurso.
 function addCustomPathStop(coordinates) {
   if (!coordinates?.length) return;
 
@@ -160,7 +258,7 @@ function addCustomPathStop(coordinates) {
       type: "custom",
       title: `Ponto ${order}`,
       order,
-      coordinates: /** @type {[number, number]} */ (coordinates.slice(0, 2)),
+      coordinates: (coordinates.slice(0, 2)),
       imageId: null,
     },
   ];
@@ -171,7 +269,7 @@ function addCustomPathStop(coordinates) {
   emitStopChange();
 }
 
-/** Clique na imagem → ponto ligado à imagem (type: "image") */
+/** Clique na imagem > ponto ligado à imagem (type: "image") */
 function toggleImageAsPathStop(imageId, coordinates, title) {
   if (imageId == null || !coordinates?.length) return;
 
@@ -209,24 +307,30 @@ function toggleImageAsPathStop(imageId, coordinates, title) {
   emitStopChange();
 }
 
-const routeCoordinates = ref(/** @type {Array<[number, number]>} */ ([]));
-const routeDistanceMeters = ref(0);
-const routeDurationSeconds = ref(0);
-const routeLoading = ref(false);
-const routeIsStreet = ref(false);
-
-let routeAbort = /** @type {AbortController | null} */ (null);
-let routeRequestId = 0;
-
 const featureCollection = computed(() =>
   createCollectionImagesFeatureCollection(props.images)
 );
 
-// Define o centro do mapa para as coordenadas da primeira parada
-const defaultCenter = computed(() => {
-  const first = featureCollection.value.features[0];
+/** Centro só na criação do mapa — não reagir a saves/edições (MapLibreMap faz setCenter no watch). */
+function resolveInitialCenter() {
+  const firstStop = props.initialStops?.find(
+    (s) => Array.isArray(s?.coordinates) && s.coordinates.length >= 2
+  );
+  if (firstStop) {
+    return [
+      Number(firstStop.coordinates[0]),
+      Number(firstStop.coordinates[1]),
+    ];
+  }
+
+  const first = createCollectionImagesFeatureCollection(props.images).features[0];
   return first ? first.geometry.coordinates : [-46.6333, -23.5505];
-});
+}
+
+const mapCenter = ref(resolveInitialCenter());
+
+/** Evita fitBounds / re-hidratação depois do enquadramento inicial (ex.: após Salvar). */
+let didInitialPathFit = false;
 
 // Exibe uma mensagem de ajuda para o usuário
 const routeHint = computed(() => {
@@ -310,9 +414,7 @@ function registerIcon(map, id, svg, { width = 64, height = 64, pixelRatio = 2 } 
  * @returns {Array<[number, number]>}
  */
 function stopCoordinatesInOrder() {
-  return pathStops.value
-    .map((s) => s.coordinates)
-    .filter((c) => Array.isArray(c) && c.length >= 2);
+  return pathStops.value.map((s) => s.coordinates).filter((c) => Array.isArray(c) && c.length >= 2);
 }
 
 /**
@@ -415,8 +517,6 @@ async function refreshRoute() {
       signal: routeAbort.signal,
     });
 
-    console.log("result OSRM:", result);
-    
     if (requestId !== routeRequestId) return; // Verifica se a requisição ainda é a mesma
 
     // Se a rota foi calculada com sucesso, atualiza as coordenadas da rota, a distância e o tempo
@@ -447,20 +547,33 @@ async function refreshRoute() {
   }
 }
 
+/**
+ * Prioriza o percurso existente (paradas + geometria da rota);
+ * se não houver, enquadra as imagens da coleção.
+ */
 function fitToPoints(map) {
-  const feats = featureCollection.value.features;
-  if (!feats.length) return;
+  const pathCoords = [
+    ...stopCoordinatesInOrder(),
+    ...(Array.isArray(routeCoordinates.value) ? routeCoordinates.value : []),
+  ].filter((c) => Array.isArray(c) && c.length >= 2);
 
-  if (feats.length === 1) {
-    map.flyTo({ center: feats[0].geometry.coordinates, zoom: 14 });
+  const coords =
+    pathCoords.length >= 1
+      ? pathCoords
+      : featureCollection.value.features.map((f) => f.geometry.coordinates);
+
+  if (!coords.length) return;
+
+  if (coords.length === 1) {
+    map.flyTo({ center: coords[0], zoom: 14 });
     return;
   }
 
-  const bounds = feats.reduce(
-    (b, f) => b.extend(f.geometry.coordinates),
-    new LngLatBounds(feats[0].geometry.coordinates, feats[0].geometry.coordinates)
+  const bounds = coords.reduce(
+    (b, c) => b.extend(c),
+    new LngLatBounds(coords[0], coords[0])
   );
-  map.fitBounds(bounds, { padding: 48, maxZoom: 15 });
+  map.fitBounds(bounds, { padding: 64, maxZoom: 15 });
 }
 
 function focusOnCoordinates(coordinates) {
@@ -539,7 +652,7 @@ async function onMapReady(map) {
   if (!map.getSource(PATH_PIN_SOURCE_ID)) {
     map.addSource(PATH_PIN_SOURCE_ID, {
       type: "geojson",
-      data: buildPathPinsGeoJson(),
+      data: { type: "FeatureCollection", features: [] },
     });
   }
 
@@ -563,6 +676,10 @@ async function onMapReady(map) {
   } else {
     map.setLayoutProperty(PATH_PIN_LAYER_ID, "icon-size", 1.45);
   }
+
+  // Registra ícones e aplica pins já hidratados (percurso carregado da API).
+  await syncPathPinsSource();
+  syncLineSource();
 
   map.on("click", LAYER_ID, (e) => {
     const feature = e.features?.[0];
@@ -645,7 +762,11 @@ async function onMapReady(map) {
   map.on("mouseup", endDrag);
   map.on("mouseleave", endDrag);
 
-  fitToPoints(map);
+  // Enquadra só na abertura se já houver percurso; depois disso nunca mais via props/save.
+  if (stopCoordinatesInOrder().length) {
+    fitToPoints(map);
+  }
+  didInitialPathFit = true;
   refreshRoute();
 }
 
@@ -671,6 +792,36 @@ watch(isPickingCustom, (picking) => {
   if (!map?.getCanvas) return;
   map.getCanvas().style.cursor = picking ? "crosshair" : "";
 });
+
+watch(
+  () => [props.initialStops, props.initialRoute],
+  ([stops, route], [prevStops, prevRoute]) => {
+    // Depois do enquadramento inicial, props vindas do save não devem
+    // reposicionar a câmera nem resetar o estado local do editor.
+    if (didInitialPathFit) return;
+
+    const sameStops =
+      JSON.stringify(stops ?? []) === JSON.stringify(prevStops ?? []);
+    const sameRoute =
+      JSON.stringify(route ?? null) === JSON.stringify(prevRoute ?? null);
+    if (sameStops && sameRoute) return;
+
+    hydrateStopsFromInitial(stops);
+    applyInitialRoute(route);
+    syncPathPinsSource();
+    syncLineSource();
+    if (!route?.coordinates?.length) {
+      refreshRoute();
+    }
+
+    const map = mapRef.value;
+    if (map && stopCoordinatesInOrder().length) {
+      fitToPoints(map);
+      didInitialPathFit = true;
+    }
+  },
+  { deep: true }
+);
 </script>
 
 <template>
@@ -679,17 +830,19 @@ watch(isPickingCustom, (picking) => {
     <MapLibreMap
       class="path-map__inner"
       :style-url="STYLE_URL"
-      :center="defaultCenter"
+      :center="mapCenter"
       :zoom="12"
       @map-ready="onMapReady"
     />
     <PathPointsPanel
       class="path-map__points-panel"
       :stops="pathStops"
+      :saving="isSaving"
       @add="onAddPathStopClick"
       @remove="removePathStop"
       @rename="renamePathStop"
       @save="onPathStopsSave"
+      @back="onPathStopsBack"
     />
     <p v-if="routeHint" class="path-map__hint">
       {{ routeHint }}

@@ -41,9 +41,18 @@ const authStore = useAuthStore();
 const albumsStore = useAlbumsStore();
 
 const isLoadingOwner = ref(true);
-// UI: transformar coleção em percurso (sem API ainda).
+// Percurso da coleção (API: GET/POST/PUT /albums/{id}/percursos).
 const isCollectionPath = ref(false);
 const showPathModal = ref(false);
+/** @type {import('vue').Ref<{ id: string, title?: string|null, stops: any[], route: any } | null>} */
+const activePercurso = ref(null);
+const isSavingPath = ref(false);
+const pathSaveError = ref(null);
+const EMPTY_PATH_STOPS = Object.freeze([]);
+const pathInitialStops = computed(
+  () => activePercurso.value?.stops ?? EMPTY_PATH_STOPS
+);
+const pathInitialRoute = computed(() => activePercurso.value?.route ?? null);
 
 function onPathSwitchClick() {
   // Só abre o modal ao ativar; desligar não precisa de confirmação.
@@ -56,12 +65,93 @@ function onPathSwitchClick() {
 
 function onPathModalConfirm({ mode } = {}) {
   isCollectionPath.value = true;
-  // mode: 'same' | 'duplicate' — API depois
+  // mode: 'same' | 'duplicate' — duplicate ainda sem API de clone
   void mode;
 
   if (collectionViewMode.value !== "map") {
     handleCollectionViewChange({ selection: "map" });
   }
+}
+
+async function fetchPercursos() {
+  if (!collectionId.value) return;
+
+  try {
+    const list = await albumsStore.getPercursos(
+      userAuthHeader.value,
+      collectionId.value
+    );
+    const first = Array.isArray(list) && list.length ? list[0] : null;
+    activePercurso.value = first;
+    // Não liga o toggle automaticamente — só carrega os dados do percurso.
+  } catch (err) {
+    console.warn("Falha ao carregar percursos:", err);
+    activePercurso.value = null;
+  }
+}
+
+async function onPathMapSave(payload = {}) {
+  if (payload.error) {
+    pathSaveError.value = payload.error;
+    return;
+  }
+
+  const { stops, route } = payload;
+  if (!stops?.length || !route) return;
+
+  if (!canManage.value || !userAuthHeader.value) {
+    pathSaveError.value = "Você não tem permissão para salvar este percurso.";
+    return;
+  }
+
+  isSavingPath.value = true;
+  pathSaveError.value = null;
+
+  const body = {
+    title: activePercurso.value?.title ?? null,
+    stops,
+    route,
+  };
+
+  try {
+    if (activePercurso.value?.id) {
+      const list = await albumsStore.syncPercursos(
+        userAuthHeader.value,
+        collectionId.value,
+        [{ id: activePercurso.value.id, ...body }]
+      );
+      const saved = list[0];
+      // Mantém stops/route enviados para não disparar re-hidratação/zoom no mapa.
+      activePercurso.value = {
+        id: saved?.id ?? activePercurso.value.id,
+        title: saved?.title ?? body.title,
+        stops: body.stops,
+        route: body.route,
+      };
+    } else {
+      const created = await albumsStore.createPercurso(
+        userAuthHeader.value,
+        collectionId.value,
+        body
+      );
+      activePercurso.value = {
+        id: created?.id,
+        title: created?.title ?? body.title,
+        stops: body.stops,
+        route: body.route,
+      };
+    }
+  } catch (err) {
+    pathSaveError.value =
+      err?.message || "Não foi possível salvar o percurso.";
+  } finally {
+    isSavingPath.value = false;
+  }
+}
+
+function onPathMapBack() {
+  isCollectionPath.value = false;
+  pathSaveError.value = null;
 }
 
 const collectionId = computed(() => route.params.collectionId);
@@ -205,6 +295,9 @@ async function fetchCollectionData() {
     isLoadingCollectionTags.value = false;
     ownerUser.value = null;
     collective.value = null;
+    activePercurso.value = null;
+    isCollectionPath.value = false;
+    pathSaveError.value = null;
     isLoadingOwner.value = false;
     if (result.status === 403) {
       accessState.value = "forbidden";
@@ -219,7 +312,7 @@ async function fetchCollectionData() {
 
   albumData.value = result.data;
 
-  await loadCollectionTags();
+  await Promise.all([loadCollectionTags(), fetchPercursos()]);
   isLoadingAlbum.value = false;
 
   // Resolve o dono conforme o tipo do álbum (coletivo ou usuário).
@@ -717,6 +810,11 @@ watch(
                 v-if="collectionViewMode === 'map' && isCollectionPath"
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
+                :is-saving="isSavingPath"
+                :initial-stops="pathInitialStops"
+                :initial-route="pathInitialRoute"
+                @save="onPathMapSave"
+                @back="onPathMapBack"
               />
               <CollectionImagesMap
                 ref="collectionMapRef"
@@ -725,7 +823,14 @@ watch(
                 :is-loading="isLoadingCollection"
                 :initial-selected-id="selectedMapImageId"
                 @select="handleMapSelect"
-              />            
+              />
+              <p
+                v-if="pathSaveError && isCollectionPath && collectionViewMode === 'map'"
+                class="collection-detail__path-error"
+                role="alert"
+              >
+                {{ pathSaveError }}
+              </p>            
             </section>
           </div>
         </template>
@@ -764,6 +869,11 @@ watch(
                 v-else-if="isCollectionPath"
                 :images="collectionImages"
                 :is-loading="isLoadingCollection"
+                :is-saving="isSavingPath"
+                :initial-stops="pathInitialStops"
+                :initial-route="pathInitialRoute"
+                @save="onPathMapSave"
+                @back="onPathMapBack"
               />
               <CollectionImagesMap
                 v-else
@@ -772,6 +882,13 @@ watch(
                 :is-loading="isLoadingCollection"
                 @select="handleMapSelect"
               />
+              <p
+                v-if="pathSaveError && isCollectionPath"
+                class="collection-detail__path-error"
+                role="alert"
+              >
+                {{ pathSaveError }}
+              </p>
             </section>
           </div>
 
@@ -2184,6 +2301,13 @@ a.collection-detail__actor-name:hover {
   font-style: normal;
   font-weight: 400;
   line-height: 150%;
+}
+
+.collection-detail__path-error {
+  margin: 8px 0 0;
+  color: #aa4f28;
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
 }
 
 .collection-detail__floating-toolbar {

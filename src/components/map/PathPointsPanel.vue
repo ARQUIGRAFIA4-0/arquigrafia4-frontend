@@ -4,15 +4,14 @@ import { nextTick, ref } from "vue";
 defineOptions({ name: "PathPointsPanel" });
 
 defineProps({
-  /** @type {{ id: string, title: string, order: number }[]} */
   stops: { type: Array, default: () => [] },
+  saving: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(["add", "remove", "rename", "save", "back"]);
 
 const editingId = ref(null);
 const draftTitle = ref("");
-/** @type {import('vue').Ref<HTMLInputElement | null>} */
 const titleInputRef = ref(null);
 
 function setTitleInputRef(el) {
@@ -22,9 +21,12 @@ function setTitleInputRef(el) {
 async function startEdit(stop) {
   editingId.value = stop.id;
   draftTitle.value = stop.title;
+  
   await nextTick();
+
   titleInputRef.value?.focus();
   titleInputRef.value?.select();
+
 }
 
 function commitEdit(stop) {
@@ -144,9 +146,10 @@ function onTitleKeydown(event, stop) {
       <button
         type="button"
         class="path-points-panel__btn path-points-panel__btn--primary"
+        :disabled="saving"
         @click="$emit('save')"
       >
-        Salvar e continuar
+        {{ saving ? "Salvando…" : "Salvar e continuar" }}
       </button>
       <button
         type="button"
@@ -355,6 +358,11 @@ function onTitleKeydown(event, stop) {
 .path-points-panel__btn--primary {
   background: var(--Cinza_E, #2f2f2f);
   color: var(--Branco, #fff);
+}
+
+.path-points-panel__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .path-points-panel__btn--secondary {

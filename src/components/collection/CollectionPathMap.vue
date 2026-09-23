@@ -7,9 +7,12 @@ defineOptions({ name: "CollectionPathMap" });
 defineProps({
   images: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
+  isSaving: { type: Boolean, default: false },
+  initialStops: { type: Array, default: () => [] },
+  initialRoute: { type: Object, default: null },
 });
 
-defineEmits(["stop-change"]);
+defineEmits(["stop-change", "save", "back"]);
 
 const mapRef = ref(null);
 </script>
@@ -21,7 +24,12 @@ const mapRef = ref(null);
       class="collection-path-map__inner"
       :images="images"
       :is-loading="isLoading"
+      :is-saving="isSaving"
+      :initial-stops="initialStops"
+      :initial-route="initialRoute"
       @stop-change="$emit('stop-change', $event)"
+      @save="$emit('save', $event)"
+      @back="$emit('back')"
     />
   </div>
 </template>
