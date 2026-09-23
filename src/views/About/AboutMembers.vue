@@ -12,7 +12,6 @@
       <div class="row">
         <div class="col-12 col-md-6">
           <p class="about-members__paragraph"><strong>Pesquisadores associados</strong></p>
-          <p class="about-members__paragraph">Prof. Dr. Artur Simões Rozestraten – FAUUSP</p>
           <p class="about-members__paragraph">Profa. Dra. Kalinka R. L. Jaquie Castelo Branco – ICMCUSP</p>
           <p class="about-members__paragraph">Profa. Dra. Vania Mara Alves Lima – ECAUSP</p>
           <p class="about-members__paragraph">Profa. Dra. Cibele Araujo C. M. dos Santos – ECAUSP</p>
@@ -109,6 +108,7 @@
           <p class="about-members__paragraph">Gustavo Alves Machado – Graduando FAUUSP</p>
           <p class="about-members__paragraph">Gustavo Moreira Bastos Dias da Silva – Graduado ECAUSP</p>
           <p class="about-members__paragraph">Helena Laura Rissoni Bou Ghosson – Graduanda FAUUSP</p>
+          <p class="about-members__paragraph">Henrique Junges – TT5</p>
           <p class="about-members__paragraph">Henrique Figueiredo Correa – Graduando FAUUSP</p>
           <p class="about-members__paragraph">Ignez Denise Gomes Moura – Graduada ECAUSP</p>
           <p class="about-members__paragraph">Ilka Apocalypse Jóia Paulini – Graduanda FAUUSP</p>
@@ -116,9 +116,9 @@
           <p class="about-members__paragraph">Izadora Feldner Graci – Graduanda ECAUSP</p>
           <p class="about-members__paragraph">Jéssica Carvalho Silva – Graduanda FAUUSP</p>
           <p class="about-members__paragraph">Jéssica Maria Neves Lúcio – Graduanda FAUUSP</p>
-          <p class="about-members__paragraph">João Henrique Kersul Faria – Graduando PoliUSP</p>     
         </div>
         <div class="col-12 col-md-6">
+          <p class="about-members__paragraph">João Henrique Kersul Faria – Graduando PoliUSP</p>     
           <p class="about-members__paragraph">João Lucas Vieira Nogueira – Pós-doutorando FAUUSP</p>
           <p class="about-members__paragraph">Joel Marques de Sousa – Graduando FAUUSP</p>
           <p class="about-members__paragraph">José Teodoro – Mestre IMEUSP</p>
