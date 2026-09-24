@@ -80,47 +80,11 @@
         </table>
       </div>
       <p class="about-open__paragraph about-open__paragraph--note">
-        Os filtros da busca seguem as mesmas regras da Busca Avançada: filtros diferentes são combinados com E, e
-        os termos do parâmetro <code class="about-open__code">q</code> são combinados com OU.
+        Para ver essas e outras rotas detalhadamente acesse a
+        <a href="https://api.arquigrafia.org.br/docs#introduction" target="_blank" rel="noopener noreferrer" class="about-open__repo-name">
+          documentação da API
+        </a>
       </p>
-
-      <!-- Exemplos -->
-      <h3 class="about-open__subtitle about-open__subtitle--rules">Exemplo de uso</h3>
-      <p class="about-open__paragraph">
-        Buscar imagens com o termo "rio", do ano de 1950 e licença CC BY:
-      </p>
-      <div class="about-open__tabs" role="tablist">
-        <button
-          v-for="example in examples"
-          :key="example.id"
-          type="button"
-          role="tab"
-          class="about-open__tab"
-          :class="{ 'about-open__tab--active': activeExample === example.id }"
-          :aria-selected="activeExample === example.id"
-          @click="activeExample = example.id"
-        >
-          {{ example.label }}
-        </button>
-      </div>
-      <div class="about-open__block-wrapper">
-        <pre class="about-open__block about-open__block--tabbed"><code>{{ currentExample.code }}</code></pre>
-        <button type="button" class="about-open__copy" @click="copyExample">
-          {{ copied ? "Copiado" : "Copiar" }}
-        </button>
-      </div>
-      <p class="about-open__paragraph">Resposta (resumida):</p>
-      <pre class="about-open__block"><code>{{ exampleResponse }}</code></pre>
-
-      <!-- Rodando localmente -->
-      <h3 class="about-open__subtitle about-open__subtitle--rules">Rodando a plataforma no seu computador</h3>
-      <ol class="about-open__steps">
-        <li v-for="step in setupSteps" :key="step.title" class="about-open__step">
-          <strong>{{ step.title }}</strong>
-          <p class="about-open__step-desc">{{ step.description }}</p>
-          <pre v-if="step.command" class="about-open__block"><code>{{ step.command }}</code></pre>
-        </li>
-      </ol>
 
       <!-- Contribuir -->
       <h3 class="about-open__subtitle about-open__subtitle--rules">Como contribuir</h3>
@@ -130,7 +94,7 @@
       </p>
       <p class="about-open__paragraph">
         <strong>Quer propor uma mudança?</strong> Faça um fork, crie um branch a partir de
-        <code class="about-open__code">main</code> e envie um pull request explicando o que foi alterado. Mudanças
+        <code class="about-open__code">develop</code> e envie um pull request explicando o que foi alterado. Mudanças
         grandes merecem uma issue antes, para discutir a abordagem.
       </p>
       <p class="about-open__paragraph">
@@ -167,7 +131,7 @@ export default {
     return {
       apiBaseUrl,
       rateLimit: "60 requisições por minuto",
-      contactEmail: "contato@arquigrafia.org.br",
+      contactEmail: "arquigrafia.org.br",
 
       repositories: [
         {
@@ -185,12 +149,11 @@ export default {
       ],
 
       endpoints: [
-        { method: "GET", path: "/images", description: "Lista imagens, com filtros e paginação." },
-        { method: "GET", path: "/images/{id}", description: "Detalhes de uma imagem: autoria, data, licença." },
-        { method: "GET", path: "/users/{id}", description: "Perfil público de um usuário." },
-        { method: "GET", path: "/tags", description: "Lista as tags usadas no acervo." },
-        { method: "POST", path: "/images", description: "Envia uma nova imagem (exige token)." },
-        { method: "POST", path: "/images/{id}/comments", description: "Comenta uma imagem (exige token)." },
+        { method: "GET", path: "/api/images", description: "Lista imagens, com filtros e paginação." },
+        { method: "GET", path: "/api/images/{id}", description: "Detalhes de uma imagem: autoria, data, licença." },
+        { method: "GET", path: "/api/users/{id}", description: "Perfil público de um usuário." },
+        { method: "POST", path: "/api/images", description: "Envia uma nova imagem (exige token)." },
+        { method: "POST", path: "/api/comments", description: "Comenta uma imagem (exige token)." },
       ],
 
       activeExample: "curl",

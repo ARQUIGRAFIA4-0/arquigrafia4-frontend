@@ -1,9 +1,9 @@
 <template>
   <AboutLayout>
-    <div>
+    <div class="col-12 col-md-8">
       <h1 class="about-search__title">Como funciona a Busca Avançada</h1>
     </div>
-    <div>
+    <div class="col-12 col-md-8">
       <h2 class="about-search__subtitle">
         A busca avançada do ARQUIGRAFIA combina diferentes tipos de filtro para encontrar imagens. Entender quando ela
         usa E (AND) e quando usa OU (OR) ajuda a montar pesquisas mais precisas.
@@ -38,6 +38,8 @@ licença = CC BY</code></pre>
       <h3 class="about-search__subtitle about-search__subtitle--rules">
         2. Busca textual, "Todos os campos" e Tags usam OU (OR)
       </h3>
+      <p class="about-search__paragraph">Exemplo de busca textual gerada:</p>
+      <pre class="about-search__block"><code>q=rio+de+janeiro</code></pre>
       <p class="about-search__paragraph">
         O parâmetro <code class="about-search__code">q</code> é processado pelo método
         <code class="about-search__code">filterByFullText</code>, que utiliza a busca de texto completo do MySQL:
