@@ -24,6 +24,8 @@ import CollectionPathModal from "@/components/collection/CollectionPathModal.vue
 import { downloadCollectionAsZip } from "@/helpers/downloadCollectionZip";
 import { sanitizeDownloadFilename } from "@/helpers/downloadImage";
 import { useAlbumImagesInfiniteQuery } from "@/composables/useAlbumImagesInfiniteQuery";
+import AppToast from "@/components/ui/AppToast.vue";
+import { useToast } from "@/composables/useToast";
 
 defineOptions({ name: "CollectionDetail" });
 
@@ -47,7 +49,7 @@ const showPathModal = ref(false);
 /** @type {import('vue').Ref<{ id: string, title?: string|null, stops: any[], route: any } | null>} */
 const activePercurso = ref(null);
 const isSavingPath = ref(false);
-const pathSaveError = ref(null);
+const toast = useToast();
 const EMPTY_PATH_STOPS = Object.freeze([]);
 const pathInitialStops = computed(
   () => activePercurso.value?.stops ?? EMPTY_PATH_STOPS
@@ -92,7 +94,7 @@ async function fetchPercursos() {
 
 async function onPathMapSave(payload = {}) {
   if (payload.error) {
-    pathSaveError.value = payload.error;
+    toast.show(payload.error, "error");
     return;
   }
 
@@ -100,12 +102,11 @@ async function onPathMapSave(payload = {}) {
   if (!stops?.length || !route) return;
 
   if (!canManage.value || !userAuthHeader.value) {
-    pathSaveError.value = "Você não tem permissão para salvar este percurso.";
+    toast.show("Você não tem permissão para salvar este percurso.", "error");
     return;
   }
 
   isSavingPath.value = true;
-  pathSaveError.value = null;
 
   const body = {
     title: activePercurso.value?.title ?? null,
@@ -128,6 +129,7 @@ async function onPathMapSave(payload = {}) {
         stops: body.stops,
         route: body.route,
       };
+      toast.show("Percurso atualizado com sucesso.", "success");
     } else {
       const created = await albumsStore.createPercurso(
         userAuthHeader.value,
@@ -140,10 +142,10 @@ async function onPathMapSave(payload = {}) {
         stops: body.stops,
         route: body.route,
       };
+      toast.show("Percurso salvo com sucesso.", "success");
     }
   } catch (err) {
-    pathSaveError.value =
-      err?.message || "Não foi possível salvar o percurso.";
+    toast.show(err?.message || "Não foi possível salvar o percurso.", "error");
   } finally {
     isSavingPath.value = false;
   }
@@ -151,7 +153,6 @@ async function onPathMapSave(payload = {}) {
 
 function onPathMapBack() {
   isCollectionPath.value = false;
-  pathSaveError.value = null;
 }
 
 const collectionId = computed(() => route.params.collectionId);
@@ -297,7 +298,6 @@ async function fetchCollectionData() {
     collective.value = null;
     activePercurso.value = null;
     isCollectionPath.value = false;
-    pathSaveError.value = null;
     isLoadingOwner.value = false;
     if (result.status === 403) {
       accessState.value = "forbidden";
@@ -703,6 +703,14 @@ watch(
       v-model="showPathModal"
       @confirm="onPathModalConfirm"
     />
+    <AppToast
+      class="collection-detail__toast"
+      variant="solid"
+      :toasts="toast.toasts.value"
+      @close="toast.hide"
+      @pause="toast.pause"
+      @resume="toast.resume"
+    />
     <header class="collection-detail__header">
         <button
           type="button"
@@ -824,13 +832,6 @@ watch(
                 :initial-selected-id="selectedMapImageId"
                 @select="handleMapSelect"
               />
-              <p
-                v-if="pathSaveError && isCollectionPath && collectionViewMode === 'map'"
-                class="collection-detail__path-error"
-                role="alert"
-              >
-                {{ pathSaveError }}
-              </p>            
             </section>
           </div>
         </template>
@@ -882,13 +883,6 @@ watch(
                 :is-loading="isLoadingCollection"
                 @select="handleMapSelect"
               />
-              <p
-                v-if="pathSaveError && isCollectionPath"
-                class="collection-detail__path-error"
-                role="alert"
-              >
-                {{ pathSaveError }}
-              </p>
             </section>
           </div>
 
@@ -2303,11 +2297,13 @@ a.collection-detail__actor-name:hover {
   line-height: 150%;
 }
 
-.collection-detail__path-error {
-  margin: 8px 0 0;
-  color: #aa4f28;
-  font-family: "DM Sans", sans-serif;
-  font-size: 13px;
+.collection-detail__toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  max-width: 90%;
 }
 
 .collection-detail__floating-toolbar {
