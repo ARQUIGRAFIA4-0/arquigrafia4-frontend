@@ -349,12 +349,12 @@ const routeHint = computed(() => {
       : "Clique em imagens ou em “Adicionar novo ponto” para montar o percurso";
   }
 
-  if (routeLoading.value) return "Calculando rota nas ruas…";
+  if (routeLoading.value) return "Calculando rota a pé…";
 
   const dist = formatRouteDistance(routeDistanceMeters.value);
   const dur = formatRouteDuration(routeDurationSeconds.value);
   const stats = [dist, dur].filter(Boolean).join(" · ");
-  const mode = routeIsStreet.value ? "pelas ruas" : "linha reta (fallback)";
+  const mode = routeIsStreet.value ? "a pé" : "linha reta (fallback)";
 
   return stats ? `${n} paradas · ${stats} (${mode})` : `${n} paradas (${mode})`;
 });
@@ -467,30 +467,17 @@ function clearRoute() {
 }
 
 /**
- * Atualiza a rota
- * ---------------------------------------------------------------------------
- *
- * Aqui ele pega as coordenadas das paradas e chama a função fetchOsrmRoute para calcular a rota.
- * Depois ele atualiza as coordenadas da rota, a distância e o tempo.
- * E depois ele desenha a rota no mapa.
- *
- * @returns {Promise<void>}
+ * Recalcula a rota pelas ruas (OSRM).
+ * Mantém a última rota visível até a nova chegar, para não piscar a linha reta.
+ * A reta só é usada como fallback, se o OSRM falhar.
  */
 async function refreshRoute() {
   const waypoints = stopCoordinatesInOrder();
 
-  // Se não houver pelo menos 2 paradas, limpa a rota
   if (waypoints.length < 2) {
     clearRoute();
     return;
   }
-
-  // Mostra reta imediatamente enquanto o OSRM responde.
-  routeCoordinates.value = waypoints;
-  routeIsStreet.value = false;
-  routeDistanceMeters.value = 0;
-  routeDurationSeconds.value = 0;
-  syncLineSource(); // IMPORTANTE: Desenha os percursos no mapa. É aqui que desenha os percursos no mapa.
 
   if (routeAbort) routeAbort.abort();
   routeAbort = new AbortController();
@@ -498,53 +485,39 @@ async function refreshRoute() {
   routeLoading.value = true;
 
   try {
-    /**
-     * Calcula a rota
-     * ---------------------------------------------------------------------------
-     *
-     * Aqui ele chama a função fetchOsrmRoute para calcular a rota.
-     * Depois ele atualiza as coordenadas da rota, a distância e o tempo.
-     * E depois ele desenha a rota no mapa.
-     *
-     * @returns {Promise<void>}
-     * @param {Array<[number, number]>} waypoints - As coordenadas das paradas
-     * @param {Object} options - As opções para calcular a rota
-     * @param {string} options.profile - O perfil da rota (walking, driving, cycling)
-     * @param {AbortSignal} options.signal - O sinal de abortação da requisição
-     */
     const result = await fetchOsrmRoute(waypoints, {
       profile: "walking", // walking, driving, cycling
       signal: routeAbort.signal,
     });
 
-    if (requestId !== routeRequestId) return; // Verifica se a requisição ainda é a mesma
+    if (requestId !== routeRequestId) return;
 
-    // Se a rota foi calculada com sucesso, atualiza as coordenadas da rota, a distância e o tempo
     if (result) {
-      // Atualiza as coordenadas da rota, a distância e o tempo
       routeCoordinates.value = result.coordinates;
       routeDistanceMeters.value = result.distanceMeters;
       routeDurationSeconds.value = result.durationSeconds;
       routeIsStreet.value = true;
-
     } else {
-      // Mantém a reta já desenhada.
-      routeIsStreet.value = false;
+      applyStraightLineFallback(waypoints);
     }
 
-    syncLineSource(); // IMPORTANTE: Desenha os percursos no mapa. É aqui que desenha os percursos no mapa.
-
+    syncLineSource();
   } catch (err) {
     if (err?.name === "AbortError") return;
     if (requestId !== routeRequestId) return;
 
-    routeIsStreet.value = false;
-    syncLineSource(); // Limpa a linha do mapa se houver erro
-
+    applyStraightLineFallback(waypoints);
+    syncLineSource();
   } finally {
     if (requestId === routeRequestId) routeLoading.value = false;
-
   }
+}
+
+function applyStraightLineFallback(waypoints) {
+  routeCoordinates.value = waypoints;
+  routeIsStreet.value = false;
+  routeDistanceMeters.value = 0;
+  routeDurationSeconds.value = 0;
 }
 
 /**
@@ -767,14 +740,17 @@ async function onMapReady(map) {
     fitToPoints(map);
   }
   didInitialPathFit = true;
-  refreshRoute();
+
+  // A rota salva já vem pelas ruas do backend; só recalcula se não houver geometria.
+  if (routeCoordinates.value.length < 2) {
+    refreshRoute();
+  }
 }
 
 watch(
   () => props.images,
   () => {
     syncStopSource();
-    refreshRoute();
   },
   { deep: true }
 );

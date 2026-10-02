@@ -1,7 +1,14 @@
+const DEFAULT_OSRM_FOOT_URL = "https://routing.openstreetmap.de/routed-foot";
+
 /**
- * Roteamento via OSRM (OpenStreetMap).
- * Aconselhado usar o endereço https://router.project-osrm.org só para desenvolvimento. Em produção é melhor usar um servidor próprio
- * e defina VITE_OSRM_URL (ex.: https://seu-osrm.example.com).
+ * Roteamento a pé via OSRM (OpenStreetMap).
+ *
+ * - O servidor demo https://router.project-osrm.org só tem o perfil de CARRO carregado
+ *   (ignora "/walking/" na URL) — não use para percurso a pé.
+ * - Padrão: servidor público a pé da FOSSGIS (https://routing.openstreetmap.de/routed-foot).
+ *   Serve para desenvolvimento / baixo volume (política de uso deles).
+ * - Produção: OSRM próprio extraído com foot.lua, configurado em VITE_OSRM_URL
+ *   (ver tutorial no final deste arquivo).
  *
  * @param {Array<[number, number]>} coordinates - [[lng, lat], ...]
  * @param {{ profile?: "walking" | "driving" | "cycling", signal?: AbortSignal }} [options]
@@ -10,8 +17,12 @@
 export async function fetchOsrmRoute(coordinates, options = {}) {
   if (!Array.isArray(coordinates) || coordinates.length < 2) return null; // Verifica se as coordenadas são um array e tem pelo menos 2 pontos
 
-  const profile = options.profile ?? "walking"; // walking, driving, cycling
-  const base = import.meta.env.VITE_OSRM_URL || "https://router.project-osrm.org"; // *IMPORTANTE: URL do servidor OSRM
+  const base = import.meta.env.VITE_OSRM_URL || DEFAULT_OSRM_FOOT_URL; // *IMPORTANTE: URL do servidor OSRM
+  // Na FOSSGIS cada instância já é um perfil (routed-foot = a pé); o segmento da URL
+  // é ignorado e a convenção documentada é "driving".
+  const profile = base.includes("routing.openstreetmap.de")
+    ? "driving"
+    : options.profile ?? "walking";
 
   const path = coordinates.map(([lng, lat]) => `${lng},${lat}`).join(";"); // Converte as coordenadas para o formato esperado pelo OSRM
   const url =  `${base.replace(/\/$/, "")}/route/v1/${profile}/${path}` + `?overview=full&geometries=geojson`; // Monta a URL da requisição
@@ -91,13 +102,14 @@ export function formatRouteDuration(seconds) {
  *    wget https://download.geofabrik.de/south-america/brazil/sudeste-latest.osm.pbf
  *    # Recortes menores: https://download.geofabrik.de/south-america/brazil.html
  *
- * 3) Extrair o grafo (perfil a pé = foot.lua > profile "walking" na URL)
+ * 3) Extrair o grafo com o perfil A PÉ (foot.lua) — obrigatório para percursos.
+ *    Não use car.lua: o grafo de carro respeita mão única e evita calçadões,
+ *    gerando voltas longas para quem anda a pé.
  *    # Imagem oficial: ghcr.io/project-osrm/osrm-backend
  *    docker run -t -v "${PWD}:/data" ghcr.io/project-osrm/osrm-backend \
  *      osrm-extract -p /opt/foot.lua /data/sudeste-latest.osm.pbf
  *
  *    # Se o .lua foot não existir na imagem, liste: docker run --rm ... ls /opt
- *    # Alternativa comum: car.lua (aí use profile "driving" no PathMap).
  *
  * 4) Partition + customize (algoritmo MLD)
  *    docker run -t -v "${PWD}:/data" ghcr.io/project-osrm/osrm-backend \
@@ -122,7 +134,8 @@ export function formatRouteDuration(seconds) {
  *    Reinicie o Vite após mudar o .env.
  *
  * 8) Produção — boas práticas
- *    - Não use https://router.project-osrm.org (demo instável, só dev).
+ *    - Não use https://router.project-osrm.org (demo instável e só tem perfil de carro).
+ *    - Não dependa da FOSSGIS em produção (servidor público, só baixo volume).
  *    - Prefira proxy no backend (ex.: GET /api/route → OSRM interno) para
  *      esconder o serviço, evitar CORS e limitar abuso.
  *    - Atualize o .osm.pbf de tempos em tempos e rode extract/partition/customize
