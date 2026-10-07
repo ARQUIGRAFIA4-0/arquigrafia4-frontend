@@ -1,4 +1,4 @@
-const DEFAULT_OSRM_FOOT_URL = "https://routing.openstreetmap.de/routed-foot";
+import axios from "@/axios";
 
 /**
  * Roteamento a pé via OSRM (OpenStreetMap).
@@ -14,43 +14,37 @@ const DEFAULT_OSRM_FOOT_URL = "https://routing.openstreetmap.de/routed-foot";
  * @param {{ profile?: "walking" | "driving" | "cycling", signal?: AbortSignal }} [options]
  * @returns {Promise<{ coordinates: Array<[number, number]>, distanceMeters: number, durationSeconds: number } | null>}
  */
-export async function fetchOsrmRoute(coordinates, options = {}) {
+export async function fetchOsrmRoute(authHeader, coordinates, options = {}) {
   if (!Array.isArray(coordinates) || coordinates.length < 2) return null; // Verifica se as coordenadas são um array e tem pelo menos 2 pontos
 
-  const base = import.meta.env.VITE_OSRM_URL || DEFAULT_OSRM_FOOT_URL; // *IMPORTANTE: URL do servidor OSRM
-  // Na FOSSGIS cada instância já é um perfil (routed-foot = a pé); o segmento da URL
-  // é ignorado e a convenção documentada é "driving".
-  const profile = base.includes("routing.openstreetmap.de")
-    ? "driving"
-    : options.profile ?? "walking";
+  try {
+    const { data } = await axios.post(
+      "/api/route",
+      { coordinates },
+      {
+        headers: authHeader ? { Authorization: authHeader } : {},
+        signal: options.signal,
+      }
+    );
 
-  const path = coordinates.map(([lng, lat]) => `${lng},${lat}`).join(";"); // Converte as coordenadas para o formato esperado pelo OSRM
-  const url =  `${base.replace(/\/$/, "")}/route/v1/${profile}/${path}` + `?overview=full&geometries=geojson`; // Monta a URL da requisição
+    if (data.code !== "Ok" || !data.routes?.[0]) return null; // Verifica se a resposta contém um caminho válido
 
-  const res = await fetch(url, { signal: options.signal }); // Faz a requisição ao servidor OSRM
-  if (!res.ok) return null; // Verifica se a requisição foi bem-sucedida
+    const route = data.routes[0];
+    const routeCoordinates = route.geometry?.coordinates;
+    if (!Array.isArray(routeCoordinates) || routeCoordinates.length < 2) return null; // Verifica se as coordenadas são um array e tem pelo menos 2 pontos
+    
+    return {
+      coordinates: routeCoordinates,
+      distanceMeters: Number(route.distance) || 0,
+      durationSeconds: Number(route.duration) || 0,
+    };
+  } catch (error) {
+    if (error.name === "CanceledError" || error.code === "ERR_CANCELED") {
+      throw error;
+    }
 
-  const data = await res.json(); // Converte a resposta para JSON
-  if (data.code !== "Ok" || !data.routes?.[0]) return null; // Verifica se a resposta contém um caminho válido
-
-  const route = data.routes[0]; // Pega o primeiro caminho da resposta
-  const coords = route.geometry?.coordinates; // Pega as coordenadas do caminho
-  if (!Array.isArray(coords) || coords.length < 2) return null; // Verifica se as coordenadas são um array e tem pelo menos 2 pontos
-
-  /**
-   * Aqui ele retorna pro mapa: as coordenadas do caminho, a distância em metros e o tempo em segundos
-   * 
-   * {
-   *   coordinates: coords,
-   *   distanceMeters: Number(route.distance) || 0,
-   *   durationSeconds: Number(route.duration) || 0,
-   * }
-   */
-  return {
-    coordinates: coords,
-    distanceMeters: Number(route.distance) || 0,
-    durationSeconds: Number(route.duration) || 0,
-  };
+    return null; // Retorna null em caso de outros erros (ex.: rede, CORS, etc.)
+  }
 }
 
 /**
