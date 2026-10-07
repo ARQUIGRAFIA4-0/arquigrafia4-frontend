@@ -2,6 +2,7 @@
 import { computed, shallowRef, ref, watch } from "vue";
 import { LngLatBounds } from "maplibre-gl";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
+import { useAuthStore } from "@/store/auth";
 import PathPointsPanel from "@/components/map/PathPointsPanel.vue";
 import { createCollectionImagesFeatureCollection } from "@/helpers/geojson";
 import {
@@ -11,6 +12,9 @@ import {
 } from "@/helpers/osrmRoute";
 
 defineOptions({ name: "PathMap" });
+
+const authStore = useAuthStore();
+const authHeader = computed(() => authStore.authHeader);
 
 const props = defineProps({
   images: { type: Array, default: () => [] },
@@ -485,10 +489,27 @@ async function refreshRoute() {
   routeLoading.value = true;
 
   try {
-    const result = await fetchOsrmRoute(waypoints, {
-      profile: "walking", // walking, driving, cycling
-      signal: routeAbort.signal,
-    });
+    /**
+     * Calcula a rota
+     * ---------------------------------------------------------------------------
+     *
+     * Aqui ele chama a função fetchOsrmRoute para calcular a rota.
+     * Depois ele atualiza as coordenadas da rota, a distância e o tempo.
+     * E depois ele desenha a rota no mapa.
+     *
+     * @returns {Promise<void>}
+     * @param {Array<[number, number]>} waypoints - As coordenadas das paradas
+     * @param {Object} options - As opções para calcular a rota
+     * @param {string} options.profile - O perfil da rota (walking, driving, cycling)
+     * @param {AbortSignal} options.signal - O sinal de abortação da requisição
+     */
+    const result = await fetchOsrmRoute(
+      authHeader.value,
+      waypoints, 
+      {
+        signal: routeAbort.signal,
+      }
+    );
 
     if (requestId !== routeRequestId) return;
 
@@ -506,8 +527,9 @@ async function refreshRoute() {
     if (err?.name === "AbortError") return;
     if (requestId !== routeRequestId) return;
 
-    applyStraightLineFallback(waypoints);
-    syncLineSource();
+    routeIsStreet.value = false;
+    syncLineSource(); // Mantém a reta de fallback no mapa
+
   } finally {
     if (requestId === routeRequestId) routeLoading.value = false;
   }
