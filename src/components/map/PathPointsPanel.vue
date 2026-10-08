@@ -6,6 +6,8 @@ defineOptions({ name: "PathPointsPanel" });
 defineProps({
   stops: { type: Array, default: () => [] },
   saving: { type: Boolean, default: false },
+  /** true enquanto o usuário escolhe o novo ponto no mapa */
+  picking: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(["add", "remove", "rename", "save", "back"]);
@@ -128,15 +130,20 @@ function onTitleKeydown(event, stop) {
           <button
             type="button"
             class="path-points-panel__add"
+            :class="{ 'path-points-panel__add--active': picking }"
+            :aria-pressed="picking"
             @click="$emit('add')"
           >
             <span
               class="path-points-panel__pin path-points-panel__pin--add"
+              :class="{ 'path-points-panel__pin--picking': picking }"
               aria-hidden="true"
             >
-              +
+              {{ picking ? "×" : "+" }}
             </span>
-            <span class="path-points-panel__label">Adicionar novo ponto</span>
+            <span class="path-points-panel__label">
+              {{ picking ? "Clique no mapa… (cancelar)" : "Adicionar novo ponto" }}
+            </span>
           </button>
         </li>
       </ul>
@@ -322,6 +329,25 @@ function onTitleKeydown(event, stop) {
   background: transparent;
   cursor: pointer;
   text-align: left;
+}
+
+.path-points-panel__add--active .path-points-panel__label {
+  color: var(--Laranja_E, #aa4f28);
+}
+
+.path-points-panel__pin--picking {
+  animation: path-points-pin-pulse 1.4s ease-out infinite;
+}
+
+@keyframes path-points-pin-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(170, 79, 40, 0.55); }
+  100% { box-shadow: 0 0 0 10px rgba(170, 79, 40, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .path-points-panel__pin--picking {
+    animation: none;
+  }
 }
 
 .path-points-panel__footer {
