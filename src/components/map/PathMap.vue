@@ -1,5 +1,5 @@
 <script setup>
-import { computed, shallowRef, ref, watch } from "vue";
+import { computed, onBeforeUnmount, shallowRef, ref, watch } from "vue";
 import { LngLatBounds } from "maplibre-gl";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import { useAuthStore } from "@/store/auth";
@@ -177,8 +177,20 @@ async function syncPathPinsSource() {
 }
 
 /** Botão “Adicionar novo ponto” > modo escolher no mapa */
+// Alterna o modo "escolher ponto no mapa" (clicar de novo no botão cancela).
 function onAddPathStopClick() {
-  isPickingCustom.value = true;
+  isPickingCustom.value = !isPickingCustom.value;
+}
+
+function cancelPicking() {
+  isPickingCustom.value = false;
+}
+
+/** Posição do cursor sobre o mapa (px), usada pelo pin "fantasma". */
+const pickPointer = ref({ x: 0, y: 0, visible: false });
+
+function handlePickKeydown(event) {
+  if (event.key === "Escape") cancelPicking();
 }
 
 // Remove uma parada do percurso.
@@ -706,6 +718,15 @@ async function onMapReady(map) {
     addCustomPathStop([e.lngLat.lng, e.lngLat.lat]);
   });
 
+  // Pin fantasma que acompanha o cursor enquanto o usuário escolhe o ponto.
+  map.on("mousemove", (e) => {
+    if (!isPickingCustom.value) return;
+    pickPointer.value = { x: e.point.x, y: e.point.y, visible: true };
+  });
+  map.on("mouseout", () => {
+    pickPointer.value = { ...pickPointer.value, visible: false };
+  });
+
   map.on("mouseenter", LAYER_ID, () => {
     if (!draggingStopId.value) map.getCanvas().style.cursor = "pointer";
   });
@@ -787,8 +808,20 @@ watch(
 
 watch(isPickingCustom, (picking) => {
   const map = mapRef.value;
-  if (!map?.getCanvas) return;
-  map.getCanvas().style.cursor = picking ? "crosshair" : "";
+  if (map?.getCanvas) {
+    map.getCanvas().style.cursor = picking ? "crosshair" : "";
+  }
+
+  if (picking) {
+    window.addEventListener("keydown", handlePickKeydown);
+  } else {
+    window.removeEventListener("keydown", handlePickKeydown);
+    pickPointer.value = { ...pickPointer.value, visible: false };
+  }
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handlePickKeydown);
 });
 
 watch(
@@ -832,17 +865,81 @@ watch(
       :zoom="12"
       @map-ready="onMapReady"
     />
+    <!-- Modo "escolher ponto": moldura, instrução e pin que segue o cursor -->
+    <div
+      v-if="isPickingCustom"
+      class="path-map__pick-frame"
+      aria-hidden="true"
+    />
+
+    <div
+      v-if="isPickingCustom"
+      class="path-map__pick-banner"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="path-map__pick-icon" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 1 1 13 0c0 5.4-6.5 11-6.5 11Z"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linejoin="round"
+          />
+          <circle cx="12" cy="10" r="2.4" fill="currentColor" />
+        </svg>
+      </span>
+      <span class="path-map__pick-text">
+        <strong>Escolha o local do novo ponto</strong>
+        <span>Clique em qualquer lugar do mapa</span>
+      </span>
+      <button
+        type="button"
+        class="path-map__pick-cancel"
+        @click="cancelPicking"
+      >
+        Cancelar
+        <kbd>Esc</kbd>
+      </button>
+    </div>
+
+    <div
+      v-if="isPickingCustom && pickPointer.visible"
+      class="path-map__ghost-pin"
+      :style="{ transform: `translate(${pickPointer.x}px, ${pickPointer.y}px)` }"
+      aria-hidden="true"
+    >
+      <span class="path-map__ghost-pulse" />
+      <svg
+        class="path-map__ghost-svg"
+        width="32"
+        height="42"
+        viewBox="0 0 40 52"
+        fill="none"
+      >
+        <path
+          d="M20 1.5C10.3 1.5 2.5 9.3 2.5 19c0 12.2 17.5 31 17.5 31S37.5 31.2 37.5 19C37.5 9.3 29.7 1.5 20 1.5z"
+          fill="#AA4F28"
+          fill-opacity="0.9"
+          stroke="#fff"
+          stroke-width="2"
+        />
+        <circle cx="20" cy="19" r="6" fill="#fff" />
+      </svg>
+    </div>
+
     <PathPointsPanel
       class="path-map__points-panel"
       :stops="pathStops"
       :saving="isSaving"
+      :picking="isPickingCustom"
       @add="onAddPathStopClick"
       @remove="removePathStop"
       @rename="renamePathStop"
       @save="onPathStopsSave"
       @back="onPathStopsBack"
     />
-    <p v-if="routeHint" class="path-map__hint">
+    <p v-if="routeHint && !isPickingCustom" class="path-map__hint">
       {{ routeHint }}
     </p>
   </div>
@@ -894,5 +991,181 @@ watch(
   top: 12px;
   right: 12px;
   z-index: 3;
+}
+
+/* ── Modo "escolher ponto" ─────────────────────────────────────────────── */
+.path-map__pick-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 3px rgba(170, 79, 40, 0.85),
+    inset 0 0 64px 8px rgba(170, 79, 40, 0.18);
+  animation: path-pick-frame 1.8s ease-in-out infinite;
+}
+
+.path-map__pick-banner {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 356px; /* deixa o painel de pontos livre (320px + margens) */
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  max-width: calc(100% - 372px);
+  margin-inline: auto;
+  padding: 10px 10px 10px 14px;
+  border-radius: 999px;
+  background: rgba(31, 31, 31, 0.94);
+  color: #fff;
+  font-family: "DM Sans", sans-serif;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(6px);
+  animation: path-pick-banner-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.path-map__pick-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #aa4f28;
+  animation: path-pick-icon 1.4s ease-in-out infinite;
+}
+
+.path-map__pick-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.path-map__pick-text strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.path-map__pick-text span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.path-map__pick-cancel {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 0 4px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.path-map__pick-cancel:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.path-map__pick-cancel:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.path-map__pick-cancel kbd {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-family: inherit;
+  font-size: 11px;
+}
+
+/* Pin que acompanha o cursor: a ponta do pin fica exatamente no cursor. */
+.path-map__ghost-pin {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.path-map__ghost-svg {
+  position: absolute;
+  left: -16px;
+  top: -42px;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+  animation: path-pick-bob 1.1s ease-in-out infinite;
+}
+
+.path-map__ghost-pulse {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #aa4f28;
+  animation: path-pick-pulse 1.4s ease-out infinite;
+}
+
+@keyframes path-pick-frame {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@keyframes path-pick-banner-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes path-pick-icon {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes path-pick-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes path-pick-pulse {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@media (max-width: 768px) {
+  .path-map__pick-banner {
+    top: auto;
+    bottom: 16px;
+    left: 12px;
+    right: 12px;
+    max-width: none;
+    border-radius: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .path-map__pick-frame,
+  .path-map__pick-banner,
+  .path-map__pick-icon,
+  .path-map__ghost-svg,
+  .path-map__ghost-pulse {
+    animation: none;
+  }
 }
 </style>
