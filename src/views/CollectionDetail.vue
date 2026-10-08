@@ -21,6 +21,7 @@ import {
 import CollectionToolbar from "@/components/CollectionToolbar.vue";
 import DownloadModal from "@/components/imageDetail/DownloadModal.vue";
 import CollectionPathModal from "@/components/collection/CollectionPathModal.vue";
+import AppToast from "@/components/ui/AppToast.vue";
 import { downloadCollectionAsZip } from "@/helpers/downloadCollectionZip";
 import { sanitizeDownloadFilename } from "@/helpers/downloadImage";
 import { useAlbumImagesInfiniteQuery } from "@/composables/useAlbumImagesInfiniteQuery";
@@ -49,12 +50,69 @@ const showPathModal = ref(false);
 /** @type {import('vue').Ref<{ id: string, title?: string|null, stops: any[], route: any } | null>} */
 const activePercurso = ref(null);
 const isSavingPath = ref(false);
-const toast = useToast();
+// Feedback do salvamento do percurso (AppToast). Sucesso fecha sozinho (e
+// pausa ao passar o mouse); erro fica até o usuário fechar.
+const PATH_TOAST_SUCCESS_MS = 4000;
+const pathToasts = ref([]);
+const pathToastTimers = new Map(); // id -> { handle, remaining, startedAt }
+let pathToastSeq = 0;
+
+function clearPathToastTimer(id) {
+  const timer = pathToastTimers.get(id);
+  if (timer?.handle) clearTimeout(timer.handle);
+  pathToastTimers.delete(id);
+}
+
+function closePathToast(id) {
+  clearPathToastTimer(id);
+  pathToasts.value = pathToasts.value.filter((toast) => toast.id !== id);
+}
+
+function closePathAlert() {
+  [...pathToasts.value].forEach((toast) => closePathToast(toast.id));
+}
+
+function schedulePathToast(id, ms) {
+  const handle = setTimeout(() => closePathToast(id), ms);
+  pathToastTimers.set(id, { handle, remaining: ms, startedAt: Date.now() });
+}
+
+function showPathAlert(message, type = "error") {
+  closePathAlert(); // um feedback por vez
+  const id = ++pathToastSeq;
+  pathToasts.value = [{ id, message, type }];
+  if (type === "success") schedulePathToast(id, PATH_TOAST_SUCCESS_MS);
+}
+
+function pausePathToast(id) {
+  const timer = pathToastTimers.get(id);
+  if (!timer?.handle) return;
+  clearTimeout(timer.handle);
+  timer.remaining = Math.max(0, timer.remaining - (Date.now() - timer.startedAt));
+  timer.handle = null;
+}
+
+function resumePathToast(id) {
+  const timer = pathToastTimers.get(id);
+  if (!timer || timer.handle) return;
+  schedulePathToast(id, timer.remaining || PATH_TOAST_SUCCESS_MS);
+}
+
+onUnmounted(() => {
+  pathToastTimers.forEach((timer) => timer.handle && clearTimeout(timer.handle));
+  pathToastTimers.clear();
+});
 const EMPTY_PATH_STOPS = Object.freeze([]);
 const pathInitialStops = computed(
   () => activePercurso.value?.stops ?? EMPTY_PATH_STOPS
 );
 const pathInitialRoute = computed(() => activePercurso.value?.route ?? null);
+
+// Edição de percurso no mapa: os detalhes da coleção ficam ocultos e o mapa
+// ocupa a largura toda.
+const isPathEditing = computed(
+  () => isCollectionPath.value && collectionViewMode.value === "map"
+);
 
 function onPathSwitchClick() {
   // Só abre o modal ao ativar; desligar não precisa de confirmação.
@@ -94,7 +152,7 @@ async function fetchPercursos() {
 
 async function onPathMapSave(payload = {}) {
   if (payload.error) {
-    toast.show(payload.error, "error");
+    showPathAlert(payload.error, "error");
     return;
   }
 
@@ -102,11 +160,12 @@ async function onPathMapSave(payload = {}) {
   if (!stops?.length || !route) return;
 
   if (!canManage.value || !userAuthHeader.value) {
-    toast.show("Você não tem permissão para salvar este percurso.", "error");
+    showPathAlert("Você não tem permissão para salvar este percurso.", "error");
     return;
   }
 
   isSavingPath.value = true;
+  closePathAlert();
 
   const body = {
     title: activePercurso.value?.title ?? null,
@@ -144,8 +203,9 @@ async function onPathMapSave(payload = {}) {
       };
       toast.show("Percurso salvo com sucesso.", "success");
     }
+    showPathAlert("Percurso salvo com sucesso!", "success");
   } catch (err) {
-    toast.show(err?.message || "Não foi possível salvar o percurso.", "error");
+    showPathAlert(err?.message || "Não foi possível salvar o percurso.", "error");
   } finally {
     isSavingPath.value = false;
   }
@@ -153,6 +213,7 @@ async function onPathMapSave(payload = {}) {
 
 function onPathMapBack() {
   isCollectionPath.value = false;
+  closePathAlert();
 }
 
 const collectionId = computed(() => route.params.collectionId);
@@ -298,6 +359,7 @@ async function fetchCollectionData() {
     collective.value = null;
     activePercurso.value = null;
     isCollectionPath.value = false;
+    closePathAlert();
     isLoadingOwner.value = false;
     if (result.status === 403) {
       accessState.value = "forbidden";
@@ -703,14 +765,15 @@ watch(
       v-model="showPathModal"
       @confirm="onPathModalConfirm"
     />
-    <AppToast
-      class="collection-detail__toast"
-      variant="solid"
-      :toasts="toast.toasts.value"
-      @close="toast.hide"
-      @pause="toast.pause"
-      @resume="toast.resume"
-    />
+    <div class="collection-detail__toast-host">
+      <AppToast
+        :toasts="pathToasts"
+        variant="solid"
+        @close="closePathToast"
+        @pause="pausePathToast"
+        @resume="resumePathToast"
+      />
+    </div>
     <header class="collection-detail__header">
         <button
           type="button"
@@ -766,6 +829,7 @@ watch(
           'collection-detail__row--mobile': isMobile,
           'collection-detail__row--grid-expanded': isMobile && isMobileGridExpanded,
           'collection-detail__row--map': collectionViewMode === 'map',
+          'collection-detail__row--path-editing': isPathEditing,
         }"
       >
         <template v-if="!isMobile">
@@ -774,9 +838,9 @@ watch(
               class="collection-detail__main-title-area"
               :class="{
                 'collection-detail__main-title-area--visible':
-                  !isInfoActive && !isLoadingCollection,
+                  !isInfoActive && !isLoadingCollection && !isPathEditing,
               }"
-              :aria-hidden="isInfoActive || isLoadingCollection"
+              :aria-hidden="isInfoActive || isLoadingCollection || isPathEditing"
             >
               <h1 class="collection-detail__main-title">
                 {{ collectionTitle }}
@@ -887,6 +951,7 @@ watch(
           </div>
 
           <button
+            v-if="!isPathEditing"
             type="button"
             class="collection-detail__mobile-handle"
             :aria-expanded="isMobileGridExpanded"
@@ -921,7 +986,7 @@ watch(
         </div>
 
         <div
-          v-if="isMobile"
+          v-if="isMobile && !isPathEditing"
           class="collection-detail__info-slot collection-detail__info-slot--mobile"
         >
           <div
@@ -1158,7 +1223,7 @@ watch(
           </div>
         </div>
 
-        <div v-if="!isMobile" class="collection-detail__info-slot">
+        <div v-if="!isMobile && !isPathEditing" class="collection-detail__info-slot">
           <div
             class="collection-detail__info-wrapper"
             :class="{ 'collection-detail__info-wrapper--closed': !isInfoActive }"
@@ -1590,6 +1655,17 @@ a.collection-detail__actor-name:hover {
 
 .collection-detail__row--map {
   align-items: stretch;
+}
+
+/* Edição de percurso: mapa em largura total, sem painel de detalhes. */
+.collection-detail__row--path-editing {
+  gap: 0;
+}
+
+.collection-detail__row--path-editing .collection-detail__image-wrapper {
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: 100%;
 }
 
 .collection-detail__row--map:not(.collection-detail__row--mobile) .collection-detail__info-inner {
@@ -2297,13 +2373,25 @@ a.collection-detail__actor-name:hover {
   line-height: 150%;
 }
 
-.collection-detail__toast {
+.collection-detail__toast-host {
   position: fixed;
-  top: 80px;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1050;
-  max-width: 90%;
+  z-index: 1200;
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+}
+
+.collection-detail__toast-host :deep(.app-toast) {
+  pointer-events: auto;
+}
+
+.collection-detail__path-error {
+  margin: 8px 0 0;
+  color: #aa4f28;
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
 }
 
 .collection-detail__floating-toolbar {
