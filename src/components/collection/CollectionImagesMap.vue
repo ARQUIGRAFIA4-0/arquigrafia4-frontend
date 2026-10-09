@@ -8,6 +8,8 @@ defineProps({
   images: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
   initialSelectedId: { type: String, default: null },
+  route: { type: Object, default: null },
+  stops: { type: Array, default: () => [] },
 });
 
 defineEmits(["select"]);
@@ -28,6 +30,8 @@ defineExpose({
       :images="images"
       :is-loading="isLoading"
       :initial-selected-id="initialSelectedId"
+      :route="route"
+      :stops="stops"
       @select="$emit('select', $event)"
     />
   </div>
