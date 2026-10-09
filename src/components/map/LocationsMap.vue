@@ -27,6 +27,12 @@ const props = defineProps({
 
   /** Id da imagem a ser selecionada/focada ao carregar (restauração). */
   initialSelectedId: { type: String, default: null },
+
+  /** Rota do percurso ({ coordinates: [[lng, lat], ...] }) desenhada como linha. */
+  route: { type: Object, default: null },
+
+  /** Paradas do percurso; as sem imagem relacionada recebem o ícone geo-fill. */
+  stops: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(["select"]);
@@ -105,6 +111,16 @@ const spiderLeavesSourceId = `${sourceId}-spider-leaves`;
 const spiderLegsLayerId = `${sourceId}-spider-legs`;
 const spiderLeavesLayerId = `${sourceId}-spider-leaves`;
 
+// Linha do percurso (mesmo estilo do editor em PathMap).
+const routeSourceId = "locations-path-route";
+const routeLayerId = `${routeSourceId}-line`;
+const ROUTE_COLOR = "#AA4F28";
+
+// Paradas do percurso sem imagem relacionada (pontos livres).
+const stopsSourceId = "locations-path-stops";
+const stopsLayerId = `${stopsSourceId}-symbols`;
+const geoIconId = "locations-geo-icon";
+
 const baseColor = "#2F2F2F";
 const selectedColor = "#D27D30";
 
@@ -122,6 +138,9 @@ const CARD_MEDIA_MIN_HEIGHT = 220;
 
 // Elemento que flutua sobre o pé do mapa (toolbar da home). Opcional.
 const mapBottomOverlay = inject("mapBottomOverlay", null);
+
+// Ícone geo-fill do Bootstrap Icons sobre um círculo.
+const geoIconSvg = (fill) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="${fill}"/><g transform="translate(8 8) scale(0.65) translate(-8 -8)"><path fill="#FFFFFF" fill-rule="evenodd" d="M4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999zm2.493 8.574a.5.5 0 0 1-.411.575c-.712.118-1.28.295-1.655.493a1.3 1.3 0 0 0-.37.265.3.3 0 0 0-.057.09V14l.002.008.016.033a.6.6 0 0 0 .145.15c.165.13.435.27.813.395.751.25 1.82.414 3.024.414s2.273-.163 3.024-.414c.378-.126.648-.265.813-.395a.6.6 0 0 0 .146-.15l.015-.033L12 14v-.004a.3.3 0 0 0-.057-.09 1.3 1.3 0 0 0-.37-.264c-.376-.198-.943-.375-1.655-.493a.5.5 0 1 1 .164-.986c.77.127 1.452.328 1.957.594C12.5 13 13 13.4 13 14c0 .426-.26.752-.544.977-.29.228-.68.413-1.116.558-.878.293-2.059.465-3.34.465s-2.462-.172-3.34-.465c-.436-.145-.826-.33-1.116-.558C3.26 14.752 3 14.426 3 14c0-.599.5-1 .961-1.243.505-.266 1.187-.467 1.957-.594a.5.5 0 0 1 .575.411"/></g></svg>`;
 
 // image → câmera | work → prédio | selected → laranja
 const iconImageLayout = [
@@ -148,6 +167,54 @@ const getLocatedFeatures = () =>
   createCollectionImagesFeatureCollection(props.images).features.filter((feature) =>
     isValidCoordinate(feature.geometry?.coordinates)
   );
+
+// Coordenadas válidas da rota do percurso (ao menos 2 pontos para formar linha).
+const getRouteCoordinates = () => {
+  const coordinates = props.route?.coordinates;
+  if (!Array.isArray(coordinates)) return [];
+  const valid = coordinates
+    .map((c) => (Array.isArray(c) ? [Number(c[0]), Number(c[1])] : null))
+    .filter(isValidCoordinate);
+  return valid.length >= 2 ? valid : [];
+};
+
+// GeoJSON da linha do percurso.
+const buildRouteGeoJson = () => {
+  const coordinates = getRouteCoordinates();
+  return {
+    type: "FeatureCollection",
+    features: coordinates.length
+      ? [
+          {
+            type: "Feature",
+            geometry: { type: "LineString", coordinates },
+            properties: {},
+          },
+        ]
+      : [],
+  };
+};
+
+// Paradas do percurso sem imagem relacionada, com coordenadas válidas.
+const getCustomStopCoordinates = () =>
+  props.stops
+    .filter((stop) => stop?.imageId == null)
+    .map((stop) =>
+      Array.isArray(stop?.coordinates)
+        ? [Number(stop.coordinates[0]), Number(stop.coordinates[1])]
+        : null
+    )
+    .filter(isValidCoordinate);
+
+// GeoJSON das paradas sem imagem.
+const buildCustomStopsGeoJson = () => ({
+  type: "FeatureCollection",
+  features: getCustomStopCoordinates().map((coordinates) => ({
+    type: "Feature",
+    geometry: { type: "Point", coordinates },
+    properties: {},
+  })),
+});
 
 // Mensagem de placeholder quando não há imagens localizadas.
 const emptyMessage = computed(() =>
@@ -621,11 +688,16 @@ const handlePointClick = (event) => {
 // Constroi a view inicial do mapa.
 const buildInitialView = () => {
   const features = getLocatedFeatures();
-  if (!features.length) {
+  const routeCoordinates = [
+    ...getRouteCoordinates(),
+    ...getCustomStopCoordinates(),
+  ];
+
+  if (!features.length && !routeCoordinates.length) {
     return { type: "point", center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM };
   }
 
-  if (features.length === 1) {
+  if (features.length === 1 && !routeCoordinates.length) {
     return {
       type: "point",
       center: features[0].geometry.coordinates,
@@ -633,9 +705,13 @@ const buildInitialView = () => {
     };
   }
 
+  // Enquadra as imagens e toda a linha do percurso.
   const bounds = new LngLatBounds();
   features.forEach((feature) => {
     bounds.extend(feature.geometry.coordinates);
+  });
+  routeCoordinates.forEach((coordinates) => {
+    bounds.extend(coordinates);
   });
 
   return { type: "bounds", bounds };
@@ -1071,6 +1147,52 @@ const setupLayers = async (map) => {
   await registerIcon(map, selectedIconId, cameraIconSvg(selectedColor));
   await registerIcon(map, workIconId, workIconSvg(baseColor));
   await registerIcon(map, workSelectedIconId, workIconSvg(selectedColor));
+  await registerIcon(map, geoIconId, geoIconSvg(ROUTE_COLOR));
+
+  // A linha do percurso é adicionada antes dos ícones para ficar por baixo deles.
+  if (!map.getSource(routeSourceId)) {
+    map.addSource(routeSourceId, {
+      type: "geojson",
+      data: buildRouteGeoJson(),
+    });
+  }
+
+  if (!map.getLayer(routeLayerId)) {
+    map.addLayer({
+      id: routeLayerId,
+      type: "line",
+      source: routeSourceId,
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+      },
+      paint: {
+        "line-color": ROUTE_COLOR,
+        "line-width": 4,
+        "line-opacity": 0.9,
+      },
+    });
+  }
+
+  if (!map.getSource(stopsSourceId)) {
+    map.addSource(stopsSourceId, {
+      type: "geojson",
+      data: buildCustomStopsGeoJson(),
+    });
+  }
+
+  if (!map.getLayer(stopsLayerId)) {
+    map.addLayer({
+      id: stopsLayerId,
+      type: "symbol",
+      source: stopsSourceId,
+      layout: {
+        "icon-image": geoIconId,
+        "icon-size": 0.8,
+        "icon-allow-overlap": true,
+      },
+    });
+  }
 
   if (!map.getSource(sourceId)) {
     map.addSource(sourceId, {
@@ -1272,6 +1394,21 @@ watch(
   { deep: true }
 );
 
+// Atualiza a linha/paradas do percurso e reenquadra o mapa quando mudam.
+watch(
+  () => [props.route, props.stops],
+  () => {
+    const map = mapInstance.value;
+    if (!map) return;
+
+    map.getSource(routeSourceId)?.setData(buildRouteGeoJson());
+    map.getSource(stopsSourceId)?.setData(buildCustomStopsGeoJson());
+
+    saveInitialView();
+    if (!selectedId.value) fitMapToFeatures();
+  }
+);
+
 watch(
   () => props.pitch,
   (pitch) => {
@@ -1304,6 +1441,8 @@ onUnmounted(() => {
 
   if (map && map.style) {
     [
+      routeLayerId,
+      stopsLayerId,
       clusterLayerId,
       clusterCountLayerId,
       unclusteredLayerId,
@@ -1313,14 +1452,15 @@ onUnmounted(() => {
       if (map.getLayer(id)) map.removeLayer(id);
     });
 
-    [sourceId, spiderLegsSourceId, spiderLeavesSourceId].forEach((id) => {
+    [routeSourceId, stopsSourceId, sourceId, spiderLegsSourceId, spiderLeavesSourceId].forEach((id) => {
       if (map.getSource(id)) map.removeSource(id);
     });
 
     if (map.hasImage(iconId)) map.removeImage(iconId);
     if (map.hasImage(selectedIconId)) map.removeImage(selectedIconId);
     if (map.hasImage(workIconId)) map.removeImage(workIconId);
-    if (map.hasImage(workSelectedIconId)) map.removeImage(workSelectedIconId);    
+    if (map.hasImage(workSelectedIconId)) map.removeImage(workSelectedIconId);
+    if (map.hasImage(geoIconId)) map.removeImage(geoIconId);    
   }
 
   mapInstance.value = null;
