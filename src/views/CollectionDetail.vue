@@ -22,11 +22,10 @@ import CollectionToolbar from "@/components/CollectionToolbar.vue";
 import DownloadModal from "@/components/imageDetail/DownloadModal.vue";
 import CollectionPathModal from "@/components/collection/CollectionPathModal.vue";
 import AppToast from "@/components/ui/AppToast.vue";
+import { useToast } from "@/composables/useToast";
 import { downloadCollectionAsZip } from "@/helpers/downloadCollectionZip";
 import { sanitizeDownloadFilename } from "@/helpers/downloadImage";
 import { useAlbumImagesInfiniteQuery } from "@/composables/useAlbumImagesInfiniteQuery";
-import AppToast from "@/components/ui/AppToast.vue";
-import { useToast } from "@/composables/useToast";
 
 defineOptions({ name: "CollectionDetail" });
 
@@ -50,58 +49,23 @@ const showPathModal = ref(false);
 /** @type {import('vue').Ref<{ id: string, title?: string|null, stops: any[], route: any } | null>} */
 const activePercurso = ref(null);
 const isSavingPath = ref(false);
-// Feedback do salvamento do percurso (AppToast). Sucesso fecha sozinho (e
-// pausa ao passar o mouse); erro fica até o usuário fechar.
-const PATH_TOAST_SUCCESS_MS = 4000;
-const pathToasts = ref([]);
-const pathToastTimers = new Map(); // id -> { handle, remaining, startedAt }
-let pathToastSeq = 0;
-
-function clearPathToastTimer(id) {
-  const timer = pathToastTimers.get(id);
-  if (timer?.handle) clearTimeout(timer.handle);
-  pathToastTimers.delete(id);
-}
-
-function closePathToast(id) {
-  clearPathToastTimer(id);
-  pathToasts.value = pathToasts.value.filter((toast) => toast.id !== id);
-}
+// Feedback do salvamento do percurso (AppToast + useToast). Um toast por vez.
+const {
+  toasts: pathToasts,
+  show: showToast,
+  hide: hideToast,
+  pause: pauseToast,
+  resume: resumeToast,
+} = useToast({ max: 1 });
 
 function closePathAlert() {
-  [...pathToasts.value].forEach((toast) => closePathToast(toast.id));
-}
-
-function schedulePathToast(id, ms) {
-  const handle = setTimeout(() => closePathToast(id), ms);
-  pathToastTimers.set(id, { handle, remaining: ms, startedAt: Date.now() });
+  [...pathToasts.value].forEach((toast) => hideToast(toast.id));
 }
 
 function showPathAlert(message, type = "error") {
-  closePathAlert(); // um feedback por vez
-  const id = ++pathToastSeq;
-  pathToasts.value = [{ id, message, type }];
-  if (type === "success") schedulePathToast(id, PATH_TOAST_SUCCESS_MS);
+  closePathAlert();
+  showToast(message, type);
 }
-
-function pausePathToast(id) {
-  const timer = pathToastTimers.get(id);
-  if (!timer?.handle) return;
-  clearTimeout(timer.handle);
-  timer.remaining = Math.max(0, timer.remaining - (Date.now() - timer.startedAt));
-  timer.handle = null;
-}
-
-function resumePathToast(id) {
-  const timer = pathToastTimers.get(id);
-  if (!timer || timer.handle) return;
-  schedulePathToast(id, timer.remaining || PATH_TOAST_SUCCESS_MS);
-}
-
-onUnmounted(() => {
-  pathToastTimers.forEach((timer) => timer.handle && clearTimeout(timer.handle));
-  pathToastTimers.clear();
-});
 const EMPTY_PATH_STOPS = Object.freeze([]);
 const pathInitialStops = computed(
   () => activePercurso.value?.stops ?? EMPTY_PATH_STOPS
@@ -188,7 +152,6 @@ async function onPathMapSave(payload = {}) {
         stops: body.stops,
         route: body.route,
       };
-      toast.show("Percurso atualizado com sucesso.", "success");
     } else {
       const created = await albumsStore.createPercurso(
         userAuthHeader.value,
@@ -201,7 +164,6 @@ async function onPathMapSave(payload = {}) {
         stops: body.stops,
         route: body.route,
       };
-      toast.show("Percurso salvo com sucesso.", "success");
     }
     showPathAlert("Percurso salvo com sucesso!", "success");
   } catch (err) {
@@ -769,9 +731,9 @@ watch(
       <AppToast
         :toasts="pathToasts"
         variant="solid"
-        @close="closePathToast"
-        @pause="pausePathToast"
-        @resume="resumePathToast"
+        @close="hideToast"
+        @pause="pauseToast"
+        @resume="resumeToast"
       />
     </div>
     <header class="collection-detail__header">
