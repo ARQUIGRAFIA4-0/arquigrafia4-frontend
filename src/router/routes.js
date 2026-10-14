@@ -137,6 +137,11 @@ export default [
     component: () => import("../views/About/AboutOpenSource.vue"),
   },
   {
+    path: "/about/advanced-search",
+    name: "about-advanced-search",
+    component: () => import("../views/About/AboutAdvancedSearch.vue"),
+  },
+  {
     path: "/about/vocabulary",
     name: "about-vocabulary",
     component: () => import("../views/About/AboutVocabulary.vue"),

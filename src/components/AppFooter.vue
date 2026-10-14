@@ -41,6 +41,10 @@ onMounted(async () => {
           faq
         </router-link>
         <span>•</span>
+        <router-link to="/about/advanced-search" class="app-footer__link">
+          busca avançada
+        </router-link>
+        <span>•</span>
         <router-link to="/about/vocabulary" class="app-footer__link">
           vocabulário
         </router-link>

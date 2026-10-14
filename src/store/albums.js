@@ -257,5 +257,85 @@ export const useAlbumsStore = defineStore("albums", () => {
         return sortAlbumsWithFavoritesFirst(refreshed);
     }
 
-    return { createAlbum, getUserAlbums, getCollectiveAlbums, deleteAlbum, getDataAlbumByAlbumId, updateAlbum, getAlbumDetail, addImageToAlbum, removeImagesFromAlbum, syncImages, getTagsByAlbumId, ensureDefaultFavoritesAlbum };
+    // Lista percursos do álbum > GET /api/albums/{albumId}/percursos
+    async function getPercursos(authHeader, albumId) {
+        try {
+            const headers = { "Content-Type": "application/json" };
+            if (authHeader) {
+                headers.Authorization = authHeader;
+            }
+            const response = await axios.get(`/api/albums/${albumId}/percursos`, {
+                headers,
+            });
+            return Array.isArray(response.data) ? response.data : [];
+        } catch (error) {
+            throw new Error(
+                error?.response?.data?.message ||
+                    "Não foi possível carregar os percursos."
+            );
+        }
+    }
+
+    // Cria um percurso > POST /api/albums/{albumId}/percursos
+    async function createPercurso(authHeader, albumId, payload) {
+        try {
+            const response = await axios.post(
+                `/api/albums/${albumId}/percursos`,
+                payload,
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: authHeader,
+                    },
+                }
+            );
+            return response.data;
+        } catch (error) {
+            throw new Error(
+                error?.response?.data?.message ||
+                    "Não foi possível salvar o percurso."
+            );
+        }
+    }
+
+    // Sincroniza percursos do álbum > PUT /api/albums/{albumId}/percursos
+    // Body: array na raiz. Itens com id atualizam; sem id criam; omitidos são removidos.
+    async function syncPercursos(authHeader, albumId, percursos) {
+        try {
+            const response = await axios.put(
+                `/api/albums/${albumId}/percursos`,
+                percursos,
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: authHeader,
+                    },
+                }
+            );
+            return Array.isArray(response.data) ? response.data : [];
+        } catch (error) {
+            throw new Error(
+                error?.response?.data?.message ||
+                    "Não foi possível atualizar o percurso."
+            );
+        }
+    }
+
+    return {
+        createAlbum,
+        getUserAlbums,
+        getCollectiveAlbums,
+        deleteAlbum,
+        getDataAlbumByAlbumId,
+        updateAlbum,
+        getAlbumDetail,
+        addImageToAlbum,
+        removeImagesFromAlbum,
+        syncImages,
+        getTagsByAlbumId,
+        ensureDefaultFavoritesAlbum,
+        getPercursos,
+        createPercurso,
+        syncPercursos,
+    };
 })

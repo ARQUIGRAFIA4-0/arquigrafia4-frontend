@@ -103,6 +103,7 @@ $breakpoint-wide: 1440px;
   margin-left: 0;
   margin-right: 0;
 
+
   @media (min-width: #{$breakpoint-laptop}) and (max-width: 1439.98px) {
     flex: 1 1 0;
     width: auto;
@@ -115,6 +116,7 @@ $breakpoint-wide: 1440px;
 }
 
 .container-fluid {
+  max-width: 1440px;
   --bs-gutter-x: 0;
 }
 </style>
