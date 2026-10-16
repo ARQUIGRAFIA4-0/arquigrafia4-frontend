@@ -1,16 +1,45 @@
 <script setup>
 import { nextTick, ref } from "vue";
+import draggable from "vuedraggable";
 
 defineOptions({ name: "PathPointsPanel" });
 
-defineProps({
+const props = defineProps({
   stops: { type: Array, default: () => [] },
   saving: { type: Boolean, default: false },
   /** true enquanto o usuário escolhe o novo ponto no mapa */
   picking: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(["add", "remove", "rename", "save", "back"]);
+const emit = defineEmits(["add", "remove", "rename", "reorder", "save", "back"]);
+
+const listRef = ref(null);
+
+// Emite a nova ordem (lista de ids) depois de soltar um ponto arrastado.
+function onDragReorder(nextStops) {
+  emit("reorder", nextStops.map((stop) => stop.id));
+}
+
+// Move um ponto com as setas do teclado (acessibilidade do arrastar e soltar).
+async function onHandleKeydown(event, index) {
+  const delta = { ArrowUp: -1, ArrowDown: 1 }[event.key];
+  if (!delta) return;
+
+  event.preventDefault();
+  const target = index + delta;
+  if (target < 0 || target >= props.stops.length) return;
+
+  const ids = props.stops.map((stop) => stop.id);
+  const [moved] = ids.splice(index, 1);
+  ids.splice(target, 0, moved);
+  emit("reorder", ids);
+
+  // Mantém o foco no ícone do ponto movido para permitir vários movimentos seguidos.
+  await nextTick();
+  listRef.value?.$el
+    ?.querySelector(`[data-stop-handle="${moved}"]`)
+    ?.focus();
+}
 
 const editingId = ref(null);
 const draftTitle = ref("");
@@ -68,12 +97,34 @@ function onTitleKeydown(event, stop) {
         Selecione os pontos do percurso
       </h2>
 
-      <ul class="path-points-panel__list">
-        <li
-          v-for="stop in stops"
-          :key="stop.id"
-          class="path-points-panel__item"
-        >
+      <draggable
+        ref="listRef"
+        :model-value="stops"
+        tag="ul"
+        class="path-points-panel__list"
+        item-key="id"
+        handle=".path-points-panel__handle"
+        ghost-class="path-points-panel__item--ghost"
+        chosen-class="path-points-panel__item--chosen"
+        :animation="150"
+        :disabled="saving || stops.length < 2"
+        @update:model-value="onDragReorder"
+      >
+        <template #item="{ element: stop, index }">
+        <li class="path-points-panel__item">
+          <button
+            type="button"
+            class="path-points-panel__handle"
+            :class="{ 'path-points-panel__handle--hidden': stops.length < 2 }"
+            :data-stop-handle="stop.id"
+            :disabled="saving || stops.length < 2"
+            :aria-label="`Reordenar ${stop.title} (posição ${stop.order} de ${stops.length}). Use as setas para cima e para baixo.`"
+            title="Arraste para reordenar"
+            @keydown="onHandleKeydown($event, index)"
+          >
+            <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+          </button>
+
           <span
             class="path-points-panel__pin"
             :class="{ 'path-points-panel__pin--custom': stop.type === 'custom' }"
@@ -125,7 +176,9 @@ function onTitleKeydown(event, stop) {
             </svg>
           </button>
         </li>
+        </template>
 
+        <template #footer>
         <li class="path-points-panel__item path-points-panel__item--add">
           <button
             type="button"
@@ -146,7 +199,8 @@ function onTitleKeydown(event, stop) {
             </span>
           </button>
         </li>
-      </ul>
+        </template>
+      </draggable>
     </div>
 
     <div class="path-points-panel__footer">
@@ -224,6 +278,66 @@ function onTitleKeydown(event, stop) {
   gap: 8px;
   width: 100%;
   min-height: 28px;
+}
+
+/* Alça de arrastar: sempre visível (descoberta e telas de toque), mais forte no hover */
+.path-points-panel__handle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 28px;
+  margin: 0 -4px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #b3b3b3;
+  font-size: 16px;
+  cursor: grab;
+  touch-action: none;
+  transition: color 0.15s ease;
+}
+
+.path-points-panel__item:hover .path-points-panel__handle,
+.path-points-panel__handle:focus-visible {
+  color: #2f2f2f;
+}
+
+.path-points-panel__handle:focus-visible {
+  outline: 2px solid #2f2f2f;
+  outline-offset: 1px;
+}
+
+.path-points-panel__handle:active {
+  cursor: grabbing;
+}
+
+/* Com menos de 2 pontos não há o que reordenar: some, mas mantém o alinhamento */
+.path-points-panel__handle--hidden {
+  visibility: hidden;
+}
+
+/* Linha "Adicionar novo ponto" alinhada com os números (largura da alça + gap) */
+.path-points-panel__item--add {
+  padding-left: 20px;
+}
+
+/* Lugar onde o ponto vai cair durante o arraste */
+.path-points-panel__item--ghost {
+  border-radius: 6px;
+  background: rgba(170, 79, 40, 0.12);
+  outline: 1px dashed var(--Laranja_E, #aa4f28);
+}
+
+.path-points-panel__item--ghost > * {
+  opacity: 0.4;
+}
+
+.path-points-panel__item--chosen {
+  border-radius: 6px;
+  background: #fff;
 }
 
 .path-points-panel__pin {

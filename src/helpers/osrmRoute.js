@@ -1,6 +1,20 @@
 import axios from "@/axios";
 
 /**
+ * Rota recusada pelo backend (HTTP 422): não deve cair no fallback de linha reta.
+ * code: "OutOfArea" (ponto fora do Brasil / longe de vias) | "TooLong" (acima do limite de km)
+ * | "Validation" (ex.: paradas demais).
+ */
+export class RouteRejectedError extends Error {
+  constructor({ code, message, coordinateIndex = null }) {
+    super(message);
+    this.name = "RouteRejectedError";
+    this.code = code;
+    this.coordinateIndex = coordinateIndex;
+  }
+}
+
+/**
  * Roteamento a pé via OSRM (OpenStreetMap).
  *
  * - O servidor demo https://router.project-osrm.org só tem o perfil de CARRO carregado
@@ -41,6 +55,15 @@ export async function fetchOsrmRoute(authHeader, coordinates, options = {}) {
   } catch (error) {
     if (error.name === "CanceledError" || error.code === "ERR_CANCELED") {
       throw error;
+    }
+
+    if (error.response?.status === 422) {
+      const body = error.response.data ?? {};
+      throw new RouteRejectedError({
+        code: body.code ?? "Validation",
+        message: body.message || "Não foi possível traçar o percurso com este ponto.",
+        coordinateIndex: body.coordinateIndex ?? null,
+      });
     }
 
     return null; // Retorna null em caso de outros erros (ex.: rede, CORS, etc.)
