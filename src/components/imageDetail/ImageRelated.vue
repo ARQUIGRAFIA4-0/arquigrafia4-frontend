@@ -1,86 +1,79 @@
 <template>
-  <div v-if="isLoading || hasItems" class="related-images">
-    <div class="related-images__header">
-      <div class="related-images__header-content">
-        <h2 class="title">
-          Continue explorando
-        </h2>
-        <i class="bi bi-arrow-down title-icon" aria-hidden="true"></i>
-      </div>
-      <UiField label=" " explain="Clique nas imagens para descobrir como se relacionam com a imagem principal.">
-      </UiField>
-    </div>
-
-    <mosaic-skeleton v-if="showSkeleton && !isMobileGrid" :gap="5" :column-widths="columnWidths"
-      :min-columns="minColumns" :max-columns="maxColumns" />
-
-    <masonry-wall v-if="!isMobileGrid" v-show="mosaicItems.length > 0" :items="mosaicItems" :column-width="columnWidths"
-      :gap="5" :min-columns="minColumns" :max-columns="maxColumns"
-      :class="['masonry-grid', { 'masonry-ready': isMasonryReady }]" @redraw="handleMasonryRedraw">
-      <template #default="slotProps">
-
-        <div v-if="slotProps && slotProps.item" class="related-card" :ref="(el) => setCardRef(el, slotProps.item.id)"
-          :class="[cardSizeClasses[slotProps.item.id]]" :data-card-id="slotProps.item.id">
-
-          <!-- <img v-if="activeCardId !== slotProps.item.id" :src="LogoConection" alt="" class="related-card__logo" />
-          <span v-else @click.stop="toggleCard(slotProps.item.id)" class="related-card__close-button">
-            <i class="bi bi-x" aria-hidden="true"></i>
-          </span> -->
-
-          <mosaic-card :id="slotProps.item.id" :title="slotProps.item.title" :image-url="slotProps.item.src"
-            :aspect-ratio="slotProps.item.aspectRatio" />
-
-          <!-- <div class="related-card__click-catcher" @click="toggleCard(slotProps.item.id)"></div>
-
-          <div v-if="activeCardId === slotProps.item.id" class="related-card__overlay"
-            @click="toggleCard(slotProps.item.id)">
-            <span class="related-card__overlay-title">Relacionada por:</span>
-            <FitTags :subjects="RELATION_CATEGORIES_TAGS ?? []" />
-            <span class="related-card__open-image">
-              <a :href="`/explore/dados/image/${slotProps.item.id}`" class="bi bi-arrow-right-circle-fill"></a>
-            </span>
-          </div> -->
+  <ImageMosaic v-if="isLoading || hasItems" ref="mosaicRef" class="related-images" :items="mosaicItems"
+    :loading="isPending" :loading-more="isFetchingNextPage" :masonry="!isMobileGrid" @redraw="handleMasonryRedraw">
+    <template #header>
+      <div class="related-images__header">
+        <div class="related-images__header-content">
+          <h2 class="title">
+            Continue explorando
+          </h2>
+          <i class="bi bi-arrow-down title-icon" aria-hidden="true"></i>
         </div>
-      </template>
-    </masonry-wall>
+        <UiField label=" " explain="Clique nas imagens para descobrir como se relacionam com a imagem principal.">
+        </UiField>
+      </div>
+    </template>
 
-    <div v-else class="related-grid">
-      <div v-for="item in mosaicItems" :key="item.id" class="related-card related-grid__item" :data-card-id="item.id">
+    <template #default="slotProps">
 
-        <!-- <img v-if="activeCardId !== item.id" :src="LogoConection" alt="" class="related-card__logo" />
-        <span v-else @click.stop="toggleCard(item.id)" class="related-card__close-button">
+      <div v-if="slotProps && slotProps.item" class="related-card" :ref="(el) => setCardRef(el, slotProps.item.id)"
+        :class="[cardSizeClasses[slotProps.item.id]]" :data-card-id="slotProps.item.id">
+
+        <!-- <img v-if="activeCardId !== slotProps.item.id" :src="LogoConection" alt="" class="related-card__logo" />
+        <span v-else @click.stop="toggleCard(slotProps.item.id)" class="related-card__close-button">
           <i class="bi bi-x" aria-hidden="true"></i>
         </span> -->
 
-        <mosaic-card :id="item.id" :title="item.title" :image-url="item.src" :aspect-ratio="1" />
+        <mosaic-card :id="slotProps.item.id" :title="slotProps.item.title" :image-url="slotProps.item.src"
+          :aspect-ratio="slotProps.item.aspectRatio" />
 
-        <!-- <div class="related-card__click-catcher" @click="toggleCard(item.id)"></div>
+        <!-- <div class="related-card__click-catcher" @click="toggleCard(slotProps.item.id)"></div>
 
-        <div v-if="activeCardId === item.id" class="related-card__overlay" @click="toggleCard(item.id)">
+        <div v-if="activeCardId === slotProps.item.id" class="related-card__overlay"
+          @click="toggleCard(slotProps.item.id)">
           <span class="related-card__overlay-title">Relacionada por:</span>
           <FitTags :subjects="RELATION_CATEGORIES_TAGS ?? []" />
           <span class="related-card__open-image">
-            <a :href="`/explore/dados/image/${item.id}`" class="bi bi-arrow-right-circle-fill"></a>
+            <a :href="`/explore/dados/image/${slotProps.item.id}`" class="bi bi-arrow-right-circle-fill"></a>
           </span>
         </div> -->
       </div>
-    </div>
+    </template>
 
-    <div ref="sentinel" class="related-images__sentinel"></div>
+    <template #grid="{ items }">
+      <div class="related-grid">
+        <div v-for="item in items" :key="item.id" class="related-card related-grid__item" :data-card-id="item.id">
 
-    <!-- Loading da próxima página -->
-    <div v-if="isFetchingNextPage" class="text-center my-4">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Carregando...</span>
+          <!-- <img v-if="activeCardId !== item.id" :src="LogoConection" alt="" class="related-card__logo" />
+          <span v-else @click.stop="toggleCard(item.id)" class="related-card__close-button">
+            <i class="bi bi-x" aria-hidden="true"></i>
+          </span> -->
+
+          <mosaic-card :id="item.id" :title="item.title" :image-url="item.src" :aspect-ratio="1" />
+
+          <!-- <div class="related-card__click-catcher" @click="toggleCard(item.id)"></div>
+
+          <div v-if="activeCardId === item.id" class="related-card__overlay" @click="toggleCard(item.id)">
+            <span class="related-card__overlay-title">Relacionada por:</span>
+            <FitTags :subjects="RELATION_CATEGORIES_TAGS ?? []" />
+            <span class="related-card__open-image">
+              <a :href="`/explore/dados/image/${item.id}`" class="bi bi-arrow-right-circle-fill"></a>
+            </span>
+          </div> -->
+        </div>
       </div>
-    </div>
-  </div>
+    </template>
+
+    <template #after>
+      <div ref="sentinel" class="related-images__sentinel"></div>
+    </template>
+  </ImageMosaic>
 </template>
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import MosaicCard from "@/components/MosaicCard.vue";
-import MosaicSkeleton from "@/components/MosaicSkeleton.vue";
+import ImageMosaic from "@/components/ImageMosaic.vue";
 import { api } from "@/services/api";
 import UiField from "@/components/ui/UiField.vue";
 
@@ -103,8 +96,6 @@ const handleClickOutside = (event) => {
 };
 
 
-const columnWidths = [320, 200, 280, 260, 210, 220, 300];
-
 const windowWidth = ref(window.innerWidth);
 let resizeTimeout = null;
 
@@ -114,11 +105,6 @@ const handleResize = () => {
     windowWidth.value = window.innerWidth;
   }, 150);
 };
-
-// Colunagem adaptativa à largura da tela, igual ao mosaico da home
-const minColumns = 2;
-const maxColumns = 7;
-
 
 const isMobileGrid = computed(() => windowWidth.value <= 768);
 
@@ -159,12 +145,12 @@ const updateAllCardSizeClasses = () => {
 
 const mosaicItems = ref([]);
 const processedIds = new Set();
-const isMasonryReady = ref(false);
 const isPending = ref(false);
 const isFetchingNextPage = ref(false);
 const currentPage = ref(0);
 const hasNextPage = ref(true);
 const sentinel = ref(null);
+const mosaicRef = ref(null);
 let observer = null;
 
 const hasItems = computed(() => mosaicItems.value.length > 0);
@@ -203,20 +189,7 @@ const processItems = (sourceItems) => {
   mosaicItems.value = [...mosaicItems.value, ...newItems];
 };
 
-const showSkeleton = computed(() => {
-  if (isPending.value) return true;
-  if (isMobileGrid.value) return false; // grid simples não usa a animação/skeleton do masonry
-  if (mosaicItems.value.length > 0 && !isMasonryReady.value) return true;
-  return false;
-});
-
 const handleMasonryRedraw = () => {
-  if (!isMasonryReady.value && mosaicItems.value.length > 0) {
-    requestAnimationFrame(() => {
-      isMasonryReady.value = true;
-    });
-  }
-
   // Recalcula as classes de tamanho depois que o DOM
   // já refletiu o novo layout do masonry (nova qtd de colunas, etc.)
   nextTick(() => {
@@ -226,7 +199,7 @@ const handleMasonryRedraw = () => {
 
 // ─── Busca paginada em /images/{id}/related ────────────────────────────────────
 const fetchRelated = async () => {
-  if (!props.imageId || !hasNextPage.value || isPending.value || isFetchingNextPage.value) {
+  if (!props.imageId || !hasNextPage.value || isPending.value || isFetchingNextPage.value || mosaicRef.value?.isRebuilding) {
     return;
   }
 
@@ -260,7 +233,6 @@ const fetchRelated = async () => {
 const resetAndFetch = () => {
   mosaicItems.value = [];
   processedIds.clear();
-  isMasonryReady.value = false;
   currentPage.value = 0;
   hasNextPage.value = true;
   fetchRelated();
@@ -372,15 +344,6 @@ $breakpoint-lg: 1440px;
 
 }
 
-
-.masonry-grid {
-  opacity: 0;
-  transition: opacity 0.15s ease-in;
-}
-
-.masonry-grid.masonry-ready {
-  opacity: 1;
-}
 
 .related-images__sentinel {
   height: 1px;

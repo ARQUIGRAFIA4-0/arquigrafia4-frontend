@@ -31,23 +31,10 @@
           </div>
 
           <!-- Masonry: até 3 colunas, caindo para 2 em telas estreitas (como na home) -->
-          <masonry-wall v-else-if="mosaicItems.length" :items="mosaicItems" :column-width="200" :gap="8"
-            :min-columns="2" :max-columns="3" :class="['masonry-grid', { 'masonry-ready': isMasonryReady }]"
-            @redraw="handleMasonryRedraw">
-            <template #default="slotProps">
-              <mosaic-card v-if="slotProps && slotProps.item" :id="slotProps.item.id" :title="slotProps.item.title"
-                :image-url="slotProps.item.src" :aspect-ratio="slotProps.item.aspectRatio" />
-            </template>
-          </masonry-wall>
+          <ImageMosaic v-else-if="mosaicItems.length" ref="mosaicRef" :items="mosaicItems" :column-width="200" :gap="8"
+            :max-columns="3" :skeleton="false" :loading-more="isFetchingNextPage" />
 
           <p v-else class="text-muted mb-0">Nenhuma imagem associada a esta obra.</p>
-
-          <!-- Loading das próximas páginas (scroll infinito) -->
-          <div v-if="isFetchingNextPage" class="text-center my-4">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Carregando...</span>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -86,7 +73,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { useRoute, useRouter, RouterLink } from "vue-router";
 import { storeToRefs } from "pinia";
-import MosaicCard from "@/components/MosaicCard.vue";
+import ImageMosaic from "@/components/ImageMosaic.vue";
 import WorkMetadata from "@/components/work/WorkMetadata.vue";
 import WorkSuggestionEdit from "@/components/work/WorkSuggestionEdit.vue";
 import WorkSuggestionList from "@/components/work/WorkSuggestionList.vue";
@@ -127,7 +114,7 @@ const error = ref(null);
 const work = ref(null);
 const galleryMeta = ref(null);
 const mosaicItems = ref([]);
-const isMasonryReady = ref(false);
+const mosaicRef = ref(null);
 
 const PER_PAGE = 24;
 const currentPage = ref(1);
@@ -192,18 +179,9 @@ const buildMosaicItems = async (items) => {
   return built;
 };
 
-const handleMasonryRedraw = () => {
-  if (!isMasonryReady.value && mosaicItems.value.length > 0) {
-    requestAnimationFrame(() => {
-      isMasonryReady.value = true;
-    });
-  }
-};
-
 const fetchWork = async () => {
   loading.value = true;
   error.value = null;
-  isMasonryReady.value = false;
   currentPage.value = 1;
   processedIds.clear();
   try {
@@ -236,7 +214,7 @@ const handleSuggestionApplied = (updatedWork) => {
 
 // Scroll infinito: mesma dinâmica do mosaico da home e dos grids de perfil.
 const fetchNextPage = async () => {
-  if (!hasNextPage.value || isFetchingNextPage.value || loading.value) return;
+  if (!hasNextPage.value || isFetchingNextPage.value || loading.value || mosaicRef.value?.isRebuilding) return;
 
   isFetchingNextPage.value = true;
   const nextPage = currentPage.value + 1;
@@ -401,14 +379,5 @@ $breakpoint-md: 1024px;
 // 28px entre o botão "voltar" e o mosaico
 .work-detail__mosaic {
   margin-top: 28px;
-}
-
-.masonry-grid {
-  opacity: 0;
-  transition: opacity 0.15s ease-in;
-}
-
-.masonry-grid.masonry-ready {
-  opacity: 1;
 }
 </style>
