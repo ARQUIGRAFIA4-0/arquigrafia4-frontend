@@ -5,30 +5,30 @@ defineOptions({ name: "CollectionPathModal" });
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
-  // "to-path": coleção vira percurso | "to-collection": percurso volta a ser coleção
+  // "create": cria o percurso da coleção | "delete": apaga o percurso da coleção
   mode: {
     type: String,
-    default: "to-path",
-    validator: (value) => ["to-path", "to-collection"].includes(value),
+    default: "create",
+    validator: (value) => ["create", "delete"].includes(value),
   },
 });
 
 const emit = defineEmits(["update:modelValue", "confirm"]);
 
 const COPY = {
-  "to-path": {
-    title: "Torne essa coleção em um percurso",
-    text: "A coleção passa a ser um percurso. Em seguida, defina os pontos e a rota no mapa.",
-    confirm: "Transformar em percurso",
+  create: {
+    title: "Deseja criar um percurso a partir dessa coleção?",
+    text: "Defina os pontos e a rota no mapa. A coleção continua a mesma, apenas ganha um percurso.",
+    confirm: "Criar percurso",
   },
-  "to-collection": {
-    title: "Converta esse percurso em uma coleção",
+  delete: {
+    title: "Apagar o percurso desta coleção?",
     text: "Os pontos e a rota do percurso serão removidos. As imagens da coleção não são alteradas.",
-    confirm: "Converter em coleção",
+    confirm: "Apagar percurso",
   },
 };
 
-const copy = computed(() => COPY[props.mode] ?? COPY["to-path"]);
+const copy = computed(() => COPY[props.mode] ?? COPY.create);
 
 function close() {
   emit("update:modelValue", false);
@@ -157,7 +157,7 @@ watch(
   margin: 0;
   color: #2f2f2f;
   text-align: start;
-  font-family: "DM Sans", sans-serif;
+  
   font-size: 20px;
   font-style: normal;
   font-weight: 500;
@@ -178,9 +178,9 @@ watch(
 .path-modal__text {
   margin: 0;
   align-self: stretch;
-  color: var(--Gray-900, #212529);
+  color: var(--Cinza_E);
   text-align: start;
-  font-family: "DM Sans", sans-serif;
+  
   font-size: 16px;
   font-style: normal;
   font-weight: 500;
@@ -189,14 +189,9 @@ watch(
 
 
 
-
-
-
-
-
 .path-modal__footer {
   display: flex;
-  padding: 16px 0;
+  padding: 18px 0;
   justify-content: center;
   align-items: flex-start;
   gap: 16px;
@@ -218,8 +213,8 @@ watch(
   min-width: 0;
   margin: 0;
   border-radius: 5px;
-  border: 1px solid var(--Cinza_E, #2f2f2f);
-  font-family: "DM Sans", sans-serif;
+  border: 1px solid var(--Cinza_E);
+  
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
@@ -230,12 +225,12 @@ watch(
 
 .path-modal__btn--secondary {
   background: var(--Off_white, #faf9f9);
-  color: var(--Cinza_E, #2f2f2f);
+  color: var(--Cinza_E);
 }
 
 .path-modal__btn--primary {
-  background: var(--Cinza_E, #2f2f2f);
-  border-color: var(--Cinza_E, #2f2f2f);
+  background: var(--Cinza_E);
+  border-color: var(--Cinza_E);
   color: var(--Branco, #fff);
 }
 

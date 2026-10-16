@@ -8,6 +8,8 @@
   const albumsStore = useAlbumsStore();
   const userAuthHeader = computed(() => authStore.authHeader);
 
+  const TITLE_MAX_LENGTH = 150;
+
   // Campos de criação de coleção
   const collectionTitle = ref("");
   const collectionDescription = ref("");
@@ -166,9 +168,12 @@
                     v-model="collectionTitle"
                     class="collection-modal__input"
                     type="text"
+                    :maxlength="TITLE_MAX_LENGTH"
                     placeholder="Crie um título para sua coleção"
                     />
-                    <p class="collection-modal__hint">Preenchimento obrigatório.</p>
+                    <p class="collection-modal__hint">
+                      Preenchimento obrigatório. {{ collectionTitle.length }} / {{ TITLE_MAX_LENGTH }} caracteres
+                    </p>
                 </div>
 
                 <div class="collection-modal__field">
@@ -356,7 +361,7 @@
   gap: 16px;
   overflow: hidden;
   border-radius: 16px;
-  background: var(--off_white, #faf9f9);
+  background: var(--Off_white);
   box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.1);
 }
 
@@ -468,7 +473,7 @@
   width: 100%;
   border: 0.75px solid var(--preto, #1f1f1f);
   border-radius: 5px;
-  background: var(--off_white, #faf9f9);
+  background: var(--Off_white);
   box-sizing: border-box;
   padding: 6px 10px;
   font-family: "DM Sans", sans-serif;
@@ -558,7 +563,7 @@
 }
 
 .collection-modal__btn--secondary {
-  background: var(--off_white, #faf9f9);
+  background: var(--Off_white);
   border-color: var(--cinza_e, #2f2f2f);
   color: var(--cinza_e, #2f2f2f);
 }
@@ -674,7 +679,7 @@
     padding: 8px 8px calc(32px + env(safe-area-inset-bottom));
     align-self: stretch;
     box-sizing: border-box;
-    background: var(--off_white, #faf9f9);
+    background: var(--Off_white);
     padding-inline: 16px;
   }
 
