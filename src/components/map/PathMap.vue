@@ -7,6 +7,7 @@ import PathPointsPanel from "@/components/map/PathPointsPanel.vue";
 import { createCollectionImagesFeatureCollection } from "@/helpers/geojson";
 import {
   fetchOsrmRoute,
+  RouteRejectedError,
   formatRouteDistance,
   formatRouteDuration,
 } from "@/helpers/osrmRoute";
@@ -24,7 +25,7 @@ const props = defineProps({
   initialRoute: { type: Object, default: null },
 });
 
-const emit = defineEmits(["stop-change", "save", "back"]);
+const emit = defineEmits(["stop-change", "save", "back", "alert"]);
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 const IMAGE_COLOR = "#D27D30";
@@ -65,6 +66,38 @@ const routeIsStreet = ref(false);
 
 let routeAbort = /** @type {AbortController | null} */ (null);
 let routeRequestId = 0;
+
+/**
+ * Último estado aceito pelo backend (paradas + rota). Quando o backend recusa a rota
+ * (ponto fora do Brasil ou percurso acima do limite de km), a ação é desfeita voltando para ele.
+ */
+let lastAccepted = null;
+
+function acceptCurrentState() {
+  lastAccepted = {
+    stops: pathStops.value,
+    seq: pathStopSeq,
+    route: {
+      coordinates: routeCoordinates.value,
+      distanceMeters: routeDistanceMeters.value,
+      durationSeconds: routeDurationSeconds.value,
+      isStreet: routeIsStreet.value,
+    },
+  };
+}
+
+function revertToLastAccepted() {
+  if (!lastAccepted) return;
+  pathStops.value = lastAccepted.stops;
+  pathStopSeq = lastAccepted.seq;
+  routeCoordinates.value = lastAccepted.route.coordinates;
+  routeDistanceMeters.value = lastAccepted.route.distanceMeters;
+  routeDurationSeconds.value = lastAccepted.route.durationSeconds;
+  routeIsStreet.value = lastAccepted.route.isStreet;
+  syncPathPinsSource();
+  syncLineSource();
+  emitStopChange();
+}
 
 // Aplica a rota inicial do percurso.
 function applyInitialRoute(route) {
@@ -121,6 +154,7 @@ function hydrateStopsFromInitial(list) {
 
 hydrateStopsFromInitial(props.initialStops);
 applyInitialRoute(props.initialRoute);
+acceptCurrentState();
 
 // Emite o evento de mudança de parada.
 function emitStopChange() {
@@ -207,6 +241,19 @@ function renamePathStop({ id, title }) {
   pathStops.value = pathStops.value.map((stop) =>
     stop.id === id ? { ...stop, title } : stop
   );
+  emitStopChange();
+}
+
+// Reordena as paradas do percurso (arrastar e soltar no painel) e recalcula a rota.
+function reorderPathStops(orderedIds) {
+  const current = pathStops.value.map((stop) => stop.id);
+  if (orderedIds.join("|") === current.join("|")) return;
+
+  const byId = new Map(pathStops.value.map((stop) => [stop.id, stop]));
+  pathStops.value = orderedIds.map((id) => byId.get(id)).filter(Boolean);
+  renumberPathStops();
+  syncPathPinsSource();
+  refreshRoute();
   emitStopChange();
 }
 
@@ -490,8 +537,17 @@ function clearRoute() {
 async function refreshRoute() {
   const waypoints = stopCoordinatesInOrder();
 
-  if (waypoints.length < 2) {
+  if (!waypoints.length) {
     clearRoute();
+    acceptCurrentState();
+    return;
+  }
+
+  // Com uma parada só não há rota, mas o ponto ainda precisa ser validado (fora do Brasil?):
+  // pede a rota do ponto até ele mesmo.
+  if (waypoints.length === 1) {
+    clearRoute();
+    await validateSingleStop(waypoints[0]);
     return;
   }
 
@@ -535,15 +591,41 @@ async function refreshRoute() {
     }
 
     syncLineSource();
+    acceptCurrentState();
   } catch (err) {
     if (err?.name === "AbortError") return;
     if (requestId !== routeRequestId) return;
+
+    if (err instanceof RouteRejectedError) {
+      revertToLastAccepted();
+      emit("alert", err.message);
+      return;
+    }
 
     routeIsStreet.value = false;
     syncLineSource(); // Mantém a reta de fallback no mapa
 
   } finally {
     if (requestId === routeRequestId) routeLoading.value = false;
+  }
+}
+
+async function validateSingleStop(coordinates) {
+  if (routeAbort) routeAbort.abort();
+  routeAbort = new AbortController();
+  const requestId = ++routeRequestId;
+
+  try {
+    await fetchOsrmRoute(authHeader.value, [coordinates, coordinates], {
+      signal: routeAbort.signal,
+    });
+    if (requestId === routeRequestId) acceptCurrentState();
+  } catch (err) {
+    if (requestId !== routeRequestId) return;
+    if (err instanceof RouteRejectedError) {
+      revertToLastAccepted();
+      emit("alert", err.message);
+    }
   }
 }
 
@@ -839,6 +921,7 @@ watch(
 
     hydrateStopsFromInitial(stops);
     applyInitialRoute(route);
+    acceptCurrentState();
     syncPathPinsSource();
     syncLineSource();
     if (!route?.coordinates?.length) {
@@ -936,6 +1019,7 @@ watch(
       @add="onAddPathStopClick"
       @remove="removePathStop"
       @rename="renamePathStop"
+      @reorder="reorderPathStops"
       @save="onPathStopsSave"
       @back="onPathStopsBack"
     />

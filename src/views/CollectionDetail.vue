@@ -47,8 +47,8 @@ const albumsStore = useAlbumsStore();
 const isLoadingOwner = ref(true);
 // Percurso da coleção (API: GET/POST/PUT /albums/{id}/percursos).
 const showPathModal = ref(false);
-/** @type {import('vue').Ref<'to-path' | 'to-collection'>} */
-const pathModalMode = ref("to-path");
+/** @type {import('vue').Ref<'create' | 'delete'>} */
+const pathModalMode = ref("create");
 /** @type {import('vue').Ref<{ id: string, title?: string|null, stops: any[], route: any } | null>} */
 const activePercurso = ref(null);
 // A coleção é um percurso quando há um percurso salvo para ela.
@@ -79,11 +79,14 @@ const pathInitialStops = computed(
 );
 const pathInitialRoute = computed(() => activePercurso.value?.route ?? null);
 
+const isMapView = computed(() => collectionViewMode.value === "map");
+
 // Edição de percurso no mapa: os detalhes da coleção ficam ocultos e o mapa
 // ocupa a largura toda da tela.
-const isPathEditing = computed(
-  () => isPathEditorOpen.value && collectionViewMode.value === "map"
-);
+const isPathEditing = computed(() => isPathEditorOpen.value && isMapView.value);
+
+// Os pontos do percurso só aparecem na visualização de mapa.
+const showPathStops = computed(() => isCollectionPath.value && isMapView.value);
 
 function openPathModal(mode) {
   pathModalMode.value = mode;
@@ -98,18 +101,23 @@ function openPathEditor() {
   }
 }
 
+// Fora do mapa (grid/mosaico) o percurso é acessado pela visualização de mapa.
+function openPathView() {
+  handleCollectionViewChange({ selection: "map" });
+}
+
 function onPathModalConfirm() {
-  if (pathModalMode.value === "to-collection") {
-    convertPathToCollection();
+  if (pathModalMode.value === "delete") {
+    deletePercurso();
     return;
   }
   openPathEditor();
 }
 
-// Remove o percurso salvo: a coleção volta a ser apenas uma coleção.
-async function convertPathToCollection() {
+// Apaga o percurso salvo: a coleção continua a mesma, só perde o percurso.
+async function deletePercurso() {
   if (!canManage.value || !userAuthHeader.value) {
-    showPathAlert("Você não tem permissão para alterar este percurso.", "error");
+    showPathAlert("Você não tem permissão para apagar este percurso.", "error");
     return;
   }
 
@@ -121,12 +129,9 @@ async function convertPathToCollection() {
     await albumsStore.syncPercursos(userAuthHeader.value, collectionId.value, []);
     activePercurso.value = null;
     isPathEditorOpen.value = false;
-    showPathAlert("Percurso convertido em coleção.", "success");
+    showPathAlert("Percurso apagado.", "success");
   } catch (err) {
-    showPathAlert(
-      err?.message || "Não foi possível converter o percurso em coleção.",
-      "error"
-    );
+    showPathAlert(err?.message || "Não foi possível apagar o percurso.", "error");
   } finally {
     isSavingPath.value = false;
   }
@@ -199,6 +204,9 @@ async function onPathMapSave(payload = {}) {
         route: body.route,
       };
     }
+    // "Salvar e continuar": sai do editor para o mapa com a coluna de detalhes.
+    isPathEditorOpen.value = false;
+    isInfoActive.value = true;
     showPathAlert("Percurso salvo com sucesso!", "success");
   } catch (err) {
     showPathAlert(err?.message || "Não foi possível salvar o percurso.", "error");
@@ -261,21 +269,23 @@ const collectionDescription = computed(() => {
 // status de visibilidade da coleção (pública/privada)
 const isPrivate = computed(() => !!albumData.value?.is_private);
 
-const visibilityLabel = computed(() => {
-  if (isCollectionPath.value) {
-    return isPrivate.value ? "Percurso privado" : "Percurso público";
-  }
-  return isPrivate.value ? "Coleção privada" : "Coleção pública";
-});
-
-// Bloco de gerenciamento do percurso (visível só para quem pode editar).
-const pathBlockTitle = computed(() =>
-  isCollectionPath.value ? "Gerenciar percurso" : "Percurso da coleção"
+const visibilityLabel = computed(() =>
+  isPrivate.value ? "Coleção privada" : "Coleção pública"
 );
-const pathBlockHelp = computed(() =>
+
+// Bloco "Percurso da coleção" (visualizar): abaixo da descrição, para todos,
+// fora do mapa, quando a coleção tem percurso.
+const showPathViewBlock = computed(() => isCollectionPath.value && !isMapView.value);
+
+// Bloco "Percurso da coleção" (gerenciar): abaixo do dono, só para quem gerencia.
+// Criar fica sempre disponível; editar/apagar só na visualização de mapa.
+const showPathManageBlock = computed(
+  () => canManage.value && (!isCollectionPath.value || isMapView.value)
+);
+const pathManageHelp = computed(() =>
   isCollectionPath.value
-    ? "Edite os pontos e a rota no mapa, ou converta o percurso de volta em coleção."
-    : "Ao transformar, esta coleção passa a ser um percurso com pontos e rota no mapa."
+    ? "Edite os pontos e a rota no mapa, ou apague o percurso. As imagens da coleção não são alteradas."
+    : "Crie um percurso com pontos e rota no mapa a partir das imagens desta coleção."
 );
 
 // O dono do álbum é polimórfico: coletivo (collective_id) ou usuário (user_id).
@@ -300,12 +310,9 @@ const ownerName = computed(() => {
 });
 
 // Rótulo da seção do dono.
-const ownerTitle = computed(() => {
-  if (isCollectionPath.value) {
-    return isCollectiveOwned.value ? "Percurso do coletivo" : "Percurso criado por";
-  }
-  return isCollectiveOwned.value ? "Coleção do coletivo" : "Coleção criada por";
-});
+const ownerTitle = computed(() =>
+  isCollectiveOwned.value ? "Coleção do coletivo" : "Coleção criada por"
+);
 
 // Quem pode gerenciar (editar): membro do coletivo ou o próprio dono usuário.
 const canManage = computed(() => {
@@ -909,6 +916,7 @@ watch(
                 :initial-route="pathInitialRoute"
                 @save="onPathMapSave"
                 @back="onPathMapBack"
+                @alert="showPathAlert($event, 'error')"
               />
               <CollectionImagesMap
                 ref="collectionMapRef"
@@ -963,6 +971,7 @@ watch(
                 :initial-route="pathInitialRoute"
                 @save="onPathMapSave"
                 @back="onPathMapBack"
+                @alert="showPathAlert($event, 'error')"
               />
               <CollectionImagesMap
                 v-else
@@ -1021,11 +1030,11 @@ watch(
             aria-label="Informações da coleção"
           >
             <div class="collection-detail__info-inner">
-              <aside v-if="isLoadingCollection" class="collection-detail__info-summary">
+              <aside v-if="isLoadingCollection" class="collection-detail__info-summary collection-detail__space">
                 <div class="collection-detail__title-skeleton" />
                 <div class="collection-detail__description-skeleton" />
               </aside>
-              <aside v-else class="collection-detail__info-summary">
+              <aside v-else class="collection-detail__info-summary collection-detail__space">
                 <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
                 <span
                   class="collection-detail__visibility"
@@ -1041,12 +1050,38 @@ watch(
                   {{ visibilityLabel }}
                 </span>
                 <UiExpandableText
-                  v-if="isCollectionPath"
                   class="collection-detail__description"
                   :text="collectionDescription"
                 />
-                <p v-else class="collection-detail__description">{{ collectionDescription }}</p>
               </aside>
+
+              <section
+                v-if="showPathViewBlock"
+                class="collection-detail__path-block collection-detail__space"
+                aria-labelledby="collection-path-view-heading"
+              >
+                <div class="collection-detail__path-heading-row">
+                  <h2 id="collection-path-view-heading" class="collection-detail__path-title">
+                    Percurso da coleção
+                  </h2>
+                  <UiField
+                    id="collection-path-view-help"
+                    class="collection-detail__help-field"
+                    label="Ajuda"
+                    explain="Veja os pontos e a rota do percurso na visualização de mapa."
+                  />
+                </div>
+                <div class="collection-detail__path-actions">
+                  <button
+                    type="button"
+                    class="collection-detail__path-btn collection-detail__path-btn--primary"
+                    @click="openPathView"
+                  >
+                    <i class="bi bi-map" aria-hidden="true" />
+                    Visualizar percurso
+                  </button>
+                </div>
+              </section>
 
               <div
                 class="collection-detail__map-panel-body"
@@ -1135,7 +1170,54 @@ watch(
             </section>
 
             <section
-              v-if="isCollectionPath"
+              v-if="showPathManageBlock"
+              class="collection-detail__path-block collection-detail__space"
+              aria-labelledby="collection-path-manage-heading"
+            >
+              <div class="collection-detail__path-heading-row">
+                <h2 id="collection-path-manage-heading" class="collection-detail__path-title">
+                  Percurso da coleção
+                </h2>
+                <UiField
+                  id="collection-path-manage-help"
+                  class="collection-detail__help-field"
+                  label="Ajuda"
+                  :explain="pathManageHelp"
+                />
+              </div>
+              <div class="collection-detail__path-actions">
+                <template v-if="isCollectionPath">
+                  <button
+                    type="button"
+                    class="collection-detail__path-btn collection-detail__path-btn--primary"
+                    :disabled="isSavingPath"
+                    @click="openPathEditor"
+                  >
+                    Editar percurso
+                  </button>
+                  <button
+                    type="button"
+                    class="collection-detail__path-btn collection-detail__path-btn--secondary"
+                    :disabled="isSavingPath"
+                    @click="openPathModal('delete')"
+                  >
+                    Apagar percurso
+                  </button>
+                </template>
+                <button
+                  v-else
+                  type="button"
+                  class="collection-detail__path-btn collection-detail__path-btn--primary"
+                  @click="openPathModal('create')"
+                >
+                  <i class="bi bi-map" aria-hidden="true" />
+                  Criar percurso
+                </button>
+              </div>
+            </section>
+
+            <section
+              v-if="showPathStops"
               class="collection-detail__stops-block"
               aria-labelledby="collection-stops-heading"
             >
@@ -1159,18 +1241,13 @@ watch(
             >
               <div class="collection-detail__tags-heading-row">
                 <h2 id="collection-tags-heading" class="collection-detail__tags-title">
-                  {{ isCollectionPath ? "Tags do percurso" : "Tags na coleção" }}
+                  Tags na coleção
                 </h2>
                 <UiField
                   id="collection-tags-help"
-                  :key="isCollectionPath ? 'tags-help-path' : 'tags-help-collection'"
                   class="collection-detail__help-field"
                   label="Ajuda"
-                  :explain="
-                    isCollectionPath
-                      ? 'Por enquanto, as etiquetas do percurso são as mesmas da coleção, coletadas de cada imagem presente nela.'
-                      : 'Estas etiquetas são coletadas de cada imagem presente na coleção.'
-                  "
+                  explain="Estas etiquetas são coletadas de cada imagem presente na coleção."
                 />
               </div>
               <div v-if="isLoadingCollectionTags" class="metadata-tags metadata-tags--skeleton">
@@ -1214,7 +1291,7 @@ watch(
             >
               <div class="collection-detail__periods-heading-row">
                 <h2 id="collection-periods-heading" class="collection-detail__periods-title">
-                  {{ isCollectionPath ? "Períodos do percurso" : "Períodos da coleção" }}
+                  Períodos da coleção
                 </h2>
                 <UiField
                   id="collection-periods-help"
@@ -1226,51 +1303,6 @@ watch(
               <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
             </section>
 
-            <section
-              v-if="canManage"
-              class="collection-detail__path-block"
-              aria-labelledby="collection-path-heading"
-            >
-              <div class="collection-detail__path-heading-row">
-                <h2 id="collection-path-heading" class="collection-detail__path-title">
-                  {{ pathBlockTitle }}
-                </h2>
-                <UiField
-                  id="collection-path-help"
-                  class="collection-detail__help-field"
-                  label="Ajuda"
-                  :explain="pathBlockHelp"
-                />
-              </div>
-              <div class="collection-detail__path-actions">
-                <template v-if="isCollectionPath">
-                  <button
-                    type="button"
-                    class="collection-detail__path-btn collection-detail__path-btn--primary"
-                    :disabled="isSavingPath"
-                    @click="openPathEditor"
-                  >
-                    Editar percurso
-                  </button>
-                  <button
-                    type="button"
-                    class="collection-detail__path-btn collection-detail__path-btn--secondary"
-                    :disabled="isSavingPath"
-                    @click="openPathModal('to-collection')"
-                  >
-                    Converter em coleção
-                  </button>
-                </template>
-                <button
-                  v-else
-                  type="button"
-                  class="collection-detail__path-btn collection-detail__path-btn--primary"
-                  @click="openPathModal('to-path')"
-                >
-                  Transformar em percurso
-                </button>
-              </div>
-            </section>
             </template>
             </div>
 
@@ -1296,11 +1328,11 @@ watch(
             aria-label="Informações da coleção"
           >
             <div class="collection-detail__info-inner">
-              <aside v-if="isLoadingCollection" class="collection-detail__info-summary">
+              <aside v-if="isLoadingCollection" class="collection-detail__info-summary collection-detail__space">
                 <div class="collection-detail__title-skeleton" />
                 <div class="collection-detail__description-skeleton" />
               </aside>
-              <aside v-else class="collection-detail__info-summary">
+              <aside v-else class="collection-detail__info-summary collection-detail__space">
                 <h1 class="collection-detail__title">{{ collectionTitle }}</h1>
                 <span
                   class="collection-detail__visibility"
@@ -1316,12 +1348,38 @@ watch(
                   {{ visibilityLabel }}
                 </span>
                 <UiExpandableText
-                  v-if="isCollectionPath"
                   class="collection-detail__description"
                   :text="collectionDescription"
                 />
-                <p v-else class="collection-detail__description">{{ collectionDescription }}</p>
               </aside>
+
+              <section
+                v-if="showPathViewBlock"
+                class="collection-detail__path-block collection-detail__space"
+                aria-labelledby="collection-path-view-heading-desktop"
+              >
+                <div class="collection-detail__path-heading-row">
+                  <h2 id="collection-path-view-heading-desktop" class="collection-detail__path-title">
+                    Percurso da coleção
+                  </h2>
+                  <UiField
+                    id="collection-path-view-help-desktop"
+                    class="collection-detail__help-field"
+                    label="Ajuda"
+                    explain="Veja os pontos e a rota do percurso na visualização de mapa."
+                  />
+                </div>
+                <div class="collection-detail__path-actions">
+                  <button
+                    type="button"
+                    class="collection-detail__path-btn collection-detail__path-btn--primary"
+                    @click="openPathView"
+                  >
+                    <i class="bi bi-map" aria-hidden="true" />
+                    Visualizar percurso
+                  </button>
+                </div>
+              </section>
 
               <div
                 class="collection-detail__map-panel-body"
@@ -1376,7 +1434,7 @@ watch(
               </section>
 
               <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
-              <section class="collection-detail__actors">
+              <section class="collection-detail__actors collection-detail__space">
                 <div class="collection-detail__actors-title-area">
                   <h2 class="collection-detail__actors-title">{{ ownerTitle }}</h2>
                 </div>
@@ -1410,7 +1468,54 @@ watch(
               </section>
 
               <section
-                v-if="isCollectionPath"
+                v-if="showPathManageBlock"
+                class="collection-detail__path-block collection-detail__space"
+                aria-labelledby="collection-path-manage-heading-desktop"
+              >
+                <div class="collection-detail__path-heading-row">
+                  <h2 id="collection-path-manage-heading-desktop" class="collection-detail__path-title">
+                    Percurso da coleção
+                  </h2>
+                  <UiField
+                    id="collection-path-manage-help-desktop"
+                    class="collection-detail__help-field"
+                    label="Ajuda"
+                    :explain="pathManageHelp"
+                  />
+                </div>
+                <div class="collection-detail__path-actions">
+                  <template v-if="isCollectionPath">
+                    <button
+                      type="button"
+                      class="collection-detail__path-btn collection-detail__path-btn--primary"
+                      :disabled="isSavingPath"
+                      @click="openPathEditor"
+                    >
+                      Editar percurso
+                    </button>
+                    <button
+                      type="button"
+                      class="collection-detail__path-btn collection-detail__path-btn--secondary"
+                      :disabled="isSavingPath"
+                      @click="openPathModal('delete')"
+                    >
+                      Apagar percurso
+                    </button>
+                  </template>
+                  <button
+                    v-else
+                    type="button"
+                    class="collection-detail__path-btn collection-detail__path-btn--primary"
+                    @click="openPathModal('create')"
+                  >
+                    <i class="bi bi-map" aria-hidden="true" />
+                    Criar percurso
+                  </button>
+                </div>
+              </section>
+
+              <section
+                v-if="showPathStops"
                 class="collection-detail__stops-block"
                 aria-labelledby="collection-stops-heading-desktop"
               >
@@ -1434,18 +1539,13 @@ watch(
               >
                 <div class="collection-detail__tags-heading-row">
                   <h2 id="collection-tags-heading-desktop" class="collection-detail__tags-title">
-                    {{ isCollectionPath ? "Tags do percurso" : "Tags na coleção" }}
+                    Tags na coleção
                   </h2>
                   <UiField
                     id="collection-tags-help-desktop"
-                    :key="isCollectionPath ? 'tags-help-path' : 'tags-help-collection'"
                     class="collection-detail__help-field"
                     label="Ajuda"
-                    :explain="
-                    isCollectionPath
-                      ? 'Por enquanto, as etiquetas do percurso são as mesmas da coleção, coletadas de cada imagem presente nela.'
-                      : 'Estas etiquetas são coletadas de cada imagem presente na coleção.'
-                  "
+                    explain="Estas etiquetas são coletadas de cada imagem presente na coleção."
                   />
                 </div>
                 <div v-if="isLoadingCollectionTags" class="metadata-tags metadata-tags--skeleton">
@@ -1489,7 +1589,7 @@ watch(
               >
                 <div class="collection-detail__periods-heading-row">
                   <h2 id="collection-periods-heading-desktop" class="collection-detail__periods-title">
-                    {{ isCollectionPath ? "Períodos do percurso" : "Períodos da coleção" }}
+                    Períodos da coleção
                   </h2>
                   <UiField
                     id="collection-periods-help-desktop"
@@ -1501,51 +1601,6 @@ watch(
                 <CollectionPeriodsChart aria-label="Gráfico de períodos da coleção" />
               </section>
 
-              <section
-                v-if="canManage"
-                class="collection-detail__path-block"
-                aria-labelledby="collection-path-heading-desktop"
-              >
-                <div class="collection-detail__path-heading-row">
-                  <h2 id="collection-path-heading-desktop" class="collection-detail__path-title">
-                    {{ pathBlockTitle }}
-                  </h2>
-                  <UiField
-                    id="collection-path-help-desktop"
-                    class="collection-detail__help-field"
-                    label="Ajuda"
-                    :explain="pathBlockHelp"
-                  />
-                </div>
-                <div class="collection-detail__path-actions">
-                  <template v-if="isCollectionPath">
-                    <button
-                      type="button"
-                      class="collection-detail__path-btn collection-detail__path-btn--primary"
-                      :disabled="isSavingPath"
-                      @click="openPathEditor"
-                    >
-                      Editar percurso
-                    </button>
-                    <button
-                      type="button"
-                      class="collection-detail__path-btn collection-detail__path-btn--secondary"
-                      :disabled="isSavingPath"
-                      @click="openPathModal('to-collection')"
-                    >
-                      Converter em coleção
-                    </button>
-                  </template>
-                  <button
-                    v-else
-                    type="button"
-                    class="collection-detail__path-btn collection-detail__path-btn--primary"
-                    @click="openPathModal('to-path')"
-                  >
-                    Transformar em percurso
-                  </button>
-                </div>
-              </section>
               </template>
               </div>
             </div>
@@ -1556,7 +1611,7 @@ watch(
   </section>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 
 .collection-detail__image-wrapper {
   flex: 1 1 0;
@@ -1566,36 +1621,34 @@ watch(
 
 .collection-detail__actors {
   display: flex;
-  height: 103px;
   flex-direction: column;
   align-items: flex-start;
-  gap: 1px;
+  gap: 8px;
   align-self: stretch;
   padding: 0 12px;
 }
 
 .collection-detail__actors-title-area {
-  display: flex;
-  padding: var(--g, 12px) var(--p, 12px) 8px 0;
-  align-items: center;
-  gap: var(--p, 12px);
-  align-self: stretch;
+  // display: flex;
+  // align-items: center;
+  // gap: 12px;
+  // align-self: stretch;
 }
 
 .collection-detail__actors-title {
   flex: 1 0 0;
-  color: var(--Preto, #1F1F1F);
-  font-family: "DM Sans";
+  color: var(--Preto);
   font-size: 20px;
   font-style: normal;
   font-weight: 500;
   line-height: 150%;
+  margin: 0;
 }
 
 .collection-detail__actors-list {
   display: flex;
   align-items: center;
-  gap: var(--m, 16px);
+  gap: 16px;
   align-self: stretch;
 }
 
@@ -1635,8 +1688,8 @@ watch(
 }
 
 .collection-detail__actor-name {
-  color: var(--Preto, #1F1F1F);
-  font-family: "DM Sans";
+  color: var(--Preto);
+  
   font-size: 16px;
   font-style: normal;
   font-weight: 500;
@@ -1670,7 +1723,7 @@ a.collection-detail__actor-name:hover {
 
 .collection-detail__state--error {
   color: #7a1c1c;
-  font-family: "DM Sans", sans-serif;
+  
   font-size: 14px;
 }
 
@@ -1702,8 +1755,8 @@ a.collection-detail__actor-name:hover {
   align-items: flex-start;
   gap: 10px;
   border-radius: 5px;
-  border: 1px solid var(--Cinza_E, #2f2f2f);
-  background: var(--Off_white, #faf9f9);
+  border: 1px solid var(--Cinza_E);
+  background: var(--Off_white,);
   cursor: pointer;
 }
 
@@ -1714,8 +1767,8 @@ a.collection-detail__actor-name:hover {
 }
 
 .collection-detail__back-text {
-  color: var(--Cinza_E, #2f2f2f);
-  font-family: "DM Sans", sans-serif;
+  color: var(--Cinza_E);
+  
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
@@ -1843,8 +1896,8 @@ a.collection-detail__actor-name:hover {
   flex: 1;
   min-width: 0;
   margin: 0;
-  color: var(--Cinza_E, #2f2f2f);
-  font-family: "DM Sans";
+  color: var(--Cinza_E);
+  
   font-size: 16px;
   font-style: normal;
   font-weight: 500;
@@ -1863,7 +1916,7 @@ a.collection-detail__actor-name:hover {
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
-  color: var(--Cinza_E, #2f2f2f);
+  color: var(--Cinza_E);
 }
 
 .collection-detail__gallery--with-title {
@@ -1896,8 +1949,8 @@ a.collection-detail__actor-name:hover {
 
 .collection-detail__main-title {
   margin: 0;
-  color: var(--Cinza_E, #2f2f2f);
-  font-family: "DM Sans", sans-serif;
+  color: var(--Cinza_E);
+  
   font-size: 30px;
   font-weight: 500;
   line-height: 115%;
@@ -1964,6 +2017,23 @@ a.collection-detail__actor-name:hover {
   transition:
     transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 160ms ease 260ms;
+  
+  &::-webkit-scrollbar {
+    width: 4px; /* Largura bem fina */
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent; /* Fundo do trilho transparente */
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #ccc; /* Cor da barra */
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: #999; /* Cor ao passar o mouse */
+  }
 }
 
 .collection-detail__info-wrapper--closed:not(.collection-detail__info-wrapper--mobile)
@@ -1985,8 +2055,8 @@ a.collection-detail__actor-name:hover {
 
 .collection-detail__title {
   align-self: stretch;
-  color: var(--Cinza_E, #2F2F2F);
-  font-family: "DM Sans";
+  color: var(--Cinza_E);
+  
   font-size: 30px;
   font-style: normal;
   font-weight: 500;
@@ -1995,8 +2065,8 @@ a.collection-detail__actor-name:hover {
 
 .collection-detail__description {
   flex: 1 0 0;
-  color: var(--Preto, #1F1F1F);
-  font-family: "DM Sans";
+  color: var(--Preto);
+  
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
@@ -2014,7 +2084,7 @@ a.collection-detail__actor-name:hover {
   margin-bottom: 6px;
   padding: 3px 10px;
   border-radius: 999px;
-  font-family: "DM Sans";
+  
   font-size: 12px;
   font-weight: 500;
   line-height: 1;
@@ -2026,12 +2096,12 @@ a.collection-detail__actor-name:hover {
 }
 
 .collection-detail__visibility--private {
-  color: var(--Laranja_E, #aa4f28);
-  background: var(--Laranja_C, #f6ddc6);
+  color: var(--Laranja_E);
+  background: var(--Laranja_C);
 }
 
 .collection-detail__visibility--public {
-  color: var(--Cinza_E, #2f2f2f);
+  color: var(--Cinza_E);
   background: rgba(47, 47, 47, 0.08);
 }
 
@@ -2088,7 +2158,7 @@ a.collection-detail__actor-name:hover {
     flex: 0 0 auto;
     width: 100%;
     max-width: 100%;
-    background: var(--Off_white, #faf9f9);
+    background: var(--Off_white);
   }
 
   .collection-detail__mobile-stage {
@@ -2241,9 +2311,9 @@ a.collection-detail__actor-name:hover {
     padding: 2px 14px;
     border: none;
     border-radius: 5px;
-    background: var(--Laranja_E, #aa4f28);
+    background: var(--Laranja_E);
     color: var(--Branco, #fff);
-    font-family: "DM Sans", sans-serif;
+    
     font-size: 14px;
     font-weight: 400;
     line-height: 150%;
@@ -2275,17 +2345,17 @@ a.collection-detail__actor-name:hover {
 
 .collection-detail__tags-heading-row {
   display: flex;
-  padding: var(--g, 22px) var(--p, 12px) 8px 0;
+  padding-right: 13px;
   align-items: center;
-  gap: var(--p, 12px);
+  gap: 12px;
   align-self: stretch;
 }
 
 .collection-detail__tags-title {
   margin: 0;
   flex: 1 0 0;
-  color: var(--Preto, #1f1f1f);
-  font-family: "DM Sans", sans-serif;
+  color: var(--Preto);
+  
   font-size: 20px;
   font-weight: 500;
   line-height: 150%;
@@ -2368,8 +2438,8 @@ a.collection-detail__actor-name:hover {
   gap: 9px;
   display: flex;
   border-radius: 2px;
-  border: 1px solid var(--Laranja_E, #AA4F28);
-  font-family: "DM Sans";
+  border: 1px solid var(--Laranja_E);
+  
   font-size: 12px;
   font-style: normal;
   font-weight: 400;
@@ -2379,6 +2449,10 @@ a.collection-detail__actor-name:hover {
 
 .metadata-tags__more {
   font-weight: 500;
+}
+
+.collection-detail__space {
+  margin-bottom: 24px;
 }
 
 .collection-detail__periods-block {
@@ -2394,14 +2468,14 @@ a.collection-detail__actor-name:hover {
   display: flex;
   padding: var(--g, 24px) var(--p, 12px) 8px 0;
   align-items: center;
-  gap: var(--p, 12px);
+  gap: 12px;
   align-self: stretch;
 }
 
 .collection-detail__periods-title {
   flex: 1 0 0;
-  color: var(--Preto, #1F1F1F);
-  font-family: "DM Sans";
+  color: var(--Preto);
+  
   font-size: 20px;
   font-style: normal;
   font-weight: 500;
@@ -2416,22 +2490,21 @@ a.collection-detail__actor-name:hover {
   align-self: stretch;
   max-width: 600px;
   padding: 0 12px;
-  margin-top: 24px;
 }
 
 .collection-detail__path-heading-row {
   display: flex;
-  padding-right: var(--p, 12px);
+  padding-right: 13px;
   align-items: center;
-  gap: var(--p, 12px);
+  gap: 12px;
   align-self: stretch;
 }
 
 .collection-detail__path-title {
   flex: 1 0 0;
   margin: 0;
-  color: var(--Preto, #1f1f1f);
-  font-family: "DM Sans", sans-serif;
+  color: var(--Preto);
+  
   font-size: 20px;
   font-style: normal;
   font-weight: 500;
@@ -2448,31 +2521,30 @@ a.collection-detail__actor-name:hover {
 
 .collection-detail__path-btn {
   display: inline-flex;
-  min-height: 32px;
-  padding: 4px 14px;
+  width: 100%;
+  min-height: 38px;
+  padding: 8.5px 14px;
   align-items: center;
   justify-content: center;
+  border: none;
+  gap: 6px;
   margin: 0;
   border-radius: 5px;
-  border: 1px solid var(--Cinza_E, #2f2f2f);
-  font-family: "DM Sans", sans-serif;
   font-size: 14px;
-  font-style: normal;
   font-weight: 400;
   line-height: 150%;
   cursor: pointer;
-  box-sizing: border-box;
   transition: opacity 0.15s ease;
 }
 
 .collection-detail__path-btn--primary {
-  background: var(--Cinza_E, #2f2f2f);
-  color: var(--Branco, #fff);
+  background: var(--Cinza_E);
+  color: var(--Branco);
 }
 
 .collection-detail__path-btn--secondary {
-  background: var(--Off_white, #faf9f9);
-  color: var(--Cinza_E, #2f2f2f);
+  background: var(--Off_white);
+  color: var(--Cinza_E);
 }
 
 .collection-detail__path-btn:disabled {
@@ -2481,7 +2553,7 @@ a.collection-detail__actor-name:hover {
 }
 
 .collection-detail__path-btn:focus-visible {
-  outline: 2px solid var(--Cinza_E, #2f2f2f);
+  outline: 2px solid var(--Cinza_E);
   outline-offset: 2px;
 }
 
@@ -2497,17 +2569,17 @@ a.collection-detail__actor-name:hover {
 
 .collection-detail__stops-heading-row {
   display: flex;
-  padding: var(--g, 24px) var(--p, 12px) 16px 0;
+  padding: 24px 12px 16px 0;
   align-items: center;
-  gap: var(--p, 12px);
+  gap: 12px;
   align-self: stretch;
 }
 
 .collection-detail__stops-title {
   flex: 1 0 0;
   margin: 0;
-  color: var(--Preto, #1f1f1f);
-  font-family: "DM Sans", sans-serif;
+  color: var(--Preto);
+  
   font-size: 20px;
   font-style: normal;
   font-weight: 500;
@@ -2531,7 +2603,7 @@ a.collection-detail__actor-name:hover {
 .collection-detail__path-error {
   margin: 8px 0 0;
   color: #aa4f28;
-  font-family: "DM Sans", sans-serif;
+  
   font-size: 13px;
 }
 
