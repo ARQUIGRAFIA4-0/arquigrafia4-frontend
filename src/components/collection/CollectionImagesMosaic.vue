@@ -1,7 +1,6 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import MosaicCard from "@/components/MosaicCard.vue";
-import MosaicSkeleton from "@/components/MosaicSkeleton.vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import ImageMosaic from "@/components/ImageMosaic.vue";
 
 defineOptions({ name: "CollectionImagesMosaic" });
 
@@ -15,11 +14,10 @@ const props = defineProps({
 
 const emit = defineEmits(["load-more"]);
 
-const columnWidths = [320, 200, 280, 260, 210, 220, 300];
 const isProcessing = ref(false);
 const mosaicItems = ref([]);
 const processedIds = new Set();
-const isMasonryReady = ref(false);
+const mosaicRef = ref(null);
 
 const preloadImageDimensions = (url) =>
   new Promise((resolve) => {
@@ -91,6 +89,8 @@ const processItems = async (sourceItems) => {
     );
 
     const newItems = resolvedItems.filter(Boolean);
+    if (newItems.length === 0) return;
+
     newItems.forEach((item) => processedIds.add(item.id));
     mosaicItems.value = [...mosaicItems.value, ...newItems];
   } catch (error) {
@@ -100,14 +100,8 @@ const processItems = async (sourceItems) => {
   }
 };
 
-const showSkeleton = computed(() => {
-  if (props.isLoading && mosaicItems.value.length === 0) return true;
-  if (isProcessing.value && mosaicItems.value.length === 0) return true;
-  return false;
-});
-
 const tryFetchNextPage = () => {
-  if (!props.hasNextPage || props.isFetchingNextPage || props.isLoading) return;
+  if (!props.hasNextPage || props.isFetchingNextPage || props.isLoading || isProcessing.value || mosaicRef.value?.isRebuilding) return;
   emit("load-more");
 };
 
@@ -118,7 +112,6 @@ watch(
     if (!list.length) {
       mosaicItems.value = [];
       processedIds.clear();
-      isMasonryReady.value = false;
       isProcessing.value = false;
       return;
     }
@@ -129,7 +122,6 @@ watch(
     if (!isContinuation) {
       mosaicItems.value = [];
       processedIds.clear();
-      isMasonryReady.value = false;
     }
 
     await processItems(list);
@@ -143,14 +135,6 @@ const handleScroll = () => {
   if (scrollPosition >= pageBottom) tryFetchNextPage();
 };
 
-const handleMasonryRedraw = () => {
-  if (!isMasonryReady.value && mosaicItems.value.length > 0) {
-    requestAnimationFrame(() => {
-      isMasonryReady.value = true;
-    });
-  }
-};
-
 onMounted(() => {
   if (props.hasNextPage) tryFetchNextPage();
   window.addEventListener("scroll", handleScroll, { passive: true });
@@ -162,59 +146,21 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
+  <ImageMosaic
+    ref="mosaicRef"
     class="container-fluid collection-mosaic-container"
     :class="{ 'collection-mosaic-container--info-open': isInfoActive }"
+    :items="mosaicItems"
+    :loading="(isLoading || isProcessing) && mosaicItems.length === 0"
+    :loading-more="isFetchingNextPage || (mosaicItems.length > 0 && isProcessing)"
+    :reveal-on-redraw="false"
   >
-    <MosaicSkeleton
-      v-if="showSkeleton"
-      :gap="5"
-      :column-widths="columnWidths"
-      :min-columns="2"
-      :max-columns="7"
-    />
-
-    <masonry-wall
-      v-show="mosaicItems.length > 0"
-      :items="mosaicItems"
-      :column-width="columnWidths"
-      :gap="5"
-      :min-columns="2"
-      :max-columns="7"
-      :class="[
-        'collection-masonry-grid',
-        {
-          'collection-masonry-grid--ready': isMasonryReady || mosaicItems.length > 0,
-          'collection-masonry-grid--info-open': isInfoActive,
-        },
-      ]"
-      @redraw="handleMasonryRedraw"
-      @redraw-skip="handleMasonryRedraw"
-    >
-      <template #default="slotProps">
-        <MosaicCard
-          v-if="slotProps?.item"
-          :id="slotProps.item.id"
-          :title="slotProps.item.title"
-          :image-url="slotProps.item.src"
-          :aspect-ratio="slotProps.item.aspectRatio"
-        />
-      </template>
-    </masonry-wall>
-
-    <div v-if="isFetchingNextPage" class="text-center my-4">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
+    <template #empty>
+      <div v-if="!isLoading && !isProcessing && images.length === 0" class="collection-mosaic-empty">
+        Esta coleção ainda não possui imagens.
       </div>
-    </div>
-
-    <div
-      v-if="!props.isLoading && !isProcessing && props.images.length === 0"
-      class="collection-mosaic-empty"
-    >
-      Esta coleção ainda não possui imagens.
-    </div>
-  </div>
+    </template>
+  </ImageMosaic>
 </template>
 
 <style scoped>
@@ -235,13 +181,7 @@ onBeforeUnmount(() => {
   --bs-gutter-x: 0;
 }
 
-.collection-masonry-grid {
-  width: 100%;
-  min-width: 0;
-  opacity: 1;
-}
-
-.collection-masonry-grid--info-open {
+.collection-mosaic-container--info-open :deep(.masonry-wall) {
   justify-content: center;
 }
 
