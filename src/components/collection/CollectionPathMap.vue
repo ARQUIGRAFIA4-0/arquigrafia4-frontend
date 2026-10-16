@@ -12,7 +12,7 @@ defineProps({
   initialRoute: { type: Object, default: null },
 });
 
-defineEmits(["stop-change", "save", "back"]);
+defineEmits(["stop-change", "save", "back", "alert"]);
 
 const mapRef = ref(null);
 </script>
@@ -30,6 +30,7 @@ const mapRef = ref(null);
       @stop-change="$emit('stop-change', $event)"
       @save="$emit('save', $event)"
       @back="$emit('back')"
+      @alert="$emit('alert', $event)"
     />
   </div>
 </template>

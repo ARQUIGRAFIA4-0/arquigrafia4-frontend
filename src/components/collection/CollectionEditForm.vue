@@ -14,7 +14,11 @@ const props = defineProps({
 
 const emit = defineEmits(["update:title", "update:description", "update:isPrivate"]);
 
+const TITLE_MAX_LENGTH = 150;
 const DESCRIPTION_MAX_LENGTH = 500;
+
+const titleLength = computed(() => props.title.length);
+const isTitleOverLimit = computed(() => titleLength.value > TITLE_MAX_LENGTH);
 
 const descriptionLength = computed(() => props.description.length);
 const isDescriptionOverLimit = computed(() => descriptionLength.value > DESCRIPTION_MAX_LENGTH);
@@ -54,10 +58,18 @@ function onPrivateChange(event) {
             type="text"
             :value="title"
             :disabled="disabled || titleDisabled"
+            :maxlength="TITLE_MAX_LENGTH"
             placeholder="Arquitetura no percurso da fonte à fábrica"
             @input="onTitleInput"
           />
         </UiField>
+
+        <p
+          class="collection-edit-form__hint collection-edit-form__hint--right"
+          :class="{ 'collection-edit-form__hint--over-limit': isTitleOverLimit }"
+        >
+          {{ titleLength }} / {{ TITLE_MAX_LENGTH }} caracteres
+        </p>
       </div>
 
       <div class="collection-edit-form__field">
