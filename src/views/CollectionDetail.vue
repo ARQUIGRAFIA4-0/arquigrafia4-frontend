@@ -28,6 +28,7 @@ import { useToast } from "@/composables/useToast";
 import { downloadCollectionAsZip } from "@/helpers/downloadCollectionZip";
 import { sanitizeDownloadFilename } from "@/helpers/downloadImage";
 import { useAlbumImagesInfiniteQuery } from "@/composables/useAlbumImagesInfiniteQuery";
+import { hasImageLocation } from "@/helpers/geojson";
 
 defineOptions({ name: "CollectionDetail" });
 
@@ -106,9 +107,34 @@ function openPathView() {
   handleCollectionViewChange({ selection: "map" });
 }
 
+// Verificando a localização das imagens antes de abrir o modal de criação.
+const isCheckingImagesLocation = ref(false);
+
+// "Criar percurso": o modal depende de quantas imagens têm localização.
+async function openCreatePathModal() {
+  if (imagesLocationStatus.value === null && hasNextPage.value) {
+    isCheckingImagesLocation.value = true;
+    try {
+      await loadAllCollectionImages();
+    } finally {
+      isCheckingImagesLocation.value = false;
+    }
+  }
+
+  const status = imagesLocationStatus.value;
+  if (status === "none") openPathModal("create-blocked");
+  else if (status === "partial") openPathModal("create-partial");
+  else openPathModal("create");
+}
+
 function onPathModalConfirm() {
   if (pathModalMode.value === "delete") {
     deletePercurso();
+    return;
+  }
+  if (pathModalMode.value === "create-blocked") {
+    // Revisar imagens: mosaico (no mobile só existe o grid).
+    handleCollectionViewChange({ selection: isMobile.value ? "grid" : "mosaic" });
     return;
   }
   openPathEditor();
@@ -247,6 +273,54 @@ const {
   albumId: collectionId,
   enabled: albumImagesEnabled,
 });
+
+/**
+ * Localização das imagens da coleção (imagem sem localização não aparece no mapa).
+ * "none" | "partial" | "all" | null (ainda indefinido ou coleção vazia).
+ * "partial" já é certo com as páginas carregadas; "none" e "all" exigem todas.
+ */
+const imagesLocationStatus = computed(() => {
+  const images = collectionImages.value;
+  const located = images.filter(hasImageLocation).length;
+  if (located > 0 && located < images.length) return "partial";
+  if (hasNextPage.value || !images.length) return null;
+  return located === 0 ? "none" : "all";
+});
+
+const PARTIAL_LOCATION_MESSAGE =
+  "Nem todas as imagens dessa coleção possuem localização. Para ter uma visão completa, registre a localização em todas as imagens.";
+
+// Aviso na coluna da direita (grid, mosaico e mapa), abaixo do bloco de criar percurso:
+// "none" para todos, "partial" só para quem gerencia.
+const locationNotice = computed(() => {
+  if (imagesLocationStatus.value === "none") {
+    return "Atenção: as imagens dessa coleção não possuem localização.";
+  }
+  if (imagesLocationStatus.value === "partial" && canManage.value) {
+    return PARTIAL_LOCATION_MESSAGE;
+  }
+  return null;
+});
+
+// Aviso no editor de percurso (canto inferior esquerdo do mapa).
+const pathEditorLocationWarning = computed(() =>
+  imagesLocationStatus.value === "partial" ? PARTIAL_LOCATION_MESSAGE : null
+);
+
+// Busca as páginas restantes das imagens. Chamadas simultâneas compartilham a mesma busca;
+// cancelRefetch: false reaproveita uma página que já esteja sendo carregada pelo scroll.
+let loadAllImagesPromise = null;
+function loadAllCollectionImages() {
+  loadAllImagesPromise ??= (async () => {
+    while (hasNextPage.value) {
+      const result = await fetchNextPage({ cancelRefetch: false });
+      if (result?.isError) break;
+    }
+  })().finally(() => {
+    loadAllImagesPromise = null;
+  });
+  return loadAllImagesPromise;
+}
 
 const isLoadingCollection = computed(
   () =>
@@ -487,6 +561,15 @@ watch(collectionViewMode, (mode) => {
   }
 
 });
+
+// O mapa precisa de todas as imagens (e o aviso de localização também).
+watch(
+  [isMapView, hasNextPage],
+  ([mapView, nextPage]) => {
+    if (mapView && nextPage) loadAllCollectionImages();
+  },
+  { immediate: true }
+);
 
 const isInfoActive = ref(true);
 const isGridReflowing = ref(false);
@@ -914,6 +997,7 @@ watch(
                 :is-saving="isSavingPath"
                 :initial-stops="pathInitialStops"
                 :initial-route="pathInitialRoute"
+                :location-warning="pathEditorLocationWarning"
                 @save="onPathMapSave"
                 @back="onPathMapBack"
                 @alert="showPathAlert($event, 'error')"
@@ -969,6 +1053,7 @@ watch(
                 :is-saving="isSavingPath"
                 :initial-stops="pathInitialStops"
                 :initial-route="pathInitialRoute"
+                :location-warning="pathEditorLocationWarning"
                 @save="onPathMapSave"
                 @back="onPathMapBack"
                 @alert="showPathAlert($event, 'error')"
@@ -1208,13 +1293,24 @@ watch(
                   v-else
                   type="button"
                   class="collection-detail__path-btn collection-detail__path-btn--primary"
-                  @click="openPathModal('create')"
+                  :disabled="isCheckingImagesLocation"
+                  @click="openCreatePathModal"
                 >
                   <i class="bi bi-map" aria-hidden="true" />
-                  Criar percurso
+                  {{ isCheckingImagesLocation ? "Verificando imagens…" : "Criar percurso" }}
                 </button>
               </div>
             </section>
+
+            <div v-if="locationNotice" class="collection-detail__space">
+              <div
+                class="collection-detail__location-notice alert alert-dark bg-off-white alert-light border border-dark border-start-3 d-flex align-items-center"
+                role="status"
+              >
+                <i class="bi bi-arrow-up-right-circle-fill text-dark me-3" aria-hidden="true"></i>
+                <span>{{ locationNotice }}</span>
+              </div>
+            </div>
 
             <section
               v-if="showPathStops"
@@ -1506,13 +1602,24 @@ watch(
                     v-else
                     type="button"
                     class="collection-detail__path-btn collection-detail__path-btn--primary"
-                    @click="openPathModal('create')"
+                    :disabled="isCheckingImagesLocation"
+                    @click="openCreatePathModal"
                   >
                     <i class="bi bi-map" aria-hidden="true" />
-                    Criar percurso
+                    {{ isCheckingImagesLocation ? "Verificando imagens…" : "Criar percurso" }}
                   </button>
                 </div>
               </section>
+
+              <div v-if="locationNotice" class="collection-detail__space">
+                <div
+                  class="collection-detail__location-notice alert alert-dark bg-off-white alert-light border border-dark border-start-3 d-flex align-items-center"
+                  role="status"
+                >
+                  <i class="bi bi-arrow-up-right-circle-fill text-dark me-3" aria-hidden="true"></i>
+                  <span>{{ locationNotice }}</span>
+                </div>
+              </div>
 
               <section
                 v-if="showPathStops"
@@ -2453,6 +2560,14 @@ a.collection-detail__actor-name:hover {
 
 .collection-detail__space {
   margin-bottom: 24px;
+}
+
+/* Aviso de imagens sem localização (coluna da direita, visualização de mapa). */
+.collection-detail__location-notice {
+  max-width: 576px;
+  margin: 0 12px;
+  font-size: 16px;
+  line-height: 150%;
 }
 
 .collection-detail__periods-block {

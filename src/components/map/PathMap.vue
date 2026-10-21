@@ -23,6 +23,8 @@ const props = defineProps({
   isSaving: { type: Boolean, default: false },
   initialStops: { type: Array, default: () => [] },
   initialRoute: { type: Object, default: null },
+  // Aviso de imagens sem localização (canto inferior esquerdo do mapa).
+  locationWarning: { type: String, default: null },
 });
 
 const emit = defineEmits(["stop-change", "save", "back", "alert"]);
@@ -1023,9 +1025,22 @@ watch(
       @save="onPathStopsSave"
       @back="onPathStopsBack"
     />
-    <p v-if="routeHint && !isPickingCustom" class="path-map__hint">
-      {{ routeHint }}
-    </p>
+    <div
+      v-if="locationWarning || (routeHint && !isPickingCustom)"
+      class="path-map__bottom-left"
+    >
+      <div
+        v-if="locationWarning"
+        class="path-map__location-warning alert alert-danger border border-danger border-start-3 d-flex align-items-center mb-0"
+        role="status"
+      >
+        <i class="bi bi-exclamation-triangle-fill text-danger me-3" aria-hidden="true"></i>
+        <span>{{ locationWarning }}</span>
+      </div>
+      <p v-if="routeHint && !isPickingCustom" class="path-map__hint">
+        {{ routeHint }}
+      </p>
+    </div>
   </div>
 </template>
 
@@ -1056,11 +1071,26 @@ watch(
   color: #2f2f2f;
 }
 
-.path-map__hint {
+/* Aviso de localização e dica da rota empilhados no canto inferior esquerdo. */
+.path-map__bottom-left {
   position: absolute;
   left: 12px;
   bottom: 12px;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: min(420px, calc(100% - 24px));
+}
+
+.path-map__location-warning {
+  font-family: "DM Sans", sans-serif;
+  font-size: 16px;
+  line-height: 150%;
+}
+
+.path-map__hint {
   margin: 0;
   padding: 6px 10px;
   border-radius: 4px;
