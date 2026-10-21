@@ -31,6 +31,14 @@ export function normalizeCoordinates(latlng) {
 }
 
 /**
+ * Indica se a imagem tem localização válida (ou seja, se aparece no mapa).
+ * Usa locationCoordinates no formato [lat, lng] da API.
+ */
+export function hasImageLocation(image) {
+  return normalizeCoordinates(image?.locationCoordinates) !== null;
+}
+
+/**
  * Cria FeatureCollections GeoJSON separadas por tipo (obra/imagem)
  * @param {Array<Object>} items - Array de itens com latlang, title, id, imageUrl e type
  * @returns {{obra: Object, imagem: Object}} Objeto com duas FeatureCollections separadas por tipo

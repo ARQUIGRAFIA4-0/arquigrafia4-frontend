@@ -5,11 +5,15 @@ defineOptions({ name: "CollectionPathModal" });
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
-  // "create": cria o percurso da coleção | "delete": apaga o percurso da coleção
+  // "create": cria o percurso da coleção
+  // "create-partial": cria, avisando que nem todas as imagens têm localização
+  // "create-blocked": nenhuma imagem tem localização; leva à revisão das imagens
+  // "delete": apaga o percurso da coleção
   mode: {
     type: String,
     default: "create",
-    validator: (value) => ["create", "delete"].includes(value),
+    validator: (value) =>
+      ["create", "create-partial", "create-blocked", "delete"].includes(value),
   },
 });
 
@@ -18,12 +22,31 @@ const emit = defineEmits(["update:modelValue", "confirm"]);
 const COPY = {
   create: {
     title: "Deseja criar um percurso a partir dessa coleção?",
-    text: "Defina os pontos e a rota no mapa. A coleção continua a mesma, apenas ganha um percurso.",
+    paragraphs: [
+      "Defina os pontos e a rota no mapa. A coleção continua a mesma, apenas ganha um percurso.",
+    ],
     confirm: "Criar percurso",
+  },
+  "create-partial": {
+    title: "Deseja criar um percurso a partir dessa coleção?",
+    paragraphs: [
+      "Nem todas as imagens dessa coleção possuem localização.",
+      "Para ter uma visão completa, registre a localização em todas as imagens.",
+    ],
+    confirm: "Prosseguir",
+  },
+  "create-blocked": {
+    title: "Antes de criar um percurso, localize as imagens",
+    paragraphs: [
+      "As imagens dessa coleção não possuem localização. Para criar um percurso, registre a localização de pelo menos uma das imagens.",
+    ],
+    confirm: "Revisar imagens da coleção",
   },
   delete: {
     title: "Apagar o percurso desta coleção?",
-    text: "Os pontos e a rota do percurso serão removidos. As imagens da coleção não são alteradas.",
+    paragraphs: [
+      "Os pontos e a rota do percurso serão removidos. As imagens da coleção não são alteradas.",
+    ],
     confirm: "Apagar percurso",
   },
 };
@@ -77,8 +100,12 @@ watch(
         </div>
 
         <div class="path-modal__body">
-          <p class="path-modal__text">
-            {{ copy.text }}
+          <p
+            v-for="(paragraph, index) in copy.paragraphs"
+            :key="index"
+            class="path-modal__text"
+          >
+            {{ paragraph }}
           </p>
         </div>
 
@@ -88,7 +115,7 @@ watch(
             class="path-modal__btn path-modal__btn--secondary"
             @click="close"
           >
-            Fechar
+            Voltar
           </button>
           <button
             type="button"
@@ -168,6 +195,7 @@ watch(
   display: flex;
   padding: 8px 32px;
   flex-direction: column;
+  gap: 12px;
   align-items: flex-start;
   align-self: stretch;
   box-sizing: border-box;
