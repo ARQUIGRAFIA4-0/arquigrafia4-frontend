@@ -454,8 +454,9 @@ const fetchImages = async (page = 1, filters = {}) => {
  * Imagens paginadas de um álbum — GET /api/albums/{albumId}/images?page=
  * Se o item não trouxer mid_url/thumb_url, enriquece com GET /api/images/{id}
  * (mesmo formato usado antes em CollectionDetail).
+ * O authHeader é opcional, mas necessário para álbuns privados (sem ele o backend retorna 403).
  */
-const getAlbumImages = async (albumId, page = 1) => {
+const getAlbumImages = async (albumId, page = 1, authHeader = null) => {
   if (!albumId) {
     return { items: [], hasMore: false };
   }
@@ -463,6 +464,7 @@ const getAlbumImages = async (albumId, page = 1) => {
   try {
     const { data } = await axios.get(`/api/albums/${albumId}/images`, {
       params: { page },
+      headers: authHeader ? { Authorization: authHeader } : {},
     });
 
     const rawItems = Array.isArray(data.data) ? data.data : [];
