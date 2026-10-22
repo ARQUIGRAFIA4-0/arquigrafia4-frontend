@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 
 defineOptions({ name: "CollectionPathModal" });
 
@@ -8,12 +8,13 @@ const props = defineProps({
   // "create": cria o percurso da coleção
   // "create-partial": cria, avisando que nem todas as imagens têm localização
   // "create-blocked": nenhuma imagem tem localização; leva à revisão das imagens
+  // "edit": confirma a edição do percurso
   // "delete": apaga o percurso da coleção
   mode: {
     type: String,
     default: "create",
     validator: (value) =>
-      ["create", "create-partial", "create-blocked", "delete"].includes(value),
+      ["create", "create-partial", "create-blocked", "edit", "delete"].includes(value),
   },
 });
 
@@ -42,6 +43,12 @@ const COPY = {
     ],
     confirm: "Revisar imagens da coleção",
   },
+  edit: {
+    title: "Editar percurso",
+    paragraphs: ["Deseja editar as informações e pontos deste percurso?"],
+    cancel: "Não",
+    confirm: "Sim",
+  },
   delete: {
     title: "Apagar o percurso desta coleção?",
     paragraphs: [
@@ -62,22 +69,66 @@ function confirm() {
   close();
 }
 
-function handleEsc(event) {
-  if (event.key === "Escape") close();
+const panelRef = ref(null);
+// Elemento com foco antes de abrir, para devolver o foco ao fechar.
+let previouslyFocused = null;
+
+const FOCUSABLE =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+// Esc fecha; Tab/Shift+Tab ficam presos dentro do modal.
+function handleKeydown(event) {
+  if (event.key === "Escape") {
+    close();
+    return;
+  }
+  if (event.key !== "Tab" || !panelRef.value) return;
+
+  const items = [...panelRef.value.querySelectorAll(FOCUSABLE)];
+  if (!items.length) return;
+
+  const first = items[0];
+  const last = items[items.length - 1];
+  const active = document.activeElement;
+
+  if (event.shiftKey && (active === first || active === panelRef.value)) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && active === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function lockPage() {
+  document.body.style.overflow = "hidden";
+  window.addEventListener("keydown", handleKeydown);
+}
+
+function unlockPage() {
+  document.body.style.overflow = "";
+  window.removeEventListener("keydown", handleKeydown);
 }
 
 watch(
   () => props.modelValue,
-  (open) => {
+  async (open) => {
     if (open) {
-      document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", handleEsc);
+      previouslyFocused = document.activeElement;
+      lockPage();
+      await nextTick();
+      panelRef.value?.focus();
     } else {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleEsc);
+      unlockPage();
+      previouslyFocused?.focus?.();
+      previouslyFocused = null;
     }
   }
 );
+
+// Se o componente sair da tela com o modal aberto (ex.: "voltar" do navegador),
+// a página não pode ficar sem rolagem nem com o listener de teclado ativo.
+onBeforeUnmount(unlockPage);
 </script>
 
 <template>
@@ -88,10 +139,12 @@ watch(
       @click.self="close"
     >
       <div
+        ref="panelRef"
         class="path-modal__panel"
         role="dialog"
         aria-modal="true"
         aria-labelledby="path-modal-title"
+        tabindex="-1"
       >
         <div class="path-modal__header">
           <h2 id="path-modal-title" class="path-modal__title">
@@ -115,7 +168,7 @@ watch(
             class="path-modal__btn path-modal__btn--secondary"
             @click="close"
           >
-            Voltar
+            {{ copy.cancel ?? "Voltar" }}
           </button>
           <button
             type="button"
@@ -167,6 +220,11 @@ watch(
   background: var(--Off_white, #faf9f9);
   box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
+}
+
+/* O painel recebe foco ao abrir (para leitores de tela); sem contorno visual. */
+.path-modal__panel:focus {
+  outline: none;
 }
 
 .path-modal__header {
