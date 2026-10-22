@@ -277,7 +277,7 @@ const imagesLocationStatus = computed(() => {
 const PARTIAL_LOCATION_MESSAGE =
   "Nem todas as imagens dessa coleção possuem localização. Para ter uma visão completa, registre a localização em todas as imagens.";
 
-// Aviso na coluna da direita (grid, mosaico e mapa), abaixo do bloco de criar percurso:
+// Aviso de localização (grid, mosaico e mapa), dentro do bloco "Percurso da coleção":
 // "none" para todos, "partial" só para quem gerencia.
 const locationNotice = computed(() => {
   if (imagesLocationStatus.value === "none") {
@@ -319,9 +319,32 @@ const visibilityLabel = computed(() =>
   isPrivate.value ? "Coleção privada" : "Coleção pública"
 );
 
-// Bloco "Percurso da coleção" (visualizar): abaixo da descrição, para todos,
-// fora do mapa, quando a coleção tem percurso.
+// Botão "Visualizar percurso": para todos, fora do mapa, quando a coleção tem percurso.
 const showPathViewBlock = computed(() => isCollectionPath.value && !isMapView.value);
+
+// "Essa coleção não tem um percurso.": para quem não gerencia. Espera a coleção e o dono
+// carregarem para um membro do coletivo não ver a frase piscar antes de canManage resolver.
+const showNoPathMessage = computed(
+  () =>
+    !isLoadingAlbum.value &&
+    !isLoadingOwner.value &&
+    !isCollectionPath.value &&
+    !canManage.value
+);
+
+// Bloco "Percurso da coleção" público, abaixo do dono. Também recebe o aviso de
+// localização quando o bloco de gerenciar não está visível.
+const showPathPublicBlock = computed(
+  () =>
+    showPathViewBlock.value ||
+    showNoPathMessage.value ||
+    (Boolean(locationNotice.value) && !showPathManageBlock.value)
+);
+const pathPublicHelp = computed(() =>
+  isCollectionPath.value
+    ? "Veja os pontos e a rota do percurso na visualização de mapa."
+    : "Percurso com pontos e rota no mapa, criado a partir das imagens desta coleção."
+);
 
 // Bloco "Percurso da coleção" (gerenciar): abaixo do dono, só para quem gerencia.
 // Criar fica sempre disponível; editar/apagar só na visualização de mapa.
@@ -1103,33 +1126,57 @@ watch(
                 />
               </aside>
 
+              <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
               <section
-                v-if="showPathViewBlock"
-                class="collection-detail__path-block collection-detail__space"
-                aria-labelledby="collection-path-view-heading"
+                class="collection-detail__tags-block collection-detail__space"
+                aria-labelledby="collection-tags-heading"
               >
-                <div class="collection-detail__path-heading-row">
-                  <h2 id="collection-path-view-heading" class="collection-detail__path-title">
-                    Percurso da coleção
+                <div class="collection-detail__tags-heading-row">
+                  <h2 id="collection-tags-heading" class="collection-detail__tags-title">
+                    Tags na coleção
                   </h2>
                   <UiField
-                    id="collection-path-view-help"
+                    id="collection-tags-help"
                     class="collection-detail__help-field"
                     label="Ajuda"
-                    explain="Veja os pontos e a rota do percurso na visualização de mapa."
+                    explain="Estas etiquetas são coletadas de cada imagem presente na coleção."
                   />
                 </div>
-                <div class="collection-detail__path-actions">
+                <div v-if="isLoadingCollectionTags" class="metadata-tags metadata-tags--skeleton">
+                  <span
+                    v-for="n in 5"
+                    :key="`tag-skeleton-${n}`"
+                    class="metadata-tags__skeleton"
+                    aria-hidden="true"
+                  />
+                </div>
+                <div v-else-if="cappedCollectionTags.length" class="metadata-tags">
                   <button
+                    v-for="(tag, index) in visibleCollectionTags"
+                    :key="`${tag.id}-${index}`"
                     type="button"
-                    class="collection-detail__path-btn collection-detail__path-btn--primary"
-                    @click="openPathView"
+                    class="btn btn-outline-primary btn-sm btn-tag"
+                    @click="goToSubject(tag.id)"
                   >
-                    <i class="bi bi-map" aria-hidden="true" />
-                    Visualizar percurso
+                    {{ tag.term }}
+                  </button>
+                  <button
+                    v-if="hiddenCollectionTagsCount > 0"
+                    type="button"
+                    class="btn btn-outline-primary btn-sm btn-tag metadata-tags__more"
+                    :aria-expanded="showAllCollectionTags"
+                    :aria-label="
+                      showAllCollectionTags
+                        ? 'Mostrar menos tags'
+                        : `Mostrar mais ${hiddenCollectionTagsCount} tags`
+                    "
+                    @click="toggleCollectionTagsExpanded"
+                  >
+                    {{ showAllCollectionTags ? "menos" : `+${hiddenCollectionTagsCount}` }}
                   </button>
                 </div>
               </section>
+              </template>
 
               <div
                 class="collection-detail__map-panel-body"
@@ -1218,6 +1265,45 @@ watch(
             </section>
 
             <section
+              v-if="showPathPublicBlock"
+              class="collection-detail__path-block collection-detail__space"
+              aria-labelledby="collection-path-view-heading"
+            >
+              <div class="collection-detail__path-heading-row">
+                <h2 id="collection-path-view-heading" class="collection-detail__path-title">
+                  Percurso da coleção
+                </h2>
+                <UiField
+                  id="collection-path-view-help"
+                  class="collection-detail__help-field"
+                  label="Ajuda"
+                  :explain="pathPublicHelp"
+                />
+              </div>
+              <p v-if="showNoPathMessage" class="collection-detail__path-empty">
+                Essa coleção não tem um percurso.
+              </p>
+              <div v-if="showPathViewBlock" class="collection-detail__path-actions">
+                <button
+                  type="button"
+                  class="collection-detail__path-btn collection-detail__path-btn--primary"
+                  @click="openPathView"
+                >
+                  <i class="bi bi-map" aria-hidden="true" />
+                  Visualizar percurso
+                </button>
+              </div>
+              <div
+                v-if="locationNotice && !showPathManageBlock"
+                class="collection-detail__location-notice alert alert-dark bg-off-white alert-light border border-dark border-start-3 d-flex align-items-center mb-0"
+                role="status"
+              >
+                <i class="bi bi-arrow-up-right-circle-fill text-dark me-3" aria-hidden="true"></i>
+                <span>{{ locationNotice }}</span>
+              </div>
+            </section>
+
+            <section
               v-if="showPathManageBlock"
               class="collection-detail__path-block collection-detail__space"
               aria-labelledby="collection-path-manage-heading"
@@ -1239,7 +1325,7 @@ watch(
                     type="button"
                     class="collection-detail__path-btn collection-detail__path-btn--primary"
                     :disabled="isSavingPath"
-                    @click="openPathEditor"
+                    @click="openPathModal('edit')"
                   >
                     Editar percurso
                   </button>
@@ -1262,17 +1348,15 @@ watch(
                   Criar percurso
                 </button>
               </div>
-            </section>
-
-            <div v-if="locationNotice" class="collection-detail__space">
               <div
-                class="collection-detail__location-notice alert alert-dark bg-off-white alert-light border border-dark border-start-3 d-flex align-items-center"
+                v-if="locationNotice"
+                class="collection-detail__location-notice alert alert-dark bg-off-white alert-light border border-dark border-start-3 d-flex align-items-center mb-0"
                 role="status"
               >
                 <i class="bi bi-arrow-up-right-circle-fill text-dark me-3" aria-hidden="true"></i>
                 <span>{{ locationNotice }}</span>
               </div>
-            </div>
+            </section>
 
             <section
               v-if="showPathStops"
@@ -1291,56 +1375,6 @@ watch(
                 />
               </div>
               <CollectionPathStops :stops="pathInitialStops" :images="collectionImages" />
-            </section>
-
-            <section
-              class="collection-detail__tags-block"
-              aria-labelledby="collection-tags-heading"
-            >
-              <div class="collection-detail__tags-heading-row">
-                <h2 id="collection-tags-heading" class="collection-detail__tags-title">
-                  Tags na coleção
-                </h2>
-                <UiField
-                  id="collection-tags-help"
-                  class="collection-detail__help-field"
-                  label="Ajuda"
-                  explain="Estas etiquetas são coletadas de cada imagem presente na coleção."
-                />
-              </div>
-              <div v-if="isLoadingCollectionTags" class="metadata-tags metadata-tags--skeleton">
-                <span
-                  v-for="n in 5"
-                  :key="`tag-skeleton-${n}`"
-                  class="metadata-tags__skeleton"
-                  aria-hidden="true"
-                />
-              </div>
-              <div v-else-if="cappedCollectionTags.length" class="metadata-tags">
-                <button
-                  v-for="(tag, index) in visibleCollectionTags"
-                  :key="`${tag.id}-${index}`"
-                  type="button"
-                  class="btn btn-outline-primary btn-sm btn-tag"
-                  @click="goToSubject(tag.id)"
-                >
-                  {{ tag.term }}
-                </button>
-                <button
-                  v-if="hiddenCollectionTagsCount > 0"
-                  type="button"
-                  class="btn btn-outline-primary btn-sm btn-tag metadata-tags__more"
-                  :aria-expanded="showAllCollectionTags"
-                  :aria-label="
-                    showAllCollectionTags
-                      ? 'Mostrar menos tags'
-                      : `Mostrar mais ${hiddenCollectionTagsCount} tags`
-                  "
-                  @click="toggleCollectionTagsExpanded"
-                >
-                  {{ showAllCollectionTags ? "menos" : `+${hiddenCollectionTagsCount}` }}
-                </button>
-              </div>
             </section>
 
             <section
@@ -1411,33 +1445,57 @@ watch(
                 />
               </aside>
 
+              <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
               <section
-                v-if="showPathViewBlock"
-                class="collection-detail__path-block collection-detail__space"
-                aria-labelledby="collection-path-view-heading-desktop"
+                class="collection-detail__tags-block collection-detail__space"
+                aria-labelledby="collection-tags-heading-desktop"
               >
-                <div class="collection-detail__path-heading-row">
-                  <h2 id="collection-path-view-heading-desktop" class="collection-detail__path-title">
-                    Percurso da coleção
+                <div class="collection-detail__tags-heading-row">
+                  <h2 id="collection-tags-heading-desktop" class="collection-detail__tags-title">
+                    Tags na coleção
                   </h2>
                   <UiField
-                    id="collection-path-view-help-desktop"
+                    id="collection-tags-help-desktop"
                     class="collection-detail__help-field"
                     label="Ajuda"
-                    explain="Veja os pontos e a rota do percurso na visualização de mapa."
+                    explain="Estas etiquetas são coletadas de cada imagem presente na coleção."
                   />
                 </div>
-                <div class="collection-detail__path-actions">
+                <div v-if="isLoadingCollectionTags" class="metadata-tags metadata-tags--skeleton">
+                  <span
+                    v-for="n in 5"
+                    :key="`tag-skeleton-desktop-${n}`"
+                    class="metadata-tags__skeleton"
+                    aria-hidden="true"
+                  />
+                </div>
+                <div v-else-if="cappedCollectionTags.length" class="metadata-tags">
                   <button
+                    v-for="(tag, index) in visibleCollectionTags"
+                    :key="`desktop-${tag.id}-${index}`"
                     type="button"
-                    class="collection-detail__path-btn collection-detail__path-btn--primary"
-                    @click="openPathView"
+                    class="btn btn-outline-primary btn-sm btn-tag"
+                    @click="goToSubject(tag.id)"
                   >
-                    <i class="bi bi-map" aria-hidden="true" />
-                    Visualizar percurso
+                    {{ tag.term }}
+                  </button>
+                  <button
+                    v-if="hiddenCollectionTagsCount > 0"
+                    type="button"
+                    class="btn btn-outline-primary btn-sm btn-tag metadata-tags__more"
+                    :aria-expanded="showAllCollectionTags"
+                    :aria-label="
+                      showAllCollectionTags
+                        ? 'Mostrar menos tags'
+                        : `Mostrar mais ${hiddenCollectionTagsCount} tags`
+                    "
+                    @click="toggleCollectionTagsExpanded"
+                  >
+                    {{ showAllCollectionTags ? "menos" : `+${hiddenCollectionTagsCount}` }}
                   </button>
                 </div>
               </section>
+              </template>
 
               <div
                 class="collection-detail__map-panel-body"
@@ -1526,6 +1584,45 @@ watch(
               </section>
 
               <section
+                v-if="showPathPublicBlock"
+                class="collection-detail__path-block collection-detail__space"
+                aria-labelledby="collection-path-view-heading-desktop"
+              >
+                <div class="collection-detail__path-heading-row">
+                  <h2 id="collection-path-view-heading-desktop" class="collection-detail__path-title">
+                    Percurso da coleção
+                  </h2>
+                  <UiField
+                    id="collection-path-view-help-desktop"
+                    class="collection-detail__help-field"
+                    label="Ajuda"
+                    :explain="pathPublicHelp"
+                  />
+                </div>
+                <p v-if="showNoPathMessage" class="collection-detail__path-empty">
+                  Essa coleção não tem um percurso.
+                </p>
+                <div v-if="showPathViewBlock" class="collection-detail__path-actions">
+                  <button
+                    type="button"
+                    class="collection-detail__path-btn collection-detail__path-btn--primary"
+                    @click="openPathView"
+                  >
+                    <i class="bi bi-map" aria-hidden="true" />
+                    Visualizar percurso
+                  </button>
+                </div>
+                <div
+                  v-if="locationNotice && !showPathManageBlock"
+                  class="collection-detail__location-notice alert alert-dark bg-off-white alert-light border border-dark border-start-3 d-flex align-items-center mb-0"
+                  role="status"
+                >
+                  <i class="bi bi-arrow-up-right-circle-fill text-dark me-3" aria-hidden="true"></i>
+                  <span>{{ locationNotice }}</span>
+                </div>
+              </section>
+
+              <section
                 v-if="showPathManageBlock"
                 class="collection-detail__path-block collection-detail__space"
                 aria-labelledby="collection-path-manage-heading-desktop"
@@ -1547,7 +1644,7 @@ watch(
                       type="button"
                       class="collection-detail__path-btn collection-detail__path-btn--primary"
                       :disabled="isSavingPath"
-                      @click="openPathEditor"
+                      @click="openPathModal('edit')"
                     >
                       Editar percurso
                     </button>
@@ -1570,17 +1667,15 @@ watch(
                     Criar percurso
                   </button>
                 </div>
-              </section>
-
-              <div v-if="locationNotice" class="collection-detail__space">
                 <div
-                  class="collection-detail__location-notice alert alert-dark bg-off-white alert-light border border-dark border-start-3 d-flex align-items-center"
+                  v-if="locationNotice"
+                  class="collection-detail__location-notice alert alert-dark bg-off-white alert-light border border-dark border-start-3 d-flex align-items-center mb-0"
                   role="status"
                 >
                   <i class="bi bi-arrow-up-right-circle-fill text-dark me-3" aria-hidden="true"></i>
                   <span>{{ locationNotice }}</span>
                 </div>
-              </div>
+              </section>
 
               <section
                 v-if="showPathStops"
@@ -1599,56 +1694,6 @@ watch(
                   />
                 </div>
                 <CollectionPathStops :stops="pathInitialStops" :images="collectionImages" />
-              </section>
-
-              <section
-                class="collection-detail__tags-block"
-                aria-labelledby="collection-tags-heading-desktop"
-              >
-                <div class="collection-detail__tags-heading-row">
-                  <h2 id="collection-tags-heading-desktop" class="collection-detail__tags-title">
-                    Tags na coleção
-                  </h2>
-                  <UiField
-                    id="collection-tags-help-desktop"
-                    class="collection-detail__help-field"
-                    label="Ajuda"
-                    explain="Estas etiquetas são coletadas de cada imagem presente na coleção."
-                  />
-                </div>
-                <div v-if="isLoadingCollectionTags" class="metadata-tags metadata-tags--skeleton">
-                  <span
-                    v-for="n in 5"
-                    :key="`tag-skeleton-desktop-${n}`"
-                    class="metadata-tags__skeleton"
-                    aria-hidden="true"
-                  />
-                </div>
-                <div v-else-if="cappedCollectionTags.length" class="metadata-tags">
-                  <button
-                    v-for="(tag, index) in visibleCollectionTags"
-                    :key="`desktop-${tag.id}-${index}`"
-                    type="button"
-                    class="btn btn-outline-primary btn-sm btn-tag"
-                    @click="goToSubject(tag.id)"
-                  >
-                    {{ tag.term }}
-                  </button>
-                  <button
-                    v-if="hiddenCollectionTagsCount > 0"
-                    type="button"
-                    class="btn btn-outline-primary btn-sm btn-tag metadata-tags__more"
-                    :aria-expanded="showAllCollectionTags"
-                    :aria-label="
-                      showAllCollectionTags
-                        ? 'Mostrar menos tags'
-                        : `Mostrar mais ${hiddenCollectionTagsCount} tags`
-                    "
-                    @click="toggleCollectionTagsExpanded"
-                  >
-                    {{ showAllCollectionTags ? "menos" : `+${hiddenCollectionTagsCount}` }}
-                  </button>
-                </div>
               </section>
 
               <section
@@ -2523,10 +2568,17 @@ a.collection-detail__actor-name:hover {
   margin-bottom: 24px;
 }
 
-/* Aviso de imagens sem localização (coluna da direita, visualização de mapa). */
+/* Aviso de imagens sem localização, dentro do bloco "Percurso da coleção". */
 .collection-detail__location-notice {
-  max-width: 576px;
-  margin: 0 12px;
+  align-self: stretch;
+  font-size: 16px;
+  line-height: 150%;
+}
+
+/* "Essa coleção não tem um percurso." */
+.collection-detail__path-empty {
+  margin: 0;
+  color: var(--Cinza_E, #2f2f2f);
   font-size: 16px;
   line-height: 150%;
 }
