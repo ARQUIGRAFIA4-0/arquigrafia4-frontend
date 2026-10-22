@@ -28,7 +28,6 @@ import { useToast } from "@/composables/useToast";
 import { downloadCollectionAsZip } from "@/helpers/downloadCollectionZip";
 import { sanitizeDownloadFilename } from "@/helpers/downloadImage";
 import { useAlbumImagesInfiniteQuery } from "@/composables/useAlbumImagesInfiniteQuery";
-import { hasImageLocation } from "@/helpers/geojson";
 
 defineOptions({ name: "CollectionDetail" });
 
@@ -107,20 +106,8 @@ function openPathView() {
   handleCollectionViewChange({ selection: "map" });
 }
 
-// Verificando a localização das imagens antes de abrir o modal de criação.
-const isCheckingImagesLocation = ref(false);
-
 // "Criar percurso": o modal depende de quantas imagens têm localização.
-async function openCreatePathModal() {
-  if (imagesLocationStatus.value === null && hasNextPage.value) {
-    isCheckingImagesLocation.value = true;
-    try {
-      await loadAllCollectionImages();
-    } finally {
-      isCheckingImagesLocation.value = false;
-    }
-  }
-
+function openCreatePathModal() {
   const status = imagesLocationStatus.value;
   if (status === "none") openPathModal("create-blocked");
   else if (status === "partial") openPathModal("create-partial");
@@ -275,16 +262,16 @@ const {
 });
 
 /**
- * Localização das imagens da coleção (imagem sem localização não aparece no mapa).
- * "none" | "partial" | "all" | null (ainda indefinido ou coleção vazia).
- * "partial" já é certo com as páginas carregadas; "none" e "all" exigem todas.
+ * Localização das imagens da coleção (imagem sem localização não aparece no mapa),
+ * a partir das contagens do GET /albums/{id}.
+ * "none" | "partial" | "all" | null (sem dados ou coleção vazia).
  */
 const imagesLocationStatus = computed(() => {
-  const images = collectionImages.value;
-  const located = images.filter(hasImageLocation).length;
-  if (located > 0 && located < images.length) return "partial";
-  if (hasNextPage.value || !images.length) return null;
-  return located === 0 ? "none" : "all";
+  const total = Number(albumData.value?.images_count);
+  const located = Number(albumData.value?.located_images_count);
+  if (!Number.isFinite(total) || !Number.isFinite(located) || total === 0) return null;
+  if (located === 0) return "none";
+  return located < total ? "partial" : "all";
 });
 
 const PARTIAL_LOCATION_MESSAGE =
@@ -306,21 +293,6 @@ const locationNotice = computed(() => {
 const pathEditorLocationWarning = computed(() =>
   imagesLocationStatus.value === "partial" ? PARTIAL_LOCATION_MESSAGE : null
 );
-
-// Busca as páginas restantes das imagens. Chamadas simultâneas compartilham a mesma busca;
-// cancelRefetch: false reaproveita uma página que já esteja sendo carregada pelo scroll.
-let loadAllImagesPromise = null;
-function loadAllCollectionImages() {
-  loadAllImagesPromise ??= (async () => {
-    while (hasNextPage.value) {
-      const result = await fetchNextPage({ cancelRefetch: false });
-      if (result?.isError) break;
-    }
-  })().finally(() => {
-    loadAllImagesPromise = null;
-  });
-  return loadAllImagesPromise;
-}
 
 const isLoadingCollection = computed(
   () =>
@@ -561,15 +533,6 @@ watch(collectionViewMode, (mode) => {
   }
 
 });
-
-// O mapa precisa de todas as imagens (e o aviso de localização também).
-watch(
-  [isMapView, hasNextPage],
-  ([mapView, nextPage]) => {
-    if (mapView && nextPage) loadAllCollectionImages();
-  },
-  { immediate: true }
-);
 
 const isInfoActive = ref(true);
 const isGridReflowing = ref(false);
@@ -1293,11 +1256,10 @@ watch(
                   v-else
                   type="button"
                   class="collection-detail__path-btn collection-detail__path-btn--primary"
-                  :disabled="isCheckingImagesLocation"
                   @click="openCreatePathModal"
                 >
                   <i class="bi bi-map" aria-hidden="true" />
-                  {{ isCheckingImagesLocation ? "Verificando imagens…" : "Criar percurso" }}
+                  Criar percurso
                 </button>
               </div>
             </section>
@@ -1602,11 +1564,10 @@ watch(
                     v-else
                     type="button"
                     class="collection-detail__path-btn collection-detail__path-btn--primary"
-                    :disabled="isCheckingImagesLocation"
                     @click="openCreatePathModal"
                   >
                     <i class="bi bi-map" aria-hidden="true" />
-                    {{ isCheckingImagesLocation ? "Verificando imagens…" : "Criar percurso" }}
+                    Criar percurso
                   </button>
                 </div>
               </section>
