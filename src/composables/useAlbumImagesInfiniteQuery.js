@@ -3,19 +3,25 @@ import { useInfiniteQuery } from "@tanstack/vue-query";
 import { api } from "@/services/api";
 
 export const useAlbumImagesInfiniteQuery = (options = {}) => {
-  const { albumId, queryKey = ["album-images"], ...queryOptions } = options;
+  const {
+    albumId,
+    authHeader = null,
+    queryKey = ["album-images"],
+    ...queryOptions
+  } = options;
 
   const normalizedBaseKey = Array.isArray(queryKey) ? queryKey : [queryKey];
 
   const resolvedQueryKey = computed(() => [
     ...normalizedBaseKey,
     toValue(albumId) || "none",
+    toValue(authHeader) ? "auth" : "anon",
   ]);
 
   const query = useInfiniteQuery({
     queryKey: resolvedQueryKey,
     queryFn: ({ pageParam = 1 }) =>
-      api.getAlbumImages(toValue(albumId), pageParam),
+      api.getAlbumImages(toValue(albumId), pageParam, toValue(authHeader)),
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage?.hasMore) {
         return allPages.length + 1;
