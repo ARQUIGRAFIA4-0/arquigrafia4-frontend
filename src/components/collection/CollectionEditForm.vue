@@ -10,9 +10,10 @@ const props = defineProps({
   isPrivate: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
   titleDisabled: { type: Boolean, default: false },
+  canDelete: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(["update:title", "update:description", "update:isPrivate"]);
+const emit = defineEmits(["update:title", "update:description", "update:isPrivate", "delete"]);
 
 const TITLE_MAX_LENGTH = 150;
 const DESCRIPTION_MAX_LENGTH = 500;
@@ -121,6 +122,24 @@ function onPrivateChange(event) {
     <p class="collection-edit-form__hint collection-edit-form__hint--required">
       Preenchimento obrigatório
     </p>
+
+    <div v-if="canDelete" class="collection-edit-form__danger">
+      <div class="collection-edit-form__danger-text">
+        <p class="collection-edit-form__danger-title">Excluir coleção</p>
+        <p class="collection-edit-form__hint">
+          Remove a coleção permanentemente. As imagens continuam no acervo.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="collection-edit-form__danger-btn"
+        :disabled="disabled"
+        @click="emit('delete')"
+      >
+        <i class="bi bi-trash" aria-hidden="true"></i>
+        Excluir coleção
+      </button>
+    </div>
   </article>
 </template>
 
@@ -251,6 +270,73 @@ function onPrivateChange(event) {
   font-size: 14px;
   font-weight: 500;
   line-height: 150%;
+}
+
+// Ação destrutiva separada do restante do formulário por um divisor.
+.collection-edit-form__danger {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  align-self: stretch;
+  margin: 20px 12px 8px;
+  padding-top: 20px;
+  border-top: 0.75px solid var(--Cinza_C, #a6a6a6);
+}
+
+.collection-edit-form__danger-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.collection-edit-form__danger-title {
+  margin: 0;
+  color: var(--Gray-900, #212529);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 150%;
+}
+
+.collection-edit-form__danger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: var(--control-height-desk, 38px);
+  padding: 2px 14px;
+  border: 1px solid #bc1518;
+  border-radius: 5px;
+  background: var(--Off_white, #faf9f9);
+  color: #bc1518;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 150%;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: #bc1518;
+    color: var(--Branco, #fff);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .collection-edit-form__danger-btn {
+    width: 100%;
+    height: var(--control-height-mobile, 48px);
+  }
 }
 
 .collection-edit-form__hint {
