@@ -35,6 +35,7 @@
                 :href="`#${tab.section}`"
                 aria-current="page"
                 :data-label="tab.label"
+                @click.prevent="scrollToSection(tab.section)"
               >
                 {{ tab.label }}
               </a>
@@ -830,6 +831,12 @@ const tabs = [
   { label: "Interpretações", section: "interpretacoes", disabled: true },
   { label: "Sugestões", section: "sugestoes", disabled: true },
 ];
+
+// Rola até a seção sem alterar o hash da URL: um "#dados" no histórico faria o
+// router.back() do Cancelar voltar para esta mesma página em vez da anterior.
+const scrollToSection = (section) => {
+  document.getElementById(section)?.scrollIntoView({ behavior: "smooth" });
+};
 
 const isIdentityDropdownOpen = ref(false);
 const selectedIdentityId = ref(null);
