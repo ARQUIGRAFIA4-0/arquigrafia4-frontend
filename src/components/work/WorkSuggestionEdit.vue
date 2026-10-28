@@ -447,6 +447,17 @@ const handleSubmit = async () => {
   align-items: stretch;
 }
 
+.work-modal__combo {
+  display: flex !important;
+  width: 100%;
+}
+
+.work-modal__combo > .form-control {
+  flex: 1 1 auto;
+  width: 1%;
+  min-width: 0;
+}
+
 .work-modal__combo > .form-control,
 .work-modal__combo > .btn,
 .work-modal__combo > .input-group-text {
