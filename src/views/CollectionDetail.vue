@@ -674,6 +674,15 @@ function handleStopClose(number) {
   if (listActiveStopNumber.value === number) listActiveStopNumber.value = null;
 }
 
+// "Ver no mapa" de um ponto sem imagem: recentraliza nele. No celular o mapa
+// fica acima da lista, então rola até ele.
+function handleStopLocate(number) {
+  handleStopOpen(number);
+  if (isMobile.value) {
+    galleryRef.value?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
 // Clique numa parada no mapa: com o card aberto, navega até ela; senão abre
 // o ponto na lista e centraliza nele.
 function handleMapStopSelect(number) {
@@ -1446,6 +1455,9 @@ watch(
                   :explain="pathManageHelp"
                 />
               </div>
+              <p v-if="!isCollectionPath" class="collection-detail__path-empty">
+                Monte um roteiro de visita a partir das imagens desta coleção.
+              </p>
               <div class="collection-detail__path-actions">
                 <template v-if="isCollectionPath">
                   <button
@@ -1512,6 +1524,7 @@ watch(
                 :active-number="listActiveStopNumber"
                 @open="handleStopOpen"
                 @close="handleStopClose"
+                @locate="handleStopLocate"
                 @hover="hoveredStopNumber = $event"
               />
             </section>
@@ -1744,6 +1757,9 @@ watch(
                     :explain="pathManageHelp"
                   />
                 </div>
+                <p v-if="!isCollectionPath" class="collection-detail__path-empty">
+                  Monte um roteiro de visita a partir das imagens desta coleção.
+                </p>
                 <div class="collection-detail__path-actions">
                   <template v-if="isCollectionPath">
                     <button
@@ -1810,6 +1826,7 @@ watch(
                   :active-number="listActiveStopNumber"
                   @open="handleStopOpen"
                   @close="handleStopClose"
+                  @locate="handleStopLocate"
                   @hover="hoveredStopNumber = $event"
                 />
               </section>

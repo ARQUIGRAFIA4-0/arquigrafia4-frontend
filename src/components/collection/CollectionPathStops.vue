@@ -15,8 +15,9 @@ const props = defineProps({
   activeNumber: { type: Number, default: null },
 });
 
-// open/close: ponto aberto ou fechado na lista; hover: ponto sob o ponteiro (ou null).
-const emit = defineEmits(["open", "close", "hover"]);
+// open/close: ponto aberto ou fechado na lista; hover: ponto sob o ponteiro (ou null);
+// locate: "ver no mapa" de um ponto sem imagem.
+const emit = defineEmits(["open", "close", "hover", "locate"]);
 
 const listRef = ref(null);
 
@@ -59,6 +60,7 @@ const orderedStops = computed(() =>
     const fetched = imageId ? fetchedImages.value.get(imageId) ?? null : null;
     return {
       ...stop,
+      hasLocation: Boolean(stop.coordinates?.every(Number.isFinite)),
       imageSrc: image?.imageUrl ?? image?.thumbUrl ?? fetched?.src ?? null,
       imageTitle: image?.title ?? fetched?.title ?? "",
       isImageLoading: !image && fetched?.status === "loading",
@@ -156,6 +158,9 @@ defineExpose({ openStop });
                 <i class="bi bi-arrow-right" aria-hidden="true"></i>
               </span>
             </span>
+            <span class="path-stops__image-badge" aria-hidden="true">
+              <i class="bi bi-arrow-up-right"></i>
+            </span>
           </RouterLink>
           <RouterLink
             v-else
@@ -165,10 +170,22 @@ defineExpose({ openStop });
             Ver imagem do ponto
           </RouterLink>
         </template>
-        <p v-else class="path-stops__no-image">
-          <i class="bi bi-geo-fill" aria-hidden="true"></i>
-          Ponto sem imagem relacionada.
-        </p>
+        <div v-else class="path-stops__no-image">
+          <p class="path-stops__no-image-text">
+            <i class="bi bi-geo-fill" aria-hidden="true"></i>
+            Ponto sem imagem relacionada.
+          </p>
+          <button
+            v-if="stop.hasLocation"
+            type="button"
+            class="path-stops__locate"
+            :aria-label="`Ver ${stop.title} no mapa`"
+            @click="emit('locate', stop.number)"
+          >
+            <i class="bi bi-crosshair" aria-hidden="true"></i>
+            ver no mapa
+          </button>
+        </div>
       </div>
     </li>
   </ol>
@@ -279,6 +296,33 @@ defineExpose({ openStop });
   transform: scale(1.03);
 }
 
+/* Telas de toque não têm hover: um selo fixo no canto indica que a foto abre os detalhes. */
+.path-stops__image-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: none;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(31, 31, 31, 0.7);
+  color: var(--Branco, #fff);
+  font-size: 14px;
+}
+
+@media (hover: none) {
+  .path-stops__image-badge {
+    display: inline-flex;
+  }
+
+  /* Evita que o escurecimento fique "preso" após o toque. */
+  .path-stops__image-overlay {
+    display: none;
+  }
+}
+
 .path-stops__image-link:focus-visible {
   outline: 2px solid var(--Cinza_E, #2f2f2f);
   outline-offset: 2px;
@@ -319,12 +363,46 @@ defineExpose({ openStop });
 
 .path-stops__no-image {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.path-stops__no-image-text {
+  display: flex;
   align-items: center;
   gap: 8px;
   margin: 0;
   color: var(--Cinza_E, #2f2f2f);
   font-family: "DM Sans", sans-serif;
   font-size: 14px;
+}
+
+/* Mesmo estilo dos botões de contorno da coluna de detalhes. */
+.path-stops__locate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 5px;
+  border: 1px solid var(--Cinza_E, #2f2f2f);
+  background: var(--Off_white, #faf9f9);
+  color: var(--Cinza_E, #2f2f2f);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  line-height: 150%;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.path-stops__locate:hover {
+  background: var(--Cinza_E, #2f2f2f);
+  color: var(--Off_white, #faf9f9);
+}
+
+.path-stops__locate:focus-visible {
+  outline: 2px solid var(--Cinza_E, #2f2f2f);
+  outline-offset: 2px;
 }
 
 .path-stops__number {
