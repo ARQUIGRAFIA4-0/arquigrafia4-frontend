@@ -621,14 +621,20 @@ function handleMapSelect(id) {
 }
 
 // Fecha a seleção e volta às informações da coleção (tags, autoria, pontos do
-// percurso), reenquadrando o mapa. Se a seleção era um ponto do percurso, a
-// lista volta com ele aberto. O foco vai para "Pontos do percurso" (ou para as
-// tags, sem percurso) para não se perder na página.
+// percurso). O mapa enquadra a rota do percurso (ou, sem percurso, volta à view
+// inicial). Se a seleção era um ponto do percurso, a lista volta com ele aberto.
+// O foco vai para "Pontos do percurso" (ou para as tags, sem percurso) para não
+// se perder na página.
 async function clearMapSelection() {
   const stopNumber = selectedPathStop.value?.number ?? null;
+  const map = collectionMapRef.value;
 
-  if (collectionMapRef.value) {
-    collectionMapRef.value.resetToInitial();
+  if (map && isCollectionPath.value) {
+    map.clearSelection();
+    handleMapSelect(null);
+    map.fitToRoute();
+  } else if (map) {
+    map.resetToInitial();
   } else {
     handleMapSelect(null);
   }
@@ -2449,6 +2455,19 @@ a.collection-detail__actor-name:hover {
     opacity: 1;
     transform: none;
     overflow: visible;
+  }
+
+  /* O limite de 100vh (com scroll interno) é só do desktop: no mobile a coluna
+     de detalhes cresce com o conteúdo e a rolagem é a da página. */
+  .collection-detail__info-slot--mobile,
+  .collection-detail__info-wrapper--mobile,
+  .collection-detail__info-wrapper--mobile .collection-detail__info-inner {
+    height: auto;
+    max-height: none;
+  }
+
+  .collection-detail__info-wrapper--mobile .collection-detail__map-panel-body--map {
+    min-height: 0;
   }
 
   .collection-detail__container--mobile .collection-detail__title {

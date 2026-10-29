@@ -196,6 +196,8 @@ defineExpose({ openStop });
 .path-stops {
   display: flex;
   flex-direction: column;
+  align-self: stretch;
+  width: 100%;
   gap: 16px;
   margin: 0;
   padding: 0;

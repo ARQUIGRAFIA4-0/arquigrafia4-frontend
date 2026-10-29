@@ -1464,7 +1464,45 @@ const clearSelection = () => {
 const focusCoordinates = (coordinates, { zoom } = {}) =>
   focusOnCoordinates(coordinates, zoom);
 
-defineExpose({ resetToInitial, selectImage, clearSelection, focusCoordinates });
+// Enquadra só a rota e as paradas do percurso (sem as demais imagens).
+// Sem percurso, volta à view inicial.
+const fitToRoute = () => {
+  const map = mapInstance.value;
+  if (!map) return;
+
+  const coordinates = [
+    ...getRouteCoordinates(),
+    ...getNumberedStops().map((stop) => stop.coordinates),
+  ];
+
+  if (!coordinates.length) {
+    restoreInitialView();
+    return;
+  }
+
+  collapseSpider();
+  closeActivePopup();
+  closeActiveCardPopup();
+
+  const bounds = new LngLatBounds();
+  coordinates.forEach((coordinate) => bounds.extend(coordinate));
+
+  map.stop();
+  map.fitBounds(bounds, {
+    padding: 56,
+    maxZoom: 16,
+    duration: SELECTED_ICON_ANIMATION_MS,
+    essential: true,
+  });
+};
+
+defineExpose({
+  resetToInitial,
+  selectImage,
+  clearSelection,
+  focusCoordinates,
+  fitToRoute,
+});
 
 /* ------------------------------- Desmontagem ---------------------------------- */
 // Desmonta o mapa e limpa as fontes e camadas.

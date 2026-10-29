@@ -26,6 +26,16 @@ const router = createRouter({
       return { top: 0, behavior: 'instant' };
     }
 
+    // Na coleção, a query só guarda a seleção do mapa (?image=): trocar de imagem
+    // não deve mover a página.
+    if (
+      to.name === "collection-detail" &&
+      from.name === to.name &&
+      to.path === from.path
+    ) {
+      return false;
+    }
+
     // Se o usuário estiver usando os botões "voltar/avançar" do navegador,
     // mantém a posição de scroll salva.
     if (savedPosition) {
