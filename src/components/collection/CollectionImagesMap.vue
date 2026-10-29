@@ -10,14 +10,19 @@ defineProps({
   initialSelectedId: { type: String, default: null },
   route: { type: Object, default: null },
   stops: { type: Array, default: () => [] },
+  activeStopNumber: { type: Number, default: null },
 });
 
-defineEmits(["select"]);
+defineEmits(["select", "stop-select"]);
 
 const mapRef = ref(null);
 
 defineExpose({
   resetToInitial: () => mapRef.value?.resetToInitial?.(),
+  selectImage: (id, options) => mapRef.value?.selectImage?.(id, options) ?? false,
+  clearSelection: () => mapRef.value?.clearSelection?.(),
+  focusCoordinates: (coordinates, options) =>
+    mapRef.value?.focusCoordinates?.(coordinates, options),
 });
 </script>
 
@@ -32,7 +37,9 @@ defineExpose({
       :initial-selected-id="initialSelectedId"
       :route="route"
       :stops="stops"
+      :active-stop-number="activeStopNumber"
       @select="$emit('select', $event)"
+      @stop-select="$emit('stop-select', $event)"
     />
   </div>
 </template>

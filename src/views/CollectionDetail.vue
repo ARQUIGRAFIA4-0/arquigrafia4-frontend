@@ -22,6 +22,9 @@ import CollectionToolbar from "@/components/CollectionToolbar.vue";
 import DownloadModal from "@/components/imageDetail/DownloadModal.vue";
 import CollectionPathModal from "@/components/collection/CollectionPathModal.vue";
 import CollectionPathStops from "@/components/collection/CollectionPathStops.vue";
+import CollectionMapSelection from "@/components/collection/CollectionMapSelection.vue";
+import { orderPathStops } from "@/helpers/pathStops";
+import { formatRouteDistance, formatRouteDuration } from "@/helpers/osrmRoute";
 import UiExpandableText from "@/components/ui/UiExpandableText.vue";
 import AppToast from "@/components/ui/AppToast.vue";
 import { useToast } from "@/composables/useToast";
@@ -78,6 +81,28 @@ const pathInitialStops = computed(
   () => activePercurso.value?.stops ?? EMPTY_PATH_STOPS
 );
 const pathInitialRoute = computed(() => activePercurso.value?.route ?? null);
+
+// Paradas numeradas na ordem de visita (mesma numeração da lista e do mapa).
+const orderedPathStops = computed(() => orderPathStops(pathInitialStops.value));
+
+// Resumo do percurso: "5 pontos · 2.3 km · ~30 min a pé". Distância e tempo só
+// quando a rota segue as ruas (no fallback em linha reta não são confiáveis).
+const pathSummary = computed(() => {
+  const count = orderedPathStops.value.length;
+  if (!count) return "";
+
+  const parts = [`${count} ${count === 1 ? "ponto" : "pontos"}`];
+  const routeData = pathInitialRoute.value;
+
+  if (routeData?.isStreet !== false) {
+    const distance = formatRouteDistance(routeData?.distanceMeters);
+    const duration = formatRouteDuration(routeData?.durationSeconds);
+    if (distance) parts.push(distance);
+    if (duration) parts.push(`~${duration} a pé`);
+  }
+
+  return parts.join(" · ");
+});
 
 const isMapView = computed(() => collectionViewMode.value === "map");
 
@@ -523,8 +548,64 @@ const selectedMapImage = computed(() =>
   collectionImages.value.find((img) => img.id === selectedMapImageId.value) || null
 );
 
+// Zoom ao focar um ponto do percurso: acima do clusterMaxZoom do mapa (14),
+// para o ícone do ponto aparecer fora do agrupamento.
+const PATH_STOP_ZOOM = 15;
+
+// Ponto sem imagem (no mapa) aberto no card de seleção.
+const selectedStopNumber = ref(null);
+
+// Ponto do percurso da seleção atual: o da imagem selecionada ou o ponto sem imagem.
+const selectedPathStop = computed(() => {
+  if (selectedMapImage.value) {
+    const imageId = String(selectedMapImage.value.id);
+    return orderedPathStops.value.find((stop) => stop.imageId === imageId) ?? null;
+  }
+  return (
+    orderedPathStops.value.find((stop) => stop.number === selectedStopNumber.value) ?? null
+  );
+});
+
+const previousPathStop = computed(() =>
+  selectedPathStop.value
+    ? orderedPathStops.value[selectedPathStop.value.number - 2] ?? null
+    : null
+);
+
+const nextPathStop = computed(() =>
+  selectedPathStop.value
+    ? orderedPathStops.value[selectedPathStop.value.number] ?? null
+    : null
+);
+
+// Card de seleção aberto na coluna de detalhes (imagem ou ponto do percurso).
+const isMapSelectionOpen = computed(
+  () =>
+    collectionViewMode.value === "map" &&
+    Boolean(selectedMapImage.value || selectedPathStop.value)
+);
+
+// Ponto aberto na lista e ponto sob o ponteiro na lista (destacados no mapa).
+const listActiveStopNumber = ref(null);
+const hoveredStopNumber = ref(null);
+const pathStopsRef = ref(null);
+
+const mapActiveStopNumber = computed(() =>
+  isMapSelectionOpen.value
+    ? selectedPathStop.value?.number ?? null
+    : hoveredStopNumber.value ?? listActiveStopNumber.value
+);
+
+// A lista é desmontada quando o card abre (perde os pontos abertos e o
+// mouseleave pode não chegar), então o destaque vindo dela é zerado.
+watch(isMapSelectionOpen, () => {
+  hoveredStopNumber.value = null;
+  listActiveStopNumber.value = null;
+});
+
 function handleMapSelect(id) {
   selectedMapImageId.value = id;
+  selectedStopNumber.value = null;
 
   const query = { ...route.query };
 
@@ -547,6 +628,50 @@ function clearMapSelection() {
   }
 }
 
+// Navega para um ponto do percurso: seleciona a imagem dele no mapa ou, se ela
+// não estiver no mapa, abre o card do ponto e centraliza nele.
+function goToPathStop(stop) {
+  if (!stop) return;
+
+  const map = collectionMapRef.value;
+  const image = stop.imageId
+    ? collectionImages.value.find((img) => String(img.id) === stop.imageId)
+    : null;
+  if (image && map?.selectImage(image.id, { zoom: PATH_STOP_ZOOM })) return;
+
+  map?.clearSelection();
+  handleMapSelect(null);
+  selectedStopNumber.value = stop.number;
+  map?.focusCoordinates(stop.coordinates, { zoom: PATH_STOP_ZOOM });
+}
+
+// Ponto aberto na lista -> destaca e centraliza no mapa.
+function handleStopOpen(number) {
+  listActiveStopNumber.value = number;
+  const stop = orderedPathStops.value[number - 1];
+  collectionMapRef.value?.focusCoordinates(stop?.coordinates, { zoom: PATH_STOP_ZOOM });
+}
+
+function handleStopClose(number) {
+  if (listActiveStopNumber.value === number) listActiveStopNumber.value = null;
+}
+
+// Clique numa parada no mapa: com o card aberto, navega até ela; senão abre
+// o ponto na lista e centraliza nele.
+function handleMapStopSelect(number) {
+  const stop = orderedPathStops.value[number - 1];
+  if (!stop) return;
+
+  if (isMapSelectionOpen.value) {
+    goToPathStop(stop);
+    return;
+  }
+
+  listActiveStopNumber.value = number;
+  pathStopsRef.value?.openStop(number);
+  collectionMapRef.value?.focusCoordinates(stop.coordinates, { zoom: PATH_STOP_ZOOM });
+}
+
 // Redireciona para a página de detalhes da imagem.
 function goToImageDetail(id) {
   if (!id) return;
@@ -558,6 +683,8 @@ watch(collectionViewMode, (mode) => {
     // O editor de percurso só existe no mapa.
     isPathEditorOpen.value = false;
     selectedMapImageId.value = null;
+    selectedStopNumber.value = null;
+    listActiveStopNumber.value = null;
     // Remove a query de imagem da URL.
     if (route.query.image) {
       const query = { ...route.query };
@@ -1007,7 +1134,9 @@ watch(
                 :initial-selected-id="selectedMapImageId"
                 :route="pathInitialRoute"
                 :stops="pathInitialStops"
+                :active-stop-number="mapActiveStopNumber"
                 @select="handleMapSelect"
+                @stop-select="handleMapStopSelect"
               />
             </section>
           </div>
@@ -1062,7 +1191,9 @@ watch(
                 :is-loading="isLoadingCollection"
                 :route="pathInitialRoute"
                 :stops="pathInitialStops"
+                :active-stop-number="mapActiveStopNumber"
                 @select="handleMapSelect"
+                @stop-select="handleMapStopSelect"
               />
             </section>
           </div>
@@ -1137,7 +1268,7 @@ watch(
                 />
               </aside>
 
-              <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
+              <template v-if="!isMapSelectionOpen">
               <section
                 class="collection-detail__tags-block collection-detail__space"
                 aria-labelledby="collection-tags-heading"
@@ -1193,71 +1324,22 @@ watch(
                 class="collection-detail__map-panel-body"
                 :class="{
                   'collection-detail__map-panel-body--map': collectionViewMode === 'map',
-                  'collection-detail__map-panel-body--selected':
-                    collectionViewMode === 'map' && selectedMapImage,
+                  'collection-detail__map-panel-body--selected': isMapSelectionOpen,
                 }"
               >
-              <section
-                v-if="collectionViewMode === 'map' && selectedMapImage"
-                class="collection-detail__selected-image"
-                aria-label="Imagem selecionada no mapa"
-              >
-                <button
-                  type="button"
-                  class="collection-detail__selected-image-back"
-                  aria-label="Fechar imagem e voltar às informações da coleção"
-                  @click="clearMapSelection"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                    <path
-                      fill-rule="evenodd"
-                      clip-rule="evenodd"
-                      d="M13.1248 7.00055C13.1248 6.88452 13.0787 6.77324 12.9967 6.69119C12.9146 6.60915 12.8033 6.56305 12.6873 6.56305H2.36843L5.12206 3.8103C5.16273 3.76963 5.195 3.72134 5.21701 3.66819C5.23903 3.61504 5.25036 3.55808 5.25036 3.50055C5.25036 3.44303 5.23903 3.38606 5.21701 3.33292C5.195 3.27977 5.16273 3.23148 5.12206 3.1908C5.08138 3.15013 5.03309 3.11786 4.97994 3.09584C4.92679 3.07383 4.86983 3.0625 4.81231 3.0625C4.75478 3.0625 4.69782 3.07383 4.64467 3.09584C4.59152 3.11786 4.54323 3.15013 4.50256 3.1908L1.00256 6.6908C0.961813 6.73144 0.929488 6.77972 0.907432 6.83287C0.885376 6.88603 0.874023 6.94301 0.874023 7.00055C0.874023 7.0581 0.885376 7.11508 0.907432 7.16823C0.929488 7.22138 0.961813 7.26966 1.00256 7.3103L4.50256 10.8103C4.54323 10.851 4.59152 10.8832 4.64467 10.9053C4.69782 10.9273 4.75478 10.9386 4.81231 10.9386C4.86983 10.9386 4.92679 10.9273 4.97994 10.9053C5.03309 10.8832 5.08138 10.851 5.12206 10.8103C5.16273 10.7696 5.195 10.7213 5.21701 10.6682C5.23903 10.615 5.25036 10.5581 5.25036 10.5006C5.25036 10.443 5.23903 10.3861 5.21701 10.3329C5.195 10.2798 5.16273 10.2315 5.12206 10.1908L2.36843 7.43805H12.6873C12.8033 7.43805 12.9146 7.39196 12.9967 7.30991C13.0787 7.22786 13.1248 7.11658 13.1248 7.00055Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <span>informações da coleção</span>
-                </button>
-                <div
-                  class="collection-detail__selected-image-media"
-                  role="img"
-                  :aria-label="selectedMapImage.title || 'Imagem da coleção'"
-                  :style="{ backgroundImage: `url(${selectedMapImage.imageUrl})` }"
-                />
-                <button
-                  type="button"
-                  class="collection-detail__selected-image-button"
-                  @click="goToImageDetail(selectedMapImage.id)"
-                >
-                  <span
-                    class="collection-detail__selected-image-title"
-                    :title="selectedMapImage.title || 'Sem título'"
-                  >
-                    {{ selectedMapImage.title || "Sem título" }}
-                  </span>
-                  <span
-                    class="collection-detail__selected-image-arrow"
-                    aria-hidden="true"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        clip-rule="evenodd"
-                        d="M1.5 12.0009C1.5 11.802 1.57902 11.6113 1.71967 11.4706C1.86032 11.33 2.05109 11.2509 2.25 11.2509H19.9395L15.219 6.53195C15.0782 6.39112 14.9991 6.20011 14.9991 6.00095C14.9991 5.80178 15.0782 5.61078 15.219 5.46995C15.3598 5.32912 15.5508 5.25 15.75 5.25C15.9492 5.25 16.1402 5.32912 16.281 5.46995L22.281 11.4699C22.3508 11.5396 22.4063 11.6224 22.4441 11.7135C22.4819 11.8046 22.5013 11.9023 22.5013 12.0009C22.5013 12.0996 22.4819 12.1973 22.4441 12.2884C22.4063 12.3795 22.3508 12.4623 22.281 12.5319L16.281 18.5319C16.1402 18.6728 15.9492 18.7519 15.75 18.7519C15.5508 18.7519 15.3598 18.6728 15.219 18.5319C15.0782 18.3911 14.9991 18.2001 14.9991 18.0009C14.9991 17.8018 15.0782 17.6108 15.219 17.4699L19.9395 12.7509H2.25C2.05109 12.7509 1.86032 12.6719 1.71967 12.5313C1.57902 12.3906 1.5 12.1999 1.5 12.0009Z"
-                        fill="#2F2F2F"
-                      />
-                    </svg>
-                  </span>
-                </button>
-              </section>
+              <CollectionMapSelection
+                v-if="isMapSelectionOpen"
+                :image="selectedMapImage"
+                :stop="selectedPathStop"
+                :stop-count="orderedPathStops.length"
+                :previous-stop="previousPathStop"
+                :next-stop="nextPathStop"
+                @back="clearMapSelection"
+                @open-image="goToImageDetail"
+                @go-to-stop="goToPathStop"
+              />
 
-              <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
+              <template v-if="!isMapSelectionOpen">
               <section class="collection-detail__actors">
               <div class="collection-detail__actors-title-area">
                 <h2 class="collection-detail__actors-title">{{ ownerTitle }}</h2>
@@ -1401,7 +1483,19 @@ watch(
                   explain="Locais que compõem o percurso, na ordem em que devem ser visitados."
                 />
               </div>
-              <CollectionPathStops :stops="pathInitialStops" :images="collectionImages" />
+              <p v-if="pathSummary" class="collection-detail__stops-summary">
+                <i class="bi bi-signpost-split" aria-hidden="true"></i>
+                {{ pathSummary }}
+              </p>
+              <CollectionPathStops
+                ref="pathStopsRef"
+                :stops="pathInitialStops"
+                :images="collectionImages"
+                :active-number="listActiveStopNumber"
+                @open="handleStopOpen"
+                @close="handleStopClose"
+                @hover="hoveredStopNumber = $event"
+              />
             </section>
 
             <section
@@ -1472,7 +1566,7 @@ watch(
                 />
               </aside>
 
-              <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
+              <template v-if="!isMapSelectionOpen">
               <section
                 class="collection-detail__tags-block collection-detail__space"
                 aria-labelledby="collection-tags-heading-desktop"
@@ -1528,71 +1622,22 @@ watch(
                 class="collection-detail__map-panel-body"
                 :class="{
                   'collection-detail__map-panel-body--map': collectionViewMode === 'map',
-                  'collection-detail__map-panel-body--selected':
-                    collectionViewMode === 'map' && selectedMapImage,
+                  'collection-detail__map-panel-body--selected': isMapSelectionOpen,
                 }"
               >
-              <section
-                v-if="collectionViewMode === 'map' && selectedMapImage"
-                class="collection-detail__selected-image"
-                aria-label="Imagem selecionada no mapa"
-              >
-                <button
-                  type="button"
-                  class="collection-detail__selected-image-back"
-                  aria-label="Fechar imagem e voltar às informações da coleção"
-                  @click="clearMapSelection"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                    <path
-                      fill-rule="evenodd"
-                      clip-rule="evenodd"
-                      d="M13.1248 7.00055C13.1248 6.88452 13.0787 6.77324 12.9967 6.69119C12.9146 6.60915 12.8033 6.56305 12.6873 6.56305H2.36843L5.12206 3.8103C5.16273 3.76963 5.195 3.72134 5.21701 3.66819C5.23903 3.61504 5.25036 3.55808 5.25036 3.50055C5.25036 3.44303 5.23903 3.38606 5.21701 3.33292C5.195 3.27977 5.16273 3.23148 5.12206 3.1908C5.08138 3.15013 5.03309 3.11786 4.97994 3.09584C4.92679 3.07383 4.86983 3.0625 4.81231 3.0625C4.75478 3.0625 4.69782 3.07383 4.64467 3.09584C4.59152 3.11786 4.54323 3.15013 4.50256 3.1908L1.00256 6.6908C0.961813 6.73144 0.929488 6.77972 0.907432 6.83287C0.885376 6.88603 0.874023 6.94301 0.874023 7.00055C0.874023 7.0581 0.885376 7.11508 0.907432 7.16823C0.929488 7.22138 0.961813 7.26966 1.00256 7.3103L4.50256 10.8103C4.54323 10.851 4.59152 10.8832 4.64467 10.9053C4.69782 10.9273 4.75478 10.9386 4.81231 10.9386C4.86983 10.9386 4.92679 10.9273 4.97994 10.9053C5.03309 10.8832 5.08138 10.851 5.12206 10.8103C5.16273 10.7696 5.195 10.7213 5.21701 10.6682C5.23903 10.615 5.25036 10.5581 5.25036 10.5006C5.25036 10.443 5.23903 10.3861 5.21701 10.3329C5.195 10.2798 5.16273 10.2315 5.12206 10.1908L2.36843 7.43805H12.6873C12.8033 7.43805 12.9146 7.39196 12.9967 7.30991C13.0787 7.22786 13.1248 7.11658 13.1248 7.00055Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <span>informações da coleção</span>
-                </button>
-                <div
-                  class="collection-detail__selected-image-media"
-                  role="img"
-                  :aria-label="selectedMapImage.title || 'Imagem da coleção'"
-                  :style="{ backgroundImage: `url(${selectedMapImage.imageUrl})` }"
-                />
-                <button
-                  type="button"
-                  class="collection-detail__selected-image-button"
-                  @click="goToImageDetail(selectedMapImage.id)"
-                >
-                  <span
-                    class="collection-detail__selected-image-title"
-                    :title="selectedMapImage.title || 'Sem título'"
-                  >
-                    {{ selectedMapImage.title || "Sem título" }}
-                  </span>
-                  <span
-                    class="collection-detail__selected-image-arrow"
-                    aria-hidden="true"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        clip-rule="evenodd"
-                        d="M1.5 12.0009C1.5 11.802 1.57902 11.6113 1.71967 11.4706C1.86032 11.33 2.05109 11.2509 2.25 11.2509H19.9395L15.219 6.53195C15.0782 6.39112 14.9991 6.20011 14.9991 6.00095C14.9991 5.80178 15.0782 5.61078 15.219 5.46995C15.3598 5.32912 15.5508 5.25 15.75 5.25C15.9492 5.25 16.1402 5.32912 16.281 5.46995L22.281 11.4699C22.3508 11.5396 22.4063 11.6224 22.4441 11.7135C22.4819 11.8046 22.5013 11.9023 22.5013 12.0009C22.5013 12.0996 22.4819 12.1973 22.4441 12.2884C22.4063 12.3795 22.3508 12.4623 22.281 12.5319L16.281 18.5319C16.1402 18.6728 15.9492 18.7519 15.75 18.7519C15.5508 18.7519 15.3598 18.6728 15.219 18.5319C15.0782 18.3911 14.9991 18.2001 14.9991 18.0009C14.9991 17.8018 15.0782 17.6108 15.219 17.4699L19.9395 12.7509H2.25C2.05109 12.7509 1.86032 12.6719 1.71967 12.5313C1.57902 12.3906 1.5 12.1999 1.5 12.0009Z"
-                        fill="#2F2F2F"
-                      />
-                    </svg>
-                  </span>
-                </button>
-              </section>
+              <CollectionMapSelection
+                v-if="isMapSelectionOpen"
+                :image="selectedMapImage"
+                :stop="selectedPathStop"
+                :stop-count="orderedPathStops.length"
+                :previous-stop="previousPathStop"
+                :next-stop="nextPathStop"
+                @back="clearMapSelection"
+                @open-image="goToImageDetail"
+                @go-to-stop="goToPathStop"
+              />
 
-              <template v-if="!(collectionViewMode === 'map' && selectedMapImage)">
+              <template v-if="!isMapSelectionOpen">
               <section class="collection-detail__actors collection-detail__space">
                 <div class="collection-detail__actors-title-area">
                   <h2 class="collection-detail__actors-title">{{ ownerTitle }}</h2>
@@ -1736,7 +1781,19 @@ watch(
                     explain="Locais que compõem o percurso, na ordem em que devem ser visitados."
                   />
                 </div>
-                <CollectionPathStops :stops="pathInitialStops" :images="collectionImages" />
+                <p v-if="pathSummary" class="collection-detail__stops-summary">
+                  <i class="bi bi-signpost-split" aria-hidden="true"></i>
+                  {{ pathSummary }}
+                </p>
+                <CollectionPathStops
+                  ref="pathStopsRef"
+                  :stops="pathInitialStops"
+                  :images="collectionImages"
+                  :active-number="listActiveStopNumber"
+                  @open="handleStopOpen"
+                  @close="handleStopClose"
+                  @hover="hoveredStopNumber = $event"
+                />
               </section>
 
               <section
@@ -2003,103 +2060,6 @@ a.collection-detail__actor-name:hover {
 
 .collection-detail__map-panel-body--selected {
   min-height: 0;
-}
-
-.collection-detail__selected-image {
-  display: flex;
-  width: 338px;
-  max-width: 100%;
-  padding: 16px 12px 0;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: stretch;
-  gap: 16px;
-  box-sizing: border-box;
-}
-
-.collection-detail__selected-image-back {
-  display: inline-flex;
-  align-self: flex-start;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 14px;
-  border-radius: 5px;
-  border: 1px solid var(--Cinza_E);
-  background: var(--Off_white);
-  color: var(--Cinza_E);
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 150%;
-  cursor: pointer;
-  transition: background-color 150ms ease, color 150ms ease;
-}
-
-.collection-detail__selected-image-back:hover {
-  background: var(--Cinza_E);
-  color: var(--Off_white);
-}
-
-.collection-detail__selected-image-back:focus-visible {
-  outline: 2px solid var(--Cinza_E);
-  outline-offset: 2px;
-}
-
-.collection-detail__selected-image-media {
-  height: 314px;
-  flex-shrink: 0;
-  align-self: stretch;
-  border-radius: 8px;
-  border-top: 0.25px solid var(--Cinza_C, #a6a6a6);
-  border-right: 0.25px solid var(--Cinza_C, #a6a6a6);
-  border-left: 0.25px solid var(--Cinza_C, #a6a6a6);
-  background-color: lightgray;
-  background-position: 50%;
-  background-size: cover;
-  background-repeat: no-repeat;
-}
-
-.collection-detail__selected-image-button {
-  display: flex;
-  min-height: 60px;
-  padding: 0;
-  gap: 8px;
-  justify-content: space-between;
-  align-items: center;
-  flex-shrink: 0;
-  align-self: stretch;
-  width: 100%;
-  box-sizing: border-box;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-}
-
-.collection-detail__selected-image-title {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  color: var(--Cinza_E);
-  
-  font-size: 16px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 140%;
-  text-align: left;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  overflow: hidden;
-}
-
-.collection-detail__selected-image-arrow {
-  display: flex;
-  padding: 6px;
-  align-items: center;
-  gap: 5px;
-  flex-shrink: 0;
-  color: var(--Cinza_E);
 }
 
 .collection-detail__gallery--with-title {
@@ -2771,6 +2731,16 @@ a.collection-detail__actor-name:hover {
   align-items: center;
   gap: 12px;
   align-self: stretch;
+}
+
+.collection-detail__stops-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -8px 0 16px;
+  color: var(--Cinza_M);
+  font-size: 14px;
+  line-height: 150%;
 }
 
 .collection-detail__stops-title {
