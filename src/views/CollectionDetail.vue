@@ -537,6 +537,16 @@ function handleMapSelect(id) {
   router.replace({ query });
 }
 
+// Fecha a imagem selecionada e volta às informações da coleção
+// (tags, autoria, pontos do percurso), reenquadrando o mapa.
+function clearMapSelection() {
+  if (collectionMapRef.value) {
+    collectionMapRef.value.resetToInitial();
+  } else {
+    handleMapSelect(null);
+  }
+}
+
 // Redireciona para a página de detalhes da imagem.
 function goToImageDetail(id) {
   if (!id) return;
@@ -1192,6 +1202,22 @@ watch(
                 class="collection-detail__selected-image"
                 aria-label="Imagem selecionada no mapa"
               >
+                <button
+                  type="button"
+                  class="collection-detail__selected-image-back"
+                  aria-label="Fechar imagem e voltar às informações da coleção"
+                  @click="clearMapSelection"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path
+                      fill-rule="evenodd"
+                      clip-rule="evenodd"
+                      d="M13.1248 7.00055C13.1248 6.88452 13.0787 6.77324 12.9967 6.69119C12.9146 6.60915 12.8033 6.56305 12.6873 6.56305H2.36843L5.12206 3.8103C5.16273 3.76963 5.195 3.72134 5.21701 3.66819C5.23903 3.61504 5.25036 3.55808 5.25036 3.50055C5.25036 3.44303 5.23903 3.38606 5.21701 3.33292C5.195 3.27977 5.16273 3.23148 5.12206 3.1908C5.08138 3.15013 5.03309 3.11786 4.97994 3.09584C4.92679 3.07383 4.86983 3.0625 4.81231 3.0625C4.75478 3.0625 4.69782 3.07383 4.64467 3.09584C4.59152 3.11786 4.54323 3.15013 4.50256 3.1908L1.00256 6.6908C0.961813 6.73144 0.929488 6.77972 0.907432 6.83287C0.885376 6.88603 0.874023 6.94301 0.874023 7.00055C0.874023 7.0581 0.885376 7.11508 0.907432 7.16823C0.929488 7.22138 0.961813 7.26966 1.00256 7.3103L4.50256 10.8103C4.54323 10.851 4.59152 10.8832 4.64467 10.9053C4.69782 10.9273 4.75478 10.9386 4.81231 10.9386C4.86983 10.9386 4.92679 10.9273 4.97994 10.9053C5.03309 10.8832 5.08138 10.851 5.12206 10.8103C5.16273 10.7696 5.195 10.7213 5.21701 10.6682C5.23903 10.615 5.25036 10.5581 5.25036 10.5006C5.25036 10.443 5.23903 10.3861 5.21701 10.3329C5.195 10.2798 5.16273 10.2315 5.12206 10.1908L2.36843 7.43805H12.6873C12.8033 7.43805 12.9146 7.39196 12.9967 7.30991C13.0787 7.22786 13.1248 7.11658 13.1248 7.00055Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span>informações da coleção</span>
+                </button>
                 <div
                   class="collection-detail__selected-image-media"
                   role="img"
@@ -1511,6 +1537,22 @@ watch(
                 class="collection-detail__selected-image"
                 aria-label="Imagem selecionada no mapa"
               >
+                <button
+                  type="button"
+                  class="collection-detail__selected-image-back"
+                  aria-label="Fechar imagem e voltar às informações da coleção"
+                  @click="clearMapSelection"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path
+                      fill-rule="evenodd"
+                      clip-rule="evenodd"
+                      d="M13.1248 7.00055C13.1248 6.88452 13.0787 6.77324 12.9967 6.69119C12.9146 6.60915 12.8033 6.56305 12.6873 6.56305H2.36843L5.12206 3.8103C5.16273 3.76963 5.195 3.72134 5.21701 3.66819C5.23903 3.61504 5.25036 3.55808 5.25036 3.50055C5.25036 3.44303 5.23903 3.38606 5.21701 3.33292C5.195 3.27977 5.16273 3.23148 5.12206 3.1908C5.08138 3.15013 5.03309 3.11786 4.97994 3.09584C4.92679 3.07383 4.86983 3.0625 4.81231 3.0625C4.75478 3.0625 4.69782 3.07383 4.64467 3.09584C4.59152 3.11786 4.54323 3.15013 4.50256 3.1908L1.00256 6.6908C0.961813 6.73144 0.929488 6.77972 0.907432 6.83287C0.885376 6.88603 0.874023 6.94301 0.874023 7.00055C0.874023 7.0581 0.885376 7.11508 0.907432 7.16823C0.929488 7.22138 0.961813 7.26966 1.00256 7.3103L4.50256 10.8103C4.54323 10.851 4.59152 10.8832 4.64467 10.9053C4.69782 10.9273 4.75478 10.9386 4.81231 10.9386C4.86983 10.9386 4.92679 10.9273 4.97994 10.9053C5.03309 10.8832 5.08138 10.851 5.12206 10.8103C5.16273 10.7696 5.195 10.7213 5.21701 10.6682C5.23903 10.615 5.25036 10.5581 5.25036 10.5006C5.25036 10.443 5.23903 10.3861 5.21701 10.3329C5.195 10.2798 5.16273 10.2315 5.12206 10.1908L2.36843 7.43805H12.6873C12.8033 7.43805 12.9146 7.39196 12.9967 7.30991C13.0787 7.22786 13.1248 7.11658 13.1248 7.00055Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span>informações da coleção</span>
+                </button>
                 <div
                   class="collection-detail__selected-image-media"
                   role="img"
@@ -1973,6 +2015,33 @@ a.collection-detail__actor-name:hover {
   align-items: stretch;
   gap: 16px;
   box-sizing: border-box;
+}
+
+.collection-detail__selected-image-back {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 5px;
+  border: 1px solid var(--Cinza_E);
+  background: var(--Off_white);
+  color: var(--Cinza_E);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 150%;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.collection-detail__selected-image-back:hover {
+  background: var(--Cinza_E);
+  color: var(--Off_white);
+}
+
+.collection-detail__selected-image-back:focus-visible {
+  outline: 2px solid var(--Cinza_E);
+  outline-offset: 2px;
 }
 
 .collection-detail__selected-image-media {
