@@ -1090,6 +1090,19 @@ $breakpoint-md: 768px;
   }
 }
 
+.input-group {
+  display: flex !important;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  width: 100%;
+}
+
+.input-group > .form-control {
+  flex: 1 1 auto;
+  width: 1%;
+  min-width: 0;
+}
+
 .profile-form {
   &__profile-image {
     h3 {

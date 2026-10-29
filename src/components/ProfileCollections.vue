@@ -1,5 +1,5 @@
 <script setup>
-  import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
+  import { ref, computed, onMounted, watch } from "vue";
   import { useAuthStore } from "@/store/auth";
   import { useAlbumsStore } from "@/store/albums";
   import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
@@ -9,15 +9,14 @@
   import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
   import AlbumCoverArt from "@/components/AlbumCoverArt.vue";
   import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
+  import CollectionCardLabels from "@/components/CollectionCardLabels.vue";
   import AppToast from "@/components/ui/AppToast.vue";
   import { useToast } from "@/composables/useToast";
-  import { isFavoritesAlbum } from "@/constants/favoritesCollection";
 
   const showCreateModal = ref(false);
   const toast = useToast();
-  const openCollectionToast = (message, type = "success") => toast.show(message, type);
 
-import { RouterLink, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 const router = useRouter();
 
 // Props
@@ -43,26 +42,12 @@ const visibleAlbums = computed(() =>
 );
 
 const showTutorialModal = ref(false);
-const expandedAlbumId = ref(null);
 
 const {
   hasLoaded: hasLoadedAlbums,
   finishInitialLoad,
   reset: resetInitialSkeleton,
 } = useInitialSkeleton();
-
-function toggleCardExpanded(albumId) {
-  expandedAlbumId.value = expandedAlbumId.value === albumId ? null : albumId;
-}
-
-// Função para fechar o card expandido ao clicar fora do card
-function handleClickOutside(event) {
-  if (expandedAlbumId.value === null) return;
-  const expandedCard = event.target.closest(".profile-grid-card--expanded");
-  if (!expandedCard) {
-    expandedAlbumId.value = null;
-  }
-}
 
 // Acesso aos dados do álbum selecionado
 async function fetchAlbumData(albumId) {
@@ -144,45 +129,9 @@ async function fetchAlbums(options = {}) {
   }
 }
 
-// Função para excluir uma coleção
-async function handleDeleteAlbum(albumId) {
-  const album = albums.value.find((item) => item.id === albumId);
-
-  if (isFavoritesAlbum(album)) {
-    openCollectionToast("A coleção Favoritos não pode ser excluída.", "error");
-    expandedAlbumId.value = null;
-    return;
-  }
-
-  try {
-    const deletedAlbum = await albumsStore.deleteAlbum(
-      userAuthHeader.value,
-      albumId,
-    );
-    albums.value = albums.value.filter((item) => item.id !== albumId);
-    if (expandedAlbumId.value === albumId) {
-      expandedAlbumId.value = null;
-    }
-    openCollectionToast(
-      "Coleção excluída com sucesso!",
-      "success",
-      deletedAlbum?.title,
-    );
-  } catch (error) {
-    openCollectionToast(error.message || "Erro ao excluir coleção.", "error");
-  }
-}
-
 // Carrega as coleções quando o componente é montado
 onMounted(() => {
   fetchAlbums();
-  nextTick(() => {
-    document.addEventListener("click", handleClickOutside);
-  });
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener("click", handleClickOutside);
 });
 
 // se trocar usuário logado/perfil, recarrega
@@ -255,16 +204,10 @@ watch(
         class="col-6 profile-grid-col"
       >
         <div
-          v-if="props.isCurrentUser"
           class="profile-grid-card__link"
-          @click="toggleCardExpanded(album.id)"
+          @click="fetchAlbumData(album.id)"
         >
-          <UiCard
-            class="profile-grid-card profile-grid-card--collection"
-            :class="{
-              'profile-grid-card--expanded': expandedAlbumId === album.id,
-            }"
-          >
+          <UiCard class="profile-grid-card profile-grid-card--collection">
             <template #image>
               <div class="profile-grid-card__image-wrapper">
                 <AlbumCoverArt
@@ -279,70 +222,22 @@ watch(
                 {{ album.title || "Sem título" }}
               </h3>
               <div class="profile-grid-card__meta">
-                <div
-                  v-if="expandedAlbumId !== album.id"
-                  class="profile-grid-card__collapsed"
-                  @click.stop="toggleCardExpanded(album.id)"
+                <CollectionCardLabels
+                  :album="album"
+                  class="profile-grid-card__labels"
+                />
+                <button
+                  type="button"
+                  class="profile-grid-card__go-btn"
+                  @click.stop="fetchAlbumData(album.id)"
                 >
-                  <span
-                    v-if="album.is_private"
-                    class="profile-grid-card__lock"
-                    title="Coleção privada"
-                    aria-label="Coleção privada"
-                  >
-                    <i class="bi bi-lock-fill" aria-hidden="true"></i>
-                  </span>
-                </div>
-                <div v-else class="profile-grid-card__actions">
-                  <button
-                    v-if="!isFavoritesAlbum(album)"
-                    type="button"
-                    class="profile-grid-card__ds-btn profile-grid-card__ds-btn--ghost"
-                    title="Excluir coleção"
-                    aria-label="Excluir coleção"
-                    @click.stop="handleDeleteAlbum(album.id)"
-                  >
-                    <i class="bi bi-trash profile-grid-card__ds-btn-icon" aria-hidden="true"></i>
-                    <span class="profile-grid-card__ds-btn-label">Excluir</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="profile-grid-card__ds-btn profile-grid-card__ds-btn--solid"
-                    title="Ver coleção"
-                    aria-label="Ver coleção"
-                    @click.stop="fetchAlbumData(album.id)"
-                  >
-                    <i class="bi bi-eye profile-grid-card__ds-btn-icon" aria-hidden="true"></i>
-                    <span class="profile-grid-card__ds-btn-label">Ver</span>
-                  </button>
-                </div>
+                  Ir para coleção
+                  <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                </button>
               </div>
             </div>
           </UiCard>
         </div>
-
-        <RouterLink
-          v-else
-          class="profile-grid-card__link"
-          :to="{
-            name: 'collection-detail',
-            params: { collectionId: album.id, viewMode: 'grid' },
-          }"
-        >
-          <UiCard class="profile-grid-card profile-grid-card--collection">
-            <template #image>
-              <div class="profile-grid-card__image-wrapper">
-                <AlbumCoverArt
-                  :album="album"
-                  class="profile-grid-card__image"
-                />
-              </div>
-            </template>
-            <div class="ui-card__header">
-              <h3 class="ui-card__title">{{ album.title || "Sem título" }}</h3>
-            </div>
-          </UiCard>
-        </RouterLink>
       </div>
     </div>
 

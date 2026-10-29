@@ -20,15 +20,22 @@
         >
           <ul class="nav nav-underline">
             <li v-for="tab in tabs" :key="tab.section" class="nav-item">
-              <a
-                class="nav-link"
-                :href="`#${tab.section}`"
-                :class="{ active: currentSection === tab.section }"
-                :aria-current="
-                  currentSection === tab.section ? 'page' : undefined
-                "
+              <span
+                v-if="tab.disabled"
+                class="nav-link metadata-upload__nav-link--inactive"
                 :data-label="tab.label"
-                @click="selectTab(tab.section)"
+                aria-disabled="true"
+              >
+                {{ tab.label }}
+              </span>
+
+              <a
+                v-else
+                class="nav-link active"
+                :href="`#${tab.section}`"
+                aria-current="page"
+                :data-label="tab.label"
+                @click.prevent="scrollToSection(tab.section)"
               >
                 {{ tab.label }}
               </a>
@@ -36,7 +43,7 @@
           </ul>
         </div>
 
-        <div class="metadata-sections">
+        <div id="dados" class="metadata-sections">
           <div class="bg-off-white p-2 mb-4" style="border-radius: 5px">
             <div>
               <h2 class="text-muted fst-italic small mb-2">
@@ -819,10 +826,17 @@ const vracStore = useVracStore();
 const workFieldRef = ref(null);
 
 const tabs = [
-  { label: "Essenciais", section: "essenciais" },
-  { label: "Geral", section: "geral" },
-  { label: "Localização", section: "localizacao" },
+  { label: "Dados", section: "dados" },
+  { label: "Comentários", section: "comentarios", disabled: true },
+  { label: "Interpretações", section: "interpretacoes", disabled: true },
+  { label: "Sugestões", section: "sugestoes", disabled: true },
 ];
+
+// Rola até a seção sem alterar o hash da URL: um "#dados" no histórico faria o
+// router.back() do Cancelar voltar para esta mesma página em vez da anterior.
+const scrollToSection = (section) => {
+  document.getElementById(section)?.scrollIntoView({ behavior: "smooth" });
+};
 
 const isIdentityDropdownOpen = ref(false);
 const selectedIdentityId = ref(null);
@@ -912,7 +926,6 @@ const selectIdentity = (identity) => {
   isIdentityDropdownOpen.value = false;
 };
 
-const currentSection = ref("essenciais");
 const toast = useToast();
 
 const isSubmitting = ref(false);
@@ -1520,10 +1533,6 @@ const licenses = [
   },
 ];
 
-const selectTab = (section) => {
-  currentSection.value = section;
-};
-
 const handleUploadError = (message) => {
   toast.show(message, "error");
 };
@@ -1811,6 +1820,19 @@ $breakpoint-tablet: 1024px;
 @mixin md {
   @media (min-width: #{$breakpoint-md}) {
     @content;
+  }
+}
+
+.metadata-upload__nav-link--inactive {
+  color: var(--Cinza_C, #a6a6a6) !important;
+  font-weight: 300 !important;
+  cursor: not-allowed;
+  pointer-events: none;
+  user-select: none;
+
+  &:hover {
+    color: var(--Cinza_C, #a6a6a6) !important;
+    font-weight: 300 !important;
   }
 }
 
