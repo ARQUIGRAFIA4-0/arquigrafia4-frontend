@@ -66,32 +66,31 @@ const orderedStops = computed(() =>
   })
 );
 
-// Pontos com o dropdown aberto.
-const openKeys = ref(new Set());
+// Ponto com o dropdown aberto (um por vez, como o único destaque no mapa).
+const openKey = ref(null);
 
-function toggleStop(stop) {
-  const next = new Set(openKeys.value);
-  if (next.has(stop.key)) {
-    next.delete(stop.key);
-    emit("close", stop.number);
-  } else {
-    next.add(stop.key);
-    // Imagem fora das páginas já carregadas: busca pelo id.
-    if (stop.imageId && !stop.imageSrc) fetchStopImage(stop.imageId);
-    emit("open", stop.number);
-  }
-  openKeys.value = next;
+// Abre o ponto e busca a imagem se ela estiver fora das páginas já carregadas.
+function expandStop(stop) {
+  openKey.value = stop.key;
+  if (stop.imageId && !stop.imageSrc) fetchStopImage(stop.imageId);
 }
 
-// Abre o ponto pelo número (clique no mapa) e rola a lista até ele.
+function toggleStop(stop) {
+  if (openKey.value === stop.key) {
+    openKey.value = null;
+    emit("close", stop.number);
+  } else {
+    expandStop(stop);
+    emit("open", stop.number);
+  }
+}
+
+// Abre o ponto pelo número (clique no mapa, volta do card) e rola a lista até ele.
 async function openStop(number) {
   const stop = orderedStops.value.find((item) => item.number === number);
   if (!stop) return;
 
-  if (!openKeys.value.has(stop.key)) {
-    openKeys.value = new Set(openKeys.value).add(stop.key);
-    if (stop.imageId && !stop.imageSrc) fetchStopImage(stop.imageId);
-  }
+  expandStop(stop);
 
   await nextTick();
   listRef.value
@@ -109,7 +108,7 @@ defineExpose({ openStop });
       :key="stop.key"
       class="path-stops__item"
       :class="{
-        'path-stops__item--open': openKeys.has(stop.key),
+        'path-stops__item--open': openKey === stop.key,
         'path-stops__item--active': stop.number === activeNumber,
       }"
       :data-stop-number="stop.number"
@@ -119,7 +118,7 @@ defineExpose({ openStop });
       <button
         type="button"
         class="path-stops__toggle"
-        :aria-expanded="openKeys.has(stop.key)"
+        :aria-expanded="openKey === stop.key"
         :aria-controls="`path-stop-panel-${stop.key}`"
         @click="toggleStop(stop)"
       >
@@ -129,7 +128,7 @@ defineExpose({ openStop });
       </button>
 
       <div
-        v-if="openKeys.has(stop.key)"
+        v-if="openKey === stop.key"
         :id="`path-stop-panel-${stop.key}`"
         class="path-stops__panel"
       >

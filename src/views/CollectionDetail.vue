@@ -589,6 +589,8 @@ const isMapSelectionOpen = computed(
 const listActiveStopNumber = ref(null);
 const hoveredStopNumber = ref(null);
 const pathStopsRef = ref(null);
+const stopsHeadingRef = ref(null);
+const tagsHeadingRef = ref(null);
 
 const mapActiveStopNumber = computed(() =>
   isMapSelectionOpen.value
@@ -618,13 +620,29 @@ function handleMapSelect(id) {
   router.replace({ query });
 }
 
-// Fecha a imagem selecionada e volta às informações da coleção
-// (tags, autoria, pontos do percurso), reenquadrando o mapa.
-function clearMapSelection() {
+// Fecha a seleção e volta às informações da coleção (tags, autoria, pontos do
+// percurso), reenquadrando o mapa. Se a seleção era um ponto do percurso, a
+// lista volta com ele aberto. O foco vai para "Pontos do percurso" (ou para as
+// tags, sem percurso) para não se perder na página.
+async function clearMapSelection() {
+  const stopNumber = selectedPathStop.value?.number ?? null;
+
   if (collectionMapRef.value) {
     collectionMapRef.value.resetToInitial();
   } else {
     handleMapSelect(null);
+  }
+
+  // Espera a lista e os títulos voltarem a ser renderizados.
+  await nextTick();
+
+  (stopsHeadingRef.value ?? tagsHeadingRef.value)?.focus({
+    preventScroll: stopNumber != null,
+  });
+
+  if (stopNumber != null) {
+    listActiveStopNumber.value = stopNumber;
+    pathStopsRef.value?.openStop(stopNumber);
   }
 }
 
@@ -1274,7 +1292,7 @@ watch(
                 aria-labelledby="collection-tags-heading"
               >
                 <div class="collection-detail__tags-heading-row">
-                  <h2 id="collection-tags-heading" class="collection-detail__tags-title">
+                  <h2 id="collection-tags-heading" ref="tagsHeadingRef" class="collection-detail__tags-title" tabindex="-1">
                     Tags na coleção
                   </h2>
                   <UiField
@@ -1473,7 +1491,7 @@ watch(
               aria-labelledby="collection-stops-heading"
             >
               <div class="collection-detail__stops-heading-row">
-                <h2 id="collection-stops-heading" class="collection-detail__stops-title">
+                <h2 id="collection-stops-heading" ref="stopsHeadingRef" class="collection-detail__stops-title" tabindex="-1">
                   Pontos do percurso
                 </h2>
                 <UiField
@@ -1572,7 +1590,7 @@ watch(
                 aria-labelledby="collection-tags-heading-desktop"
               >
                 <div class="collection-detail__tags-heading-row">
-                  <h2 id="collection-tags-heading-desktop" class="collection-detail__tags-title">
+                  <h2 id="collection-tags-heading-desktop" ref="tagsHeadingRef" class="collection-detail__tags-title" tabindex="-1">
                     Tags na coleção
                   </h2>
                   <UiField
@@ -1771,7 +1789,7 @@ watch(
                 aria-labelledby="collection-stops-heading-desktop"
               >
                 <div class="collection-detail__stops-heading-row">
-                  <h2 id="collection-stops-heading-desktop" class="collection-detail__stops-title">
+                  <h2 id="collection-stops-heading-desktop" ref="stopsHeadingRef" class="collection-detail__stops-title" tabindex="-1">
                     Pontos do percurso
                   </h2>
                   <UiField
@@ -2731,6 +2749,12 @@ a.collection-detail__actor-name:hover {
   align-items: center;
   gap: 12px;
   align-self: stretch;
+}
+
+/* Títulos recebem foco por código ao fechar a seleção do mapa (tabindex="-1"). */
+.collection-detail__stops-title:focus,
+.collection-detail__tags-title:focus {
+  outline: none;
 }
 
 .collection-detail__stops-summary {
