@@ -23,6 +23,7 @@ defineExpose({
   clearSelection: () => mapRef.value?.clearSelection?.(),
   focusCoordinates: (coordinates, options) =>
     mapRef.value?.focusCoordinates?.(coordinates, options),
+  fitToRoute: () => mapRef.value?.fitToRoute?.(),
 });
 </script>
 
