@@ -23,14 +23,22 @@ const showStopTitle = computed(
   () => Boolean(props.stop) && props.stop.title !== props.image?.title
 );
 
-// Setas ← → navegam pelo percurso, exceto ao digitar ou com o mapa em foco
-// (no mapa as setas movem a visualização).
+// Esc fecha a seleção. Setas ← → navegam pelo percurso, exceto com o mapa em
+// foco (no mapa as setas movem a visualização). Nada disso vale ao digitar ou
+// com um diálogo aberto.
 function handleKeydown(event) {
-  if (!props.stop) return;
+  if (event.defaultPrevented) return;
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-  if (event.target?.closest?.("input, textarea, select, [contenteditable], .maplibregl-map")) {
+  if (event.target?.closest?.("input, textarea, select, [contenteditable]")) return;
+  if (document.querySelector(".modal.show, [role='dialog'][aria-modal='true']")) return;
+
+  if (event.key === "Escape") {
+    event.preventDefault();
+    emit("back");
     return;
   }
+
+  if (!props.stop || event.target?.closest?.(".maplibregl-map")) return;
 
   const target =
     event.key === "ArrowLeft"
@@ -57,6 +65,8 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
       type="button"
       class="map-selection__back"
       aria-label="Fechar seleção e voltar às informações da coleção"
+      aria-keyshortcuts="Escape"
+      title="Voltar às informações da coleção (Esc)"
       @click="emit('back')"
     >
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden="true">
