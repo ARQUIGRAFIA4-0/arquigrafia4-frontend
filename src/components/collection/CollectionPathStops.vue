@@ -1,7 +1,8 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 import { RouterLink } from "vue-router";
 import { api } from "@/services/api";
+import { orderPathStops } from "@/helpers/pathStops";
 
 defineOptions({ name: "CollectionPathStops" });
 
@@ -10,7 +11,14 @@ const props = defineProps({
   stops: { type: Array, default: () => [] },
   // Imagens da coleção já carregadas (usadas para mostrar a imagem do ponto).
   images: { type: Array, default: () => [] },
+  // Número do ponto em destaque no mapa (bolinha laranja).
+  activeNumber: { type: Number, default: null },
 });
+
+// open/close: ponto aberto ou fechado na lista; hover: ponto sob o ponteiro (ou null).
+const emit = defineEmits(["open", "close", "hover"]);
+
+const listRef = ref(null);
 
 const imagesById = computed(
   () => new Map(props.images.map((image) => [String(image.id), image]))
@@ -45,22 +53,17 @@ async function fetchStopImage(imageId) {
 }
 
 const orderedStops = computed(() =>
-  [...props.stops]
-    .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0))
-    .map((stop, index) => {
-      const imageId = stop.imageId != null ? String(stop.imageId) : null;
-      const image = imageId ? imagesById.value.get(imageId) ?? null : null;
-      const fetched = imageId ? fetchedImages.value.get(imageId) ?? null : null;
-      return {
-        key: `${stop.order ?? index}-${index}`,
-        number: index + 1,
-        title: stop.title?.trim() || `Ponto ${index + 1}`,
-        imageId,
-        imageSrc: image?.imageUrl ?? image?.thumbUrl ?? fetched?.src ?? null,
-        imageTitle: image?.title ?? fetched?.title ?? "",
-        isImageLoading: !image && fetched?.status === "loading",
-      };
-    })
+  orderPathStops(props.stops).map((stop) => {
+    const { imageId } = stop;
+    const image = imageId ? imagesById.value.get(imageId) ?? null : null;
+    const fetched = imageId ? fetchedImages.value.get(imageId) ?? null : null;
+    return {
+      ...stop,
+      imageSrc: image?.imageUrl ?? image?.thumbUrl ?? fetched?.src ?? null,
+      imageTitle: image?.title ?? fetched?.title ?? "",
+      isImageLoading: !image && fetched?.status === "loading",
+    };
+  })
 );
 
 // Pontos com o dropdown aberto.
@@ -70,22 +73,48 @@ function toggleStop(stop) {
   const next = new Set(openKeys.value);
   if (next.has(stop.key)) {
     next.delete(stop.key);
+    emit("close", stop.number);
   } else {
     next.add(stop.key);
     // Imagem fora das páginas já carregadas: busca pelo id.
     if (stop.imageId && !stop.imageSrc) fetchStopImage(stop.imageId);
+    emit("open", stop.number);
   }
   openKeys.value = next;
 }
+
+// Abre o ponto pelo número (clique no mapa) e rola a lista até ele.
+async function openStop(number) {
+  const stop = orderedStops.value.find((item) => item.number === number);
+  if (!stop) return;
+
+  if (!openKeys.value.has(stop.key)) {
+    openKeys.value = new Set(openKeys.value).add(stop.key);
+    if (stop.imageId && !stop.imageSrc) fetchStopImage(stop.imageId);
+  }
+
+  await nextTick();
+  listRef.value
+    ?.querySelector(`[data-stop-number="${number}"]`)
+    ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+defineExpose({ openStop });
 </script>
 
 <template>
-  <ol v-if="orderedStops.length" class="path-stops">
+  <ol v-if="orderedStops.length" ref="listRef" class="path-stops">
     <li
       v-for="stop in orderedStops"
       :key="stop.key"
       class="path-stops__item"
-      :class="{ 'path-stops__item--open': openKeys.has(stop.key) }"
+      :class="{
+        'path-stops__item--open': openKeys.has(stop.key),
+        'path-stops__item--active': stop.number === activeNumber,
+      }"
+      :data-stop-number="stop.number"
+      @mouseenter="emit('hover', stop.number)"
+      @mouseleave="emit('hover', null)"
     >
       <button
         type="button"
@@ -189,6 +218,10 @@ function toggleStop(stop) {
   color: var(--Cinza_E, #2f2f2f);
   font-size: 14px;
   transition: transform 0.2s ease;
+}
+
+.path-stops__item--active .path-stops__number {
+  background: var(--Laranja_M, #d27d30);
 }
 
 .path-stops__item--open .path-stops__chevron {
@@ -309,6 +342,7 @@ function toggleStop(stop) {
   font-size: 14px;
   font-weight: 500;
   line-height: 1;
+  transition: background-color 150ms ease;
 }
 
 .path-stops__title {
