@@ -122,6 +122,12 @@ function toggleStop(stop) {
               class="path-stops__image"
               loading="lazy"
             />
+            <span class="path-stops__image-overlay" aria-hidden="true">
+              <span class="path-stops__image-overlay-text">
+                Ver detalhes
+                <i class="bi bi-arrow-right" aria-hidden="true"></i>
+              </span>
+            </span>
           </RouterLink>
           <RouterLink
             v-else
@@ -194,6 +200,7 @@ function toggleStop(stop) {
 }
 
 .path-stops__image-link {
+  position: relative;
   display: block;
   overflow: hidden;
   border-radius: 8px;
@@ -204,6 +211,57 @@ function toggleStop(stop) {
   width: 100%;
   max-height: 220px;
   object-fit: cover;
+  transition: transform 250ms ease;
+}
+
+/* Escurece a imagem no hover/foco para indicar que leva aos detalhes. */
+.path-stops__image-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.path-stops__image-overlay-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--Branco, #fff);
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 150%;
+}
+
+.path-stops__image-link:hover .path-stops__image-overlay,
+.path-stops__image-link:focus-visible .path-stops__image-overlay {
+  opacity: 1;
+}
+
+.path-stops__image-link:hover .path-stops__image,
+.path-stops__image-link:focus-visible .path-stops__image {
+  transform: scale(1.03);
+}
+
+.path-stops__image-link:focus-visible {
+  outline: 2px solid var(--Cinza_E, #2f2f2f);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .path-stops__image,
+  .path-stops__image-overlay {
+    transition: none;
+  }
+
+  .path-stops__image-link:hover .path-stops__image,
+  .path-stops__image-link:focus-visible .path-stops__image {
+    transform: none;
+  }
 }
 
 .path-stops__image-skeleton {
