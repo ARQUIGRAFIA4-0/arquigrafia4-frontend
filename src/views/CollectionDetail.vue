@@ -180,6 +180,7 @@ const {
   isFetchingNextPage,
 } = useAlbumImagesInfiniteQuery({
   albumId: collectionId,
+  authHeader: userAuthHeader,
   enabled: albumImagesEnabled,
 });
 

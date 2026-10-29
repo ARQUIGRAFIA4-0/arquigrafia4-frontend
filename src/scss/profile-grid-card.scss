@@ -174,32 +174,6 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
   }
 }
 
-// Estado colapsado do slot reservado (__meta): ocupa a mesma altura que os
-// botões ocupam quando o card é selecionado, mantendo o grid estável. Usado
-// pelos cards de coleção (usuário e coletivo) para posicionar o cadeado.
-.profile-grid-card__collapsed {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  height: 36px;
-}
-
-// Cadeado de coleção privada: apenas o ícone, na cor do título da coleção.
-.profile-grid-card__lock {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  margin-right: 5px;
-  color: var(--Preto, #1f1f1f);
-  flex-shrink: 0;
-
-  i {
-    font-size: 14px;
-    line-height: 1;
-  }
-}
-
 // Largura igual; btn-sm compacto (fora do padrão LINA 38×38 dos botões normais).
 .profile-grid-card__action-btn {
   flex: 1;
@@ -243,8 +217,9 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
   box-sizing: border-box;
 }
 
-// Card de coleção — LINA DS (desk / default + selecionado)
+// Card de coleção — LINA DS
 .profile-grid-card.profile-grid-card--collection {
+  position: relative;
   border: 0;
   border-radius: 4px;
   box-shadow: none;
@@ -256,11 +231,12 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
 
   // Anula flex:1 global do .profile-grid-card — altura fixa no bloco de texto
   // Padding horizontal 8px sempre (título e grupo de botões — LINA / Figma)
+  // Título (2 linhas) + 8px + slot das labels + 8px de padding inferior
   &:deep(.ui-card__content) {
-    flex: 0 0 105px;
-    height: 105px;
-    min-height: 105px;
-    max-height: 105px;
+    flex: 0 0 85px;
+    height: 85px;
+    min-height: 85px;
+    max-height: 85px;
     padding: 0 8px 8px;
     background: transparent;
     box-sizing: border-box;
@@ -289,16 +265,16 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
   }
 
   &:deep(.ui-card__title) {
-    flex: 0 0 72px;
-    height: 72px;
-    min-height: 72px;
-    max-height: 72px;
+    flex: 0 0 36px;
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
     margin: 0;
     white-space: normal;
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 4;
+    -webkit-line-clamp: 2;
     text-overflow: ellipsis;
     font-family: "DM Sans", sans-serif;
     font-size: 18px;
@@ -307,103 +283,77 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
     color: #000;
   }
 
-  // Slot fixo: cadeado (colapsado) ou botões (expandido)
+  // Slot fixo das labels (Percurso / Privada): mantém a altura do card
+  // estável mesmo quando a coleção não tem nenhuma label. No hover, o botão
+  // "Ir para coleção" ocupa o mesmo lugar das labels.
   .profile-grid-card__meta {
     flex: 0 0 33px;
+    display: grid;
+    align-items: end;
     height: 33px;
     min-height: 33px;
     max-height: 33px;
-    margin-top: 0;
+    margin-top: 8px;
   }
 
-  .profile-grid-card__collapsed {
-    height: 33px;
-    min-height: 33px;
-    max-height: 33px;
-    justify-content: flex-end;
-  }
-
-  // Evita regras genéricas de .profile-grid-card--expanded (laranja)
-  &.profile-grid-card--expanded {
-    background: var(--Off_white, #faf9f9);
-    border-color: transparent;
-    box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
-
-    &:deep(.ui-card__content) {
-      background-color: var(--Off_white, #faf9f9);
-    }
-
-    &:deep(.ui-card__title) {
-      flex: 0 0 54px;
-      height: 54px;
-      min-height: 54px;
-      max-height: 54px;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 3;
-      line-height: 18px;
-      text-overflow: ellipsis;
-    }
-
-    .profile-grid-card__meta {
-      margin-top: 18px;
-    }
+  .profile-grid-card__labels,
+  .profile-grid-card__go-btn {
+    grid-area: 1 / 1;
   }
 
   @media (hover: hover) {
-    &:hover {
-      transform: none;
-      box-shadow: none;
+    .profile-grid-card__go-btn {
+      display: inline-flex;
+      opacity: 0;
+      pointer-events: none;
     }
 
-    &.profile-grid-card--expanded:hover {
+    &:hover,
+    &:focus-within {
+      transform: none;
+      background: var(--Off_white, #faf9f9);
       box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
+
+      .profile-grid-card__labels {
+        visibility: hidden;
+      }
+
+      .profile-grid-card__go-btn {
+        opacity: 1;
+        pointer-events: auto;
+      }
     }
   }
 }
 
-.profile-grid-card__ds-btn {
-  flex: 1 1 0;
-  min-width: 0;
-  height: 25px;
+// Botão "Ir para coleção": só existe em dispositivos com hover. Em telas
+// touch fica oculto e o clique no card navega direto.
+.profile-grid-card__go-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
   padding: 2px 14px;
-  border-radius: 5px;
   border: 1px solid var(--Cinza_E, #2f2f2f);
+  border-radius: 5px;
+  background: var(--Cinza_E, #2f2f2f);
+  color: var(--Branco, #fff);
   font-family: "DM Sans", sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 150%;
+  white-space: nowrap;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 
-  &--ghost {
-    background: var(--Off_white, #faf9f9);
-    color: var(--Cinza_E, #2f2f2f);
-  }
-
-  &--solid {
-    background: var(--Cinza_E, #2f2f2f);
-    color: var(--Branco, #fff);
+  i {
+    font-size: 16px;
+    line-height: 1;
   }
 }
 
-.profile-grid-card__ds-btn-icon {
-  display: none;
-  font-size: 18px;
-  line-height: 1;
-}
-
-.profile-grid-card--collection .profile-grid-card__actions {
-  gap: 8px;
-  padding: 0; /* 8px horizontal já vem do .ui-card__content */
-  margin-top: 0;
-  height: 25px;
-  align-items: center;
-}
-
-// Mobile — coleção: ativo (4589:2007) + selecionado (4589:2031)
+// Mobile — coleção
 @media (max-width: 767.98px) {
   .profile-grid-card.profile-grid-card--collection {
     gap: 12px;
@@ -424,7 +374,7 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
       max-height: none;
       font-size: 16px;
       line-height: 16px;
-      -webkit-line-clamp: 5;
+      -webkit-line-clamp: 2;
     }
 
     .profile-grid-card__meta {
@@ -432,95 +382,7 @@ $profile-grid-shimmer: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 
       height: auto;
       min-height: 0;
       max-height: none;
-    }
-
-    .profile-grid-card__collapsed {
-      height: auto;
-      min-height: 0;
-      max-height: none;
-    }
-
-    &.profile-grid-card--expanded {
-      gap: 12px; /* capa  >  botões — NÃO zerar / NÃO esticar a capa */
-      border-radius: 4px;
-      background: var(--Off_white, #faf9f9);
-      box-shadow: 1px 1px 3px 2px rgba(0, 0, 0, 0.1);
-      padding-bottom: 4px;
-
-      .profile-grid-card__image-wrapper {
-        padding-top: 100%; /* capa continua quadrada */
-      }
-
-      &:deep(.ui-card__content) {
-        flex: 0 0 auto;
-        height: auto;
-        min-height: 0;
-        max-height: none;
-        padding: 4px 12px; /* Figma: py 4 / px 12 no grupo de botões */
-        box-sizing: border-box;
-        background-color: var(--Off_white, #faf9f9);
-      }
-
-      &:deep(.ui-card__body),
-      &:deep(.ui-card__header) {
-        flex: 0 0 auto;
-        height: auto;
-      }
-
-      &:deep(.ui-card__title) {
-        display: none;
-      }
-
-      .profile-grid-card__meta {
-        flex: 0 0 auto;
-        height: auto;
-        min-height: 0;
-        max-height: none;
-        margin-top: 0;
-      }
-
-      .profile-grid-card__actions {
-        flex-direction: column;
-        width: 100%;
-        height: auto;
-        padding: 0;
-        gap: 10px; /* Figma: gap 10 entre botões */
-      }
-
-      .profile-grid-card__ds-btn {
-        flex: none;
-        width: 100%;
-        height: 28px;
-        min-height: 28px;
-        padding: 2px 10px;
-        border-radius: 5px;
-
-        &--solid {
-          order: -1; /* Ver (olho) em cima */
-        }
-
-        &--ghost {
-          background: var(--Off_white, #faf9f9);
-          border-color: var(--Preto, #1f1f1f);
-        }
-
-        &--ghost .profile-grid-card__ds-btn-icon {
-          color: var(--Cinza_E, #2f2f2f);
-        }
-
-        &--solid .profile-grid-card__ds-btn-icon {
-          color: var(--Branco, #fff);
-        }
-      }
-
-      .profile-grid-card__ds-btn-label {
-        display: none;
-      }
-
-      .profile-grid-card__ds-btn-icon {
-        display: inline-flex;
-        font-size: 14px;
-      }
+      margin-top: 8px;
     }
   }
 }
