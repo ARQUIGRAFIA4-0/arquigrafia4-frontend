@@ -5,6 +5,7 @@ import { LngLatBounds, Popup } from "maplibre-gl";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import { createCollectionImagesFeatureCollection } from "@/helpers/geojson.js";
 import escapeHtml from "@/helpers/escapeHtml";
+import { orderPathStops } from "@/helpers/pathStops";
 
 defineOptions({ name: "LocationsMap" });
 
@@ -32,9 +33,12 @@ const props = defineProps({
 
   /** Paradas do percurso; as sem imagem relacionada recebem o ícone geo-fill. */
   stops: { type: Array, default: () => [] },
+
+  /** Número da parada em destaque (laranja), sincronizado com a lista de pontos. */
+  activeStopNumber: { type: Number, default: null },
 });
 
-const emit = defineEmits(["select"]);
+const emit = defineEmits(["select", "stop-select"]);
 
 const mapInstance = shallowRef(null);
 const selectedId = ref(null);
@@ -140,10 +144,10 @@ const workIconSvg = (fill = baseColor) => `<svg xmlns="http://www.w3.org/2000/sv
 // Ícone geo-fill do Bootstrap Icons sobre um círculo.
 const geoIconSvg = (fill) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="${fill}"/><g transform="translate(8 8) scale(0.65) translate(-8 -8)"><path fill="#FFFFFF" fill-rule="evenodd" d="M4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999zm2.493 8.574a.5.5 0 0 1-.411.575c-.712.118-1.28.295-1.655.493a1.3 1.3 0 0 0-.37.265.3.3 0 0 0-.057.09V14l.002.008.016.033a.6.6 0 0 0 .145.15c.165.13.435.27.813.395.751.25 1.82.414 3.024.414s2.273-.163 3.024-.414c.378-.126.648-.265.813-.395a.6.6 0 0 0 .146-.15l.015-.033L12 14v-.004a.3.3 0 0 0-.057-.09 1.3 1.3 0 0 0-.37-.264c-.376-.198-.943-.375-1.655-.493a.5.5 0 1 1 .164-.986c.77.127 1.452.328 1.957.594C12.5 13 13 13.4 13 14c0 .426-.26.752-.544.977-.29.228-.68.413-1.116.558-.878.293-2.059.465-3.34.465s-2.462-.172-3.34-.465c-.436-.145-.826-.33-1.116-.558C3.26 14.752 3 14.426 3 14c0-.599.5-1 .961-1.243.505-.266 1.187-.467 1.957-.594a.5.5 0 0 1 .575.411"/></g></svg>`;
 
-// Círculo preto preenchido com o número da parada em branco.
-const stopNumberIconSvg = (number) => {
+// Círculo preenchido com o número da parada em branco (preto, ou laranja quando ativa).
+const stopNumberIconSvg = (number, fill = "#1F1F1F") => {
   const fontSize = number >= 100 ? 7 : number >= 10 ? 9 : 11;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9.25" fill="#1F1F1F" stroke="#FFFFFF" stroke-width="1.5"/><text x="10" y="10.5" text-anchor="middle" dominant-baseline="middle" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="700">${number}</text></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9.25" fill="${fill}" stroke="#FFFFFF" stroke-width="1.5"/><text x="10" y="10.5" text-anchor="middle" dominant-baseline="middle" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="700">${number}</text></svg>`;
 };
 
 // image → câmera | work → prédio | selected → laranja
@@ -210,47 +214,52 @@ const getCustomStopCoordinates = () =>
     )
     .filter(isValidCoordinate);
 
-// GeoJSON das paradas sem imagem.
+// GeoJSON das paradas sem imagem (com o número, para o clique).
 const buildCustomStopsGeoJson = () => ({
   type: "FeatureCollection",
-  features: getCustomStopCoordinates().map((coordinates) => ({
-    type: "Feature",
-    geometry: { type: "Point", coordinates },
-    properties: {},
-  })),
+  features: getNumberedStops()
+    .filter((stop) => stop.imageId == null)
+    .map(({ number, coordinates }) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates },
+      properties: { number },
+    })),
 });
 
 // Paradas numeradas na ordem do percurso (mesma numeração da lista de paradas).
 const getNumberedStops = () =>
-  [...props.stops]
-    .sort((a, b) => (Number(a?.order) || 0) - (Number(b?.order) || 0))
-    .map((stop, index) => ({
-      number: index + 1,
-      coordinates: Array.isArray(stop?.coordinates)
-        ? [Number(stop.coordinates[0]), Number(stop.coordinates[1])]
-        : null,
-    }))
-    .filter((stop) => isValidCoordinate(stop.coordinates));
+  orderPathStops(props.stops).filter((stop) => isValidCoordinate(stop.coordinates));
 
 // GeoJSON dos números das paradas.
 const buildStopNumbersGeoJson = () => ({
   type: "FeatureCollection",
-  features: getNumberedStops().map(({ number, coordinates }) => ({
-    type: "Feature",
-    geometry: { type: "Point", coordinates },
-    properties: { icon: `${stopNumberIconPrefix}${number}` },
-  })),
+  features: getNumberedStops().map(({ number, coordinates }) => {
+    const active = number === props.activeStopNumber;
+    return {
+      type: "Feature",
+      geometry: { type: "Point", coordinates },
+      properties: {
+        number,
+        active,
+        icon: `${stopNumberIconPrefix}${number}${active ? "-active" : ""}`,
+      },
+    };
+  }),
 });
 
-// Registra os ícones numerados que ainda não existem no mapa.
+// Registra os ícones numerados (normal e ativo) que ainda não existem no mapa.
 const ensureStopNumberIcons = async (map) => {
   const numbers = getNumberedStops().map((stop) => stop.number);
   await Promise.all(
-    numbers.map(async (number) => {
-      const id = `${stopNumberIconPrefix}${number}`;
-      await registerIcon(map, id, stopNumberIconSvg(number));
-      registeredStopNumberIcons.add(id);
-    })
+    numbers.flatMap((number) =>
+      [
+        [`${stopNumberIconPrefix}${number}`, stopNumberIconSvg(number)],
+        [`${stopNumberIconPrefix}${number}-active`, stopNumberIconSvg(number, selectedColor)],
+      ].map(async ([id, svg]) => {
+        await registerIcon(map, id, svg);
+        registeredStopNumberIcons.add(id);
+      })
+    )
   );
 };
 
@@ -579,12 +588,12 @@ const setCursor = (value) => {
 };
 
 // Aproxima o zoom para exibir o ícone selecionado.
-const focusOnCoordinates = (coordinates) => {
+const focusOnCoordinates = (coordinates, minZoom = SELECTED_ICON_ZOOM) => {
   const map = mapInstance.value;
   if (!map || !isValidCoordinate(coordinates)) return;
 
   const currentZoom = map.getZoom();
-  const targetZoom = Math.max(currentZoom, SELECTED_ICON_ZOOM);
+  const targetZoom = Math.max(currentZoom, minZoom);
 
   map.easeTo({
     center: coordinates,
@@ -595,10 +604,19 @@ const focusOnCoordinates = (coordinates) => {
 
 };
 
+// Verifica se há um número de parada sob o ponteiro (ele fica sobre o ícone da imagem).
+const isStopNumberAt = (point) => {
+  const map = mapInstance.value;
+  if (!map?.getLayer(stopNumbersLayerId)) return false;
+  return map.queryRenderedFeatures(point, { layers: [stopNumbersLayerId] }).length > 0;
+};
+
 // Manipulador de evento para quando o usuário clica em um ponto no mapa.
 const handlePointClick = (event) => {
   const feature = event.features?.[0];
   if (!feature) return;
+  // O clique no número da parada é tratado por handleStopClick.
+  if (isStopNumberAt(event.point)) return;
 
   const map = mapInstance.value;
   const coordinates = feature.geometry.coordinates.slice();
@@ -953,6 +971,7 @@ const spiderfyCluster = async (source, clusterId, center) => {
 const handleClusterClick = async (event) => {
   const map = mapInstance.value;
   if (!map) return;
+  if (isStopNumberAt(event.point)) return;
 
   const features = map.queryRenderedFeatures(event.point, {
     layers: [clusterLayerId, clusterCountLayerId],
@@ -1020,6 +1039,7 @@ const handleSpiderLeafClick = (event) => {
   const feature = event.features?.[0];
   const id = feature?.properties?.id ?? null;
   if (!feature || !id) return;
+  if (isStopNumberAt(event.point)) return;
 
   closeActivePopup();
   selectedId.value = id;
@@ -1031,6 +1051,30 @@ const handleSpiderLeafClick = (event) => {
     showExploreCardPopup(feature);
   }
 };
+
+/* --------------------------- Paradas do percurso --------------------------- */
+// Camadas clicáveis das paradas: o número e o ícone dos pontos sem imagem.
+const getStopLayers = () => {
+  const map = mapInstance.value;
+  return map ? [stopNumbersLayerId, stopsLayerId].filter((id) => map.getLayer(id)) : [];
+};
+
+// Clique numa parada -> avisa o pai (abre o ponto na lista / navega no percurso).
+const handleStopClick = (event) => {
+  const map = mapInstance.value;
+  const layers = getStopLayers();
+  if (!map || !layers.length) return;
+
+  const hit = map.queryRenderedFeatures(event.point, { layers })[0];
+  const number = Number(hit?.properties?.number);
+  if (!number) return;
+
+  closeActivePopup();
+  emit("stop-select", number);
+};
+
+const handleStopEnter = () => setCursor("pointer");
+const handleStopLeave = () => setCursor("");
 
 // Clique fora do spiderfy -> fecha o leque e restaura o agrupamento.
 const handleMapClickOutsideSpider = (event) => {
@@ -1257,7 +1301,7 @@ const setupLayers = async (map) => {
       source: stopNumbersSourceId,
       layout: {
         "icon-image": ["get", "icon"],
-        "icon-size": 0.6,
+        "icon-size": ["case", ["get", "active"], 0.75, 0.6],
         // Canto superior direito do ícone da parada (offset × icon-size = px).
         "icon-offset": [20, -20],
         "icon-allow-overlap": true,
@@ -1279,6 +1323,11 @@ const setupLayers = async (map) => {
   map.on("mouseenter", spiderLeavesLayerId, handleSpiderLeafEnter);
   map.on("mouseleave", spiderLeavesLayerId, handleSpiderLeafLeave);
   map.on("click", handleMapClickOutsideSpider);
+  map.on("click", handleStopClick);
+  map.on("mouseenter", stopNumbersLayerId, handleStopEnter);
+  map.on("mouseleave", stopNumbersLayerId, handleStopLeave);
+  map.on("mouseenter", stopsLayerId, handleStopEnter);
+  map.on("mouseleave", stopsLayerId, handleStopLeave);
   map.on("zoomstart", collapseSpider);
   map.on("dragstart", collapseSpider);
 };
@@ -1373,6 +1422,16 @@ watch(
   }
 );
 
+// Destaca (laranja) a parada ativa.
+watch(
+  () => props.activeStopNumber,
+  () => {
+    mapInstance.value
+      ?.getSource(stopNumbersSourceId)
+      ?.setData(buildStopNumbersGeoJson());
+  }
+);
+
 watch(
   () => props.pitch,
   (pitch) => {
@@ -1380,7 +1439,32 @@ watch(
   }
 );
 
-defineExpose({ resetToInitial });
+// Seleciona uma imagem pelo id e aproxima o mapa (navegação pelo percurso).
+const selectImage = (id, { zoom } = {}) => {
+  const feature = getFeatureById(id);
+  if (!feature) return false;
+
+  collapseSpider();
+  closeActivePopup();
+  closeActiveCardPopup();
+
+  selectedId.value = id;
+  emit("select", id);
+  focusOnCoordinates(feature.geometry.coordinates.slice(), zoom);
+  return true;
+};
+
+// Remove a seleção sem mexer no enquadramento.
+const clearSelection = () => {
+  if (!selectedId.value) return;
+  selectedId.value = null;
+  emit("select", null);
+};
+
+const focusCoordinates = (coordinates, { zoom } = {}) =>
+  focusOnCoordinates(coordinates, zoom);
+
+defineExpose({ resetToInitial, selectImage, clearSelection, focusCoordinates });
 
 /* ------------------------------- Desmontagem ---------------------------------- */
 // Desmonta o mapa e limpa as fontes e camadas.
