@@ -689,7 +689,7 @@
       </label>
       <button
         type="button"
-        class="btn p-0 border-0 bg-transparent ms-2 preview-actions-bar__info-btn"
+        class="btn p-0 border-0 bg-transparent preview-actions-bar__info-btn"
         data-bs-toggle="popover"
         data-bs-placement="top"
         data-bs-trigger="hover focus"
@@ -2313,12 +2313,21 @@ $breakpoint-tablet: 1024px;
   z-index: 1;
 
   &__checkbox {
-    display: none;
+    display: flex;
     align-items: center;
     gap: 8px;
+    min-height: 0;
+    padding-left: 0;
     padding-bottom: 4px;
     padding-right: 4px;
     width: 100%;
+
+    // Neutraliza o layout em float do .form-check do Bootstrap
+    .form-check-input {
+      float: none;
+      margin: 0;
+      flex-shrink: 0;
+    }
   }
 
   &__checkbox-label {
@@ -2329,9 +2338,7 @@ $breakpoint-tablet: 1024px;
   }
 
   &__info-btn {
-    display: none;
-    vertical-align: middle;
-    transform: translateY(-2px);
+    display: flex;
   }
 
   &__buttons {
@@ -2364,7 +2371,6 @@ $breakpoint-tablet: 1024px;
     box-shadow: 2px -2px 5px 2px rgba(0, 0, 0, 0.1);
 
     &__checkbox {
-      display: flex;
       width: auto;
       flex: 0 0 auto;
       padding-bottom: 0;
@@ -2375,10 +2381,6 @@ $breakpoint-tablet: 1024px;
       flex: 0 1 auto;
       font-size: 14px;
       line-height: 150%;
-    }
-
-    &__info-btn {
-      display: flex;
     }
 
     &__buttons {
