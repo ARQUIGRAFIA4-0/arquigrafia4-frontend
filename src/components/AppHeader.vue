@@ -23,6 +23,13 @@ const isMenuOpen = ref(false);
 
 function toggleMenu() {
   isMenuOpen.value = !isMenuOpen.value;
+
+  // Relê o usuário ao abrir o menu para pegar mudanças feitas fora desta
+  // sessão (ex.: entrada aprovada em um coletivo). Sem await: o menu abre
+  // na hora com a lista em cache e atualiza sozinho quando a resposta chegar.
+  if (isMenuOpen.value && store.isLoggedIn) {
+    store.getLoggedUser();
+  }
 }
 
 function closeMenu() {
