@@ -34,7 +34,6 @@ const showFullProfile = ref(false);
 const joinRequested = ref(false);
 const leaveLoading = ref(false);
 const showLeaveModal = ref(false);
-const leaveError = ref("");
 
 const showSkeleton = computed(() => !hasLoaded.value);
 
@@ -83,21 +82,18 @@ async function handleCopyInvite() {
 }
 
 function openLeaveModal() {
-  leaveError.value = "";
   showLeaveModal.value = true;
 }
 
 async function handleLeave() {
   leaveLoading.value = true;
-  leaveError.value = "";
   const result = await collectivesStore.leaveCollective(props.collectiveData.id);
   leaveLoading.value = false;
+  showLeaveModal.value = false;
   if (result.success) {
-    showLeaveModal.value = false;
     router.push({ name: "my-profile-images" });
   } else {
-    // Mantém o modal aberto mostrando o motivo (ex.: último admin do coletivo).
-    leaveError.value = result.message;
+    toast.show(result.message, "error");
   }
 }
 </script>
@@ -119,7 +115,6 @@ async function handleLeave() {
       v-model="showLeaveModal"
       :collective-name="collectiveData?.name ?? ''"
       :is-leaving="leaveLoading"
-      :error="leaveError"
       @confirm="handleLeave"
     />
 

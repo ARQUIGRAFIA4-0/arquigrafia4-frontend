@@ -9,7 +9,6 @@ const props = defineProps({
   modelValue: { type: Boolean, default: false },
   collectiveName: { type: String, default: "" },
   isLeaving: { type: Boolean, default: false },
-  error: { type: String, default: "" },
 });
 
 const emit = defineEmits(["update:modelValue", "confirm"]);
@@ -75,7 +74,6 @@ onBeforeUnmount(unlockPage);
           <p class="modal-warning">
             Para voltar, será preciso solicitar a entrada novamente.
           </p>
-          <p v-if="error" class="modal-error" role="alert">{{ error }}</p>
         </div>
 
         <div class="modal-footer footer-grid">
@@ -154,13 +152,6 @@ onBeforeUnmount(unlockPage);
   margin: 0;
   font-size: 0.9rem;
   color: var(--Cinza_F, #333);
-  font-weight: 500;
-}
-
-.modal-error {
-  margin: 12px 0 0 0;
-  font-size: 0.9rem;
-  color: #bc1518;
   font-weight: 500;
 }
 
