@@ -85,7 +85,7 @@ async function handleLeave() {
   const result = await collectivesStore.leaveCollective(props.collectiveData.id);
   leaveLoading.value = false;
   if (result.success) {
-    router.push("/coletivos");
+    router.push({ name: "my-profile-images" });
   } else {
     toast.show(result.message, "error");
   }
