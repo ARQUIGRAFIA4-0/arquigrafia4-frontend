@@ -191,12 +191,12 @@ E
 
       <!-- 4. Campos específicos -->
       <h3 class="about-search__subtitle about-search__subtitle--rules">
-        4. Campos específicos: Título, Autoria e Local
+        4. Campos específicos: Título e Autoria
       </h3>
       <p class="about-search__paragraph">
-        Os campos <strong>Título</strong>, <strong>Autoria</strong> (nome do contribuidor) e <strong>Local</strong>
-        não separam o texto em palavras: o texto digitado inteiro é procurado como um <strong>trecho contínuo</strong>,
-        em qualquer posição do campo, inclusive no meio de uma palavra.
+        Os campos <strong>Título</strong> e <strong>Autoria</strong> (nome do contribuidor) não separam o texto em
+        palavras: o texto digitado inteiro é procurado como um <strong>trecho contínuo</strong>, em qualquer posição
+        do campo, inclusive no meio de uma palavra.
       </p>
       <p class="about-search__paragraph">
         Por isso, no campo Título, <code class="about-search__code">rio de janeiro</code> só encontra títulos que
@@ -204,8 +204,80 @@ E
         como "Interior da casa" ou "Casa Mário de Andrade".
       </p>
 
-      <!-- 5. Datas -->
-      <h3 class="about-search__subtitle about-search__subtitle--rules">5. Datas da imagem e da obra</h3>
+      <!-- 5. Localização -->
+      <h3 class="about-search__subtitle about-search__subtitle--rules">5. Campo Localização</h3>
+      <p class="about-search__paragraph">
+        O campo <strong>Localização</strong> procura no endereço cadastrado em cada imagem. O texto digitado é
+        separado em palavras e <strong>todas precisam aparecer no mesmo endereço (E)</strong>, em qualquer ordem. Ao
+        pesquisar <code class="about-search__code">Fortaleza CE</code>, a busca fica:
+      </p>
+      <pre class="about-search__block"><code>("fortaleza..." no endereço)
+E
+(palavra inteira "CE" OU "Ceará" no endereço)</code></pre>
+
+      <h4 class="about-search__subheading">Como cada palavra é comparada</h4>
+      <ul class="about-search__list">
+        <li>
+          Palavras de <strong>uma ou duas letras</strong> precisam aparecer como <strong>palavra inteira</strong>:
+          <code class="about-search__code">ce</code> encontra "Itapipoca - CE", mas não "Centro", "Recife" ou
+          "Conceição".
+        </li>
+        <li>
+          Palavras de <strong>três letras ou mais</strong> são comparadas como <strong>início de palavra</strong>:
+          <code class="about-search__code">fortal</code> encontra "Fortaleza", mas
+          <code class="about-search__code">aleza</code> não.
+        </li>
+        <li>Maiúsculas, minúsculas e acentos não fazem diferença.</li>
+        <li>
+          Conectores comuns (como <code class="about-search__code">de, da, do, em, para</code>) são ignorados, e são
+          consideradas no máximo 6 palavras.
+        </li>
+      </ul>
+
+      <h4 class="about-search__subheading">Estados: sigla ou nome</h4>
+      <p class="about-search__paragraph">
+        Os endereços do acervo registram o estado às vezes pela sigla ("Fortaleza - CE") e às vezes pelo nome
+        ("Fortaleza, Ceará, Brasil"). Por isso, a sigla e o nome de um estado brasileiro são equivalentes na busca:
+        <code class="about-search__code">CE</code> e <code class="about-search__code">Ceará</code> trazem o mesmo
+        resultado.
+      </p>
+      <ul class="about-search__list">
+        <li>
+          Nomes compostos são tratados como um termo só: <code class="about-search__code">Mato Grosso do Sul</code>
+          não exige as palavras soltas, e <code class="about-search__code">Mato Grosso</code> não traz imagens de Mato
+          Grosso do Sul.
+        </li>
+        <li>
+          Siglas que coincidem com conectores, como <code class="about-search__code">TO</code> (Tocantins), não são
+          ignoradas.
+        </li>
+        <li>
+          <strong>São Paulo</strong> e <strong>Rio de Janeiro</strong> são nome de cidade e de estado ao mesmo tempo.
+          Pesquisar <code class="about-search__code">São Paulo</code> traz imagens de todo o estado, como as de
+          "Campinas - SP".
+        </li>
+      </ul>
+
+      <h4 class="about-search__subheading">Limites</h4>
+      <ul class="about-search__list">
+        <li>Imagens sem endereço cadastrado não aparecem quando o campo Localização é usado.</li>
+        <li>
+          A busca é feita no texto do endereço. Um nome de estado também encontra ruas com esse nome em outros
+          lugares (como uma "Rua Espírito Santo" fora do Espírito Santo).
+        </li>
+        <li>
+          Vários termos de localização se somam com E e precisam estar no mesmo endereço. Pesquisar
+          <code class="about-search__code">Fortaleza</code> e <code class="about-search__code">Recife</code> juntos
+          não retorna nada, porque nenhum endereço tem as duas cidades.
+        </li>
+      </ul>
+      <p class="about-search__paragraph about-search__paragraph--conclusion">
+        <strong>Conclusão:</strong> para encontrar imagens de um estado, digite a sigla ou o nome. Para afinar por
+        cidade, acrescente o nome dela (<code class="about-search__code">Fortaleza CE</code>).
+      </p>
+
+      <!-- 6. Datas -->
+      <h3 class="about-search__subtitle about-search__subtitle--rules">6. Datas da imagem e da obra</h3>
       <p class="about-search__paragraph">
         Há dois conjuntos de datas: a <strong>data da imagem</strong> (quando a foto foi feita) e a
         <strong>data da obra</strong> (quando a obra arquitetônica foi realizada). Cada data cadastrada é um intervalo,
@@ -229,8 +301,8 @@ fim da data da imagem &lt;= data final</code></pre>
         obra), cada uma das duas condições pode ser atendida por uma data diferente.
       </p>
 
-      <!-- 6. Binômios -->
-      <h3 class="about-search__subtitle about-search__subtitle--rules">6. Binômios</h3>
+      <!-- 7. Binômios -->
+      <h3 class="about-search__subtitle about-search__subtitle--rules">7. Binômios</h3>
       <p class="about-search__paragraph">
         Os binômios (pares de qualidades opostas, avaliados numa escala de 0 a 100) são filtrados pela
         <strong>média das avaliações</strong> que a imagem recebeu:
@@ -244,8 +316,8 @@ fim da data da imagem &lt;= data final</code></pre>
         avaliadas em um binômio não aparecem quando ele é usado como filtro.
       </p>
 
-      <!-- 7. Ordenação -->
-      <h3 class="about-search__subtitle about-search__subtitle--rules">7. Ordem dos resultados</h3>
+      <!-- 8. Ordenação -->
+      <h3 class="about-search__subtitle about-search__subtitle--rules">8. Ordem dos resultados</h3>
       <p class="about-search__paragraph">Quando você não escolhe uma ordenação:</p>
       <ul class="about-search__list">
         <li><strong>Sem busca textual</strong>, os resultados aparecem em ordem aleatória.</li>
@@ -299,6 +371,14 @@ fim da data da imagem &lt;= data final</code></pre>
             <tr>
               <td><code class="about-search__code">Título = rio de janeiro</code></td>
               <td>título contém o trecho "rio de janeiro"</td>
+            </tr>
+            <tr>
+              <td><code class="about-search__code">Localização = CE</code></td>
+              <td>palavra inteira "CE" OU "Ceará" no endereço</td>
+            </tr>
+            <tr>
+              <td><code class="about-search__code">Localização = Fortaleza CE</code></td>
+              <td>"fortaleza..." E ("CE" OU "Ceará"), no mesmo endereço</td>
             </tr>
             <tr>
               <td><code class="about-search__code">Material = concreto, vidro</code></td>

@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/auth";
 import { useAlbumsStore } from "@/store/albums";
 import { api } from "@/services/api";
 import CollectionEditForm from "@/components/collection/CollectionEditForm.vue";
+import DeleteCollectionModal from "@/components/collection/DeleteCollectionModal.vue";
 import { isFavoritesAlbumTitle } from "@/constants/favoritesCollection";
 
 defineOptions({ name: "CollectionEdit" });
@@ -99,6 +100,7 @@ async function fetchCollectionImages() {
     collectionTitle.value = data?.title?.trim() || "";
     collectionDescription.value = data?.description?.trim() || "";
     collectionIsPrivate.value = !!data?.is_private;
+    collectionCollectiveId.value = data?.collective_id ?? null;
     initialTitle.value = collectionTitle.value;
     initialDescription.value = collectionDescription.value;
     initialIsPrivate.value = collectionIsPrivate.value;
@@ -111,6 +113,7 @@ async function fetchCollectionImages() {
     collectionTitle.value = "";
     collectionDescription.value = "";
     collectionIsPrivate.value = false;
+    collectionCollectiveId.value = null;
     initialTitle.value = "";
     initialDescription.value = "";
     initialIsPrivate.value = false;
@@ -168,6 +171,7 @@ const initialTitle = ref("");
 const initialDescription = ref("");
 const initialIsPrivate = ref(false);
 const isSaving = ref(false);
+const collectionCollectiveId = ref(null);
 
 const DESCRIPTION_MAX_LENGTH = 500;
 
@@ -263,6 +267,48 @@ async function handleSave() {
   }
 }
 
+/***
+ * Start: Exclusão da coleção
+ */
+
+const showDeleteModal = ref(false);
+const isDeleting = ref(false);
+const deleteError = ref("");
+
+// A coleção Favoritos é padrão do usuário e não pode ser excluída.
+const canDelete = computed(
+  () => hasLoaded.value && !isFavoritesAlbumTitle(initialTitle.value),
+);
+
+function openDeleteModal() {
+  deleteError.value = "";
+  showDeleteModal.value = true;
+}
+
+// Exclui a coleção e volta para a lista de coleções do dono (coletivo ou
+// usuário), já que a página da coleção deixa de existir.
+async function handleDelete() {
+  if (!collectionId.value || isDeleting.value) return;
+
+  isDeleting.value = true;
+  deleteError.value = "";
+
+  try {
+    await albumsStore.deleteAlbum(authStore.authHeader, collectionId.value);
+    showDeleteModal.value = false;
+
+    router.replace(
+      collectionCollectiveId.value
+        ? { name: "collective-detail", params: { id: collectionCollectiveId.value } }
+        : { name: "my-profile-collections" },
+    );
+  } catch (error) {
+    deleteError.value = error?.message || "Não foi possível excluir a coleção.";
+  } finally {
+    isDeleting.value = false;
+  }
+}
+
 onMounted(() => {
   fetchCollectionImages();
 });
@@ -277,6 +323,7 @@ watch(collectionId, () => {
   collectionTitle.value = "";
   collectionDescription.value = "";
   collectionIsPrivate.value = false;
+  collectionCollectiveId.value = null;
   initialTitle.value = "";
   initialDescription.value = "";
   initialIsPrivate.value = false;
@@ -367,8 +414,10 @@ watch(collectionId, () => {
                   v-model:title="collectionTitle"
                   v-model:description="collectionDescription"
                   v-model:is-private="collectionIsPrivate"
-                  :disabled="isSaving"
+                  :disabled="isSaving || isDeleting"
                   :title-disabled="isFavoritesCollection"
+                  :can-delete="canDelete"
+                  @delete="openDeleteModal"
                 />
               </div>
             </template>
@@ -399,6 +448,14 @@ watch(collectionId, () => {
           </span>
         </button>
       </footer>
+
+      <DeleteCollectionModal
+        v-model="showDeleteModal"
+        :collection-title="initialTitle"
+        :is-deleting="isDeleting"
+        :error="deleteError"
+        @confirm="handleDelete"
+      />
     </section>
 </template>
 

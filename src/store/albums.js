@@ -5,8 +5,17 @@ import {
   sortAlbumsWithFavoritesFirst,
   buildDefaultFavoritesAlbumPayload,
 } from "@/constants/favoritesCollection";
+import { queryClient } from "@/queryClient";
 
 export const useAlbumsStore = defineStore("albums", () => {
+
+    // Descarta o cache de imagens do álbum (useAlbumImagesInfiniteQuery) após alterações,
+    // para que CollectionDetail busque a lista atualizada ao ser aberta novamente.
+    // Usa reset e não invalidate: a query tem refetchOnMount: false, então dado apenas
+    // marcado como stale continuaria sendo exibido.
+    function resetAlbumImagesCache(albumId) {
+        return queryClient.resetQueries({ queryKey: ["album-images", albumId] });
+    }
 
     // Função para criar um álbum
     async function createAlbum(authHeader, payload) {
@@ -160,7 +169,9 @@ export const useAlbumsStore = defineStore("albums", () => {
                     },
                 }
             );
-        
+
+            resetAlbumImagesCache(albumId);
+
             return response.data;
 
         } catch (error) {
@@ -186,6 +197,8 @@ export const useAlbumsStore = defineStore("albums", () => {
                     image_ids: ids,
                 },
             });
+
+            resetAlbumImagesCache(albumId);
 
             return response.data;
 
@@ -232,6 +245,7 @@ export const useAlbumsStore = defineStore("albums", () => {
                     Authorization: authHeader,
                 },
             });
+            resetAlbumImagesCache(albumId);
             return response.data;
         } catch (error) {
             throw new Error(
