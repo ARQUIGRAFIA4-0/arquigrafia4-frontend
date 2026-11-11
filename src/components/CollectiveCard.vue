@@ -6,6 +6,7 @@ import { useSubjectTerms } from "@/composables/useSubjectTerms";
 import { useCollectivesStore } from "@/store/collectives";
 import { useToast } from "@/composables/useToast";
 import AppToast from "@/components/ui/AppToast.vue";
+import LeaveCollectiveModal from "@/components/LeaveCollectiveModal.vue";
 import profileImageDefault from "@/assets/collective_image.png";
 
 const API_BASE_URL = import.meta.env.VITE_BASE_REQUEST_URL;
@@ -32,6 +33,8 @@ const loadStartedAt = ref(Date.now());
 const showFullProfile = ref(false);
 const joinRequested = ref(false);
 const leaveLoading = ref(false);
+const showLeaveModal = ref(false);
+const leaveError = ref("");
 
 const showSkeleton = computed(() => !hasLoaded.value);
 
@@ -79,15 +82,22 @@ async function handleCopyInvite() {
   }
 }
 
+function openLeaveModal() {
+  leaveError.value = "";
+  showLeaveModal.value = true;
+}
+
 async function handleLeave() {
-  if (!confirm("Tem certeza que deseja deixar de participar deste coletivo?")) return;
   leaveLoading.value = true;
+  leaveError.value = "";
   const result = await collectivesStore.leaveCollective(props.collectiveData.id);
   leaveLoading.value = false;
   if (result.success) {
+    showLeaveModal.value = false;
     router.push({ name: "my-profile-images" });
   } else {
-    toast.show(result.message, "error");
+    // Mantém o modal aberto mostrando o motivo (ex.: último admin do coletivo).
+    leaveError.value = result.message;
   }
 }
 </script>
@@ -104,6 +114,14 @@ async function handleLeave() {
         @resume="toast.resume"
       />
     </Teleport>
+
+    <LeaveCollectiveModal
+      v-model="showLeaveModal"
+      :collective-name="collectiveData?.name ?? ''"
+      :is-leaving="leaveLoading"
+      :error="leaveError"
+      @confirm="handleLeave"
+    />
 
     <!-- Skeleton -->
     <div
@@ -244,9 +262,9 @@ async function handleLeave() {
             <button
               class="btn btn-sm w-100 collective-card__leave-btn"
               :disabled="leaveLoading"
-              @click="handleLeave"
+              @click="openLeaveModal"
             >
-              {{ leaveLoading ? "Saindo..." : "Deixar de participar" }}
+              Deixar de participar
             </button>
           </template>
         </div>
