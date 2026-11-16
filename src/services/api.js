@@ -450,6 +450,25 @@ const fetchImages = async (page = 1, filters = {}) => {
   }
 };
 
+const getPublicAlbums = async ({ page = 1, perPage = 24, title = "", hasPercursos = null } = {}) => {
+  const params = { page, per_page: perPage };
+  const trimmedTitle = title?.trim();
+  if (trimmedTitle) params.title = trimmedTitle;
+  if (typeof hasPercursos === "boolean") params.has_percursos = hasPercursos ? "true" : "false";
+
+  const { data } = await axios.get("/api/albums", { params });
+
+  const items = Array.isArray(data?.data) ? data.data : [];
+  const currentPage = Number(data?.current_page) || page;
+  const lastPage = Number(data?.last_page) || null;
+
+  return {
+    items,
+    total: Number.isFinite(Number(data?.total)) ? Number(data.total) : null,
+    hasMore: Boolean(data?.next_page_url) || (lastPage != null && currentPage < lastPage),
+  };
+};
+
 /**
  * Imagens paginadas de um álbum — GET /api/albums/{albumId}/images?page=
  * Se o item não trouxer mid_url/thumb_url, enriquece com GET /api/images/{id}
@@ -1226,6 +1245,7 @@ const isWorkContributor = async (workId, userId) => {
 export const api = {
   getImages: fetchImages,
   getAlbumImages,
+  getPublicAlbums,
   getGeoJSON,
   getLocationsGeoJSON,
   getFilteredLocationsGeoJSON,
