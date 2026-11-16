@@ -316,6 +316,19 @@ const createExploreCardPopupContent = ({
   
 };
 
+const CARD_CLOSE_ICON = `
+  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+    <circle class="locations-map-card-close__bg" cx="16" cy="16" r="16" />
+    <path fill="currentColor" d="M10.708 9.292C10.5202 9.10423 10.2656 8.99874 10 8.99874C9.73445 8.99874 9.47977 9.10423 9.292 9.292C9.10423 9.47977 8.99874 9.73445 8.99874 10C8.99874 10.2656 9.10423 10.5202 9.292 10.708L14.586 16L9.292 21.292C9.19902 21.385 9.12527 21.4954 9.07495 21.6168C9.02464 21.7383 8.99874 21.8685 8.99874 22C8.99874 22.1315 9.02464 22.2617 9.07495 22.3832C9.12527 22.5046 9.19902 22.615 9.292 22.708C9.47977 22.8958 9.73445 23.0013 10 23.0013C10.1315 23.0013 10.2617 22.9754 10.3832 22.925C10.5046 22.8747 10.615 22.801 10.708 22.708L16 17.414L21.292 22.708C21.385 22.801 21.4954 22.8747 21.6168 22.925C21.7383 22.9754 21.8685 23.0013 22 23.0013C22.1315 23.0013 22.2617 22.9754 22.3832 22.925C22.5046 22.8747 22.615 22.801 22.708 22.708C22.801 22.615 22.8747 22.5046 22.925 22.3832C22.9754 22.2617 23.0013 22.1315 23.0013 22C23.0013 21.8685 22.9754 21.7383 22.925 21.6168C22.8747 21.4954 22.801 21.385 22.708 21.292L17.414 16L22.708 10.708C22.801 10.615 22.8747 10.5046 22.925 10.3832C22.9754 10.2617 23.0013 10.1315 23.0013 10C23.0013 9.86851 22.9754 9.73831 22.925 9.61683C22.8747 9.49535 22.801 9.38498 22.708 9.292C22.615 9.19902 22.5046 9.12527 22.3832 9.07495C22.2617 9.02464 22.1315 8.99874 22 8.99874C21.8685 8.99874 21.7383 9.02464 21.6168 9.07495C21.4954 9.12527 21.385 9.19902 21.292 9.292L16 14.586L10.708 9.292Z" />
+  </svg>
+`;
+
+// MapLibre recria o botão (com o caractere "×") a cada setHTML.
+const applyCardCloseIcon = (popup) => {
+  const button = popup.getElement()?.querySelector(".maplibregl-popup-close-button");
+  if (button) button.innerHTML = CARD_CLOSE_ICON;
+};
+
 const showExploreCardPopup = async (feature) => {
   const map = mapInstance.value;
   const coordinates = feature?.geometry?.coordinates?.slice();
@@ -346,6 +359,7 @@ const showExploreCardPopup = async (feature) => {
     )
     .addTo(map);
 
+  applyCardCloseIcon(popup);
   activeCardPopup = popup;
   activeCardImageId = id;
 
@@ -398,6 +412,7 @@ const showExploreCardPopup = async (feature) => {
         featureType: properties.featureType ?? "image",
       })
     );
+    applyCardCloseIcon(popup);
   } catch (error) {
     console.error("Erro ao carregar detalhes da imagem do mapa", error);
 
@@ -1417,15 +1432,35 @@ onUnmounted(() => {
 
 .locations-map-card-popup-container .maplibregl-popup-close-button {
   z-index: 2;
-  top: 6px;
-  right: 6px;
-  width: 28px;
-  height: 28px;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  /* Zera os estilos nativos de <button> (o Safari aplica padding próprio) */
+  appearance: none;
+  padding: 0;
   border-radius: 50%;
   color: var(--Cinza_E, #2f2f2f);
-  background: rgba(255, 255, 255, 0.92);
-  font-size: 20px;
-  line-height: 28px;
+  background: transparent;
+  line-height: 0;
+}
+
+.locations-map-card-popup-container .maplibregl-popup-close-button:hover {
+  background: transparent;
+}
+
+.locations-map-card-popup-container .maplibregl-popup-close-button svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.locations-map-card-close__bg {
+  fill: var(--Branco, #fff);
+  fill-opacity: 0.92;
 }
 
 .locations-map-card {
