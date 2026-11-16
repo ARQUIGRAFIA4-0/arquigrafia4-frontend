@@ -75,8 +75,8 @@
     </div>
 
     <div class="collections-toolbar-container">
-      <CollectionsToolbar ref="toolbarRef" v-model:search="searchDraft" :filter="activeFilterOption.value"
-        @update:filter="setFilter" @submit="applySearchNow" @clear="clearSearch" />
+      <CollectionsToolbar ref="toolbarRef" :search="appliedSearch" :filter="activeFilterOption.value"
+        @update:filter="setFilter" @search="applySearch" />
     </div>
   </section>
 </template>
@@ -85,7 +85,7 @@
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useRouteQuery } from "@vueuse/router";
-import { refDebounced, useElementVisibility } from "@vueuse/core";
+import { useElementVisibility } from "@vueuse/core";
 import CollectionCard from "@/components/collection/CollectionCard.vue";
 import CollectionsToolbar from "@/components/collection/CollectionsToolbar.vue";
 import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
@@ -96,7 +96,6 @@ import {
   resolveCollectionPercursoFilter,
 } from "@/constants/collectionFilters";
 
-const SEARCH_DEBOUNCE_MS = 400;
 const LOAD_MORE_MARGIN = "400px";
 
 const router = useRouter();
@@ -130,39 +129,20 @@ const hasActiveFilters = computed(
   () => Boolean(appliedSearch.value) || activeFilterOption.value.value !== DEFAULT_COLLECTION_PERCURSO_FILTER,
 );
 
-const searchDraft = ref(appliedSearch.value);
-const debouncedSearchDraft = refDebounced(searchDraft, SEARCH_DEBOUNCE_MS);
-
+// A busca é aplicada quando o usuário confirma (Enter, seta ou "Buscar" no
+// mobile) e removida pelo "Limpar"; o toolbar emite o termo final.
 function applySearch(value) {
-  const term = value.trim();
+  const term = (value ?? "").trim();
   if (term !== appliedSearch.value) {
     searchQuery.value = term;
   }
-}
-
-watch(debouncedSearchDraft, applySearch);
-
-watch(appliedSearch, (term) => {
-  if (term !== searchDraft.value.trim()) {
-    searchDraft.value = term;
-  }
-});
-
-function applySearchNow() {
-  applySearch(searchDraft.value);
 }
 
 function setFilter(value) {
   filterQuery.value = resolveCollectionPercursoFilter(value).value;
 }
 
-function clearSearch() {
-  searchDraft.value = "";
-  applySearch("");
-}
-
 function clearAll() {
-  searchDraft.value = "";
   router.replace({ query: {} });
 }
 
@@ -175,7 +155,6 @@ function focusSearch() {
 // --- Dados --------------------------------------------------------------
 const {
   items,
-  data,
   isPending,
   isError,
   isFetching,
@@ -194,20 +173,28 @@ const isInitialLoading = computed(() => isPending.value && !items.value.length &
 // Troca de filtro/busca: mantém os cards anteriores (esmaecidos) até a nova
 // resposta chegar, em vez de piscar o skeleton.
 const isShowingStaleResults = computed(() => isPlaceholderData.value && isFetching.value);
+// Uma página pode vir só com coleções "Favoritos" (removidas da lista): só é
+// vazio de fato quando não há mais páginas; senão o scroll infinito continua.
 const isEmpty = computed(
-  () => !isPending.value && !isPlaceholderData.value && !isError.value && items.value.length === 0,
+  () =>
+    !isPending.value &&
+    !isPlaceholderData.value &&
+    !isError.value &&
+    !hasNextPage.value &&
+    items.value.length === 0,
 );
 
-const total = computed(() => data.value?.pages?.[0]?.total ?? null);
-
+// O `total` da API inclui as coleções "Favoritos", então o número exato só é
+// anunciado quando todas as páginas já foram carregadas.
 const statusMessage = computed(() => {
   if (isInitialLoading.value || isShowingStaleResults.value) return "Carregando coleções...";
   if (isError.value && !items.value.length) return "Erro ao carregar as coleções.";
   if (isEmpty.value) return "Nenhuma coleção encontrada.";
-  if (total.value != null) {
-    return total.value === 1 ? "1 coleção encontrada." : `${total.value} coleções encontradas.`;
+  if (!hasNextPage.value) {
+    const count = items.value.length;
+    return count === 1 ? "1 coleção encontrada." : `${count} coleções encontradas.`;
   }
-  return "";
+  return "Coleções encontradas.";
 });
 
 watch([appliedSearch, () => activeFilterOption.value.value], () => {
@@ -314,12 +301,5 @@ $breakpoint-md: 768px;
   z-index: 1000;
   width: fit-content;
   margin: 0 auto;
-
-  @media (max-width: 767.98px) {
-    bottom: 16px;
-    left: 12px;
-    right: 12px;
-    width: auto;
-  }
 }
 </style>
