@@ -1,5 +1,5 @@
 <script setup>
-import { computed, markRaw, onUnmounted, ref, shallowRef, watch } from "vue";
+import { computed, inject, markRaw, onUnmounted, ref, shallowRef, unref, watch } from "vue";
 import { LngLatBounds, Popup } from "maplibre-gl";
 
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
@@ -110,6 +110,15 @@ const DEFAULT_ZOOM = 3;
 const SELECTED_ICON_ZOOM = 8;
 const SELECTED_ICON_ANIMATION_MS = 700;
 const POPUP_CLOSE_ZOOM_DELTA = 0.1;
+
+// Enquadramento do card: distância card→ponto (igual ao offset do Popup),
+// margem mínima das bordas e piso da altura da imagem ao encolher.
+const CARD_POINT_GAP = 14;
+const CARD_SAFE_MARGIN = 16;
+const CARD_MEDIA_MIN_HEIGHT = 220;
+
+// Elemento que flutua sobre o pé do mapa (toolbar da home). Opcional.
+const mapBottomOverlay = inject("mapBottomOverlay", null);
 
 const cameraIconSvg = (fill) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="${fill}"/><g transform="translate(8 8) scale(0.75) translate(-8 -8)"><path fill="#FFFFFF" d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/><path fill="#FFFFFF" d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4Zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0"/></g></svg>`;
 
@@ -259,6 +268,7 @@ const createExploreCardPopupContent = ({
   title,
   imageUrl,
   date = "",
+  reserveDate = false,
   featureType = "image",
 }) => {
   const safeId = encodeURIComponent(id);
@@ -283,7 +293,11 @@ const createExploreCardPopupContent = ({
         </h3>
 
         ${
-          date ? `<p class="locations-map-card__date">${escapeHtml(date)}</p>` : ""
+          date
+            ? `<p class="locations-map-card__date">${escapeHtml(date)}</p>`
+            : reserveDate
+              ? `<p class="locations-map-card__date" aria-hidden="true">&nbsp;</p>`
+              : ""
         }
 
         <a
@@ -329,24 +343,32 @@ const applyCardCloseIcon = (popup) => {
   if (button) button.innerHTML = CARD_CLOSE_ICON;
 };
 
-const showExploreCardPopup = async (feature) => {
+// Abre o card da imagem. Com `hidden`, ele nasce invisível para ser medido
+// antes do movimento da câmera (ver focusOnCard).
+const showExploreCardPopup = (feature, { hidden = false } = {}) => {
   const map = mapInstance.value;
   const coordinates = feature?.geometry?.coordinates?.slice();
   const properties = feature?.properties ?? {};
   const id = properties.id;
 
-  if (!map || !id || !isValidCoordinate(coordinates)) return;
+  if (!map || !id || !isValidCoordinate(coordinates)) return null;
 
   closeActivePopup();
   closeActiveCardPopup();
 
+  // Imagens recebem a data depois; reservar a linha evita o card crescer.
+  const reserveDate =
+    Boolean(props.loadImageDetails) && properties.featureType !== "work";
+
   const popup = new Popup({
     anchor: "bottom",
-    offset: [0, -14],
+    offset: [0, -CARD_POINT_GAP],
     closeButton: true,
     closeOnClick: true,
     closeOnMove: false,
-    className: "locations-map-card-popup-container",
+    className: hidden
+      ? "locations-map-card-popup-container is-measuring"
+      : "locations-map-card-popup-container",
   })
     .setLngLat(coordinates)
     .setHTML(
@@ -354,6 +376,7 @@ const showExploreCardPopup = async (feature) => {
         id,
         title: properties.title,
         imageUrl: properties.thumbUrl ?? properties.imageUrl,
+        reserveDate,
         featureType: properties.featureType ?? "image",
       })
     )
@@ -393,8 +416,12 @@ const showExploreCardPopup = async (feature) => {
   });
 
   // Obras não usam /api/images/:id — o GeoJSON já traz título/thumb.
-  if (!props.loadImageDetails || properties.featureType === "work") return;
+  if (reserveDate) loadCardDetails(popup, id, properties);
 
+  return popup;
+};
+
+const loadCardDetails = async (popup, id, properties) => {
   try {
     const details = await props.loadImageDetails(id);
 
@@ -409,15 +436,75 @@ const showExploreCardPopup = async (feature) => {
           properties.thumbUrl ??
           properties.imageUrl,
         date: formatPopupDate(details?.dates),
+        reserveDate: true,
         featureType: properties.featureType ?? "image",
       })
     );
     applyCardCloseIcon(popup);
   } catch (error) {
     console.error("Erro ao carregar detalhes da imagem do mapa", error);
+  }
+};
 
+// Quanto do pé do mapa está coberto pelo elemento flutuante (0 se nada).
+const getMapBottomOverlap = (mapRect) => {
+  const overlay = unref(mapBottomOverlay);
+  if (!overlay?.getBoundingClientRect) return 0;
+
+  const rect = overlay.getBoundingClientRect();
+  if (!rect.height) return 0;
+
+  return Math.min(Math.max(0, mapRect.bottom - rect.top), mapRect.height);
+};
+
+// Abre o card e move a câmera para centralizar o conjunto card + ponto na
+// área livre do mapa. Em telas baixas, encolhe a imagem até o piso e, se
+// ainda não couber, prende o topo do card na margem.
+const focusOnCard = (feature, { zoom } = {}) => {
+  const map = mapInstance.value;
+  const coordinates = feature?.geometry?.coordinates?.slice();
+  if (!map || !isValidCoordinate(coordinates)) return;
+
+  const popup = showExploreCardPopup(feature, { hidden: true });
+  const popupEl = popup?.getElement();
+  if (!popupEl) return;
+
+  const mapRect = map.getContainer().getBoundingClientRect();
+  const freeTop = CARD_SAFE_MARGIN;
+  const freeHeight =
+    mapRect.height - getMapBottomOverlap(mapRect) - CARD_SAFE_MARGIN - freeTop;
+
+  const measureBlock = () => popupEl.offsetHeight + CARD_POINT_GAP;
+  let block = measureBlock();
+
+  const media = popupEl.querySelector(".locations-map-card__media");
+  if (media && block > freeHeight) {
+    const mediaHeight = media.offsetHeight;
+    const target = Math.max(
+      CARD_MEDIA_MIN_HEIGHT,
+      Math.floor(mediaHeight - (block - freeHeight))
+    );
+
+    if (target < mediaHeight) {
+      popupEl.style.setProperty("--card-media-height", `${target}px`);
+      block = measureBlock();
+    }
   }
 
+  const cardTop = freeTop + Math.max(0, (freeHeight - block) / 2);
+  const pointY = cardTop + block;
+
+  map.once("moveend", () => {
+    if (popup.isOpen()) popup.removeClassName("is-measuring");
+  });
+
+  map.easeTo({
+    center: coordinates,
+    zoom: zoom ?? Math.max(map.getZoom(), SELECTED_ICON_ZOOM),
+    offset: [0, pointY - mapRect.height / 2],
+    duration: SELECTED_ICON_ANIMATION_MS,
+    essential: true,
+  });
 };
 
 // Mostra o popup para o feature.
@@ -522,14 +609,12 @@ const handlePointClick = (event) => {
     emit("select", id);
   }
 
-  if (props.context === "explore") {
-    map.once("moveend", () => {
-      showExploreCardPopup(feature);
-    });
-  }
-
   requestAnimationFrame(() => {
-    focusOnCoordinates(coordinates);
+    if (props.context === "explore") {
+      focusOnCard(feature);
+    } else {
+      focusOnCoordinates(coordinates);
+    }
   });
 
 };
@@ -579,19 +664,15 @@ const applyInitialSelection = () => {
   const feature = getFeatureById(props.initialSelectedId);
   if (!feature) return;
 
-  const map = mapInstance.value;
-
   selectedId.value = props.initialSelectedId;
   hasAppliedInitialSelection = true;
 
-  if (props.context === "explore") {
-    map.once("moveend", () => {
-      showExploreCardPopup(feature);
-    });
-  }
-
   requestAnimationFrame(() => {
-    focusOnCoordinates(feature.geometry.coordinates.slice());
+    if (props.context === "explore") {
+      focusOnCard(feature);
+    } else {
+      focusOnCoordinates(feature.geometry.coordinates.slice());
+    }
   });
 };
 
@@ -920,8 +1001,8 @@ const handleSpiderLeafClick = (event) => {
   if (spiderContext) renderSpider();
 
   if (props.context === "explore") {
-    closeActiveCardPopup();
-    showExploreCardPopup(feature);
+    // Mantém o zoom: aproximar desfaria o leque.
+    focusOnCard(feature, { zoom: mapInstance.value?.getZoom() });
   }
 };
 
@@ -1470,9 +1551,16 @@ onUnmounted(() => {
   background: var(--Branco, #fff);
 }
 
+/* Medido invisível antes de a câmera se mover (focusOnCard). */
+.locations-map-card-popup-container.is-measuring {
+  visibility: hidden;
+}
+
 .locations-map-card__media {
   position: relative;
   width: 100%;
+  /* Só definida quando o card precisa encolher; senão vale o aspect-ratio. */
+  height: var(--card-media-height, auto);
   aspect-ratio: 1;
   overflow: hidden;
   background: #f8f9fa;
