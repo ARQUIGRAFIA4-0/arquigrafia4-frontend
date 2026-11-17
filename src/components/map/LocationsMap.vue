@@ -74,6 +74,8 @@ const updateAwayFromInitial = () => {
 
 let activeCardPopup = null;
 let activeCardImageId = null;
+// Card aberto a partir de uma folha do spider (ancorado nela).
+let spiderCardPopup = null;
 let isUnmounting = false;
 
 // Guarda o centro e as folhas atualmente "abertas" para poder re-renderizar/colapsar.
@@ -1003,7 +1005,23 @@ const handleSpiderLeafClick = (event) => {
   if (props.context === "explore") {
     // Mantém o zoom: aproximar desfaria o leque.
     focusOnCard(feature, { zoom: mapInstance.value?.getZoom() });
+    spiderCardPopup = activeCardPopup;
   }
+};
+
+const isSpiderCardOpen = () =>
+  Boolean(spiderCardPopup) && spiderCardPopup === activeCardPopup;
+
+// Arrastar não deforma o leque; com um card dele aberto, o leque fica.
+const handleDragStart = () => {
+  if (isSpiderCardOpen()) return;
+  collapseSpider();
+};
+
+// O leque é desenhado para um zoom; ao mudar, fecha junto com o card dele.
+const handleZoomStart = () => {
+  if (isSpiderCardOpen()) closeActiveCardPopup();
+  collapseSpider();
 };
 
 // Clique fora do spiderfy -> fecha o leque e restaura o agrupamento.
@@ -1182,8 +1200,8 @@ const setupLayers = async (map) => {
   map.on("mouseenter", spiderLeavesLayerId, handleSpiderLeafEnter);
   map.on("mouseleave", spiderLeavesLayerId, handleSpiderLeafLeave);
   map.on("click", handleMapClickOutsideSpider);
-  map.on("zoomstart", collapseSpider);
-  map.on("dragstart", collapseSpider);
+  map.on("zoomstart", handleZoomStart);
+  map.on("dragstart", handleDragStart);
 };
 
 // Manipulador de evento para quando o mapa estiver pronto.
