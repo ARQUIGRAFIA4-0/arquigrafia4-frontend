@@ -3,6 +3,7 @@ import { ref, reactive, computed, onMounted } from "vue";
 import { api } from "@/services/api";
 import { useAuthStore } from "@/store/auth";
 import { resolveAvatarUrl } from "@/helpers/avatarUrl";
+import { workApiError } from "@/helpers/workApiError";
 
 const props = defineProps({
   suggestion: { type: Object, required: true },
@@ -170,11 +171,13 @@ onMounted(async () => {
       // O payload traz só UUIDs; o texto vem de "vrac-descriptions/{id}".
       const ids = props.suggestion.payload.descriptions || [];
       const entities = await Promise.all(ids.map((id) => api.resolveVracEntity("descriptions", id)));
+      const texts = entities.map((e) => e?.text).filter(Boolean);
       fieldStates.push({
         field,
         kind: "scalar",
         current: props.work?.description || "",
-        suggested: entities.map((e) => e?.text).filter(Boolean).join("\n\n"),
+        // Sem isso, um id que deu 404 apareceria como "(vazio)", que é remover.
+        suggested: ids.length && !texts.length ? "(descrição não encontrada)" : texts.join("\n\n"),
         decision: null,
       });
       continue;
@@ -235,18 +238,12 @@ const maybeSubmit = async () => {
       fallbackStatus: isFullAccept ? "accepted" : "partially_accepted",
     });
   } catch (e) {
-    const data = e.response?.data;
     // Duplicata a menos de 100m volta com a obra conflitante no corpo.
-    if (data?.existing_work) {
-      emit("error", {
-        message: data.message || "Já existe uma obra com este título neste local.",
-        existingWork: data.existing_work,
-      });
-    } else {
-      emit("error", {
-        message: data?.message || "Não foi possível registrar a decisão. A sugestão pode não ser mais válida.",
-      });
-    }
+    const { message, existingWork } = workApiError(
+      e,
+      "Não foi possível registrar a decisão. A sugestão pode não ser mais válida."
+    );
+    emit("error", existingWork ? { message, existingWork } : { message });
     resetDecisions();
   } finally {
     isSubmitting.value = false;

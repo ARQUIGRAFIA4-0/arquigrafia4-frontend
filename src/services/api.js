@@ -1019,7 +1019,7 @@ const createVracDate = async (authHeader, date) => {
   return res.data.date.id;
 };
 
-// O backend não valida o corpo: "text" vazio estoura NOT NULL e vira 500.
+// Texto vazio volta 422 do backend; checar antes poupa a requisição.
 const createVracDescription = async (authHeader, text) => {
   if (!text?.trim()) throw new Error("Descrição vazia.");
   const res = await axios.post("/api/vrac-descriptions", { text: text.trim() }, { headers: { Authorization: authHeader } });

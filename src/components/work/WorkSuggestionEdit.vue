@@ -6,6 +6,7 @@ import { useWorkForm } from "@/composables/useWorkForm";
 import { materializeWorkParts } from "@/composables/useWorkAutocomplete";
 import { useAuthStore } from "@/store/auth";
 import { api } from "@/services/api";
+import { workApiError } from "@/helpers/workApiError";
 
 const props = defineProps({
   work: { type: Object, required: true },
@@ -95,8 +96,8 @@ const buildPayload = async () => {
   if (current.titles !== initialSnapshot.titles) payload.titles = titleIds;
   if (current.agents !== initialSnapshot.agents) payload.agents = agentIds;
   if (current.dates !== initialSnapshot.dates) payload.dates = dateIds;
-  // Sempre uma descrição nova: editar a existente mudaria a obra sem revisão.
-  // `descriptions` substitui a lista; campo vazio sugere remover.
+  // Sempre uma descrição nova: editar o registro existente pularia a revisão e
+  // não deixa histórico. `descriptions` substitui a lista; vazio remove.
   if (current.description !== initialSnapshot.description) {
     payload.descriptions = draft.description
       ? [await api.createVracDescription(authHeader, draft.description)]
@@ -133,8 +134,7 @@ const handleSubmit = async () => {
     return;
   }
 
-  // O backend só valida o payload no aceite, então o que der para checar aqui
-  // evita que o erro apareça na cara de quem for revisar.
+  // O backend também valida, mas checar aqui poupa as criações do buildPayload.
   if (!hasPreferredTitle.value) {
     showError("A obra precisa de exatamente um título principal.");
     return;
@@ -159,7 +159,7 @@ const handleSubmit = async () => {
     isSaved.value = true;
     setTimeout(() => emit("submitted"), 1500);
   } catch (e) {
-    showError(e.response?.data?.message || "Não foi possível enviar a sugestão.");
+    showError(workApiError(e, "Não foi possível enviar a sugestão.").message);
   } finally {
     isSaving.value = false;
   }
