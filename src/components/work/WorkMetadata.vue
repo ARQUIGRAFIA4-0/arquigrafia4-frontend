@@ -24,11 +24,11 @@
       </template>
     </p>
 
-    <!-- `description` ainda não existe na API (migration pendente no backend). -->
     <div class="metadata-section">
       <h2 class="h5 metadata-title">Descrição</h2>
-      <p class="metadata-text">
-        {{ props.work?.description || "Sem descrição disponível." }}
+      <p v-if="!props.work?.descriptions?.length" class="metadata-text">Sem descrição disponível.</p>
+      <p v-for="desc in props.work?.descriptions || []" :key="desc.id" class="metadata-text">
+        {{ desc.text }}
       </p>
     </div>
 

@@ -208,7 +208,15 @@ const normalizeWork = (work) => {
     id: work.id,
     title: workPrimaryTitle(work),
     titles: work.titles || [],
-    description: work.description ?? null,
+    descriptions: (work.descriptions ?? [])
+      .filter((d) => d?.text)
+      .map((d) => ({ id: d.id, text: d.text, source: d.source ?? null })),
+    // Texto agregado: o formulário de obra e o diff de sugestões editam um campo só.
+    description:
+      (work.descriptions ?? [])
+        .map((d) => d?.text)
+        .filter(Boolean)
+        .join("\n\n") || null,
     imagesCount: typeof work.images_count === "number" ? work.images_count : null,
     location: work.location
       ? {
@@ -949,6 +957,7 @@ const VRAC_ENTITIES = {
   titles:  { endpoint: "vrac-titles", envelope: "title", displayKey: "label" },
   agents:  { endpoint: "vrac-agents", envelope: "agent" },
   dates:   { endpoint: "vrac-dates",  envelope: "date"  },
+  descriptions: { endpoint: "vrac-descriptions", envelope: "description", displayKey: "text" },
   style_periods: {
     endpoint: "vrac-style-periods", envelope: "period", displayKey: "label",
     draftKey: "stylePeriods", createPayload: (v) => ({ label: v }),
@@ -1008,6 +1017,13 @@ const createVracAgent = async (authHeader, { contributorNameId, roleId }) => {
 const createVracDate = async (authHeader, date) => {
   const res = await axios.post("/api/vrac-dates", date, { headers: { Authorization: authHeader } });
   return res.data.date.id;
+};
+
+// Texto vazio volta 422 do backend; checar antes poupa a requisição.
+const createVracDescription = async (authHeader, text) => {
+  if (!text?.trim()) throw new Error("Descrição vazia.");
+  const res = await axios.post("/api/vrac-descriptions", { text: text.trim() }, { headers: { Authorization: authHeader } });
+  return res.data.description.id;
 };
 
 /**
@@ -1269,6 +1285,7 @@ export const api = {
   createVracContributorName,
   createVracAgent,
   createVracDate,
+  createVracDescription,
   findExistingVocabId,
   createVocabTerm,
   resolveVocabIds,
