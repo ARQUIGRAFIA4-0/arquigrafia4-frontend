@@ -8,7 +8,7 @@ import lab02Pesquisador03 from '@/assets/lab_02_pesquisador03.png';
 import lab02Pesquisador04 from '@/assets/lab_02_pesquisador04.png';
 import lab03Pesquisador01 from '@/assets/lab_03_pesquisador01.png';
 import lab03Pesquisador02 from '@/assets/lab_03_pesquisador02.png';
-import lab04Pesquisador01 from '@/assets/lab_04_pesquisador01.png';
+import lab04Pesquisador01 from '@/assets/lab_04_pesquisador01.webp';
 import { markRaw } from 'vue';
 import CollectionCoversPreview from '@/components/lab/CollectionCoversPreview.vue';
 import CollectionCoversGuide from '@/components/lab/CollectionCoversGuide.vue';
