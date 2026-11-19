@@ -272,8 +272,16 @@ onMounted(async () => {
   desktopQuery.addEventListener("change", handleDesktopChange);
   await fetchImageData();
 });
+watch(
+  () => image.value?.title,
+  (title) => {
+    document.title = title ? `ARQUIGRAFIA - ${title}` : "ARQUIGRAFIA";
+  }
+);
+
 onBeforeUnmount(() => {
   desktopQuery.removeEventListener("change", handleDesktopChange);
+  document.title = "ARQUIGRAFIA";
 });
 </script>
 

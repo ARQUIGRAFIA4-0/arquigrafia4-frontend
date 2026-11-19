@@ -134,7 +134,9 @@ export const materializeWork = async (draft) => {
   };
   if (agentIds.length) workPayload.agents = agentIds;
   if (dateIds.length) workPayload.dates = dateIds;
-  if (draft.description) workPayload.description = draft.description;
+  if (draft.description) {
+    workPayload.descriptions = [await api.createVracDescription(authHeader, draft.description)];
+  }
   if (resolvedVocab.stylePeriods.length)
     workPayload.style_periods = resolvedVocab.stylePeriods;
   if (resolvedVocab.culturalCtxs.length)
