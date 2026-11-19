@@ -1,6 +1,7 @@
 import { computed, toValue } from "vue";
 import { keepPreviousData, useInfiniteQuery } from "@tanstack/vue-query";
 import { api } from "@/services/api";
+import { excludeFavoritesAlbums } from "@/constants/favoritesCollection";
 
 export const usePublicAlbumsInfiniteQuery = (options = {}) => {
   const { title, hasPercursos, perPage = 24, ...queryOptions } = options;
@@ -33,9 +34,11 @@ export const usePublicAlbumsInfiniteQuery = (options = {}) => {
     ...queryOptions,
   });
 
+  // A coleção "Favoritos" de cada usuário é pública, mas não faz parte da
+  // exploração de coleções; usa a mesma regra de identificação do perfil.
   const items = computed(() => {
     const pages = query.data?.value?.pages ?? [];
-    return pages.flatMap((page) => page?.items ?? []);
+    return excludeFavoritesAlbums(pages.flatMap((page) => page?.items ?? []));
   });
 
   const hasNextPage = computed(() => Boolean(query.hasNextPage?.value));

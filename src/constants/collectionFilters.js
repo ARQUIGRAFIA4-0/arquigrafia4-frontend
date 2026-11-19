@@ -1,7 +1,7 @@
 export const COLLECTION_PERCURSO_FILTERS = [
-  { value: "todas", label: "todas", icon: "bi-collection", hasPercursos: null },
-  { value: "com-percurso", label: "com percurso", icon: "bi-signpost-split-fill", hasPercursos: true },
-  { value: "sem-percurso", label: "sem percurso", icon: "bi-signpost-split", hasPercursos: false },
+  { value: "todas", label: "todas", icon: "bi-globe", hasPercursos: null },
+  { value: "com-percurso", label: "só percurso", icon: "bi-signpost-split-fill", hasPercursos: true },
+  { value: "sem-percurso", label: "sem percurso", icon: "bi-grid-1x2", hasPercursos: false },
 ];
 
 export const DEFAULT_COLLECTION_PERCURSO_FILTER = "todas";
