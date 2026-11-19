@@ -8,7 +8,11 @@
     @keydown.space.prevent="$emit('click')"
   >
     <div class="lab-card__image-wrapper">
+      <div v-if="$slots.image" class="lab-card__image">
+        <slot name="image" />
+      </div>
       <img
+        v-else
         :src="image"
         :alt="title"
         class="lab-card__image"
@@ -38,9 +42,10 @@
 
 <script setup>
 defineProps({
+  // Opcional quando a imagem é fornecida pelo slot `image`.
   image: {
     type: String,
-    required: true,
+    default: null,
   },
   title: {
     type: String,

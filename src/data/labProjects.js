@@ -8,6 +8,10 @@ import lab02Pesquisador03 from '@/assets/lab_02_pesquisador03.png';
 import lab02Pesquisador04 from '@/assets/lab_02_pesquisador04.png';
 import lab03Pesquisador01 from '@/assets/lab_03_pesquisador01.png';
 import lab03Pesquisador02 from '@/assets/lab_03_pesquisador02.png';
+import lab04Pesquisador01 from '@/assets/lab_04_pesquisador01.webp';
+import { markRaw } from 'vue';
+import CollectionCoversPreview from '@/components/lab/CollectionCoversPreview.vue';
+import CollectionCoversGuide from '@/components/lab/CollectionCoversGuide.vue';
 
 export const labProjects = [
     {
@@ -115,6 +119,36 @@ export const labProjects = [
                 label: "Ler mais",
                 url: "https://www.acervosdigitais.fau.usp.br/visao-computacional-aplicada-a-arquivos-de-arquitetura-arte-e-design/",
             }
+        ],
+    },
+    {
+        id: 4,
+        slug: "visualizando-dados-das-colecoes",
+        cardTitle: "Visualizando dados das coleções",
+        fullTitle: "Visualizando dados das coleções",
+        subTitle: "Entenda como as capas das coleções representam graficamente os seus dados.",
+        cover: markRaw(CollectionCoversPreview),
+        content: markRaw(CollectionCoversGuide),
+        sectionTitle: "Como ler as capas",
+        researchers: [
+            {
+                name: "Gabriela Momberg",
+                avatar: lab04Pesquisador01,
+                bio: `<a href="https://arquigrafia.org.br/perfil/e6ae4229-bfdb-486b-af1b-76565b547b78" target="_blank" rel="noopener noreferrer">Gabriela Momberg</a> é arquiteta-urbanista e mestra em design pela FAU-USP. Sua pesquisa aborda cartografias e formas de visualização de informação em materiais físicos e espaços expositivos. Atua como designer de informação e educadora, e fez parte da equipe de desenvolvimento do ARQUIGRAFIA entre 2025 e 2026.`,
+            }
+        ],
+        links: [
+            {
+                type: "collections",
+                label: "Ver todas as coleções",
+                to: { name: "colecoes" },
+            },
+            {
+                type: "my-collections",
+                label: "Ver minhas coleções",
+                to: { name: "my-profile-collections" },
+                primary: true,
+            },
         ],
     }
 ];

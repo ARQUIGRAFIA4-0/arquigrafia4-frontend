@@ -33,6 +33,10 @@ function navigateToLab() {
 function navigateToRede() {
   router.push("/explore/rede");
 }
+
+function navigateToColecoes() {
+  router.push("/explore/colecoes");
+}
 </script>
 
 <template>
@@ -47,6 +51,16 @@ function navigateToRede() {
             @click="navigateToCollection"
           >
             Acervo
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            :class="['nav-link', { active: activeTab === 'colecoes' }]"
+            :aria-current="activeTab === 'colecoes' ? 'page' : undefined"
+            data-label="Coleções"
+            @click="navigateToColecoes"
+          >
+            Coleções
           </button>
         </li>
         <li class="nav-item">

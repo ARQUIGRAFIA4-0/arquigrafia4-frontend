@@ -17,7 +17,11 @@
             :subtitle="item.subTitle"
             :authors="item.researchers"
             @click="selectProject(item)"
-          />
+          >
+            <template v-if="item.cover" #image>
+              <component :is="item.cover" />
+            </template>
+          </LabCard>
         </div>
       </div>
     </template>

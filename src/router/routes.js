@@ -106,6 +106,12 @@ export default [
     name: "rede",
     component: () => import("../views/NetworkPage.vue")
   },
+  // Exploração de coleções públicas (de usuários e coletivos)
+  {
+    path: "/explore/colecoes",
+    name: "colecoes",
+    component: () => import("../views/CollectionsPage.vue"),
+  },
   // About routes
   {
     path: "/about",

@@ -10,15 +10,15 @@
 
       <div class="search-modal__header">
         <div class="d-flex align-items-center gap-2">
-          <h2 class="network-offcanvas__title">Busca por nome</h2>
+          <h2 class="network-offcanvas__title">{{ title }}</h2>
           <UiField id="network-offcanvas-help" class="network-offcanvas__help-field" label=" "
-            explain="Busque por um nome específico ou pelo nome de um coletivo." />
+            :explain="explain" />
         </div>
       </div>
 
       <div class="search-modal__input-row">
-        <input v-model="inputText" class="search-modal__input" type="text" placeholder="Digite um nome..."
-          @keydown.enter="confirm" />
+        <input v-model="inputText" class="search-modal__input" type="text" :placeholder="placeholder"
+          :aria-label="title" @keydown.enter="confirm" />
       </div>
 
       <div class="network-offcanvas__actions">
@@ -34,13 +34,31 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, watch, onMounted, onBeforeUnmount } from "vue";
 import { Offcanvas } from "bootstrap";
 import UiField from "../ui/UiField.vue";
 
+// Textos configuráveis para reaproveitar o painel em outras telas (ex.: Coleções).
+// Os padrões são os da tela de Rede.
+const props = defineProps({
+  title: { type: String, default: "Busca por nome" },
+  explain: { type: String, default: "Busque por um nome específico ou pelo nome de um coletivo." },
+  placeholder: { type: String, default: "Digite um nome..." },
+  // Termo aplicado no momento; quando informado, mantém o campo sincronizado
+  // com buscas limpas/alteradas fora do painel.
+  value: { type: String, default: null },
+});
+
 const emit = defineEmits(["search"]);
 
-const inputText = ref("");
+const inputText = ref(props.value ?? "");
+
+watch(
+  () => props.value,
+  (value) => {
+    if (value !== null) inputText.value = value;
+  },
+);
 const terms = ref([]);
 const dialogEl = ref(null);
 const offcanvasEl = ref(null);
