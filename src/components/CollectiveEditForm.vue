@@ -298,6 +298,8 @@ async function handleSubmit() {
         },
       }
     );
+    // Reflete nome/avatar atualizados em loggedUser.collectives (menu).
+    await authStore.getLoggedUser();
     displayAlert('Alterações salvas com sucesso!', 'success');
     scrollToTop();
     setTimeout(() => {

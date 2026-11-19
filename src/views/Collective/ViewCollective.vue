@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import { useCollectivesStore } from "@/store/collectives";
@@ -34,14 +34,46 @@ const userRole = computed(() => {
   return member?.role ?? null;
 });
 
-onMounted(async () => {
-  const result = await collectivesStore.getCollective(route.params.id);
+// Identifica a carga mais recente: se o usuário trocar de coletivo antes da
+// resposta anterior chegar, a resposta antiga é descartada.
+let latestLoadId = 0;
+// Id do coletivo exibido; usado como :key do container no template.
+const currentCollectiveId = ref(null);
+
+async function loadCollective(id) {
+  const loadId = ++latestLoadId;
+  currentCollectiveId.value = id;
+
+  // Limpa o estado do coletivo anterior para não exibir dados/abas dele
+  // (ex.: aba "Solicitações" de um coletivo em que o usuário era admin).
+  collectiveData.value = null;
+  loadError.value = "";
+  selectedTab.value = "Imagens";
+
+  const result = await collectivesStore.getCollective(id);
+  if (loadId !== latestLoadId) return;
+
   if (result.success) {
     collectiveData.value = result.data;
   } else {
     loadError.value = result.message;
   }
+}
 
+// Navegar de /coletivos/A para /coletivos/B reaproveita esta mesma instância
+// (só o :id muda), então onMounted não roda de novo. O watch recarrega o
+// coletivo sempre que o id da rota muda.
+watch(
+  () => route.params.id,
+  (id) => {
+    // Ignora a mudança de params ao sair desta tela para outra rota.
+    if (!id || route.name !== "collective-detail") return;
+    loadCollective(id);
+  },
+  { immediate: true }
+);
+
+onMounted(() => {
   window.addEventListener("resize", handleResize);
 });
 
@@ -74,7 +106,9 @@ async function handleRequestApproved() {
       {{ loadError }}
     </div>
 
-    <div v-else :class="['collective-container', isMobile ? '' : 'row']">
+    <!-- :key recria os filhos ao trocar de coletivo, zerando o estado interno
+         deles (ex.: "solicitação enviada" no CollectiveCard, skeletons). -->
+    <div v-else :key="currentCollectiveId" :class="['collective-container', isMobile ? '' : 'row']">
       <!-- Card lateral esquerdo -->
       <div class="col-12 collective-container__sidebar">
         <CollectiveCard
