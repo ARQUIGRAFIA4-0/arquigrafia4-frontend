@@ -59,7 +59,7 @@
         </div>
       </template>
 
-      <div class="toolbar" data-cy="toolbar">
+      <div ref="toolbarRef" class="toolbar" data-cy="toolbar">
         <template v-if="isMobile">
           <page-toolbar-mobile :view-selection="viewSelection" :search-mode="localSearchMode" data-cy="toolbar-mobile"
             @search-mode-change="handleMobileSearchModeChange" @open-view-menu="openViewMenu"
@@ -165,7 +165,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, nextTick, onUnmounted } from "vue";
+import { computed, ref, watch, nextTick, onUnmounted, provide } from "vue";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/store/auth";
 import { useAlbumsStore } from "@/store/albums";
@@ -202,6 +202,10 @@ const albumsStore = useAlbumsStore();
 const { isLoggedIn, authHeader, loggedUser } = storeToRefs(authStore);
 const breakpoints = useBreakpoints({ md: 768 });
 const isMobile = breakpoints.smaller("md");
+
+// Toolbar flutuante sobre o mapa; usada pelo LocationsMap.
+const toolbarRef = ref(null);
+provide("mapBottomOverlay", toolbarRef);
 
 const activeTab = computed(() => {
   if (route.path.startsWith("/explore/lab")) return "lab";

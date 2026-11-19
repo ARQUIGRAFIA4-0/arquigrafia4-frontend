@@ -6,6 +6,7 @@ import { useWorkForm } from "@/composables/useWorkForm";
 import { materializeWorkParts } from "@/composables/useWorkAutocomplete";
 import { useAuthStore } from "@/store/auth";
 import { api } from "@/services/api";
+import { workApiError } from "@/helpers/workApiError";
 
 const props = defineProps({
   work: { type: Object, required: true },
@@ -23,6 +24,7 @@ const {
   AGENT_ROLE_LABELS, agentRoleInput, agentNameInput, agents,
   filteredNameSuggestions, showNameSuggestions, loadContributorNames,
   onAgentNameInput, hideNameSuggestions, addAgent, removeAgent,
+  canCreateAgent, createAndAddAgent, onAgentEnter, agentPendingError,
   DATE_TYPES, dateTypeInput, dateYearInput, dateYearEndInput, dateIntervalMode,
   dateCirca, dates, dateError, isDateTypeDisabled, addDate, removeDate, dateTypeLabel,
   formatDateChip,
@@ -94,8 +96,12 @@ const buildPayload = async () => {
   if (current.titles !== initialSnapshot.titles) payload.titles = titleIds;
   if (current.agents !== initialSnapshot.agents) payload.agents = agentIds;
   if (current.dates !== initialSnapshot.dates) payload.dates = dateIds;
+  // Sempre uma descrição nova: editar o registro existente pularia a revisão e
+  // não deixa histórico. `descriptions` substitui a lista; vazio remove.
   if (current.description !== initialSnapshot.description) {
-    payload.description = draft.description;
+    payload.descriptions = draft.description
+      ? [await api.createVracDescription(authHeader, draft.description)]
+      : [];
   }
   for (const payloadKey of api.VRAC_VOCAB_KEYS) {
     if (current[payloadKey] === initialSnapshot[payloadKey]) continue;
@@ -110,10 +116,14 @@ const handleSubmit = async () => {
 
   // Aproveita o que ficou digitado sem virar chip, em vez de descartar em silêncio.
   commitPendingInputs();
-  // Vocabulário com texto pendente segura o envio: o termo digitado não vira
-  // chip sozinho, então enviar agora o perderia.
+  // Vocabulário ou autoria com texto pendente seguram o envio: o que foi
+  // digitado não vira chip sozinho, então enviar agora o perderia.
   if (vocabPendingError.value) {
     showError(vocabPendingError.value);
+    return;
+  }
+  if (agentPendingError.value) {
+    showError(agentPendingError.value);
     return;
   }
 
@@ -124,8 +134,7 @@ const handleSubmit = async () => {
     return;
   }
 
-  // O backend só valida o payload no aceite, então o que der para checar aqui
-  // evita que o erro apareça na cara de quem for revisar.
+  // O backend também valida, mas checar aqui poupa as criações do buildPayload.
   if (!hasPreferredTitle.value) {
     showError("A obra precisa de exatamente um título principal.");
     return;
@@ -150,7 +159,7 @@ const handleSubmit = async () => {
     isSaved.value = true;
     setTimeout(() => emit("submitted"), 1500);
   } catch (e) {
-    showError(e.response?.data?.message || "Não foi possível enviar a sugestão.");
+    showError(workApiError(e, "Não foi possível enviar a sugestão.").message);
   } finally {
     isSaving.value = false;
   }
@@ -225,22 +234,24 @@ const handleSubmit = async () => {
               <button class="dropdown-item" @click.prevent="agentRoleInput = r">{{ r }}</button>
             </li>
           </ul>
-          <input v-model="agentNameInput" type="text" class="form-control border-preto border-end-0"
+          <input v-model="agentNameInput" type="text" class="form-control border-preto"
             placeholder="Nome" autocomplete="off" @input="onAgentNameInput"
-            @focus="showNameSuggestions = true" @blur="hideNameSuggestions" @keydown.enter.prevent="addAgent()" />
-          <div v-if="showNameSuggestions && filteredNameSuggestions.length > 0"
+            @focus="showNameSuggestions = true" @blur="hideNameSuggestions" @keydown.enter.prevent="onAgentEnter()" />
+          <div v-if="showNameSuggestions && (filteredNameSuggestions.length > 0 || canCreateAgent())"
             class="dropdown-menu w-100 show position-absolute top-100 start-0 mt-1"
             style="z-index: 1500; max-height: 220px; overflow-y: auto">
             <button v-for="c in filteredNameSuggestions" :key="c.id" type="button" class="dropdown-item"
               @click="addAgent(c)">
               {{ c.name }}
             </button>
+            <button v-if="canCreateAgent()" type="button"
+              class="dropdown-item text-primary d-flex align-items-center gap-1" @click="createAndAddAgent()">
+              <i class="bi bi-plus-circle" />
+              <span>Criar "{{ agentNameInput.trim() }}"</span>
+            </button>
           </div>
-          <button type="button" class="btn btn-light border-preto border-start-0 bg-transparent btn-enlarge-40"
-            aria-label="Adicionar autoria" @click="addAgent()">
-            <i class="bi bi-plus-square-fill" />
-          </button>
         </div>
+        <p v-if="agentPendingError" class="text-danger small mt-1 mb-0">{{ agentPendingError }}</p>
         <div class="d-flex flex-wrap gap-2 mt-2">
           <button v-for="(a, i) in agents" :key="i" type="button" class="btn btn-primary btn-sm btn-tag">
             {{ a.roleLabel }}: {{ a.contributorName }}

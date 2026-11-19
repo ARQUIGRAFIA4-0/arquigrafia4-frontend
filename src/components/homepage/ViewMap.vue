@@ -113,6 +113,8 @@ watch(
   position: relative;
   width: 100%;
   height: calc(100vh - 70px - 75px);
+  /* svh: altura com as barras do Safari iOS visíveis; no desktop = vh. */
+  height: calc(100svh - 70px - 75px);
 }
 
 .explore-acervo-map :deep(.locations-map) {

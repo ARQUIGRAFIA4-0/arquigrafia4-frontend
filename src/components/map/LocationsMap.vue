@@ -1,10 +1,11 @@
 <script setup>
-import { computed, markRaw, onUnmounted, ref, shallowRef, watch } from "vue";
+import { computed, inject, markRaw, onUnmounted, ref, shallowRef, unref, watch } from "vue";
 import { LngLatBounds, Popup } from "maplibre-gl";
 
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
 import { createCollectionImagesFeatureCollection } from "@/helpers/geojson.js";
 import escapeHtml from "@/helpers/escapeHtml";
+import { cameraIconSvg, workIconSvg } from "@/helpers/mapIcons";
 
 defineOptions({ name: "LocationsMap" });
 
@@ -74,6 +75,8 @@ const updateAwayFromInitial = () => {
 
 let activeCardPopup = null;
 let activeCardImageId = null;
+// Card aberto a partir de uma folha do spider (ancorado nela).
+let spiderCardPopup = null;
 let isUnmounting = false;
 
 // Guarda o centro e as folhas atualmente "abertas" para poder re-renderizar/colapsar.
@@ -111,9 +114,14 @@ const SELECTED_ICON_ZOOM = 8;
 const SELECTED_ICON_ANIMATION_MS = 700;
 const POPUP_CLOSE_ZOOM_DELTA = 0.1;
 
-const cameraIconSvg = (fill) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="${fill}"/><g transform="translate(8 8) scale(0.75) translate(-8 -8)"><path fill="#FFFFFF" d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/><path fill="#FFFFFF" d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4Zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0"/></g></svg>`;
+// Enquadramento do card: distância card→ponto (igual ao offset do Popup),
+// margem mínima das bordas e piso da altura da imagem ao encolher.
+const CARD_POINT_GAP = 18;
+const CARD_SAFE_MARGIN = 16;
+const CARD_MEDIA_MIN_HEIGHT = 220;
 
-const workIconSvg = (fill = baseColor) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="${fill}"/><path fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" d="M18 45 V31.5 L28 19.5 L46.5 28.5 V45 H18 Z"/><line x1="28" y1="19.5" x2="28" y2="45" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"/><g fill="#FFFFFF"><rect x="21" y="33" width="3.4" height="3.4" rx="0.35"/><rect x="21" y="38.2" width="3.4" height="3.4" rx="0.35"/><rect x="31" y="24.8" width="3.2" height="3.2" rx="0.3"/><rect x="35.6" y="24.8" width="3.2" height="3.2" rx="0.3"/><rect x="40.2" y="24.8" width="3.2" height="3.2" rx="0.3"/><rect x="31" y="29" width="3.2" height="3.2" rx="0.3"/><rect x="35.6" y="29" width="3.2" height="3.2" rx="0.3"/><rect x="40.2" y="29" width="3.2" height="3.2" rx="0.3"/><rect x="31" y="33.2" width="3.2" height="3.2" rx="0.3"/><rect x="35.6" y="33.2" width="3.2" height="3.2" rx="0.3"/><rect x="40.2" y="33.2" width="3.2" height="3.2" rx="0.3"/><rect x="31" y="37.4" width="3.2" height="3.2" rx="0.3"/><rect x="35.6" y="37.4" width="3.2" height="3.2" rx="0.3"/><rect x="40.2" y="37.4" width="3.2" height="3.2" rx="0.3"/><rect x="31" y="41.6" width="3.2" height="3.2" rx="0.3"/><rect x="35.6" y="41.6" width="3.2" height="3.2" rx="0.3"/><rect x="40.2" y="41.6" width="3.2" height="3.2" rx="0.3"/></g></svg>`;
+// Elemento que flutua sobre o pé do mapa (toolbar da home). Opcional.
+const mapBottomOverlay = inject("mapBottomOverlay", null);
 
 // image → câmera | work → prédio | selected → laranja
 const iconImageLayout = [
@@ -259,6 +267,7 @@ const createExploreCardPopupContent = ({
   title,
   imageUrl,
   date = "",
+  reserveDate = false,
   featureType = "image",
 }) => {
   const safeId = encodeURIComponent(id);
@@ -283,7 +292,11 @@ const createExploreCardPopupContent = ({
         </h3>
 
         ${
-          date ? `<p class="locations-map-card__date">${escapeHtml(date)}</p>` : ""
+          date
+            ? `<p class="locations-map-card__date">${escapeHtml(date)}</p>`
+            : reserveDate
+              ? `<p class="locations-map-card__date" aria-hidden="true">&nbsp;</p>`
+              : ""
         }
 
         <a
@@ -316,24 +329,45 @@ const createExploreCardPopupContent = ({
   
 };
 
-const showExploreCardPopup = async (feature) => {
+const CARD_CLOSE_ICON = `
+  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+    <circle class="locations-map-card-close__bg" cx="16" cy="16" r="16" />
+    <path fill="currentColor" d="M10.708 9.292C10.5202 9.10423 10.2656 8.99874 10 8.99874C9.73445 8.99874 9.47977 9.10423 9.292 9.292C9.10423 9.47977 8.99874 9.73445 8.99874 10C8.99874 10.2656 9.10423 10.5202 9.292 10.708L14.586 16L9.292 21.292C9.19902 21.385 9.12527 21.4954 9.07495 21.6168C9.02464 21.7383 8.99874 21.8685 8.99874 22C8.99874 22.1315 9.02464 22.2617 9.07495 22.3832C9.12527 22.5046 9.19902 22.615 9.292 22.708C9.47977 22.8958 9.73445 23.0013 10 23.0013C10.1315 23.0013 10.2617 22.9754 10.3832 22.925C10.5046 22.8747 10.615 22.801 10.708 22.708L16 17.414L21.292 22.708C21.385 22.801 21.4954 22.8747 21.6168 22.925C21.7383 22.9754 21.8685 23.0013 22 23.0013C22.1315 23.0013 22.2617 22.9754 22.3832 22.925C22.5046 22.8747 22.615 22.801 22.708 22.708C22.801 22.615 22.8747 22.5046 22.925 22.3832C22.9754 22.2617 23.0013 22.1315 23.0013 22C23.0013 21.8685 22.9754 21.7383 22.925 21.6168C22.8747 21.4954 22.801 21.385 22.708 21.292L17.414 16L22.708 10.708C22.801 10.615 22.8747 10.5046 22.925 10.3832C22.9754 10.2617 23.0013 10.1315 23.0013 10C23.0013 9.86851 22.9754 9.73831 22.925 9.61683C22.8747 9.49535 22.801 9.38498 22.708 9.292C22.615 9.19902 22.5046 9.12527 22.3832 9.07495C22.2617 9.02464 22.1315 8.99874 22 8.99874C21.8685 8.99874 21.7383 9.02464 21.6168 9.07495C21.4954 9.12527 21.385 9.19902 21.292 9.292L16 14.586L10.708 9.292Z" />
+  </svg>
+`;
+
+// MapLibre recria o botão (com o caractere "×") a cada setHTML.
+const applyCardCloseIcon = (popup) => {
+  const button = popup.getElement()?.querySelector(".maplibregl-popup-close-button");
+  if (button) button.innerHTML = CARD_CLOSE_ICON;
+};
+
+// Abre o card da imagem. Com `hidden`, ele nasce invisível para ser medido
+// antes do movimento da câmera (ver focusOnCard).
+const showExploreCardPopup = (feature, { hidden = false } = {}) => {
   const map = mapInstance.value;
   const coordinates = feature?.geometry?.coordinates?.slice();
   const properties = feature?.properties ?? {};
   const id = properties.id;
 
-  if (!map || !id || !isValidCoordinate(coordinates)) return;
+  if (!map || !id || !isValidCoordinate(coordinates)) return null;
 
   closeActivePopup();
   closeActiveCardPopup();
 
+  // Imagens recebem a data depois; reservar a linha evita o card crescer.
+  const reserveDate =
+    Boolean(props.loadImageDetails) && properties.featureType !== "work";
+
   const popup = new Popup({
     anchor: "bottom",
-    offset: [0, -14],
+    offset: [0, -CARD_POINT_GAP],
     closeButton: true,
     closeOnClick: true,
     closeOnMove: false,
-    className: "locations-map-card-popup-container",
+    className: hidden
+      ? "locations-map-card-popup-container is-measuring"
+      : "locations-map-card-popup-container",
   })
     .setLngLat(coordinates)
     .setHTML(
@@ -341,11 +375,13 @@ const showExploreCardPopup = async (feature) => {
         id,
         title: properties.title,
         imageUrl: properties.thumbUrl ?? properties.imageUrl,
+        reserveDate,
         featureType: properties.featureType ?? "image",
       })
     )
     .addTo(map);
 
+  applyCardCloseIcon(popup);
   activeCardPopup = popup;
   activeCardImageId = id;
 
@@ -379,8 +415,12 @@ const showExploreCardPopup = async (feature) => {
   });
 
   // Obras não usam /api/images/:id — o GeoJSON já traz título/thumb.
-  if (!props.loadImageDetails || properties.featureType === "work") return;
+  if (reserveDate) loadCardDetails(popup, id, properties);
 
+  return popup;
+};
+
+const loadCardDetails = async (popup, id, properties) => {
   try {
     const details = await props.loadImageDetails(id);
 
@@ -395,14 +435,75 @@ const showExploreCardPopup = async (feature) => {
           properties.thumbUrl ??
           properties.imageUrl,
         date: formatPopupDate(details?.dates),
+        reserveDate: true,
         featureType: properties.featureType ?? "image",
       })
     );
+    applyCardCloseIcon(popup);
   } catch (error) {
     console.error("Erro ao carregar detalhes da imagem do mapa", error);
+  }
+};
 
+// Quanto do pé do mapa está coberto pelo elemento flutuante (0 se nada).
+const getMapBottomOverlap = (mapRect) => {
+  const overlay = unref(mapBottomOverlay);
+  if (!overlay?.getBoundingClientRect) return 0;
+
+  const rect = overlay.getBoundingClientRect();
+  if (!rect.height) return 0;
+
+  return Math.min(Math.max(0, mapRect.bottom - rect.top), mapRect.height);
+};
+
+// Abre o card e move a câmera para centralizar o conjunto card + ponto na
+// área livre do mapa. Em telas baixas, encolhe a imagem até o piso e, se
+// ainda não couber, prende o topo do card na margem.
+const focusOnCard = (feature, { zoom } = {}) => {
+  const map = mapInstance.value;
+  const coordinates = feature?.geometry?.coordinates?.slice();
+  if (!map || !isValidCoordinate(coordinates)) return;
+
+  const popup = showExploreCardPopup(feature, { hidden: true });
+  const popupEl = popup?.getElement();
+  if (!popupEl) return;
+
+  const mapRect = map.getContainer().getBoundingClientRect();
+  const freeTop = CARD_SAFE_MARGIN;
+  const freeHeight =
+    mapRect.height - getMapBottomOverlap(mapRect) - CARD_SAFE_MARGIN - freeTop;
+
+  const measureBlock = () => popupEl.offsetHeight + CARD_POINT_GAP;
+  let block = measureBlock();
+
+  const media = popupEl.querySelector(".locations-map-card__media");
+  if (media && block > freeHeight) {
+    const mediaHeight = media.offsetHeight;
+    const target = Math.max(
+      CARD_MEDIA_MIN_HEIGHT,
+      Math.floor(mediaHeight - (block - freeHeight))
+    );
+
+    if (target < mediaHeight) {
+      popupEl.style.setProperty("--card-media-height", `${target}px`);
+      block = measureBlock();
+    }
   }
 
+  const cardTop = freeTop + Math.max(0, (freeHeight - block) / 2);
+  const pointY = cardTop + block;
+
+  map.once("moveend", () => {
+    if (popup.isOpen()) popup.removeClassName("is-measuring");
+  });
+
+  map.easeTo({
+    center: coordinates,
+    zoom: zoom ?? Math.max(map.getZoom(), SELECTED_ICON_ZOOM),
+    offset: [0, pointY - mapRect.height / 2],
+    duration: SELECTED_ICON_ANIMATION_MS,
+    essential: true,
+  });
 };
 
 // Mostra o popup para o feature.
@@ -507,14 +608,12 @@ const handlePointClick = (event) => {
     emit("select", id);
   }
 
-  if (props.context === "explore") {
-    map.once("moveend", () => {
-      showExploreCardPopup(feature);
-    });
-  }
-
   requestAnimationFrame(() => {
-    focusOnCoordinates(coordinates);
+    if (props.context === "explore") {
+      focusOnCard(feature);
+    } else {
+      focusOnCoordinates(coordinates);
+    }
   });
 
 };
@@ -564,19 +663,15 @@ const applyInitialSelection = () => {
   const feature = getFeatureById(props.initialSelectedId);
   if (!feature) return;
 
-  const map = mapInstance.value;
-
   selectedId.value = props.initialSelectedId;
   hasAppliedInitialSelection = true;
 
-  if (props.context === "explore") {
-    map.once("moveend", () => {
-      showExploreCardPopup(feature);
-    });
-  }
-
   requestAnimationFrame(() => {
-    focusOnCoordinates(feature.geometry.coordinates.slice());
+    if (props.context === "explore") {
+      focusOnCard(feature);
+    } else {
+      focusOnCoordinates(feature.geometry.coordinates.slice());
+    }
   });
 };
 
@@ -905,9 +1000,25 @@ const handleSpiderLeafClick = (event) => {
   if (spiderContext) renderSpider();
 
   if (props.context === "explore") {
-    closeActiveCardPopup();
-    showExploreCardPopup(feature);
+    // Mantém o zoom: aproximar desfaria o leque.
+    focusOnCard(feature, { zoom: mapInstance.value?.getZoom() });
+    spiderCardPopup = activeCardPopup;
   }
+};
+
+const isSpiderCardOpen = () =>
+  Boolean(spiderCardPopup) && spiderCardPopup === activeCardPopup;
+
+// Arrastar não deforma o leque; com um card dele aberto, o leque fica.
+const handleDragStart = () => {
+  if (isSpiderCardOpen()) return;
+  collapseSpider();
+};
+
+// O leque é desenhado para um zoom; ao mudar, fecha junto com o card dele.
+const handleZoomStart = () => {
+  if (isSpiderCardOpen()) closeActiveCardPopup();
+  collapseSpider();
 };
 
 // Clique fora do spiderfy -> fecha o leque e restaura o agrupamento.
@@ -1086,8 +1197,8 @@ const setupLayers = async (map) => {
   map.on("mouseenter", spiderLeavesLayerId, handleSpiderLeafEnter);
   map.on("mouseleave", spiderLeavesLayerId, handleSpiderLeafLeave);
   map.on("click", handleMapClickOutsideSpider);
-  map.on("zoomstart", collapseSpider);
-  map.on("dragstart", collapseSpider);
+  map.on("zoomstart", handleZoomStart);
+  map.on("dragstart", handleDragStart);
 };
 
 // Manipulador de evento para quando o mapa estiver pronto.
@@ -1417,15 +1528,35 @@ onUnmounted(() => {
 
 .locations-map-card-popup-container .maplibregl-popup-close-button {
   z-index: 2;
-  top: 6px;
-  right: 6px;
-  width: 28px;
-  height: 28px;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  /* Zera os estilos nativos de <button> (o Safari aplica padding próprio) */
+  appearance: none;
+  padding: 0;
   border-radius: 50%;
   color: var(--Cinza_E, #2f2f2f);
-  background: rgba(255, 255, 255, 0.92);
-  font-size: 20px;
-  line-height: 28px;
+  background: transparent;
+  line-height: 0;
+}
+
+.locations-map-card-popup-container .maplibregl-popup-close-button:hover {
+  background: transparent;
+}
+
+.locations-map-card-popup-container .maplibregl-popup-close-button svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.locations-map-card-close__bg {
+  fill: var(--Branco, #fff);
+  fill-opacity: 0.92;
 }
 
 .locations-map-card {
@@ -1435,9 +1566,16 @@ onUnmounted(() => {
   background: var(--Branco, #fff);
 }
 
+/* Medido invisível antes de a câmera se mover (focusOnCard). */
+.locations-map-card-popup-container.is-measuring {
+  visibility: hidden;
+}
+
 .locations-map-card__media {
   position: relative;
   width: 100%;
+  /* Só definida quando o card precisa encolher; senão vale o aspect-ratio. */
+  height: var(--card-media-height, auto);
   aspect-ratio: 1;
   overflow: hidden;
   background: #f8f9fa;
