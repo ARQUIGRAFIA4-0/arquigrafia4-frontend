@@ -201,13 +201,27 @@ export const useAuthStore = defineStore("auth", () => {
           Authorization: authHeader.value,
         },
       });
-      loggedUser.value = response.data.user;
+      loggedUser.value = keepAvatarStamp(response.data.user, loggedUser.value);
 
       // Save to localStorage
       localStorage.setItem("loggedUser", JSON.stringify(loggedUser.value));
     } catch (error) {
       console.error("Error fetching logged user:", error);
     }
+  }
+  // `avatar_updated_at` só existe no front (ver markAvatarUpdated): a resposta
+  // de /api/me não o traz, e substituir o usuário inteiro faria a URL do avatar
+  // voltar à versão antiga, reexibindo a foto em cache. Mantém o carimbo do
+  // mesmo usuário enquanto ele for mais recente que o `updated_at` da API.
+  function keepAvatarStamp(freshUser, previousUser) {
+    const stamp = previousUser?.avatar_updated_at;
+    if (!freshUser || !stamp || freshUser.avatar_updated_at != null) return freshUser;
+    if (previousUser.id !== freshUser.id) return freshUser;
+
+    const apiStamp = Date.parse(freshUser.updated_at);
+    if (Number.isFinite(apiStamp) && apiStamp >= stamp) return freshUser;
+
+    return { ...freshUser, avatar_updated_at: stamp };
   }
   // Carimba o avatar como recém-trocado para quebrar o cache do browser (ver
   // helpers/avatarUrl.js). Só deve ser chamada depois que a API confirmou o

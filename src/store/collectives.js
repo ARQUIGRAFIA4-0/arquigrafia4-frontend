@@ -42,6 +42,9 @@ export const useCollectivesStore = defineStore("collectives", () => {
     isLoading.value = true;
     try {
       const data = await api.createCollective(authStore.authHeader, formData);
+      // A lista de coletivos do menu vem de loggedUser.collectives (/api/me);
+      // sem reler o usuário, o coletivo novo só apareceria após novo login.
+      await authStore.getLoggedUser();
       return { success: true, data };
     } catch (error) {
       return { success: false, message: error.message };
@@ -97,6 +100,8 @@ export const useCollectivesStore = defineStore("collectives", () => {
     }
     try {
       await api.leaveCollective(authStore.authHeader, collectiveId, authStore.loggedUser.id);
+      // Remove o coletivo de loggedUser.collectives (menu e demais telas).
+      await authStore.getLoggedUser();
       return { success: true };
     } catch (error) {
       return {
@@ -121,6 +126,8 @@ export const useCollectivesStore = defineStore("collectives", () => {
     isLoading.value = true;
     try {
       const data = await api.updateCollective(authStore.authHeader, id, formData);
+      // Reflete nome/avatar atualizados em loggedUser.collectives.
+      await authStore.getLoggedUser();
       return { success: true, data };
     } catch (error) {
       return { success: false, message: error.message };
