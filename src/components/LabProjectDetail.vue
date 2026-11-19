@@ -25,31 +25,34 @@
       >
         <img :src="project.image" :alt="project.title" class="lab-project-detail__hero-image" />
       </a>
+      <div v-else-if="project.cover" class="lab-project-detail__hero-image">
+        <component :is="project.cover" />
+      </div>
       <img v-else :src="project.image" :alt="project.title" class="lab-project-detail__hero-image" />
     </div>
 
     <!-- Mobile Action Menu -->
-    <div class="d-md-none lab-project-detail__mobile-actions">
-      <a
+    <div v-if="project.links?.length" class="d-md-none lab-project-detail__mobile-actions">
+      <component
+        :is="link.to ? RouterLink : 'a'"
         v-for="link in project.links"
         :key="link.type"
-        :href="link.url"
+        v-bind="getLinkAttrs(link)"
         class="mobile-action-button"
         :aria-label="link.label"
-        target="_blank"
-        rel="noopener noreferrer"
       >
         <i class="bi" :class="getIconClass(link.type)" aria-hidden="true"></i>
-      </a>
+      </component>
     </div>
 
     <!-- Content Columns -->
     <div class="lab-project-detail__content row">
       <!-- Left Column: Description -->
       <div class="col-12 col-md-6 lab-project-detail__main">
-        <h2 class="lab-project-detail__section-title">Sobre o projeto</h2>
+        <h2 class="lab-project-detail__section-title">{{ project.sectionTitle || "Sobre o projeto" }}</h2>
         <h3 v-if="project.subTitle" class="lab-project-detail__sub-title">{{ project.subTitle }}</h3>
-        <div class="lab-project-detail__description" v-html="project.fullDescription"></div>
+        <component :is="project.content" v-if="project.content" />
+        <div v-else class="lab-project-detail__description" v-html="project.fullDescription"></div>
       </div>
 
       <!-- Right Column: Researcher + Actions -->
@@ -75,17 +78,18 @@
 
           <!-- Action Buttons -->
           <div class="d-none d-md-flex col-md-4 lab-project-detail__actions">
-            <a v-for="link in project.links" :key="link.type" :href="link.url" :class="[
+            <component :is="link.to ? RouterLink : 'a'" v-for="link in project.links" :key="link.type"
+              v-bind="getLinkAttrs(link)" :class="[
               'btn',
               'btn-sm',
               'd-flex',
               'align-items-center',
               'gap-2',
-              link.type === 'project' ? 'btn-primary' : 'btn-outline-secondary'
-            ]" target="_blank" rel="noopener noreferrer">
+              isPrimaryLink(link) ? 'btn-primary' : 'btn-outline-secondary'
+            ]">
               <i class="bi" :class="getIconClass(link.type)"></i>
               {{ link.label }}
-            </a>
+            </component>
           </div>
         </div>
       </div>
@@ -95,6 +99,7 @@
 
 <script setup>
 import { computed } from "vue";
+import { RouterLink } from "vue-router";
 
 const props = defineProps({
   project: {
@@ -110,12 +115,26 @@ const projectLink = computed(() => {
   return links.find((link) => link.type === "project") ?? null;
 });
 
+// Links com `to` são rotas internas (RouterLink, mesma aba); com `url` são
+// externos e abrem em nova aba.
+function getLinkAttrs(link) {
+  if (link.to) return { to: link.to };
+  return { href: link.url, target: "_blank", rel: "noopener noreferrer" };
+}
+
+// `primary` permite destacar outro link além do "Acessar projeto".
+function isPrimaryLink(link) {
+  return link.primary ?? link.type === "project";
+}
+
 function getIconClass(type) {
   const icons = {
     project: "bi-box-arrow-up-right",
     share: "bi-share",
     publications: "bi-book",
     manual: "bi-info-circle",
+    collections: "bi-collection",
+    "my-collections": "bi-person-square",
   };
   return icons[type] || "bi-link";
 }
