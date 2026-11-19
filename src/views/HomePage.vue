@@ -10,6 +10,13 @@
           </button>
         </li>
         <li class="nav-item">
+          <button :class="['nav-link', { active: activeTab === 'colecoes' }]"
+            :aria-current="activeTab === 'colecoes' ? 'page' : undefined" data-label="Coleções"
+            @click="navigateToColecoes">
+            Coleções
+          </button>
+        </li>
+        <li class="nav-item">
           <button :class="['nav-link', { active: activeTab === 'lab' }]"
             :aria-current="activeTab === 'lab' ? 'page' : undefined" data-label="Lab" @click="navigateToLab">
             Lab
@@ -498,6 +505,10 @@ function navigateToLab() {
 
 function navigateToRede() {
   router.push("/explore/rede");
+}
+
+function navigateToColecoes() {
+  router.push("/explore/colecoes");
 }
 
 function handleViewChange({ selection }) {

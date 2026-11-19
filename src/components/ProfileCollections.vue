@@ -4,12 +4,10 @@
   import { useAlbumsStore } from "@/store/albums";
   import { useInitialSkeleton } from "@/composables/useInitialSkeleton";
   import UploadColectionBox from "@/components/UploadColectionBox.vue";
-  import UiCard from "@/components/ui/UiCard.vue";
   import ProfileGridSkeleton from "@/components/ProfileGridSkeleton.vue";
   import TutorialModalCollections from "@/components/TutorialModalCollections.vue";
-  import AlbumCoverArt from "@/components/AlbumCoverArt.vue";
   import CollectionCreateModal from "@/components/CollectionCreateModal.vue";
-  import CollectionCardLabels from "@/components/CollectionCardLabels.vue";
+  import CollectionCard from "@/components/collection/CollectionCard.vue";
   import AppToast from "@/components/ui/AppToast.vue";
   import { useToast } from "@/composables/useToast";
 
@@ -203,41 +201,7 @@ watch(
         :key="album.id"
         class="col-6 profile-grid-col"
       >
-        <div
-          class="profile-grid-card__link"
-          @click="fetchAlbumData(album.id)"
-        >
-          <UiCard class="profile-grid-card profile-grid-card--collection">
-            <template #image>
-              <div class="profile-grid-card__image-wrapper">
-                <AlbumCoverArt
-                  :album="album"
-                  class="profile-grid-card__image"
-                />
-              </div>
-            </template>
-
-            <div class="ui-card__header">
-              <h3 class="ui-card__title">
-                {{ album.title || "Sem título" }}
-              </h3>
-              <div class="profile-grid-card__meta">
-                <CollectionCardLabels
-                  :album="album"
-                  class="profile-grid-card__labels"
-                />
-                <button
-                  type="button"
-                  class="profile-grid-card__go-btn"
-                  @click.stop="fetchAlbumData(album.id)"
-                >
-                  Ir para coleção
-                  <i class="bi bi-arrow-right" aria-hidden="true"></i>
-                </button>
-              </div>
-            </div>
-          </UiCard>
-        </div>
+        <CollectionCard :album="album" @open="fetchAlbumData(album.id)" />
       </div>
     </div>
 
