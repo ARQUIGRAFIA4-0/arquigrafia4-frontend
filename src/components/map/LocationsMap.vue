@@ -1148,6 +1148,21 @@ const handleSpiderLeafClick = (event) => {
   }
 };
 
+const isSpiderCardOpen = () =>
+  Boolean(spiderCardPopup) && spiderCardPopup === activeCardPopup;
+
+// Arrastar não deforma o leque; com um card dele aberto, o leque fica.
+const handleDragStart = () => {
+  if (isSpiderCardOpen()) return;
+  collapseSpider();
+};
+
+// O leque é desenhado para um zoom; ao mudar, fecha junto com o card dele.
+const handleZoomStart = () => {
+  if (isSpiderCardOpen()) closeActiveCardPopup();
+  collapseSpider();
+};
+
 /* --------------------------- Paradas do percurso --------------------------- */
 // Camadas clicáveis das paradas: o número e o ícone dos pontos sem imagem.
 const getStopLayers = () => {
@@ -1424,8 +1439,8 @@ const setupLayers = async (map) => {
   map.on("mouseleave", stopNumbersLayerId, handleStopLeave);
   map.on("mouseenter", stopsLayerId, handleStopEnter);
   map.on("mouseleave", stopsLayerId, handleStopLeave);
-  map.on("zoomstart", collapseSpider);
-  map.on("dragstart", collapseSpider);
+  map.on("zoomstart", handleZoomStart);
+  map.on("dragstart", handleDragStart);
 };
 
 // Manipulador de evento para quando o mapa estiver pronto.
