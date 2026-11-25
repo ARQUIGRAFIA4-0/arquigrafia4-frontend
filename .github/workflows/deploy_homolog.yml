@@ -31,6 +31,7 @@ jobs:
           VITE_CLIENT_ID: "${{ vars.VITE_CLIENT_ID }}"
           VITE_CLIENT_SECRET: "${{ secrets.VITE_CLIENT_SECRET }}"
           VITE_SCOPE: "${{ vars.VITE_SCOPE }}"
+          VITE_GUIA_ESTILO: "${{ vars.VITE_GUIA_ESTILO }}"
       
       - name: 📂 Copy files via SSH
         uses: appleboy/scp-action@v1.0.0

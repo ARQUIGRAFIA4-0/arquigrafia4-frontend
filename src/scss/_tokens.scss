@@ -1,0 +1,106 @@
+// Tokens do Design System LINA (Figma) que ainda não existiam no projeto.
+// Cores e tipografia anteriores continuam em _variables.scss e styles.scss.
+
+:root {
+  /* Sombras (effect styles do Figma) */
+  --Sombra_P: 2px 2px 5px 2px rgba(0, 0, 0, 0.25);
+  --Sombra_G: 4px 4px 2px 4px rgba(0, 0, 0, 0.25);
+
+  /* Escala de espaçamento do Figma (variáveis ppp…xxg) */
+  --espaco-ppp: 4px;
+  --espaco-pp: 8px;
+  --espaco-p: 12px;
+  --espaco-m: 16px;
+  --espaco-g: 24px;
+  --espaco-gg: 32px;
+  --espaco-ggg: 40px;
+  --espaco-xg: 56px;
+  --espaco-xxg: 64px;
+
+  /* "DM Sans 9pt" do Figma: usar em font-variation-settings */
+  --fonte-9pt: "opsz" 9;
+
+  /* Estilos de texto do Figma (valores mobile; desktop no bloco abaixo) */
+  --rotulo-fs: 10px;
+  --rotulo-fw: 400;
+  --rotulo-lh: 16px;
+
+  --entrada-fs: 12px;
+  --entrada-fw: 400;
+  --entrada-lh: 150%;
+
+  --p-italico-fs: 12px;
+  --p-italico-fw: 400;
+  --p-italico-lh: 125%;
+
+  --menu-nsel-fs: 18px;
+  --menu-nsel-fw: 500;
+  --menu-nsel-lh: 100%;
+  --menu-nsel-ls: -0.06em;
+
+  --submenu-nsel-fs: 14px;
+  --submenu-nsel-fw: 300;
+  --submenu-nsel-lh: 150%;
+
+  /* Foco por teclado: padrão do Design System para todo elemento interativo */
+  --foco-cor: var(--Laranja_E);
+  --foco-largura: 2px;
+  --foco-afastamento: 2px;
+
+  /* Botão_p do Figma */
+  --botao-gap: 7px;
+  --botao-icone: 14px;
+  --botao-inativo-opacidade: 0.4;
+
+  /* item lista do Figma (valores mobile; desktop no bloco abaixo) */
+  --item-lista-titulo-fs: 12px;
+  --item-lista-titulo-fw: 700;
+  --item-lista-titulo-lh: 125%;
+  --item-lista-imagem: 30px;
+  --item-lista-seta: 12px;
+  --item-lista-borda: 0.5px;
+
+  /* Abas: item_tab_txt e tab_horizontal_txt do LINA; espaço entre abas do
+     Interfaces. --abas-sel-* existe porque --submenu-sel-* não tem valor mobile. */
+  --abas-altura: 40px;
+  --abas-linha: 3px;
+  --abas-gap: var(--espaco-p);
+  --abas-padding-vertical: var(--espaco-ppp);
+  --abas-sel-fs: 14px;
+  --abas-sel-fw: 800;
+  --abas-sel-lh: 150%;
+
+  /* Grids do Figma (grade_mobile; grade_desktop no bloco abaixo) */
+  --grade-margem: 16px;
+  --grade-gutter: 16px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --rotulo-fs: 12px;
+    --rotulo-lh: 115%;
+
+    --entrada-fs: 14px;
+
+    --p-italico-fs: 14px;
+
+    --menu-nsel-fs: 24px;
+    --menu-nsel-fw: 600;
+
+    --submenu-nsel-fs: 20px;
+    --submenu-nsel-lh: 100%;
+
+    --item-lista-titulo-fs: 14px;
+    --item-lista-imagem: 50px;
+    --item-lista-seta: 25px;
+
+    --abas-gap: var(--espaco-ggg);
+    --abas-padding-vertical: 0px;
+    --abas-sel-fs: 20px;
+    --abas-sel-fw: 700;
+    --abas-sel-lh: 100%;
+
+    --grade-margem: 50px;
+    --grade-gutter: 20px;
+  }
+}

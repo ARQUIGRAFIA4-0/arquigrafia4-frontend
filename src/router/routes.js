@@ -4,6 +4,10 @@ import {
 } from "@/constants/viewModes";
 import { useImageUploadStore } from "@/store/imageUploads";
 
+// Ligado em dev; nos demais builds, só com VITE_GUIA_ESTILO=true.
+const GUIA_ESTILO_ATIVO =
+  import.meta.env.DEV || import.meta.env.VITE_GUIA_ESTILO === "true";
+
 const redirectToDefaultView = (to) => ({
   name: "explore",
   params: {
@@ -307,6 +311,48 @@ export default [
     name: "view-profile",
     component: () => import("../views/Profile/ViewPublicProfile.vue")
   },
+  ...(GUIA_ESTILO_ATIVO
+    ? [
+        {
+          path: "/guia-de-estilo",
+          component: () => import("../views/GuiaEstilo/GuiaEstiloLayout.vue"),
+          meta: { showFooter: false },
+          children: [
+            { path: "", redirect: { name: "guia-estilo-tokens" } },
+            {
+              path: "tokens",
+              name: "guia-estilo-tokens",
+              component: () =>
+                import("../views/GuiaEstilo/GuiaEstiloTokens.vue"),
+            },
+            {
+              path: "botao",
+              name: "guia-estilo-botao",
+              component: () =>
+                import("../views/GuiaEstilo/GuiaEstiloBotao.vue"),
+            },
+            {
+              path: "item-lista",
+              name: "guia-estilo-item-lista",
+              component: () =>
+                import("../views/GuiaEstilo/GuiaEstiloItemLista.vue"),
+            },
+            {
+              path: "menu-lateral",
+              name: "guia-estilo-menu-lateral",
+              component: () =>
+                import("../views/GuiaEstilo/GuiaEstiloMenuLateral.vue"),
+            },
+            {
+              path: "abas",
+              name: "guia-estilo-abas",
+              component: () =>
+                import("../views/GuiaEstilo/GuiaEstiloAbas.vue"),
+            },
+          ],
+        },
+      ]
+    : []),
   // Rota "catch-all" para casos 404 (deve ser a última rota definida)
   {
     path: "/:pathMatch(.*)*",
