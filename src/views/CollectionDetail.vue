@@ -1231,8 +1231,9 @@ watch(
             </section>
           </div>
 
+          <!-- Só a grade expande/recolhe; o mapa tem altura fixa no mobile. -->
           <button
-            v-if="!isPathEditing"
+            v-if="!isPathEditing && collectionViewMode !== 'map'"
             type="button"
             class="collection-detail__mobile-handle"
             :aria-expanded="isMobileGridExpanded"
@@ -2091,11 +2092,13 @@ a.collection-detail__actor-name:hover {
 }
 
 .collection-detail__row--map:not(.collection-detail__row--mobile) .collection-detail__info-inner {
-  min-height: 620px;
+  // min-height: 620px;
+  min-height: 600px;
 }
 
 .collection-detail__map-panel-body--map {
-  min-height: 560px;
+  min-height: 540px;
+  // min-height: 560px;
   flex-shrink: 0;
 }
 
@@ -2421,6 +2424,13 @@ a.collection-detail__actor-name:hover {
     box-sizing: border-box;
     overflow: visible;
     height: auto;
+  }
+
+  /* O MapLibre precisa de um contêiner com altura definida: com height: auto
+     os height: 100% internos não resolvem e o mapa fica com 0px. */
+  .collection-detail__image-wrapper--mobile .collection-detail__gallery--map {
+    height: 60dvh;
+    min-height: 320px;
   }
 
   .collection-detail__image-wrapper--grid-collapsed {
