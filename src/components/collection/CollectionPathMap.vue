@@ -10,9 +10,10 @@ defineProps({
   isSaving: { type: Boolean, default: false },
   initialStops: { type: Array, default: () => [] },
   initialRoute: { type: Object, default: null },
+  locationWarning: { type: String, default: null },
 });
 
-defineEmits(["stop-change", "save", "back"]);
+defineEmits(["stop-change", "save", "back", "alert"]);
 
 const mapRef = ref(null);
 </script>
@@ -27,9 +28,11 @@ const mapRef = ref(null);
       :is-saving="isSaving"
       :initial-stops="initialStops"
       :initial-route="initialRoute"
+      :location-warning="locationWarning"
       @stop-change="$emit('stop-change', $event)"
       @save="$emit('save', $event)"
       @back="$emit('back')"
+      @alert="$emit('alert', $event)"
     />
   </div>
 </template>
