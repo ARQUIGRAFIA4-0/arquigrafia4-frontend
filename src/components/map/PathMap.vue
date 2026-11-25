@@ -1,17 +1,22 @@
 <script setup>
-import { computed, shallowRef, ref, watch } from "vue";
+import { computed, onBeforeUnmount, shallowRef, ref, watch } from "vue";
 import { LngLatBounds } from "maplibre-gl";
 import MapLibreMap from "@/components/map/MapLibreMap.vue";
+import { useAuthStore } from "@/store/auth";
 import PathPointsPanel from "@/components/map/PathPointsPanel.vue";
 import { createCollectionImagesFeatureCollection } from "@/helpers/geojson";
 import { cameraIconSvg, workIconSvg } from "@/helpers/mapIcons";
 import {
   fetchOsrmRoute,
+  RouteRejectedError,
   formatRouteDistance,
   formatRouteDuration,
 } from "@/helpers/osrmRoute";
 
 defineOptions({ name: "PathMap" });
+
+const authStore = useAuthStore();
+const authHeader = computed(() => authStore.authHeader);
 
 const props = defineProps({
   images: { type: Array, default: () => [] },
@@ -19,9 +24,11 @@ const props = defineProps({
   isSaving: { type: Boolean, default: false },
   initialStops: { type: Array, default: () => [] },
   initialRoute: { type: Object, default: null },
+  // Aviso de imagens sem localização (canto inferior esquerdo do mapa).
+  locationWarning: { type: String, default: null },
 });
 
-const emit = defineEmits(["stop-change", "save", "back"]);
+const emit = defineEmits(["stop-change", "save", "back", "alert"]);
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 const IMAGE_COLOR = "#D27D30";
@@ -62,6 +69,38 @@ const routeIsStreet = ref(false);
 
 let routeAbort = /** @type {AbortController | null} */ (null);
 let routeRequestId = 0;
+
+/**
+ * Último estado aceito pelo backend (paradas + rota). Quando o backend recusa a rota
+ * (ponto fora do Brasil ou percurso acima do limite de km), a ação é desfeita voltando para ele.
+ */
+let lastAccepted = null;
+
+function acceptCurrentState() {
+  lastAccepted = {
+    stops: pathStops.value,
+    seq: pathStopSeq,
+    route: {
+      coordinates: routeCoordinates.value,
+      distanceMeters: routeDistanceMeters.value,
+      durationSeconds: routeDurationSeconds.value,
+      isStreet: routeIsStreet.value,
+    },
+  };
+}
+
+function revertToLastAccepted() {
+  if (!lastAccepted) return;
+  pathStops.value = lastAccepted.stops;
+  pathStopSeq = lastAccepted.seq;
+  routeCoordinates.value = lastAccepted.route.coordinates;
+  routeDistanceMeters.value = lastAccepted.route.distanceMeters;
+  routeDurationSeconds.value = lastAccepted.route.durationSeconds;
+  routeIsStreet.value = lastAccepted.route.isStreet;
+  syncPathPinsSource();
+  syncLineSource();
+  emitStopChange();
+}
 
 // Aplica a rota inicial do percurso.
 function applyInitialRoute(route) {
@@ -118,6 +157,7 @@ function hydrateStopsFromInitial(list) {
 
 hydrateStopsFromInitial(props.initialStops);
 applyInitialRoute(props.initialRoute);
+acceptCurrentState();
 
 // Emite o evento de mudança de parada.
 function emitStopChange() {
@@ -174,8 +214,20 @@ async function syncPathPinsSource() {
 }
 
 /** Botão “Adicionar novo ponto” > modo escolher no mapa */
+// Alterna o modo "escolher ponto no mapa" (clicar de novo no botão cancela).
 function onAddPathStopClick() {
-  isPickingCustom.value = true;
+  isPickingCustom.value = !isPickingCustom.value;
+}
+
+function cancelPicking() {
+  isPickingCustom.value = false;
+}
+
+/** Posição do cursor sobre o mapa (px), usada pelo pin "fantasma". */
+const pickPointer = ref({ x: 0, y: 0, visible: false });
+
+function handlePickKeydown(event) {
+  if (event.key === "Escape") cancelPicking();
 }
 
 // Remove uma parada do percurso.
@@ -192,6 +244,19 @@ function renamePathStop({ id, title }) {
   pathStops.value = pathStops.value.map((stop) =>
     stop.id === id ? { ...stop, title } : stop
   );
+  emitStopChange();
+}
+
+// Reordena as paradas do percurso (arrastar e soltar no painel) e recalcula a rota.
+function reorderPathStops(orderedIds) {
+  const current = pathStops.value.map((stop) => stop.id);
+  if (orderedIds.join("|") === current.join("|")) return;
+
+  const byId = new Map(pathStops.value.map((stop) => [stop.id, stop]));
+  pathStops.value = orderedIds.map((id) => byId.get(id)).filter(Boolean);
+  renumberPathStops();
+  syncPathPinsSource();
+  refreshRoute();
   emitStopChange();
 }
 
@@ -472,8 +537,17 @@ function clearRoute() {
 async function refreshRoute() {
   const waypoints = stopCoordinatesInOrder();
 
-  if (waypoints.length < 2) {
+  if (!waypoints.length) {
     clearRoute();
+    acceptCurrentState();
+    return;
+  }
+
+  // Com uma parada só não há rota, mas o ponto ainda precisa ser validado (fora do Brasil?):
+  // pede a rota do ponto até ele mesmo.
+  if (waypoints.length === 1) {
+    clearRoute();
+    await validateSingleStop(waypoints[0]);
     return;
   }
 
@@ -483,10 +557,27 @@ async function refreshRoute() {
   routeLoading.value = true;
 
   try {
-    const result = await fetchOsrmRoute(waypoints, {
-      profile: "walking", // walking, driving, cycling
-      signal: routeAbort.signal,
-    });
+    /**
+     * Calcula a rota
+     * ---------------------------------------------------------------------------
+     *
+     * Aqui ele chama a função fetchOsrmRoute para calcular a rota.
+     * Depois ele atualiza as coordenadas da rota, a distância e o tempo.
+     * E depois ele desenha a rota no mapa.
+     *
+     * @returns {Promise<void>}
+     * @param {Array<[number, number]>} waypoints - As coordenadas das paradas
+     * @param {Object} options - As opções para calcular a rota
+     * @param {string} options.profile - O perfil da rota (walking, driving, cycling)
+     * @param {AbortSignal} options.signal - O sinal de abortação da requisição
+     */
+    const result = await fetchOsrmRoute(
+      authHeader.value,
+      waypoints, 
+      {
+        signal: routeAbort.signal,
+      }
+    );
 
     if (requestId !== routeRequestId) return;
 
@@ -500,14 +591,41 @@ async function refreshRoute() {
     }
 
     syncLineSource();
+    acceptCurrentState();
   } catch (err) {
     if (err?.name === "AbortError") return;
     if (requestId !== routeRequestId) return;
 
-    applyStraightLineFallback(waypoints);
-    syncLineSource();
+    if (err instanceof RouteRejectedError) {
+      revertToLastAccepted();
+      emit("alert", err.message);
+      return;
+    }
+
+    routeIsStreet.value = false;
+    syncLineSource(); // Mantém a reta de fallback no mapa
+
   } finally {
     if (requestId === routeRequestId) routeLoading.value = false;
+  }
+}
+
+async function validateSingleStop(coordinates) {
+  if (routeAbort) routeAbort.abort();
+  routeAbort = new AbortController();
+  const requestId = ++routeRequestId;
+
+  try {
+    await fetchOsrmRoute(authHeader.value, [coordinates, coordinates], {
+      signal: routeAbort.signal,
+    });
+    if (requestId === routeRequestId) acceptCurrentState();
+  } catch (err) {
+    if (requestId !== routeRequestId) return;
+    if (err instanceof RouteRejectedError) {
+      revertToLastAccepted();
+      emit("alert", err.message);
+    }
   }
 }
 
@@ -682,6 +800,15 @@ async function onMapReady(map) {
     addCustomPathStop([e.lngLat.lng, e.lngLat.lat]);
   });
 
+  // Pin fantasma que acompanha o cursor enquanto o usuário escolhe o ponto.
+  map.on("mousemove", (e) => {
+    if (!isPickingCustom.value) return;
+    pickPointer.value = { x: e.point.x, y: e.point.y, visible: true };
+  });
+  map.on("mouseout", () => {
+    pickPointer.value = { ...pickPointer.value, visible: false };
+  });
+
   map.on("mouseenter", LAYER_ID, () => {
     if (!draggingStopId.value) map.getCanvas().style.cursor = "pointer";
   });
@@ -763,8 +890,20 @@ watch(
 
 watch(isPickingCustom, (picking) => {
   const map = mapRef.value;
-  if (!map?.getCanvas) return;
-  map.getCanvas().style.cursor = picking ? "crosshair" : "";
+  if (map?.getCanvas) {
+    map.getCanvas().style.cursor = picking ? "crosshair" : "";
+  }
+
+  if (picking) {
+    window.addEventListener("keydown", handlePickKeydown);
+  } else {
+    window.removeEventListener("keydown", handlePickKeydown);
+    pickPointer.value = { ...pickPointer.value, visible: false };
+  }
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handlePickKeydown);
 });
 
 watch(
@@ -782,6 +921,7 @@ watch(
 
     hydrateStopsFromInitial(stops);
     applyInitialRoute(route);
+    acceptCurrentState();
     syncPathPinsSource();
     syncLineSource();
     if (!route?.coordinates?.length) {
@@ -808,19 +948,97 @@ watch(
       :zoom="12"
       @map-ready="onMapReady"
     />
+    <!-- Modo "escolher ponto": moldura, instrução e pin que segue o cursor -->
+    <div
+      v-if="isPickingCustom"
+      class="path-map__pick-frame"
+      aria-hidden="true"
+    />
+
+    <div
+      v-if="isPickingCustom"
+      class="path-map__pick-banner"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="path-map__pick-icon" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 1 1 13 0c0 5.4-6.5 11-6.5 11Z"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linejoin="round"
+          />
+          <circle cx="12" cy="10" r="2.4" fill="currentColor" />
+        </svg>
+      </span>
+      <span class="path-map__pick-text">
+        <strong>Escolha o local do novo ponto</strong>
+        <span>Clique em qualquer lugar do mapa</span>
+      </span>
+      <button
+        type="button"
+        class="path-map__pick-cancel"
+        @click="cancelPicking"
+      >
+        Cancelar
+        <kbd>Esc</kbd>
+      </button>
+    </div>
+
+    <div
+      v-if="isPickingCustom && pickPointer.visible"
+      class="path-map__ghost-pin"
+      :style="{ transform: `translate(${pickPointer.x}px, ${pickPointer.y}px)` }"
+      aria-hidden="true"
+    >
+      <span class="path-map__ghost-pulse" />
+      <svg
+        class="path-map__ghost-svg"
+        width="32"
+        height="42"
+        viewBox="0 0 40 52"
+        fill="none"
+      >
+        <path
+          d="M20 1.5C10.3 1.5 2.5 9.3 2.5 19c0 12.2 17.5 31 17.5 31S37.5 31.2 37.5 19C37.5 9.3 29.7 1.5 20 1.5z"
+          fill="#AA4F28"
+          fill-opacity="0.9"
+          stroke="#fff"
+          stroke-width="2"
+        />
+        <circle cx="20" cy="19" r="6" fill="#fff" />
+      </svg>
+    </div>
+
     <PathPointsPanel
       class="path-map__points-panel"
       :stops="pathStops"
       :saving="isSaving"
+      :picking="isPickingCustom"
       @add="onAddPathStopClick"
       @remove="removePathStop"
       @rename="renamePathStop"
+      @reorder="reorderPathStops"
       @save="onPathStopsSave"
       @back="onPathStopsBack"
     />
-    <p v-if="routeHint" class="path-map__hint">
-      {{ routeHint }}
-    </p>
+    <div
+      v-if="locationWarning || (routeHint && !isPickingCustom)"
+      class="path-map__bottom-left"
+    >
+      <div
+        v-if="locationWarning"
+        class="path-map__location-warning alert alert-danger border border-danger border-start-3 d-flex align-items-center mb-0"
+        role="status"
+      >
+        <i class="bi bi-exclamation-triangle-fill text-danger me-3" aria-hidden="true"></i>
+        <span>{{ locationWarning }}</span>
+      </div>
+      <p v-if="routeHint && !isPickingCustom" class="path-map__hint">
+        {{ routeHint }}
+      </p>
+    </div>
   </div>
 </template>
 
@@ -851,11 +1069,26 @@ watch(
   color: #2f2f2f;
 }
 
-.path-map__hint {
+/* Aviso de localização e dica da rota empilhados no canto inferior esquerdo. */
+.path-map__bottom-left {
   position: absolute;
   left: 12px;
   bottom: 12px;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: min(420px, calc(100% - 24px));
+}
+
+.path-map__location-warning {
+  font-family: "DM Sans", sans-serif;
+  font-size: 16px;
+  line-height: 150%;
+}
+
+.path-map__hint {
   margin: 0;
   padding: 6px 10px;
   border-radius: 4px;
@@ -870,5 +1103,181 @@ watch(
   top: 12px;
   right: 12px;
   z-index: 3;
+}
+
+/* ── Modo "escolher ponto" ─────────────────────────────────────────────── */
+.path-map__pick-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 3px rgba(170, 79, 40, 0.85),
+    inset 0 0 64px 8px rgba(170, 79, 40, 0.18);
+  animation: path-pick-frame 1.8s ease-in-out infinite;
+}
+
+.path-map__pick-banner {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 356px; /* deixa o painel de pontos livre (320px + margens) */
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  max-width: calc(100% - 372px);
+  margin-inline: auto;
+  padding: 10px 10px 10px 14px;
+  border-radius: 999px;
+  background: rgba(31, 31, 31, 0.94);
+  color: #fff;
+  font-family: "DM Sans", sans-serif;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(6px);
+  animation: path-pick-banner-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.path-map__pick-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #aa4f28;
+  animation: path-pick-icon 1.4s ease-in-out infinite;
+}
+
+.path-map__pick-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.path-map__pick-text strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.path-map__pick-text span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.path-map__pick-cancel {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 0 4px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.path-map__pick-cancel:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.path-map__pick-cancel:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.path-map__pick-cancel kbd {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-family: inherit;
+  font-size: 11px;
+}
+
+/* Pin que acompanha o cursor: a ponta do pin fica exatamente no cursor. */
+.path-map__ghost-pin {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.path-map__ghost-svg {
+  position: absolute;
+  left: -16px;
+  top: -42px;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+  animation: path-pick-bob 1.1s ease-in-out infinite;
+}
+
+.path-map__ghost-pulse {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #aa4f28;
+  animation: path-pick-pulse 1.4s ease-out infinite;
+}
+
+@keyframes path-pick-frame {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@keyframes path-pick-banner-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes path-pick-icon {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes path-pick-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes path-pick-pulse {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@media (max-width: 768px) {
+  .path-map__pick-banner {
+    top: auto;
+    bottom: 16px;
+    left: 12px;
+    right: 12px;
+    max-width: none;
+    border-radius: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .path-map__pick-frame,
+  .path-map__pick-banner,
+  .path-map__pick-icon,
+  .path-map__ghost-svg,
+  .path-map__ghost-pulse {
+    animation: none;
+  }
 }
 </style>

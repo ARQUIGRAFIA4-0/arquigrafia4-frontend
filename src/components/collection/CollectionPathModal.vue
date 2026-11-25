@@ -1,43 +1,134 @@
 <script setup>
-import { ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 
 defineOptions({ name: "CollectionPathModal" });
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
+  // "create": cria o percurso da coleção
+  // "create-partial": cria, avisando que nem todas as imagens têm localização
+  // "create-blocked": nenhuma imagem tem localização; leva à revisão das imagens
+  // "edit": confirma a edição do percurso
+  // "delete": apaga o percurso da coleção
+  mode: {
+    type: String,
+    default: "create",
+    validator: (value) =>
+      ["create", "create-partial", "create-blocked", "edit", "delete"].includes(value),
+  },
 });
 
 const emit = defineEmits(["update:modelValue", "confirm"]);
 
-/** @type {import('vue').Ref<'same' | 'duplicate'>} */
-const pathMode = ref("same");
+const COPY = {
+  create: {
+    title: "Deseja criar um percurso a partir dessa coleção?",
+    paragraphs: [
+      "Defina os pontos e a rota no mapa. A coleção continua a mesma, apenas ganha um percurso.",
+    ],
+    confirm: "Criar percurso",
+  },
+  "create-partial": {
+    title: "Deseja criar um percurso a partir dessa coleção?",
+    paragraphs: [
+      "Nem todas as imagens dessa coleção possuem localização.",
+      "Para ter uma visão completa, registre a localização em todas as imagens.",
+    ],
+    confirm: "Prosseguir",
+  },
+  "create-blocked": {
+    title: "Antes de criar um percurso, localize as imagens",
+    paragraphs: [
+      "As imagens dessa coleção não possuem localização. Para criar um percurso, registre a localização de pelo menos uma das imagens.",
+    ],
+    confirm: "Revisar imagens da coleção",
+  },
+  edit: {
+    title: "Editar percurso",
+    paragraphs: ["Deseja editar as informações e pontos deste percurso?"],
+    cancel: "Não",
+    confirm: "Sim",
+  },
+  delete: {
+    title: "Apagar o percurso desta coleção?",
+    paragraphs: [
+      "Os pontos e a rota do percurso serão removidos. As imagens da coleção não são alteradas.",
+    ],
+    confirm: "Apagar percurso",
+  },
+};
+
+const copy = computed(() => COPY[props.mode] ?? COPY.create);
 
 function close() {
   emit("update:modelValue", false);
 }
 
 function confirm() {
-  emit("confirm", { mode: pathMode.value });
+  emit("confirm");
   close();
 }
 
-function handleEsc(event) {
-  if (event.key === "Escape") close();
+const panelRef = ref(null);
+// Elemento com foco antes de abrir, para devolver o foco ao fechar.
+let previouslyFocused = null;
+
+const FOCUSABLE =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+// Esc fecha; Tab/Shift+Tab ficam presos dentro do modal.
+function handleKeydown(event) {
+  if (event.key === "Escape") {
+    close();
+    return;
+  }
+  if (event.key !== "Tab" || !panelRef.value) return;
+
+  const items = [...panelRef.value.querySelectorAll(FOCUSABLE)];
+  if (!items.length) return;
+
+  const first = items[0];
+  const last = items[items.length - 1];
+  const active = document.activeElement;
+
+  if (event.shiftKey && (active === first || active === panelRef.value)) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && active === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function lockPage() {
+  document.body.style.overflow = "hidden";
+  window.addEventListener("keydown", handleKeydown);
+}
+
+function unlockPage() {
+  document.body.style.overflow = "";
+  window.removeEventListener("keydown", handleKeydown);
 }
 
 watch(
   () => props.modelValue,
-  (open) => {
+  async (open) => {
     if (open) {
-      pathMode.value = "same";
-      document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", handleEsc);
+      previouslyFocused = document.activeElement;
+      lockPage();
+      await nextTick();
+      panelRef.value?.focus();
     } else {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleEsc);
+      unlockPage();
+      previouslyFocused?.focus?.();
+      previouslyFocused = null;
     }
   }
 );
+
+// Se o componente sair da tela com o modal aberto (ex.: "voltar" do navegador),
+// a página não pode ficar sem rolagem nem com o listener de teclado ativo.
+onBeforeUnmount(unlockPage);
 </script>
 
 <template>
@@ -48,60 +139,27 @@ watch(
       @click.self="close"
     >
       <div
+        ref="panelRef"
         class="path-modal__panel"
         role="dialog"
         aria-modal="true"
         aria-labelledby="path-modal-title"
+        tabindex="-1"
       >
         <div class="path-modal__header">
           <h2 id="path-modal-title" class="path-modal__title">
-            Deseja criar um percurso a partir dessa coleção?
+            {{ copy.title }}
           </h2>
         </div>
 
         <div class="path-modal__body">
-          <div class="path-modal__stack">
-            <div class="path-modal__copy">
-              <p class="path-modal__text">
-                Você pode utilizar a mesma coleção ou criar uma nova coleção
-                utilizando as mesmas imagens como ponto de partida.
-              </p>
-
-              <div class="path-modal__fields">
-                <div
-                  class="path-modal__radios"
-                  role="radiogroup"
-                  aria-label="Opções de percurso"
-                >
-                  <label class="path-modal__radio">
-                    <input
-                      v-model="pathMode"
-                      type="radio"
-                      name="path-mode"
-                      value="same"
-                      class="path-modal__radio-input"
-                    />
-                    <span class="path-modal__radio-label">
-                      Criar percurso na mesma coleção
-                    </span>
-                  </label>
-
-                  <label class="path-modal__radio">
-                    <input
-                      v-model="pathMode"
-                      type="radio"
-                      name="path-mode"
-                      value="duplicate"
-                      class="path-modal__radio-input"
-                    />
-                    <span class="path-modal__radio-label">
-                      Duplicar imagens para uma nova coleção
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
+          <p
+            v-for="(paragraph, index) in copy.paragraphs"
+            :key="index"
+            class="path-modal__text"
+          >
+            {{ paragraph }}
+          </p>
         </div>
 
         <div class="path-modal__footer">
@@ -110,14 +168,14 @@ watch(
             class="path-modal__btn path-modal__btn--secondary"
             @click="close"
           >
-            Fechar
+            {{ copy.cancel ?? "Voltar" }}
           </button>
           <button
             type="button"
             class="path-modal__btn path-modal__btn--primary"
             @click="confirm"
           >
-            Criar percurso
+            {{ copy.confirm }}
           </button>
         </div>
       </div>
@@ -164,6 +222,11 @@ watch(
   box-sizing: border-box;
 }
 
+/* O painel recebe foco ao abrir (para leitores de tela); sem contorno visual. */
+.path-modal__panel:focus {
+  outline: none;
+}
+
 .path-modal__header {
   display: flex;
   padding: 32px 32px 16px;
@@ -179,7 +242,7 @@ watch(
   margin: 0;
   color: #2f2f2f;
   text-align: start;
-  font-family: "DM Sans", sans-serif;
+  
   font-size: 20px;
   font-style: normal;
   font-weight: 500;
@@ -188,115 +251,33 @@ watch(
 
 .path-modal__body {
   display: flex;
-  padding: 0 32px;
+  padding: 8px 32px;
   flex-direction: column;
+  gap: 12px;
   align-items: flex-start;
   align-self: stretch;
   box-sizing: border-box;
 }
 
-.path-modal__stack {
-  display: flex;
-  padding: 8px 0;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  align-self: stretch;
-  box-sizing: border-box;
-}
 
-.path-modal__copy {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 16px;
-  flex: 1 0 0;
-  align-self: stretch;
-  min-width: 0;
-}
 
 .path-modal__text {
   margin: 0;
   align-self: stretch;
-  color: var(--Gray-900, #212529);
+  color: var(--Cinza_E);
   text-align: start;
-  font-family: "DM Sans", sans-serif;
+  
   font-size: 16px;
   font-style: normal;
   font-weight: 500;
   line-height: 150%;
 }
 
-.path-modal__fields {
-  display: flex;
-  min-width: 200px;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
-  align-self: stretch;
-}
 
-.path-modal__radios {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  align-self: stretch;
-  gap: 8px;
-  width: 100%;
-}
-
-.path-modal__radio {
-  display: flex;
-  flex: 0 1 auto;
-  padding: 8px 4px 4px;
-  align-items: center;
-  gap: 8px;
-  max-width: none;
-  box-sizing: border-box;
-  cursor: pointer;
-}
-
-.path-modal__radio-input {
-  appearance: none;
-  -webkit-appearance: none;
-  flex: 0 0 12px;
-  width: 12px;
-  height: 12px;
-  margin: 0;
-  border: 1px solid #2f2f2f;
-  border-radius: 50%;
-  background: transparent;
-  box-sizing: border-box;
-  cursor: pointer;
-}
-
-.path-modal__radio-input:checked {
-  background: radial-gradient(
-    circle at center,
-    #2f2f2f 0 3px,
-    transparent 3.5px
-  );
-}
-
-.path-modal__radio-input:focus-visible {
-  outline: 2px solid #2f2f2f;
-  outline-offset: 2px;
-}
-
-.path-modal__radio-label {
-  color: #2f2f2f;
-  font-family: "DM Sans", sans-serif;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 125%;
-  white-space: nowrap;
-}
 
 .path-modal__footer {
   display: flex;
-  padding: 16px 0;
+  padding: 18px 0;
   justify-content: center;
   align-items: flex-start;
   gap: 16px;
@@ -318,8 +299,8 @@ watch(
   min-width: 0;
   margin: 0;
   border-radius: 5px;
-  border: 1px solid var(--Cinza_E, #2f2f2f);
-  font-family: "DM Sans", sans-serif;
+  border: 1px solid var(--Cinza_E);
+  
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
@@ -330,12 +311,12 @@ watch(
 
 .path-modal__btn--secondary {
   background: var(--Off_white, #faf9f9);
-  color: var(--Cinza_E, #2f2f2f);
+  color: var(--Cinza_E);
 }
 
 .path-modal__btn--primary {
-  background: var(--Cinza_E, #2f2f2f);
-  border-color: var(--Cinza_E, #2f2f2f);
+  background: var(--Cinza_E);
+  border-color: var(--Cinza_E);
   color: var(--Branco, #fff);
 }
 
@@ -346,15 +327,6 @@ watch(
 
   .path-modal__body {
     padding: 0 8px;
-  }
-
-  .path-modal__radios {
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .path-modal__radio {
-    max-width: 100%;
   }
 }
 </style>
