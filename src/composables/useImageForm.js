@@ -130,6 +130,8 @@ export function useImageForm() {
     dateEnd: "",
     dateType: "year",
     dateAccuracy: "exact",
+    // Número de tombo (inventário do acervo). Opcional; vazio apaga no backend.
+    tombo: "",
     location: "",
     coordinates: null,
   };
@@ -583,6 +585,7 @@ export function useImageForm() {
           ? "interval"
           : "year",
       dateAccuracy: dateRaw?.circa ? "approximate" : "exact",
+      tombo: data.tombo || "",
       location: data.location || "",
       coordinates: coords,
     };

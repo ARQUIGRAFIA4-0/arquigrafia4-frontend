@@ -307,6 +307,23 @@
               </div>
             </UiField>
           </div>
+
+          <div class="mb-4 px-3">
+            <UiField label="Número de tombo" explain="Número de inventário do acervo, se houver">
+              <div style="max-width: 280px">
+                <UiInput
+                  type="text"
+                  placeholder="Ex: 9A8148"
+                  v-model="form.tombo"
+                  :maxlength="64"
+                  autocomplete="off"
+                />
+              </div>
+            </UiField>
+            <div class="text-muted small mt-1">
+              Opcional. Máximo 64 caracteres.
+            </div>
+          </div>
         </section>
 
         <!-- Seção: Localização -->
@@ -467,11 +484,13 @@ const buildPayload = async (workId) => {
     earliest_date: form.value.date || null,
     latest_date: form.value.dateEnd || null,
     circa: form.value.dateAccuracy === "approximate",
+    // `null` apaga o tombo no backend (regra `sometimes|nullable`).
+    tombo: form.value.tombo?.trim() || null,
   };
 
   const cleaned = Object.fromEntries(
     Object.entries(payload).filter(([key, v]) =>
-      v !== null || ["latitude", "longitude", "location_label"].includes(key))
+      v !== null || ["latitude", "longitude", "location_label", "tombo"].includes(key))
   );
 
   // Só entra no payload quando o vínculo mudou: omitir preserva o que existe,
