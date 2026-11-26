@@ -743,6 +743,13 @@ function updateIsMobile() {
   isMobile.value = window.innerWidth < MOBILE_BREAKPOINT;
 }
 
+// Mobile: o editor de percurso ocupa a tela; rola até o mapa ao abrir.
+watch(isPathEditing, async (editing) => {
+  if (!editing || !isMobile.value) return;
+  await nextTick();
+  galleryRef.value?.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 async function handleToggleMobileGrid() {
   const willExpand = !isMobileGridExpanded.value;
   isMobileGridExpanded.value = willExpand;
@@ -1184,7 +1191,8 @@ watch(
             ref="galleryRef"
             class="collection-detail__image-wrapper collection-detail__image-wrapper--mobile"
             :class="{
-              'collection-detail__image-wrapper--grid-collapsed': !isMobileGridExpanded,
+              'collection-detail__image-wrapper--grid-collapsed':
+                !isMobileGridExpanded && !isPathEditing,
               'collection-detail__image-wrapper--grid-expanded': isMobileGridExpanded,
             }"
           >
@@ -2431,6 +2439,14 @@ a.collection-detail__actor-name:hover {
   .collection-detail__image-wrapper--mobile .collection-detail__gallery--map {
     height: 60dvh;
     min-height: 320px;
+  }
+
+  /* Editor de percurso: mapa em tela cheia, com a folha de pontos na base. */
+  .collection-detail__row--path-editing
+    .collection-detail__image-wrapper--mobile
+    .collection-detail__gallery--map {
+    height: 100dvh;
+    min-height: 480px;
   }
 
   .collection-detail__image-wrapper--grid-collapsed {

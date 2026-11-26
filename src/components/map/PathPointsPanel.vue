@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref } from "vue";
+import { nextTick, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
 defineOptions({ name: "PathPointsPanel" });
@@ -14,6 +14,18 @@ const props = defineProps({
 const emit = defineEmits(["add", "remove", "rename", "reorder", "save", "back"]);
 
 const listRef = ref(null);
+
+// Mobile: o painel é uma folha na base do mapa. Recolhida, mostra só o título,
+// "Adicionar novo ponto" e os botões; expandida, mostra a lista de pontos.
+const isExpanded = ref(false);
+
+// Ao escolher um ponto no mapa, a folha recolhe para liberar o mapa.
+watch(
+  () => props.picking,
+  (picking) => {
+    if (picking) isExpanded.value = false;
+  }
+);
 
 // Emite a nova ordem (lista de ids) depois de soltar um ponto arrastado.
 function onDragReorder(nextStops) {
@@ -89,15 +101,32 @@ function onTitleKeydown(event, stop) {
 <template>
   <aside
     class="path-points-panel"
+    :class="{ 'path-points-panel--expanded': isExpanded }"
     role="dialog"
     aria-labelledby="path-points-panel-title"
   >
     <div class="path-points-panel__body">
-      <h2 id="path-points-panel-title" class="path-points-panel__title">
-        Selecione os pontos do percurso
-      </h2>
+      <div class="path-points-panel__header">
+        <h2 id="path-points-panel-title" class="path-points-panel__title">
+          Selecione os pontos do percurso
+          <span v-if="stops.length" class="path-points-panel__count">({{ stops.length }})</span>
+        </h2>
+        <!-- Só no mobile (CSS): expande/recolhe a lista de pontos. -->
+        <button
+          v-if="stops.length"
+          type="button"
+          class="path-points-panel__toggle"
+          :aria-expanded="isExpanded"
+          aria-controls="path-points-panel-list"
+          :aria-label="isExpanded ? 'Recolher lista de pontos' : 'Ver lista de pontos'"
+          @click="isExpanded = !isExpanded"
+        >
+          <i class="bi bi-chevron-up" aria-hidden="true"></i>
+        </button>
+      </div>
 
       <draggable
+        id="path-points-panel-list"
         ref="listRef"
         :model-value="stops"
         tag="ul"
@@ -508,5 +537,122 @@ function onTitleKeydown(event, stop) {
 .path-points-panel__btn--secondary {
   background: var(--Off_white, #faf9f9);
   color: var(--Cinza_E, #2f2f2f);
+}
+
+.path-points-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.path-points-panel__header .path-points-panel__title {
+  flex: 1 1 auto;
+}
+
+/* Contador e botão de expandir existem só na folha do mobile. */
+.path-points-panel__count,
+.path-points-panel__toggle {
+  display: none;
+}
+
+/* Telas de toque não têm hover: remover e reordenar ficam sempre visíveis. */
+@media (hover: none) {
+  .path-points-panel__icon-btn {
+    opacity: 1;
+  }
+
+  .path-points-panel__handle {
+    width: 24px;
+    color: #6c757d;
+  }
+
+  .path-points-panel__item--add {
+    padding-left: 28px;
+  }
+}
+
+/* Mobile: folha na base do mapa (o PathMap a posiciona). */
+@media (max-width: 767px) {
+  .path-points-panel {
+    width: 100%;
+    height: auto;
+    max-height: 70%;
+    padding: 12px 16px 16px;
+    border-width: 0.75px 0 0;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+  }
+
+  .path-points-panel__body {
+    gap: 12px;
+  }
+
+  .path-points-panel__title {
+    min-height: 0;
+    font-size: 16px;
+  }
+
+  .path-points-panel__count {
+    display: inline;
+    color: var(--Cinza_M, #636262);
+    font-weight: 400;
+  }
+
+  .path-points-panel__toggle {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin: -8px -8px -8px 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--Cinza_E, #2f2f2f);
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .path-points-panel__toggle i {
+    transition: transform 0.2s ease;
+  }
+
+  .path-points-panel--expanded .path-points-panel__toggle i {
+    transform: rotate(180deg);
+  }
+
+  .path-points-panel__toggle:focus-visible {
+    outline: 2px solid var(--Cinza_E, #2f2f2f);
+    outline-offset: -2px;
+  }
+
+  /* Recolhida: só "Adicionar novo ponto" fica na lista. */
+  .path-points-panel:not(.path-points-panel--expanded)
+    .path-points-panel__item:not(.path-points-panel__item--add) {
+    display: none;
+  }
+
+  .path-points-panel__item {
+    min-height: 36px;
+  }
+
+  /* Botões lado a lado, com altura de toque confortável: Voltar à esquerda. */
+  .path-points-panel__footer {
+    flex-direction: row-reverse;
+    margin-top: 12px;
+  }
+
+  .path-points-panel__btn {
+    flex: 1 1 0;
+    height: 40px;
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .path-points-panel__toggle i {
+    transition: none;
+  }
 }
 </style>

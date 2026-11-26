@@ -1261,13 +1261,28 @@ watch(
 }
 
 @media (max-width: 768px) {
+  /* No topo: a base do mapa é ocupada pela folha de pontos. */
   .path-map__pick-banner {
-    top: auto;
-    bottom: 16px;
+    top: 12px;
     left: 12px;
     right: 12px;
     max-width: none;
     border-radius: 16px;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Painel de pontos como folha na base: o mapa fica livre acima dele. */
+  .path-map__points-panel {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  .path-map__bottom-left {
+    top: 12px;
+    bottom: auto;
   }
 }
 
