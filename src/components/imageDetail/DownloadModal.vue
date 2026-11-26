@@ -452,4 +452,29 @@ function confirmDownload() {
     opacity: 0.35;
   }
 }
+
+/* Mobile: botões empilhados, com a ação principal em cima e cancelar embaixo. */
+@media (max-width: 767px) {
+  .download-modal__footer {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .download-modal__btn {
+    width: 100%;
+    flex: 0 0 auto;
+    min-height: var(--control-height-mobile, 48px);
+    height: var(--control-height-mobile, 48px);
+  }
+
+  .download-modal__btn--primary {
+    order: 1;
+  }
+
+  .download-modal__btn--secondary {
+    order: 2;
+  }
+}
 </style>

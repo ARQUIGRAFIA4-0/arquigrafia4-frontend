@@ -315,4 +315,29 @@ watch(
     order: 2;
   }
 }
+
+/* Mobile: botões empilhados, com a ação principal em cima e cancelar embaixo. */
+@media (max-width: 767px) {
+  .suggestion-modal__footer {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .suggestion-modal__btn {
+    width: 100%;
+    flex: 0 0 auto;
+    min-height: var(--control-height-mobile, 48px);
+    height: var(--control-height-mobile, 48px);
+  }
+
+  .suggestion-modal__btn--primary {
+    order: 1;
+  }
+
+  .suggestion-modal__btn--secondary {
+    order: 2;
+  }
+}
 </style>

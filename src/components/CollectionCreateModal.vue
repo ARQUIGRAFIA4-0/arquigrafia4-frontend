@@ -585,7 +585,6 @@
     padding: 0;
     align-items: stretch;
     justify-content: stretch;
-    background: rgba(0, 0, 0, 0.1);
   }
 
   .collection-modal__panel {
@@ -596,16 +595,19 @@
     border-radius: 0;
     padding: 0;
     gap: 0;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
   }
 
   .collection-modal__column {
+    width: 100%;
+    flex: 1 1 auto;
     min-height: 0;
+    padding: 0 16px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    padding: 0 32px;
   }
 
   .collection-modal__close-row {
@@ -618,23 +620,22 @@
   }
 
   .collection-modal__header {
-    padding-top: 4px;
+    padding-top: 20px;
     padding-bottom: 12px;
   }
 
   .collection-modal__title {
-    margin: 0;
-    font-size: 16px;
-    line-height: 1.5;
+    font-size: 20px;
+    line-height: 1.35;
   }
 
   .collection-modal__body {
     flex: 1 1 auto;
     min-height: 0;
-    padding: 0 0 24px;
+    padding: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    gap: 16px;
+    gap: 14px;
   }
 
   .collection-modal__label {
@@ -705,6 +706,31 @@
     padding: 10px 12px;
     font-size: 13px;
     box-sizing: border-box;
+  }
+}
+
+/* Mobile: botões empilhados, com a ação principal em cima e cancelar embaixo. */
+@media (max-width: 767px) {
+  .collection-modal__footer {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .collection-modal__btn {
+    width: 100%;
+    flex: 0 0 auto;
+    min-height: var(--control-height-mobile, 48px);
+    height: var(--control-height-mobile, 48px);
+  }
+
+  .collection-modal__btn--primary {
+    order: 1;
+  }
+
+  .collection-modal__btn--secondary {
+    order: 2;
   }
 }
 </style>

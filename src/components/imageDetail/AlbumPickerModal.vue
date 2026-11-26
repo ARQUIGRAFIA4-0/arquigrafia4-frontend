@@ -850,4 +850,29 @@ watch(
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Mobile: botões empilhados, com a ação principal em cima e cancelar embaixo. */
+@media (max-width: 767px) {
+  .album-picker__footer {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .album-picker__btn {
+    width: 100%;
+    flex: 0 0 auto;
+    min-height: var(--control-height-mobile, 48px);
+    height: var(--control-height-mobile, 48px);
+  }
+
+  .album-picker__btn--add {
+    order: 1;
+  }
+
+  .album-picker__btn--cancel {
+    order: 2;
+  }
+}
 </style>

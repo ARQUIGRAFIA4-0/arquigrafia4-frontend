@@ -141,4 +141,29 @@ function confirmDelete() {
   color: var(--Cinza_F, #333);
   font-weight: 500;
 }
+
+/* Mobile: botões empilhados, com a ação principal em cima e cancelar embaixo. */
+@media (max-width: 767px) {
+  .footer-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .footer-grid > .btn {
+    width: 100%;
+    flex: 0 0 auto;
+    min-height: var(--control-height-mobile, 48px);
+    height: var(--control-height-mobile, 48px);
+  }
+
+  .footer-grid > .btn-danger {
+    order: 1;
+  }
+
+  .footer-grid > .btn-outline-secondary {
+    order: 2;
+  }
+}
 </style>

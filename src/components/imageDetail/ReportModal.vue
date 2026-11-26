@@ -682,18 +682,21 @@ function submit() {
     height: 100dvh;
     margin: 0;
     border-radius: 0;
-    padding: 0;           /* importante: sem padding no painel */
-    gap: 0;               /* evita “respiro” extra no topo */
-    display: grid;
-    grid-template-rows: auto 1fr auto;
+    padding: 0;
+    gap: 0;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
   }
 
   .report-modal__column {
+    width: 100%;
+    flex: 1 1 auto;
     min-height: 0;
+    padding: 0 16px;
+    box-sizing: border-box;
     display: flex;
-    flex-direction: column;
-    padding: 0 16px;      /* mesmo padrão visual dos outros */
+    flex-direction: column;     /* mesmo padrão visual dos outros */
   }
 
   .report-modal__header {
@@ -702,7 +705,6 @@ function submit() {
   }
 
   .report-modal__title {
-    margin: 0;
     font-size: 20px;
     line-height: 1.35;    /* igual ao Share/Download */
   }
@@ -746,11 +748,12 @@ function submit() {
   }
 
   .report-modal__footer {
-    grid-row: 3;
+    grid-row: 2;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
     align-self: stretch;
   }
 
@@ -776,6 +779,31 @@ function submit() {
   .report-modal__input-shell {
     height: var(--control-height-mobile, 48px);
     min-height: var(--control-height-mobile, 48px);
+  }
+}
+
+/* Mobile: botões empilhados, com a ação principal em cima e cancelar embaixo. */
+@media (max-width: 767px) {
+  .report-modal__footer {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .report-modal__btn {
+    width: 100%;
+    flex: 0 0 auto;
+    min-height: var(--control-height-mobile, 48px);
+    height: var(--control-height-mobile, 48px);
+  }
+
+  .report-modal__btn--primary {
+    order: 1;
+  }
+
+  .report-modal__btn--secondary {
+    order: 2;
   }
 }
 </style>
