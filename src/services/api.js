@@ -137,6 +137,12 @@ const getImageDetails = async (id) => {
     const subjects = image.subjects || [];
     const rights = image.rights || [];
 
+    // Número de tombo (inventário do acervo). Opcional e não único: várias fotos
+    // do mesmo objeto podem compartilhá-lo. Vazio/ausente vira null.
+    const tombo = typeof image.tombo === "string" && image.tombo.trim() !== ""
+      ? image.tombo.trim()
+      : null;
+
     // Obras associadas à imagem. O backend inclui "works" com "works.titles" e
     // "works.location" no GET /images/{id}. Uma imagem pode não ter obra (array vazio).
     const works = Array.isArray(image.works)
@@ -167,6 +173,7 @@ const getImageDetails = async (id) => {
       locationCoordinates,
       description,
       subjects,
+      tombo,
       rights,
       works,
     };

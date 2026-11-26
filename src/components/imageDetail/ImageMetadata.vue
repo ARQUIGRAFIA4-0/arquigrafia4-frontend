@@ -73,6 +73,11 @@
       </div>
     </div>
 
+    <div v-if="props.image?.tombo" class="metadata-section">
+      <h2 class="h5 metadata-title">Número de tombo</h2>
+      <p class="metadata-text">{{ props.image.tombo }}</p>
+    </div>
+
     <div class="metadata-section" v-if="showMap">
       <h2 class="h5 metadata-title">Localização</h2>
       <p v-if="props.image?.location" class="metadata-location-label">{{ props.image.location }}</p>
